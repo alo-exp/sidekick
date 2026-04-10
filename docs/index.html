@@ -185,7 +185,7 @@ nav .nav-cta:hover{
 }
 .theme-toggle:hover{border-color:var(--border-hover);color:var(--text-primary)}
 .nav-toggle{display:none;background:none;border:none;color:var(--text-primary);font-size:1.5rem;cursor:pointer}
-@media(max-width:768px){
+@media(max-width:640px){
   nav .nav-links{display:none}
   .nav-toggle{display:block}
   nav .nav-links.active{
@@ -541,6 +541,97 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
 /* ───── SCROLL ANIMATIONS ───── */
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
 .reveal.visible{opacity:1;transform:none}
+
+/* ───── TABLE SCROLL WRAPPER ───── */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
+.table-scroll .comparison-table{min-width:540px}
+
+/* ───── RESPONSIVE — TABLET (641–900px) ───── */
+@media(min-width:641px) and (max-width:900px){
+  nav .nav-links{display:flex;gap:16px}
+  .nav-toggle{display:none}
+  nav .nav-cta{padding:7px 16px;font-size:.75rem}
+  .hero{padding:88px 24px 88px}
+  .setup-steps{grid-template-columns:repeat(2,1fr)}
+  .sidekick-grid{grid-template-columns:repeat(2,1fr)}
+  .flow-diagram{flex-direction:column}
+  .flow-step:not(:last-child)::after{content:'↓';right:auto;left:50%;bottom:-14px;top:auto;transform:translateX(-50%)}
+  .flow-step:not(:last-child){border-right:none;border-bottom:1px solid var(--border)}
+}
+
+/* ───── RESPONSIVE — MOBILE (≤640px) ───── */
+@media(max-width:640px){
+  /* Nav: hide redundant CTA (hero has it) */
+  nav .nav-cta{display:none}
+
+  /* Hero */
+  .hero{padding:80px 16px 72px}
+  .hero .subtitle{font-size:1rem;margin-bottom:32px}
+  .hero .cta-group{flex-direction:column;align-items:center;gap:12px;margin-bottom:40px}
+  .hero .cta-group .btn{width:100%;max-width:300px;justify-content:center}
+  .hero .hero-pills{gap:8px}
+  .hero-pill{font-size:.72rem;padding:6px 12px}
+
+  /* Sections */
+  section{padding:60px 0}
+  .container{padding:0 16px}
+  .section-desc{margin-bottom:32px}
+
+  /* Flow diagram */
+  .flow-diagram{flex-direction:column;border-radius:var(--radius)}
+  .flow-step:not(:last-child)::after{content:'↓';right:auto;left:50%;bottom:-14px;top:auto;transform:translateX(-50%)}
+  .flow-step:not(:last-child){border-right:none;border-bottom:1px solid var(--border)}
+
+  /* Feature grid */
+  .grid-4{grid-template-columns:1fr}
+
+  /* Sidekick grid */
+  .sidekick-grid{grid-template-columns:1fr}
+
+  /* Setup steps */
+  .setup-steps{grid-template-columns:1fr}
+
+  /* Install block */
+  .install-code{padding:16px 18px;font-size:.78rem;line-height:1.9}
+
+  /* Callout */
+  .callout{padding:24px 20px}
+  .callout .cta-group{flex-direction:column;align-items:center;gap:12px}
+  .callout .cta-group .btn{width:100%;max-width:300px;justify-content:center}
+
+  /* Footer */
+  footer .footer-inner{flex-direction:column;align-items:flex-start;gap:16px}
+  footer .footer-links{flex-wrap:wrap;gap:16px}
+}
+
+/* ───── RESPONSIVE — SMALL MOBILE (≤480px) ───── */
+@media(max-width:480px){
+  /* Nav: hide theme toggle to reduce clutter */
+  .theme-toggle{display:none}
+
+  /* Tighter container */
+  .container{padding:0 14px}
+
+  /* Hero */
+  .hero{padding:72px 14px 64px}
+  .hero .version-badge{font-size:.72rem;padding:5px 12px;margin-bottom:24px}
+
+  /* Smaller section titles */
+  .section-title{font-size:clamp(1.4rem,6vw,1.9rem)}
+
+  /* Install code tighter */
+  .install-code{font-size:.72rem;padding:14px}
+
+  /* Comparison table cells tighter */
+  .comparison-table th,.comparison-table td{padding:10px 8px;font-size:.78rem}
+
+  /* Setup step code */
+  .step-code{font-size:.72rem}
+
+  /* Callout */
+  .callout{padding:20px 16px}
+  .callout h3{font-size:1.25rem}
+}
 </style>
 </head>
 <body>
@@ -725,7 +816,7 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
     <div class="section-label">Performance</div>
     <h2 class="section-title">Forge on Terminal-Bench 2.0</h2>
     <p class="section-desc">Terminal-Bench 2.0 is ICLR 2026's benchmark for terminal AI agents — 89 Docker-containerized real-world tasks.</p>
-    <div class="reveal" style="overflow-x:auto">
+    <div class="reveal table-scroll">
       <table class="comparison-table">
         <thead>
           <tr>
