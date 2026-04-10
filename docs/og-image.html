@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800;900&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1200px;height:630px;overflow:hidden}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  background:#0a0a0f;
+  color:#e2e8f0;
+  position:relative;
+}
+/* Background blobs */
+.blob-1{
+  position:absolute;top:-120px;right:-80px;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(79,70,229,.18) 0%,transparent 65%);
+}
+.blob-2{
+  position:absolute;bottom:-80px;left:40px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(124,58,237,.12) 0%,transparent 65%);
+}
+.blob-3{
+  position:absolute;top:200px;right:320px;
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(219,39,119,.07) 0%,transparent 65%);
+}
+/* Grid lines */
+.grid-lines{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(99,102,241,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,.04) 1px, transparent 1px);
+  background-size:60px 60px;
+}
+.content{
+  position:relative;z-index:1;
+  display:flex;align-items:stretch;
+  width:1200px;height:630px;
+}
+/* Left panel */
+.left{
+  flex:1;
+  padding:56px 64px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.logo{
+  display:flex;align-items:center;gap:12px;
+}
+.logo-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed,#db2777);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;
+}
+.logo-text{
+  font-size:1.15rem;font-weight:800;letter-spacing:-.02em;
+  color:#e2e8f0;
+}
+.logo-domain{
+  font-size:.8rem;color:#475569;margin-left:4px;font-weight:400;
+}
+.headline{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:0 0 8px;
+}
+.eyebrow{
+  font-size:.78rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#6366f1;margin-bottom:18px;
+}
+h1{
+  font-size:3.4rem;font-weight:900;line-height:1.05;
+  letter-spacing:-.04em;margin-bottom:20px;
+}
+h1 .gradient{
+  background:linear-gradient(135deg,#6366f1 0%,#a855f7 50%,#ec4899 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.subtitle{
+  font-size:1.05rem;color:#94a3b8;line-height:1.6;
+  max-width:480px;
+}
+.bottom-row{
+  display:flex;align-items:center;gap:12px;
+}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border-radius:999px;
+  background:rgba(99,102,241,.1);
+  border:1px solid rgba(99,102,241,.2);
+  font-size:.78rem;font-weight:700;color:#818cf8;
+  font-family:'Fira Code',monospace;letter-spacing:.02em;
+}
+/* Right panel */
+.right{
+  width:400px;flex-shrink:0;
+  padding:48px 48px 48px 32px;
+  display:flex;flex-direction:column;gap:16px;justify-content:center;
+}
+.card{
+  background:#12121a;
+  border:1px solid rgba(99,102,241,.25);
+  border-radius:20px;padding:28px;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,#4f46e5,#7c3aed,#db2777);
+}
+.card-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.22);
+  border-radius:999px;padding:3px 10px;font-size:.68rem;font-weight:700;
+  color:#818cf8;letter-spacing:.04em;margin-bottom:12px;
+}
+.card-logo{font-size:1.6rem;margin-bottom:8px}
+.card-name{font-size:1rem;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.card-role{
+  font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+  color:#6366f1;margin-bottom:14px;
+}
+.benchmark{
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(124,58,237,.07));
+  border:1px solid rgba(99,102,241,.18);
+  border-radius:10px;padding:10px 14px;
+  font-family:'Fira Code',monospace;font-size:.78rem;color:#818cf8;font-weight:500;
+}
+.benchmark .score{
+  font-size:1.5rem;font-weight:900;
+  background:linear-gradient(135deg,#6366f1,#a855f7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em;
+}
+.stat-row{
+  display:flex;gap:10px;margin-top:12px;
+}
+.stat{
+  flex:1;background:rgba(30,41,59,.6);border:1px solid #1e293b;
+  border-radius:8px;padding:10px 12px;text-align:center;
+}
+.stat .val{font-size:.95rem;font-weight:800;color:#e2e8f0;margin-bottom:2px}
+.stat .lbl{font-size:.62rem;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="blob-1"></div>
+<div class="blob-2"></div>
+<div class="blob-3"></div>
+<div class="grid-lines"></div>
+<div class="content">
+  <div class="left">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">Sidekick<span class="logo-domain"> · sidekick.alolabs.dev</span></span>
+    </div>
+    <div class="headline">
+      <div class="eyebrow">Claude Code Plugin · Ālo Labs</div>
+      <h1>Give Claude the<br><span class="gradient">Sidekick it deserves!</span></h1>
+      <p class="subtitle">AI coding agents that auto-install, configure, and let Claude delegate all implementation work.</p>
+    </div>
+    <div class="bottom-row">
+      <span class="pill">⚡ Claude Code Plugin</span>
+      <span class="pill">🦀 ForgeCode</span>
+      <span class="pill">🔑 OpenRouter</span>
+    </div>
+  </div>
+  <div class="right">
+    <div class="card">
+      <div class="card-badge">✅ Available · v1.0.0</div>
+      <div class="card-logo">🦀</div>
+      <div class="card-name">Forge</div>
+      <div class="card-role">ForgeCode · Terminal Agent</div>
+      <div class="benchmark">
+        <div>
+          <div class="score">#2</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:#e2e8f0;margin-bottom:2px">Terminal-Bench 2.0</div>
+          <div style="color:#475569;font-size:.7rem">ICLR 2026 · 89 tasks</div>
+        </div>
+        <div style="margin-left:auto;font-size:1.1rem;font-weight:800;color:#818cf8">81.8%</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="val">1M</div>
+          <div class="lbl">Context</div>
+        </div>
+        <div class="stat">
+          <div class="val">Rust</div>
+          <div class="lbl">Engine</div>
+        </div>
+        <div class="stat">
+          <div class="val">$0.33</div>
+          <div class="lbl">per MTok</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
