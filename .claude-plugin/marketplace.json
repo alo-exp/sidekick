@@ -1,0 +1,28 @@
+{
+  "name": "forge",
+  "owner": {
+    "name": "Ālo Labs"
+  },
+  "metadata": {
+    "description": "Forge — ForgeCode terminal agent as a Claude sidekick. Auto-installs, configures via OpenRouter, and turns Claude into an orchestrator that delegates coding tasks to Forge."
+  },
+  "plugins": [
+    {
+      "name": "forge",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/alo-exp/forge.git"
+      },
+      "description": "Forge — ForgeCode terminal agent as a Claude sidekick. Automatically installs ForgeCode, configures it with OpenRouter (Qwen 3.6 Plus), and turns Claude into an orchestrator that delegates all coding, file-system, and git tasks to Forge while handling planning and user interaction itself.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Ālo Labs",
+        "url": "https://alolabs.dev"
+      },
+      "homepage": "https://github.com/alo-exp/forge",
+      "repository": "https://github.com/alo-exp/forge",
+      "license": "MIT",
+      "keywords": ["forge", "forgecode", "terminal-agent", "coding-agent", "openrouter", "orchestration", "sidekick"]
+    }
+  ]
+}
