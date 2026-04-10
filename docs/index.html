@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
 /* ───── RESET ───── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -394,7 +395,7 @@ section:nth-child(even){background:var(--section-alt)}
   color:var(--accent-light);margin-bottom:14px;
 }
 .sidekick-card .sk-desc{
-  font-size:.875rem;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;flex:1;
+  font-size:.875rem;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;
 }
 .sidekick-card .sk-features{
   list-style:none;padding:0;margin:0 0 18px;
@@ -638,6 +639,29 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
   .callout{padding:20px 16px}
   .callout h3{font-size:1.25rem}
 }
+
+/* ───── LUCIDE ICONS ───── */
+i[data-lucide]{display:inline-flex;flex-shrink:0;vertical-align:middle}
+.logo-icon i[data-lucide]{width:16px;height:16px;stroke:#fff;stroke-width:2.5}
+footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width:2.5}
+.hero-pill i[data-lucide]{width:13px;height:13px;stroke:currentColor;stroke-width:2.5}
+.feature-icon i[data-lucide]{width:24px;height:24px;stroke:currentColor;stroke-width:2}
+.sk-logo i[data-lucide]{width:36px;height:36px;stroke:currentColor;stroke-width:1.5}
+.primary-badge i[data-lucide]{width:13px;height:13px;stroke:currentColor;stroke-width:2.5}
+.theme-toggle i[data-lucide]{width:16px;height:16px;stroke:currentColor;stroke-width:2}
+.nav-toggle i[data-lucide]{width:22px;height:22px;stroke:currentColor;stroke-width:2}
+.sk-learn-more i[data-lucide]{width:14px;height:14px;stroke:currentColor;stroke-width:2.5;transition:transform .15s}
+
+/* ───── SIDEKICK LEARN MORE ───── */
+.sk-learn-more{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.8rem;font-weight:600;color:var(--accent-light);
+  text-decoration:none;margin-top:14px;
+  transition:gap .15s,color .15s;
+}
+.sk-learn-more:hover{gap:8px}
+.coming-soon .sk-learn-more{color:var(--text-dim)}
+.coming-soon .sk-learn-more:hover{color:var(--text-secondary)}
 </style>
 </head>
 <body>
@@ -646,7 +670,7 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
 <nav>
   <div class="nav-inner">
     <a href="/" class="logo">
-      <span class="logo-icon">⚡</span>
+      <span class="logo-icon"><i data-lucide="zap"></i></span>
       Sidekick
     </a>
     <ul class="nav-links" id="nav-links">
@@ -656,9 +680,9 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
       <li><a href="#install">Install</a></li>
     </ul>
     <div class="nav-right">
-      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">☀</button>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun"></i></button>
       <a href="#install" class="nav-cta">Get Started</a>
-      <button class="nav-toggle" id="nav-toggle" aria-label="Menu">☰</button>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu"><i data-lucide="menu"></i></button>
     </div>
   </div>
 </nav>
@@ -671,16 +695,16 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
       v1.0.0 · First Sidekick: Forge
     </div>
     <h1>Reduce Claude Code Costs by up to 70%!<br><span class="gradient">Give Claude the Sidekick it's Missing</span></h1>
-    <p class="subtitle">Offload Claude by giving it a super cost-effective top coding agent ForgeCode (#2, #3 and #6 in <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid rgba(129,140,248,.4)">Terminal Bench 2.0</a>). Let Claude delegate all implementation work — while you interact only with Claude.</p>
+    <p class="subtitle">Offload Claude by giving it top coding agent Sidekicks like ForgeCode (#2, #3 and #6 in <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid rgba(129,140,248,.4)">Terminal Bench 2.0</a>) and super cost-effective models like Qwen 3.6 Plus. Let Claude delegate all implementation work — while you interact only with Claude.</p>
     <div class="cta-group">
       <a href="#install" class="btn btn-primary">Install Sidekick</a>
       <a href="https://github.com/alo-exp/sidekick" class="btn btn-outline" target="_blank" rel="noopener">View on GitHub</a>
     </div>
     <div class="hero-pills">
-      <span class="hero-pill">⚡ Claude Code Plugin</span>
-      <span class="hero-pill">🦀 Forge — TB 2.0 #2</span>
-      <span class="hero-pill">🔑 OpenRouter</span>
-      <span class="hero-pill">🤖 Auto-Install</span>
+      <span class="hero-pill"><i data-lucide="zap"></i> Claude Code Plugin</span>
+      <span class="hero-pill"><i data-lucide="terminal"></i> Forge — TB 2.0 #2</span>
+      <span class="hero-pill"><i data-lucide="key"></i> OpenRouter</span>
+      <span class="hero-pill"><i data-lucide="bot"></i> Auto-Install</span>
     </div>
   </div>
 </section>
@@ -725,22 +749,22 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
     </div>
     <div class="grid grid-4 reveal">
       <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(99,102,241,.1)">🎯</div>
+        <div class="feature-icon" style="background:rgba(99,102,241,.1);color:#818cf8"><i data-lucide="target"></i></div>
         <h3>Maximum Delegation</h3>
         <p>Claude delegates all file writes, edits, test runs, and commits. You get faster results without Claude burning context on execution.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(124,58,237,.1)">🔌</div>
+        <div class="feature-icon" style="background:rgba(124,58,237,.1);color:#a78bfa"><i data-lucide="plug"></i></div>
         <h3>Auto-Install</h3>
         <p>Each Sidekick installs itself on the first Claude session after the plugin is enabled. No manual setup required.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(219,39,119,.1)">📋</div>
+        <div class="feature-icon" style="background:rgba(219,39,119,.1);color:#f472b6"><i data-lucide="file-text"></i></div>
         <h3>Context Continuity</h3>
         <p>AGENTS.md keeps each Sidekick fully aware of project goals, stack, and conventions on every invocation.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(8,145,178,.1)">🔄</div>
+        <div class="feature-icon" style="background:rgba(8,145,178,.1);color:#22d3ee"><i data-lucide="refresh-cw"></i></div>
         <h3>Failure Recovery</h3>
         <p>12-failure-type recovery playbook built into Claude's orchestration skill. 402s, 429s, PATH issues — handled automatically.</p>
       </div>
@@ -758,8 +782,8 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
 
       <!-- Forge -->
       <div class="sidekick-card primary">
-        <div class="primary-badge">✅ Available · v1.0.0</div>
-        <div class="sk-logo">🦀</div>
+        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v1.0.0</div>
+        <div class="sk-logo"><i data-lucide="terminal"></i></div>
         <div class="sk-name">Forge</div>
         <div class="sk-role">ForgeCode · Terminal Agent</div>
         <div class="benchmark-badge">#2, #3 &amp; #6 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(129,140,248,.35)">Terminal-Bench 2.0</a></div>
@@ -776,12 +800,13 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
           <span class="tag tag-purple">OpenRouter</span>
           <span class="tag tag-green">Qwen 3.6 Plus</span>
         </div>
+        <a href="https://forgecode.dev" class="sk-learn-more" target="_blank" rel="noopener">Learn More <i data-lucide="arrow-right"></i></a>
       </div>
 
       <!-- Coming Soon — Pilot -->
       <div class="sidekick-card coming-soon">
         <div class="soon-badge">Coming Soon</div>
-        <div class="sk-logo">✈️</div>
+        <div class="sk-logo"><i data-lucide="plane"></i></div>
         <div class="sk-name">Pilot</div>
         <div class="sk-role">Ticket-to-PR Agent · <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(148,163,184,.3)">#1 Terminal-Bench 2.0</a></div>
         <p class="sk-desc">The #1 ranked agent on Terminal-Bench 2.0 (82.9%). A ticket-to-PR pipeline agent — takes a GitHub issue and produces a full pull request autonomously.</p>
@@ -794,23 +819,26 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
           <span class="tag tag-cyan">pilot</span>
           <span class="tag tag-indigo">ticket-to-PR</span>
         </div>
+        <a href="https://pilot.quantflow.studio/" class="sk-learn-more" target="_blank" rel="noopener">Learn More <i data-lucide="arrow-right"></i></a>
       </div>
 
-      <!-- Coming Soon 2 -->
+      <!-- Coming Soon 2 — OpenCode -->
       <div class="sidekick-card coming-soon">
         <div class="soon-badge">Coming Soon</div>
-        <div class="sk-logo">🧪</div>
-        <div class="sk-name">Tester</div>
-        <div class="sk-role">Test Generation Agent</div>
-        <p class="sk-desc">Generates comprehensive test suites, edge cases, and integration tests. Works alongside Forge to validate every change.</p>
+        <div class="sk-logo"><i data-lucide="code-2"></i></div>
+        <div class="sk-name">OpenCode</div>
+        <div class="sk-role">Terminal Coding Assistant</div>
+        <p class="sk-desc">An open-source, extensible terminal coding assistant. Provider-agnostic — works with any LLM. Lightweight, fast, and ideal for long coding sessions.</p>
         <ul class="sk-features">
-          <li>Unit &amp; integration test generation</li>
-          <li>Edge case discovery</li>
-          <li>Coverage reporting</li>
+          <li>Open-source &amp; self-hostable</li>
+          <li>Any LLM provider via OpenRouter</li>
+          <li>Lightweight and fast</li>
         </ul>
         <div class="sk-tags">
-          <span class="tag tag-amber">testing</span>
+          <span class="tag tag-green">open-source</span>
+          <span class="tag tag-indigo">terminal</span>
         </div>
+        <a href="https://opencode.ai" class="sk-learn-more" target="_blank" rel="noopener">Learn More <i data-lucide="arrow-right"></i></a>
       </div>
 
     </div>
@@ -968,7 +996,7 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
 <footer>
   <div class="footer-inner">
     <a href="/" class="footer-logo">
-      <span class="logo-icon">⚡</span>
+      <span class="logo-icon"><i data-lucide="zap"></i></span>
       Sidekick
     </a>
     <ul class="footer-links">
@@ -986,7 +1014,9 @@ footer .footer-copy{font-size:.8rem;color:var(--text-dim)}
 const themeToggle = document.getElementById('theme-toggle');
 const html = document.documentElement;
 function updateToggleIcon() {
-  themeToggle.textContent = html.getAttribute('data-theme') === 'dark' ? '☀' : '☾';
+  const icon = html.getAttribute('data-theme') === 'dark' ? 'sun' : 'moon';
+  themeToggle.innerHTML = `<i data-lucide="${icon}"></i>`;
+  lucide.createIcons({nodes: [themeToggle]});
 }
 updateToggleIcon();
 themeToggle.addEventListener('click', () => {
@@ -1006,6 +1036,9 @@ const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Initialize Lucide icons
+lucide.createIcons();
 </script>
 </body>
 </html>
