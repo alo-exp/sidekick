@@ -1,70 +1,125 @@
 ---
 name: forge
 description: >
-  Core orchestration skill: Claude acts as the planner/communicator and delegates ALL
-  coding, file, and git work to ForgeCode (forge). Trigger on ANY of: implement, build,
-  create, write, fix, refactor, add, update, delete, rename, move, test, commit, run,
-  install, configure, generate, scaffold — applied to code, files, or the project.
-  Also trigger when the user asks to set up Forge, configure OpenRouter, switch models,
-  check Forge status, or troubleshoot Forge errors.
+  Core orchestration skill: Claude acts as planner/communicator and delegates ALL
+  coding, file-system, and git execution to ForgeCode (forge). Trigger on ANY
+  request involving: implement, build, create, write, fix, refactor, add, update,
+  delete, rename, move, test, commit, run, install, configure, generate, scaffold,
+  migrate, lint, format, deploy, debug, optimize, document — applied to code, files,
+  tests, or the project. Also trigger when the user asks to: set up Forge, configure
+  OpenRouter, switch models, check Forge status, troubleshoot Forge errors (429, 402,
+  PATH, credentials), or asks "why isn't forge working". Do NOT trigger for: pure
+  questions, explanations, research, web searches, email/calendar/browser tasks,
+  or any task where forge is explicitly unwanted.
 ---
 
 # Forge — Claude Orchestration Protocol
 
-ForgeCode (`forge`) is a Rust-powered terminal AI coding agent running independently
-alongside this Claude session. It is #2 on Terminal-Bench 2.0 (81.8%) and #1 for
-interactive developer workflows.
+ForgeCode (`forge`) is a Rust-powered terminal AI coding agent that runs independently
+alongside this Claude session. It is **#2 on Terminal-Bench 2.0 (81.8%)** and the
+recommended sidekick for all file-system and coding execution.
 
-**Claude's role: Orchestrator + Communicator**
-**Forge's role: Executor — all file-system and coding work**
+```
+Claude = Brain (plan, communicate, review, research)
+Forge  = Hands (write, edit, run, commit, test)
+```
 
 ---
 
-## 0. First-Use Setup
+## STEP 0 — Health Check (run before every delegation)
 
-Before delegating any task, verify Forge is configured. Run:
+Always verify forge is operational before delegating. Run silently:
 
 ```bash
-~/.local/bin/forge info 2>/dev/null || forge info 2>/dev/null
+export FORGE="${HOME}/.local/bin/forge"
+export PATH="${HOME}/.local/bin:${PATH}"
+"${FORGE}" info 2>/dev/null || forge info 2>/dev/null
 ```
 
-### If forge is not found
+Parse the output to confirm: provider, model, and API key are set.
+
+---
+
+## STEP 0A — Full Setup Flow (first use or broken state)
+
+### 0A-1. Binary not installed
+
+**Symptom:** `forge: command not found` and no file at `~/.local/bin/forge`
+
+**Fix:**
 ```bash
+# Requires curl and internet access
 curl -fsSL https://forgecode.dev/cli | sh
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="${HOME}/.local/bin:${PATH}"
+forge --version
 ```
 
-### If forge shows no provider / Google AI Studio default
-Guide the user through OpenRouter setup:
-
-1. **Tell the user:**
-   > "Forge needs an API key to work. The recommended provider is OpenRouter — it gives
-   > access to Qwen 3.6 Plus (best free-tier coding model, $0.33/$1.95 per MTok).
-   >
-   > 1. Go to **openrouter.ai** and sign up (Google/GitHub OAuth, ~30 seconds)
-   > 2. Go to **openrouter.ai/settings/credits** and add $5 (minimum, lasts weeks)
-   > 3. Go to **openrouter.ai/keys** and create a new API key
-   > 4. Paste the key here and I'll configure Forge."
-
-2. **When user pastes the key**, configure Forge:
-
+**If curl is unavailable:**
 ```bash
-# Write credentials
+# Check alternatives
+which wget && wget -qO- https://forgecode.dev/cli | sh
+# OR: tell user to manually download from https://forgecode.dev and place in ~/.local/bin/
+```
+
+**If install fails silently (binary still missing):**
+```bash
+ls -la ~/.local/bin/forge 2>/dev/null || echo "not found"
+# Try with verbose output:
+curl -fsSL https://forgecode.dev/cli | bash -x
+```
+
+**After install, add to PATH permanently:**
+```bash
+grep -q '.local/bin' ~/.zshrc 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+grep -q '.local/bin' ~/.bashrc 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+```
+
+---
+
+### 0A-2. Binary installed but not on PATH
+
+**Symptom:** `forge: command not found` but `~/.local/bin/forge` exists
+
+**Fix:** Always use the full path in all commands:
+```bash
+~/.local/bin/forge -p "..."
+```
+And tell user: "Open a new terminal tab or run `exec zsh` to reload PATH."
+
+---
+
+### 0A-3. No provider configured / Google AI Studio default
+
+**Symptom:** `forge info` shows `google_ai_studio` provider or `No default provider set`
+
+Tell the user:
+
+> "Forge needs an API key. The recommended provider is **OpenRouter** — it routes to
+> Qwen 3.6 Plus, the best open coding model (#1 open on Terminal-Bench), at
+> $0.33/$1.95 per MTok with 1M context and vision support.
+>
+> **Setup takes ~2 minutes:**
+> 1. Go to **openrouter.ai** → Sign up (Google/GitHub OAuth)
+> 2. Go to **openrouter.ai/settings/credits** → Add $5 (lasts weeks)
+> 3. Go to **openrouter.ai/keys** → Create a key
+> 4. Paste the key here and I'll configure everything."
+
+**When the user pastes the key** — write credentials atomically:
+```bash
 FORGE_DIR="${HOME}/forge"
 mkdir -p "${FORGE_DIR}"
 
-cat > "${FORGE_DIR}/.credentials.json" << CREDS
-[
-  {
-    "id": "open_router",
-    "auth_details": {
-      "api_key": "PASTE_KEY_HERE"
-    }
-  }
-]
-CREDS
+# Write credentials (replace KEY with actual key)
+python3 -c "
+import json, os
+creds = [{'id': 'open_router', 'auth_details': {'api_key': 'KEY'}}]
+path = os.path.expanduser('~/forge/.credentials.json')
+with open(path, 'w') as f:
+    json.dump(creds, f, indent=2)
+print('credentials written')
+"
 
-# Write config with Qwen 3.6 Plus
+# Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
 "$schema" = "https://forgecode.dev/schema.json"
 max_tokens = 16384
@@ -79,193 +134,550 @@ export PATH="${HOME}/.local/bin:${PATH}"
 forge info
 ```
 
-3. **Confirm** with: `forge -p "reply with just the word OK"`
-
-### If forge is already configured
-Proceed directly to delegation.
-
----
-
-## 1. Core Delegation Rule
-
-**Default: delegate to Forge. Only keep in Claude what cannot run in a terminal.**
-
-| Delegate to Forge ✅ | Keep in Claude ✋ |
-|---|---|
-| Write / edit / create files | Architecture decisions |
-| Implement features or functions | Explaining code or concepts |
-| Refactor existing code | Research (web searches, docs) |
-| Write tests | Reviewing forge's output |
-| Fix failing tests | Non-coding tasks (email, calendar) |
-| Run shell commands | Short answers (< 5 lines of code) |
-| Rename / move / delete files | API calls (Gmail, Drive, etc.) |
-| Git commits | Asking clarifying questions |
-| Scaffold projects | Planning before implementation |
-| Bulk changes across files | |
-| Database migrations | |
-
----
-
-## 2. How to Delegate
-
-### Determine the project directory
-Always run forge with `-C <project-root>` so it operates in the right context.
-The project root is the `git` root or the directory the user has been working in.
-
+**Test the connection:**
 ```bash
-# Detect project root
-PROJECT_ROOT=$(git -C "${PWD}" rev-parse --show-toplevel 2>/dev/null || echo "${PWD}")
+forge -p "reply with just the word OK" 2>&1
 ```
 
-### Build the forge prompt
-- Be specific and actionable. Forge works best with concrete instructions.
-- Reference file paths relative to the project root when relevant.
-- Include constraints (naming conventions, test requirements, etc.) from AGENTS.md if present.
+**Expected success output:** `OK` (within 5 seconds)
 
-### Run forge
+---
 
-**For implementation tasks:**
+### 0A-4. Key accepted but 402 Payment Required
+
+**Symptom:** `402 Payment Required: This request requires more credits`
+
+**Cause:** Free signup credits (~$0.01) exhausted. Qwen 3.6 Plus requires paid credits.
+
+**Fix:** Tell user: "Please add $5 at **openrouter.ai/settings/credits** — that's the minimum and will last weeks of daily use."
+
+**Workaround while waiting:** Switch to free Gemma 4 tier (rate-limited but $0):
+```bash
+forge config set model open_router "google/gemma-4-31b-it:free"
+```
+Note: free tier uses Google AI Studio's shared pool and is heavily rate-limited during peak hours. Switch back to paid Qwen after adding credits:
+```bash
+forge config set model open_router qwen/qwen3.6-plus
+```
+
+---
+
+### 0A-5. Key is invalid
+
+**Symptom:** `401 Unauthorized` or `Invalid API key`
+
+**Fix:** Tell user to generate a new key at **openrouter.ai/keys**, then re-run 0A-3 configuration with the new key.
+
+---
+
+### 0A-6. Credentials file malformed / config file malformed
+
+**Symptom:** Forge starts but immediately errors on provider lookup
+
+**Fix:** Re-write both files cleanly using the commands in 0A-3. Check file validity:
+```bash
+python3 -c "import json; json.load(open('${HOME}/forge/.credentials.json')); print('valid')"
+```
+
+---
+
+## STEP 1 — Delegation Decision Framework
+
+**Bias heavily toward delegation. When in doubt, delegate.**
+
+### Always delegate to Forge
+- Writing, editing, creating, or deleting any file
+- Implementing any feature, function, class, or component
+- Fixing any bug that requires file changes
+- Refactoring — rename, restructure, extract, inline
+- Writing or fixing tests
+- Running tests and fixing failures in a loop
+- Database migrations or schema changes
+- Scaffolding a new project or module
+- Installing packages / updating dependencies
+- Any shell command that modifies state
+- Git staging, committing, branching, merging
+- Linting, formatting, type-checking fixes
+- Generating documentation, docstrings, comments
+- Bulk find-and-replace across files
+- Build system / CI config changes
+
+### Keep in Claude (do NOT delegate)
+- Pure questions: "What does X do?", "How does Y work?"
+- Explaining existing code (read-only analysis) — use `sage` instead, or answer directly
+- Architecture/design decisions requiring back-and-forth with the user
+- Web searches, reading documentation URLs
+- Non-coding tasks: email, calendar, browser automation
+- Asking clarifying questions before starting a task
+- Reviewing what forge just produced
+- Tasks the user explicitly says to do in Claude
+
+### Edge cases — lean toward delegation
+- "Show me an example" → if it involves writing a file, delegate
+- "Fix this one line" → delegate (forge is fast, even for small changes)
+- "Create a quick script" → delegate
+- "Can you add X?" → delegate
+
+---
+
+## STEP 2 — Project Context Detection
+
+Before delegating, always establish project context.
+
+```bash
+# 1. Find project root
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "${PWD}")
+
+# 2. Check if AGENTS.md exists
+AGENTS_FILE="${PROJECT_ROOT}/AGENTS.md"
+ls "${AGENTS_FILE}" 2>/dev/null && echo "AGENTS.md found" || echo "no AGENTS.md"
+
+# 3. Get project language hint
+ls "${PROJECT_ROOT}/package.json" 2>/dev/null && echo "Node/JS project"
+ls "${PROJECT_ROOT}/Cargo.toml" 2>/dev/null && echo "Rust project"
+ls "${PROJECT_ROOT}/pyproject.toml" "${PROJECT_ROOT}/requirements.txt" 2>/dev/null && echo "Python project"
+ls "${PROJECT_ROOT}/go.mod" 2>/dev/null && echo "Go project"
+```
+
+### If no git repo
+Run forge with the current directory and note the absence:
+```bash
+forge -C "${PWD}" -p "..."
+```
+Suggest initializing git: `git init && git add -A && forge -C "${PWD}" -p ":commit"`
+
+### If AGENTS.md is missing on a real project
+Before the first forge delegation on a new project, bootstrap context:
+```bash
+forge -C "${PROJECT_ROOT}" -p "Explore this codebase and create AGENTS.md at the project root. Include: tech stack, key dependencies, project structure summary, naming conventions, how to run tests, how to build/run the project, and any important patterns you notice."
+```
+This pays off on every subsequent forge invocation.
+
+### If AGENTS.md is stale (project has changed significantly)
+```bash
+forge -C "${PROJECT_ROOT}" -p "Update AGENTS.md — the project has changed. Review the current codebase and refresh all sections."
+```
+
+### Large codebases (>500 files)
+Index semantically first for concept-based search:
+```bash
+forge workspace sync -C "${PROJECT_ROOT}"
+```
+Then forge can find "where payments are processed" rather than just text-matching.
+
+---
+
+## STEP 3 — Crafting Forge Prompts
+
+The quality of forge's output directly depends on prompt quality. Follow these rules:
+
+### Be concrete, not vague
+```
+❌  "Add some error handling"
+✅  "Add try/catch error handling to all async functions in src/api/routes.ts.
+     Log errors with the existing logger at src/utils/logger.ts. Return HTTP 500
+     with { error: message } on failure."
+```
+
+### Specify files explicitly when known
+```
+✅  "In src/auth/middleware.ts, add rate limiting that allows max 10 requests
+     per minute per IP. Use the existing Redis client at src/db/redis.ts."
+```
+
+### Include current state and desired state
+```
+✅  "The login function in src/auth/login.ts currently stores session tokens in
+     localStorage. Change it to use httpOnly cookies instead. The cookie config
+     should match the pattern in src/auth/refresh.ts."
+```
+
+### Reference conventions from the codebase
+```
+✅  "Add a new API endpoint POST /api/tasks following the same pattern as the
+     existing endpoints in src/api/tasks.ts. Use Zod validation like the other
+     endpoints. Write a test in tests/api/tasks.test.ts."
+```
+
+### For multi-step tasks, sequence explicitly
+```
+✅  "1. Run the existing tests with `npm test` and note what passes/fails.
+     2. Implement the PaymentProcessor class in src/payments/processor.ts.
+     3. Write unit tests in tests/payments/processor.test.ts.
+     4. Run tests again and fix any failures."
+```
+
+### Never over-constrain implementation details
+```
+❌  "Use a for loop, declare variables with let, use == not ==="
+✅  "Implement a function that filters users by role and returns sorted by name"
+```
+
+---
+
+## STEP 4 — Running Forge
+
+### Standard invocation
 ```bash
 export PATH="${HOME}/.local/bin:${PATH}"
-forge -C "${PROJECT_ROOT}" -p "TASK_DESCRIPTION"
+forge -C "${PROJECT_ROOT}" -p "PROMPT"
 ```
 
-**For complex features (plan first, then implement):**
+### With reasoning (for complex tasks)
 ```bash
-# Step 1: plan
-forge --agent muse -C "${PROJECT_ROOT}" -p "Design a plan for: FEATURE_DESCRIPTION"
+# Low: fast, simple tasks
+forge -C "${PROJECT_ROOT}" -p "PROMPT"  # default is high
 
-# Step 2: implement
-forge -C "${PROJECT_ROOT}" -p "Implement the plan in plans/"
+# Explicitly set for complex architectural changes:
+forge -C "${PROJECT_ROOT}" -p "PROMPT"  # forge uses high reasoning by default
 ```
 
-**For research/analysis without file changes:**
+### Muse → Forge (for complex features)
+Use muse to plan first when the task has significant ambiguity or spans many files:
 ```bash
-forge --agent sage -C "${PROJECT_ROOT}" -p "ANALYSIS_QUESTION"
+# Step 1: Generate a plan (writes to plans/ directory, does NOT edit code)
+forge --agent muse -C "${PROJECT_ROOT}" -p "Design a detailed implementation plan for: FEATURE_DESCRIPTION. Consider edge cases, affected files, and testing strategy."
+
+# Step 2: Review the plan Claude output briefly, then implement
+forge -C "${PROJECT_ROOT}" -p "Implement the plan in plans/. Follow it step by step and run tests after each logical section."
 ```
 
-**For git commits:**
+### Sage → Forge (for unfamiliar code)
+Use sage to understand before changing:
 ```bash
-forge -C "${PROJECT_ROOT}" -p ":commit"
-# OR non-interactively:
-git -C "${PROJECT_ROOT}" add -A && forge -C "${PROJECT_ROOT}" -p "Generate and execute a git commit message for the staged changes"
+# Step 1: Research (read-only, no file changes)
+forge --agent sage -C "${PROJECT_ROOT}" -p "How does the authentication flow work? Trace from the login endpoint through middleware to session creation. What are the key files and their responsibilities?"
+
+# Step 2: Report sage's findings to user, then delegate the change
+forge -C "${PROJECT_ROOT}" -p "Based on the auth flow analysis, add 2FA support to the login flow in src/auth/. The login endpoint is at src/api/auth.ts, middleware at src/middleware/auth.ts."
 ```
 
-### Attaching context files
-When forge needs to understand specific files, include their paths in the prompt:
-
+### Sandbox mode (risky or experimental changes)
+```bash
+forge --sandbox experiment-name -C "${PROJECT_ROOT}" -p "Try rewriting the DB layer using Prisma instead of raw SQL"
+# Creates isolated git worktree — main branch untouched
+# Merge or discard after review
 ```
-forge -C "${PROJECT_ROOT}" -p "Refactor the auth module in src/auth/index.ts — it currently does X, change it to do Y. Follow the patterns in src/utils/http.ts"
+
+### Continuing a failed forge run
+If forge was interrupted or produced incomplete output:
+```bash
+forge -C "${PROJECT_ROOT}" -p "Continue from where you left off. Check what was already done (look at recent file changes with git diff) and complete the remaining work: ORIGINAL_TASK_DESCRIPTION"
 ```
 
 ---
 
-## 3. Context Continuity — AGENTS.md
+## STEP 5 — Failure Recovery Playbook
 
-For any project where forge will be used repeatedly, maintain an `AGENTS.md` at the
-project root. Forge reads this automatically on every run.
+### 5-1. `429 Too Many Requests` (rate limit)
 
-When starting work on a new project, create or update AGENTS.md with:
-- Tech stack and key dependencies
-- Naming conventions and coding standards
-- Test setup and how to run tests
-- Key file locations and module structure
-- Any project-specific rules
+**Immediate:** Forge retries automatically up to 8 times with exponential backoff.
+If it still fails after retries:
 
-Example prompt to forge:
 ```bash
-forge -C "${PROJECT_ROOT}" -p "Read the existing codebase and create/update AGENTS.md with the project conventions, tech stack, key file locations, and how to run tests."
-```
-
----
-
-## 4. Switching Models
-
-**Qwen 3.6 Plus** (default, recommended for coding):
-```bash
-forge config set model open_router qwen/qwen3.6-plus
-```
-
-**Gemma 4 31B** (alternative, no vision):
-```bash
+# Option A: Switch to Gemma 4 31B (same cost tier, separate rate limit)
 forge config set model open_router google/gemma-4-31b-it
+
+# Option B: Wait ~60 seconds and retry
+# Option C: If on free tier, switch to paid Qwen 3.6 Plus after adding credits
 ```
 
-**Check current model:**
+Tell the user which model is now active.
+
+---
+
+### 5-2. `402 Payment Required` mid-task
+
+Forge ran out of credits during a task. The task is incomplete.
+
+1. Tell user to add credits at **openrouter.ai/settings/credits**
+2. After top-up, resume:
+```bash
+forge -C "${PROJECT_ROOT}" -p "Continue the task. Check git diff to see what was already done, then complete: ORIGINAL_TASK"
+```
+
+---
+
+### 5-3. Forge completes but no files written
+
+**Causes:** Rate limit interrupted mid-stream; forge planned but didn't execute; prompt was too vague.
+
+**Recovery:**
+```bash
+forge -C "${PROJECT_ROOT}" -p "You previously planned but did not write files. Now implement the solution — actually write the files to disk. Task: TASK_DESCRIPTION"
+```
+
+Check what happened:
+```bash
+git -C "${PROJECT_ROOT}" diff --stat
+git -C "${PROJECT_ROOT}" status
+```
+
+---
+
+### 5-4. Forge writes the wrong files or wrong content
+
+**Recovery:** Don't panic — git is the safety net.
+
+```bash
+# See what changed
+git -C "${PROJECT_ROOT}" diff
+
+# Discard unwanted changes (specific file)
+git -C "${PROJECT_ROOT}" checkout -- path/to/wrong/file
+
+# Discard all changes
+git -C "${PROJECT_ROOT}" checkout -- .
+```
+
+Re-delegate with a more specific prompt that includes what NOT to do:
+```bash
+forge -C "${PROJECT_ROOT}" -p "CORRECTED_PROMPT. Important: only modify src/X.ts and tests/X.test.ts — do not touch any other files."
+```
+
+---
+
+### 5-5. Forge times out (task too large)
+
+**Symptom:** Forge runs for a very long time or hits the max_requests_per_turn limit
+
+**Strategy:** Break the task into smaller, sequential forge invocations:
+```bash
+# Instead of: "Refactor the entire payments module"
+# Do:
+
+forge -C "${PROJECT_ROOT}" -p "Refactor only src/payments/processor.ts: extract the validation logic into a separate validatePayment() function. Don't touch other files yet."
+
+forge -C "${PROJECT_ROOT}" -p "Now update src/payments/gateway.ts to use the new validatePayment() function we just extracted."
+
+forge -C "${PROJECT_ROOT}" -p "Update the tests in tests/payments/ to cover the refactored code."
+```
+
+---
+
+### 5-6. Forge produces an error in the generated code
+
+**Strategy:** Let forge fix its own output:
+```bash
+forge -C "${PROJECT_ROOT}" -p "The code you wrote has an error: ERROR_MESSAGE. Fix it. The error is in FILE_PATH at line LINE_NUMBER."
+```
+
+Or run the tests and let forge iterate:
+```bash
+forge -C "${PROJECT_ROOT}" -p "Run the tests with TEST_COMMAND. If any fail, fix them. Repeat until all tests pass."
+```
+
+---
+
+### 5-7. Forge is stuck in a loop (retrying the same failed approach)
+
+**Symptom:** Forge output shows it trying the same thing repeatedly without progress.
+
+**Recovery:** Kill the current run (Ctrl+C in the terminal), then redirect:
+```bash
+forge -C "${PROJECT_ROOT}" -p "The previous approach of APPROACH didn't work. Try a completely different approach: ALTERNATIVE_APPROACH"
+```
+
+---
+
+### 5-8. `No provider configured` / `No default provider set`
+
+```bash
+# Quick fix
+forge config set model open_router qwen/qwen3.6-plus
+
+# If that errors, re-run full setup from 0A-3
+```
+
+---
+
+### 5-9. `Credential migration warning` on first run
+
+This is **normal** — forge auto-migrates from environment variables to credentials file. It prints a warning but still works. No action needed.
+
+---
+
+### 5-10. Forge installed but `forge info` shows wrong provider after config change
+
+The config may have been written to a different location. Check:
+```bash
+forge config path  # shows where config file lives
+forge info         # shows active provider/model
+```
+
+If stale, edit directly:
+```bash
+cat > "$(forge config path | head -1)" << 'TOML'
+"$schema" = "https://forgecode.dev/schema.json"
+max_tokens = 16384
+
+[session]
+provider_id = "open_router"
+model_id = "qwen/qwen3.6-plus"
+TOML
+```
+
+---
+
+### 5-11. Network / SSL errors reaching OpenRouter
+
+```bash
+# Test connectivity
+curl -s -o /dev/null -w "%{http_code}" https://openrouter.ai/api/v1/models \
+  -H "Authorization: Bearer $(python3 -c "import json; print(json.load(open('${HOME}/forge/.credentials.json'))[0]['auth_details']['api_key'])")"
+# Expect 200
+```
+
+If SSL errors: check system date/time (SSL certs fail if clock is wrong). If behind a proxy, OpenRouter may be blocked.
+
+---
+
+### 5-12. First run in a new terminal (PATH not loaded)
+
+Always prefix forge commands with PATH export when running from Claude's Bash tool:
+```bash
+export PATH="${HOME}/.local/bin:${PATH}" && forge -C "${PROJECT_ROOT}" -p "..."
+```
+
+---
+
+## STEP 6 — Post-Delegation Review Protocol
+
+After forge completes, always:
+
+**1. Check what changed:**
+```bash
+git -C "${PROJECT_ROOT}" diff --stat
+git -C "${PROJECT_ROOT}" diff
+```
+
+**2. Verify tests pass (if tests exist):**
+```bash
+# Run whatever test command the project uses
+# Ask forge to run them if unsure: forge -C "${PROJECT_ROOT}" -p "Run the tests"
+```
+
+**3. Report to user:**
+- List files changed (from `git diff --stat`)
+- Summarise what was implemented (1-3 sentences)
+- Note any warnings or caveats forge mentioned
+- Ask if the result looks correct and offer to iterate
+
+**4. If output looks wrong:**
+- Show the user the diff
+- Ask what specifically needs adjusting
+- Re-delegate with the correction
+
+---
+
+## STEP 7 — Advanced Scenarios
+
+### 7-1. New project from scratch
+
+```bash
+mkdir -p "${PROJECT_ROOT}" && cd "${PROJECT_ROOT}"
+
+# Let forge scaffold everything
+forge -C "${PROJECT_ROOT}" -p "Scaffold a new TECH_STACK project called PROJECT_NAME. Initialize git, create the standard directory structure, set up the package manager, add a basic README, and make an initial commit."
+```
+
+### 7-2. Monorepo
+
+Always specify the sub-package path, not just the monorepo root:
+```bash
+forge -C "${MONOREPO_ROOT}/packages/api" -p "..."
+# OR pass full context:
+forge -C "${MONOREPO_ROOT}" -p "In the packages/api workspace, add endpoint POST /users. The shared types are in packages/types/src/user.ts."
+```
+
+### 7-3. Project with CI/CD
+
+Include CI awareness in the prompt:
+```bash
+forge -C "${PROJECT_ROOT}" -p "Add the new feature. Make sure all existing tests still pass (`npm test`) and linting passes (`npm run lint`) before finishing — the CI pipeline will reject commits that fail these."
+```
+
+### 7-4. Returning to a project after a long break
+
+Refresh context before delegating:
+```bash
+# Update forge's understanding of the current state
+forge --agent sage -C "${PROJECT_ROOT}" -p "What has changed recently? Check git log for the last 20 commits, look at recent file modifications, and summarise the current state of the project."
+```
+
+### 7-5. Task requires user input mid-execution
+
+If the task needs a decision from the user partway through (e.g., "should I use approach A or B?"), break it into two forge invocations with Claude asking the user between them.
+
+### 7-6. Code review of forge's output
+
+Use sage to review what forge produced:
+```bash
+forge --agent sage -C "${PROJECT_ROOT}" -p "Review the changes in the last commit (git diff HEAD~1). Check for: correctness, edge cases, security issues, consistency with project conventions. Report findings."
+```
+
+Then present sage's review to the user.
+
+### 7-7. Rolling back forge's work
+
+```bash
+# Undo last commit (keep changes staged)
+git -C "${PROJECT_ROOT}" reset --soft HEAD~1
+
+# Undo last commit (discard changes)
+git -C "${PROJECT_ROOT}" reset --hard HEAD~1
+```
+
+---
+
+## STEP 8 — Model Selection Guide
+
+| Task type | Recommended model | Why |
+|---|---|---|
+| General coding | `qwen/qwen3.6-plus` | Best overall, 1M context |
+| Screenshot/UI analysis | `qwen/qwen3.6-plus` | Has vision |
+| Budget / high volume | `google/gemma-4-31b-it` | Cheaper, still strong |
+| Rate-limited | `google/gemma-4-31b-it` | Separate rate limit bucket |
+| Local / no API cost | Google AI Studio `gemini-2.5-flash` | Free 20 req/day |
+
+**Switch commands:**
+```bash
+forge config set model open_router qwen/qwen3.6-plus       # default
+forge config set model open_router google/gemma-4-31b-it   # alternative
+forge config set model google_ai_studio gemini-2.5-flash   # free tier
+```
+
+**Check active model:**
 ```bash
 forge info
 ```
 
 ---
 
-## 5. Troubleshooting
-
-### `forge: command not found`
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-# If still missing: reinstall
-curl -fsSL https://forgecode.dev/cli | sh
-```
-
-### `402 Payment Required` (OpenRouter)
-Add credits at **openrouter.ai/settings/credits** ($5 minimum).
-
-### `429 Too Many Requests` (OpenRouter)
-Rate limit hit. Wait 30 seconds and retry, or switch to Gemma 4:
-```bash
-forge config set model open_router google/gemma-4-31b-it
-```
-
-### Forge completes but files not written
-Re-prompt with explicit instruction: "Write the file now and save it to disk."
-
-### Provider not configured
-```bash
-forge provider login   # interactive setup
-# OR check: forge info
-```
-
----
-
-## 6. Workflow Pattern
-
-The recommended flow for any coding request:
-
-```
-User → Claude (understand + plan) → Forge (execute) → Claude (review + report to user)
-```
-
-1. **Claude understands** the request and asks any clarifying questions
-2. **Claude plans** the approach (briefly, in Claude's response)
-3. **Claude delegates** to forge with a precise, scoped prompt
-4. **Forge executes** autonomously (file changes, tests, commits)
-5. **Claude reviews** forge's output and summarises the result to the user
-6. **Claude asks** if the user wants further changes
-
-Never do step 3 yourself (write files with Edit/Write tools) for tasks that qualify
-for forge delegation — always prefer sending it to forge.
-
----
-
-## 7. Quick Reference
+## STEP 9 — Quick Reference
 
 ```bash
-# Run forge on a task
-forge -C /path/to/project -p "description of task"
+# ── Setup ────────────────────────────────────────────────────────
+forge info                                   # check status
+curl -fsSL https://forgecode.dev/cli | sh    # install binary
+forge config set model open_router qwen/qwen3.6-plus  # set model
 
-# Plan first, then implement
-forge --agent muse -C /path/to/project -p "plan: feature description"
-forge -C /path/to/project -p "implement the plan in plans/"
+# ── Delegation ───────────────────────────────────────────────────
+export PATH="${HOME}/.local/bin:${PATH}"
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "${PWD}")
 
-# Research without changes
-forge --agent sage -C /path/to/project -p "how does X work in this codebase?"
+forge -C "${PROJECT_ROOT}" -p "TASK"         # implement
+forge --agent muse -C "${PROJECT_ROOT}" -p "plan: FEATURE"  # plan first
+forge --agent sage -C "${PROJECT_ROOT}" -p "QUESTION"       # research only
+forge --sandbox try-X -C "${PROJECT_ROOT}" -p "RISKY_TASK"  # safe experiment
+forge -C "${PROJECT_ROOT}" -p ":commit"      # AI commit message
 
-# Commit
-forge -C /path/to/project -p ":commit"
+# ── Recovery ─────────────────────────────────────────────────────
+git diff --stat                              # see what changed
+git checkout -- .                            # discard all changes
+forge config set model open_router google/gemma-4-31b-it  # if 429
 
-# Check status
-forge info
-
-# Switch model
-forge config set model open_router qwen/qwen3.6-plus
+# ── Context ──────────────────────────────────────────────────────
+forge -C "${PROJECT_ROOT}" -p "Create/update AGENTS.md with project conventions"
+forge workspace sync -C "${PROJECT_ROOT}"    # semantic index for large codebases
 ```
