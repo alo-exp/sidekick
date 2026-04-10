@@ -1,17 +1,18 @@
-# Forge Plugin for Claude Code
+# Sidekick — AI Coding Agents for Claude Code
 
-**ForgeCode as a Claude sidekick** — auto-installs ForgeCode, configures it via OpenRouter, and turns Claude into an orchestrator that delegates all coding work to Forge.
+**Coding agents as Claude sidekicks** — each agent auto-installs, configures itself, and lets Claude delegate implementation work while focusing on planning and communication.
 
-## What it does
+## Sidekicks
 
-- **Auto-installs** ForgeCode on first session start (no manual setup)
-- **Guides** you through OpenRouter API key setup (Qwen 3.6 Plus — best cost/performance for coding)
-- **Transforms Claude** into an orchestrator: Claude plans and communicates, Forge executes all file changes, tests, and commits
-- **Context-aware**: Forge always runs in the right project directory with full codebase context
+| Sidekick | Skill | Agent | Status |
+|----------|-------|-------|--------|
+| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.0.0 |
+
+More sidekicks planned.
+
+---
 
 ## Installation
-
-### Option 1: Add to your Claude Code settings
 
 Add to `~/.claude/settings.json`:
 
@@ -21,52 +22,51 @@ Add to `~/.claude/settings.json`:
     "alo-exp": {
       "source": {
         "source": "github",
-        "repo": "alo-exp/forge"
+        "repo": "alo-exp/sidekick"
       },
       "autoUpdate": true
     }
   },
   "enabledPlugins": {
-    "forge@alo-exp": true
+    "sidekick@alo-exp": true
   }
 }
 ```
 
-### Option 2: Manual install
+On the next Claude session, all sidekicks install automatically.
 
-```bash
-git clone https://github.com/alo-exp/forge.git ~/.claude/plugins/forge
-bash ~/.claude/plugins/forge/install.sh
-```
+---
 
-## After installation
+## Forge — ForgeCode Sidekick
 
-On the next Claude session, Forge will be installed automatically. Claude will then guide you to:
+### What it does
+- **Auto-installs** ForgeCode on first session start
+- **Guides** OpenRouter API key setup (Qwen 3.6 Plus — best coding model, $0.33/$1.95/MTok)
+- **Turns Claude into an orchestrator**: Claude plans and communicates, Forge executes all file changes, tests, and commits
 
-1. Create a free account at **openrouter.ai**
-2. Add $5 credits (lasts weeks of daily use)
-3. Create an API key and paste it into Claude
-
-That's it — Claude will configure Forge and from that point, delegate all coding tasks automatically.
-
-## How it works
+### How it works
 
 ```
 You → Claude (plan + communicate) → Forge (implement + commit) → Claude (review + report)
 ```
 
-Claude handles: architecture decisions, explaining code, research, reviewing output
-Forge handles: writing files, implementing features, running tests, git commits
+Claude handles: architecture, explanations, research, code review
+Forge handles: writing files, features, tests, git commits
 
-## Models
+### After installation
 
-Default: **Qwen 3.6 Plus** via OpenRouter — #1 open model on Terminal-Bench 2.0, $0.33/$1.95 per MTok, 1M context
+Claude will guide you to:
+1. Sign up at **openrouter.ai** (Google/GitHub OAuth, ~30 seconds)
+2. Add $5 credits at **openrouter.ai/settings/credits**
+3. Create an API key and paste it into Claude
 
-Switch to Gemma 4 31B: `forge config set model open_router google/gemma-4-31b-it`
+Claude configures Forge automatically and delegates all coding work from that point.
 
-## Benchmarks
+### Models
+- Default: **Qwen 3.6 Plus** (`qwen/qwen3.6-plus`) — 1M context, vision, $0.33/$1.95/MTok
+- Alternative: **Gemma 4 31B** (`google/gemma-4-31b-it`) — dense, fast
 
-ForgeCode with Qwen 3.6 Plus: **#2 on Terminal-Bench 2.0** (81.8%, behind only Pilot at 82.9%)
+---
 
 ## License
 
