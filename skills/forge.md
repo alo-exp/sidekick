@@ -70,10 +70,11 @@ echo "  https://forgecode.dev/releases  (or the GitHub releases page)"
 echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
 # NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
 # proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R6-2)
-# R9-8: To enable pinned-hash verification (recommended), set EXPECTED_FORGE_SHA to
-# the official release hash from https://forgecode.dev/releases before running:
-#   EXPECTED_FORGE_SHA="<hash from releases page>"
-#   [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ] && echo "MISMATCH — aborting" && exit 1
+# Pinned-hash verification — update hash when upgrading ForgeCode (R9-8/R12-2):
+EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
+  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"; exit 1
+fi
 sleep 5
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 export PATH="${HOME}/.local/bin:${PATH}"
