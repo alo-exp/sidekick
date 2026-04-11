@@ -96,8 +96,9 @@ FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
 curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL}"
 FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" | awk '{print $1}')
 echo "SHA-256: ${FORGE_SHA}"
-echo "IMPORTANT: Compare against https://forgecode.dev/releases before proceeding."
-echo "Press Ctrl+C to cancel. Proceeding in 5 seconds..."
+echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
+echo "  https://forgecode.dev/releases"
+echo "If hashes do not match, press Ctrl+C NOW to cancel. Proceeding in 5 seconds..."
 sleep 5
 bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ```
@@ -292,10 +293,21 @@ forge -C "${PWD}" -p "..."
 Suggest initializing git: `git init && git add -A && forge -C "${PWD}" -p ":commit"`
 
 ### If AGENTS.md is missing on a real project
-Before the first forge delegation on a new project, bootstrap context:
+Before the first forge delegation on a new project, bootstrap context.
+
+**For repositories you own or fully trust:**
 ```bash
 forge -C "${PROJECT_ROOT}" -p "Explore this codebase and create AGENTS.md at the project root. Include: tech stack, key dependencies, project structure summary, naming conventions, how to run tests, how to build/run the project, and any important patterns you notice."
 ```
+
+**For external or unfamiliar repositories** — use sandbox mode so the bootstrap
+cannot be influenced by malicious project files to produce a tainted AGENTS.md:
+```bash
+forge --sandbox bootstrap-agents -C "${PROJECT_ROOT}" -p "Explore this codebase and create AGENTS.md at the project root. Include: tech stack, key dependencies, project structure summary, naming conventions, how to run tests, how to build/run the project, and any important patterns you notice."
+```
+Review the generated AGENTS.md before merging it into the main branch.
+*(SENTINEL FINDING-1.2 R4: sandbox-first for bootstrap on untrusted repos)*
+
 This pays off on every subsequent forge invocation.
 
 ### AGENTS.md Trust Gate — MANDATORY (not advisory)
