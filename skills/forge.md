@@ -342,9 +342,19 @@ AGENTS.md from any repository not owned or fully trusted by the current user is
 > (SENTINEL FINDING-1.1 R2: advisory → mandatory enforcement)
 
 ### If AGENTS.md is stale (project has changed significantly)
+
+**For repositories you own or fully trust:**
 ```bash
 forge -C "${PROJECT_ROOT}" -p "Update AGENTS.md — the project has changed. Review the current codebase and refresh all sections."
 ```
+
+**For external or unfamiliar repositories** — use sandbox mode so a compromised
+upstream cannot produce a tainted AGENTS.md that bypasses the Trust Gate:
+```bash
+forge --sandbox update-agents -C "${PROJECT_ROOT}" -p "Update AGENTS.md — the project has changed. Review the current codebase and refresh all sections."
+```
+Review the updated AGENTS.md before merging.
+*(SENTINEL FINDING-1.3 R5: mirror R4 sandbox-first for stale-update on untrusted repos)*
 
 ### Large codebases (>500 files)
 Index semantically first for concept-based search:
@@ -453,8 +463,10 @@ forge -C "${PROJECT_ROOT}" -p "Based on the auth flow analysis, add 2FA support 
 ### Sandbox mode (risky or experimental changes)
 ```bash
 forge --sandbox experiment-name -C "${PROJECT_ROOT}" -p "Try rewriting the DB layer using Prisma instead of raw SQL"
-# Creates isolated git worktree — main branch untouched
-# Merge or discard after review
+# Creates isolated git worktree — main branch untouched until you review and merge/discard.
+# NOTE: Sandbox isolates filesystem changes only. The forge binary still makes API calls
+# to the configured AI provider during a sandboxed run. For sensitive codebases, see the
+# privacy note in STEP 0A-3. (SENTINEL FINDING-8.2 R5)
 ```
 
 ### Continuing a failed forge run
