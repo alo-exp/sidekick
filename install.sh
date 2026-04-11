@@ -28,10 +28,17 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
     exit 1
   fi
   FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL_TMP}" | awk '{print $1}')
+  FORGE_SHA_LOG="${HOME}/.local/share/forge-plugin-install-sha.log"
+  mkdir -p "$(dirname "${FORGE_SHA_LOG}")"
   echo "[forge-plugin] Install script SHA-256: ${FORGE_SHA}"
   echo "[forge-plugin] IMPORTANT: Compare this hash against the official release at:"
   echo "[forge-plugin]   https://forgecode.dev/releases  (or GitHub releases page)"
-  echo "[forge-plugin] If hashes do not match, press Ctrl+C NOW to cancel."
+  echo "[forge-plugin] If hashes do not match, delete ${FORGE_INSTALL_TMP} and abort."
+  # Log SHA to a persistent file so the user can verify even in non-interactive contexts
+  printf '%s  %s  (downloaded %s)\n' "${FORGE_SHA}" "forgecode-install.sh" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${FORGE_SHA_LOG}"
+  echo "[forge-plugin] SHA logged to: ${FORGE_SHA_LOG}"
+  # R6-1: In non-interactive mode Ctrl+C may not be available; give a short window anyway.
+  sleep 5
   bash "${FORGE_INSTALL_TMP}"
   echo "[forge-plugin] ForgeCode installed."
 else
@@ -48,6 +55,18 @@ add_to_path() {
   local marker='# Added by sidekick/forge plugin (https://github.com/alo-exp/sidekick) — remove this block to undo'
   local line='export PATH="$HOME/.local/bin:$PATH"'
   if [ -f "${profile}" ] && ! grep -qF '.local/bin' "${profile}"; then
+    # R6-5: Symlink validation — refuse to append to a profile that is a symlink
+    # pointing outside the user's home directory (potential symlink hijack).
+    if [ -L "${profile}" ]; then
+      local real_target
+      real_target=$(realpath "${profile}" 2>/dev/null || readlink -f "${profile}" 2>/dev/null || echo "")
+      local home_prefix
+      home_prefix=$(realpath "${HOME}" 2>/dev/null || echo "${HOME}")
+      if [[ "${real_target}" != "${home_prefix}/"* ]]; then
+        echo "[forge-plugin] WARNING: ${profile} is a symlink pointing outside HOME (${real_target}). Skipping PATH addition." >&2
+        return 0
+      fi
+    fi
     printf '\n%s\n%s\n' "${marker}" "${line}" >> "${profile}"
     echo "[forge-plugin] Added ~/.local/bin to PATH in ${profile} (marker: 'Added by sidekick/forge plugin')"
   fi
@@ -75,9 +94,17 @@ add_to_path "${HOME}/.bash_profile"
 export PATH="${HOME}/.local/bin:${PATH}"
 
 # --- Verify installation ---
+# R6-10: Binary identity check — confirm the 'forge' binary is actually ForgeCode,
+# not a different tool that happens to share the name.
 if command -v forge &>/dev/null || [ -f "${FORGE_BIN}" ]; then
   VERSION=$("${FORGE_BIN}" --version 2>/dev/null || echo "unknown")
-  echo "[forge-plugin] ForgeCode ${VERSION} ready."
+  # ForgeCode --version output contains "forge" or "forgecode"; warn if it doesn't.
+  if echo "${VERSION}" | grep -qiE 'forge|forgecode'; then
+    echo "[forge-plugin] ForgeCode ${VERSION} ready."
+  else
+    echo "[forge-plugin] WARNING: Binary at ${FORGE_BIN} reported version '${VERSION}'." >&2
+    echo "[forge-plugin] WARNING: This does not look like ForgeCode. Verify the binary manually." >&2
+  fi
 else
   echo "[forge-plugin] WARNING: forge binary not found after install. Check PATH." >&2
 fi

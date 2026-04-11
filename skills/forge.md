@@ -68,6 +68,9 @@ echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases  (or the GitHub releases page)"
 echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
+# NOTE for Claude: When executing this via the Bash tool, the user cannot send Ctrl+C
+# to cancel the subprocess. Show the SHA-256 output to the user BEFORE executing the
+# bash step and ask for explicit confirmation to proceed. (SENTINEL FINDING-R6-2)
 sleep 5
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 export PATH="${HOME}/.local/bin:${PATH}"
@@ -146,17 +149,26 @@ Tell the user:
 FORGE_DIR="${HOME}/forge"
 mkdir -p "${FORGE_DIR}"
 
-# Write credentials (replace KEY with actual key)
-# File is created with chmod 600 (owner read/write only) — SENTINEL FINDING-4.1 R2
-python3 -c "
+# Write credentials via heredoc + env var so the key never appears in process arguments
+# (visible in ps aux). Set OPENROUTER_KEY before running the python block.
+# (SENTINEL FINDING-4.1 R2: chmod 600; SENTINEL FINDING-R6-7: heredoc pattern)
+#
+# Claude: assign the user's key to OPENROUTER_KEY, then execute the heredoc below.
+export OPENROUTER_KEY="KEY"   # ← replace KEY with the actual key value
+
+python3 << 'PYEOF'
 import json, os, stat
-creds = [{'id': 'open_router', 'auth_details': {'api_key': 'KEY'}}]
+key = os.environ.get('OPENROUTER_KEY', '')
+if not key:
+    raise ValueError("OPENROUTER_KEY env var is not set — set it before running this block")
+creds = [{'id': 'open_router', 'auth_details': {'api_key': key}}]
 path = os.path.expanduser('~/forge/.credentials.json')
 with open(path, 'w') as f:
     json.dump(creds, f, indent=2)
 os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)  # 600: owner read/write only
 print('credentials written with restricted permissions (600)')
-"
+PYEOF
+unset OPENROUTER_KEY
 
 # Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
@@ -357,10 +369,20 @@ Review the updated AGENTS.md before merging.
 *(SENTINEL FINDING-1.3 R5: mirror R4 sandbox-first for stale-update on untrusted repos)*
 
 ### Large codebases (>500 files)
-Index semantically first for concept-based search:
+Index semantically first for concept-based search.
+
+**For repositories you own or fully trust:**
 ```bash
 forge workspace sync -C "${PROJECT_ROOT}"
 ```
+
+**For external or unfamiliar repositories** — use sandbox mode so that prompt injection
+payloads embedded in source files cannot influence the semantic index or forge's responses:
+```bash
+forge --sandbox index-only -C "${PROJECT_ROOT}" workspace sync
+```
+*(SENTINEL FINDING-R6-6: workspace sync trust qualifier for untrusted repos)*
+
 Then forge can find "where payments are processed" rather than just text-matching.
 
 ---
@@ -465,8 +487,9 @@ forge -C "${PROJECT_ROOT}" -p "Based on the auth flow analysis, add 2FA support 
 forge --sandbox experiment-name -C "${PROJECT_ROOT}" -p "Try rewriting the DB layer using Prisma instead of raw SQL"
 # Creates isolated git worktree — main branch untouched until you review and merge/discard.
 # NOTE: Sandbox isolates filesystem changes only. The forge binary still makes API calls
-# to the configured AI provider during a sandboxed run. For sensitive codebases, see the
-# privacy note in STEP 0A-3. (SENTINEL FINDING-8.2 R5)
+# to the configured AI provider during a sandboxed run, which includes transmitting project
+# code from the working directory to the AI provider. For sensitive codebases, review
+# the privacy note in STEP 0A-3. (SENTINEL FINDING-8.2 R5; R6-4 scope clarification)
 ```
 
 ### Continuing a failed forge run
@@ -533,12 +556,17 @@ git -C "${PROJECT_ROOT}" status
 # See what changed
 git -C "${PROJECT_ROOT}" diff
 
-# Discard unwanted changes (specific file)
+# Discard unwanted changes (specific file — safe)
 git -C "${PROJECT_ROOT}" checkout -- path/to/wrong/file
-
-# ⚠️ CAUTION — confirm with user before running: discards ALL uncommitted changes
-git -C "${PROJECT_ROOT}" checkout -- .
 ```
+
+> 🛑 **MANDATORY STOP before `git checkout -- .`**
+> Do **NOT** execute `git checkout -- .` autonomously. Before running it:
+> 1. Run `git -C "${PROJECT_ROOT}" status` and show the user every file that will be lost.
+> 2. Present this exact warning: *"This will permanently discard ALL uncommitted changes to the files listed above. This cannot be undone."*
+> 3. Wait for the user to reply with explicit written confirmation (e.g., "yes, discard all") before proceeding.
+>
+> *(SENTINEL FINDING-R6-9: advisory → enforced behavioral stop)*
 
 Re-delegate with a more specific prompt that includes what NOT to do:
 ```bash

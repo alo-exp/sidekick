@@ -18,5 +18,6 @@
     "openrouter",
     "orchestration"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "_integrity_note": "R6-8: install.sh downloads ForgeCode from https://forgecode.dev/cli — verify SHA-256 against https://forgecode.dev/releases before trusting. Plugin source: https://github.com/alo-exp/sidekick"
 }
