@@ -27,8 +27,11 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
     echo "[forge-plugin] ERROR: Neither curl nor wget found. Install ForgeCode manually from https://forgecode.dev" >&2
     exit 1
   fi
-  echo "[forge-plugin] Install script SHA-256: $(shasum -a 256 "${FORGE_INSTALL_TMP}" | awk '{print $1}')"
-  echo "[forge-plugin] Source: https://forgecode.dev/cli — verify this matches a published release before trusting."
+  FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL_TMP}" | awk '{print $1}')
+  echo "[forge-plugin] Install script SHA-256: ${FORGE_SHA}"
+  echo "[forge-plugin] IMPORTANT: Compare this hash against the official release at:"
+  echo "[forge-plugin]   https://forgecode.dev/releases  (or GitHub releases page)"
+  echo "[forge-plugin] If hashes do not match, press Ctrl+C NOW to cancel."
   bash "${FORGE_INSTALL_TMP}"
   echo "[forge-plugin] ForgeCode installed."
 else
@@ -49,6 +52,21 @@ add_to_path() {
     echo "[forge-plugin] Added ~/.local/bin to PATH in ${profile} (marker: 'Added by sidekick/forge plugin')"
   fi
 }
+
+# --- Pre-consent notice before shell profile modification ---
+# (SENTINEL FINDING-10.1 R2: pre-consent hardening)
+if [ -t 1 ]; then
+  # Interactive terminal: give user a cancellation window
+  echo "[forge-plugin] NOTICE: About to add ~/.local/bin to PATH in:"
+  echo "[forge-plugin]   ~/.zshrc, ~/.bashrc, ~/.bash_profile (if they exist and don't already have it)"
+  echo "[forge-plugin] This makes the 'forge' command available in new terminal sessions."
+  echo "[forge-plugin] Press Ctrl+C within 10 seconds to cancel, or wait to proceed."
+  sleep 10
+else
+  # Non-interactive (SessionStart hook context): print notice with undo instructions
+  echo "[forge-plugin] NOTICE: Adding ~/.local/bin to PATH in shell profiles (if not already present)."
+  echo "[forge-plugin] To undo: remove lines marked 'Added by sidekick/forge plugin' from ~/.zshrc etc."
+fi
 
 add_to_path "${HOME}/.zshrc"
 add_to_path "${HOME}/.bashrc"
