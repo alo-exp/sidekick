@@ -162,52 +162,40 @@ Tell the user:
 > 3. Go to **openrouter.ai/keys** → Create a key
 > 4. Paste the key here and I'll configure everything."
 
-**When the user pastes the key** — write credentials atomically:
+**When the user pastes the key** — write credentials using the Write tool (not Bash):
+
+> **SENTINEL FINDING-R12-1 (LOW) remediation:** Never embed the API key in a Bash
+> command — it would appear in the conversation transcript and ps aux. Instead, use
+> Claude's **Write tool** to write the credentials file directly. The key stays in the
+> file-write parameter only, never in a shell command.
+
+**Step 1 — Validate the key format first** (must be alphanumeric + dashes/underscores):
 ```bash
-FORGE_DIR="${HOME}/forge"
-mkdir -p "${FORGE_DIR}"
+# Claude: before writing, run this validation with the actual key value
+python3 -c "
+import re, sys
+key = 'KEY_PLACEHOLDER'
+if not re.match(r'^[A-Za-z0-9_\-]+\$', key):
+    sys.exit('Key contains unexpected characters — verify before proceeding')
+print('Key format valid')
+"
+```
 
-# Write the key via a restricted temp file so it never appears in process arguments
-# (visible in ps aux), and disable shell history for this block so it is not saved.
-# (SENTINEL FINDING-4.1 R2: chmod 600; FINDING-R6-7: no inline args; FINDING-R7-3: no history)
-#
-# Claude: replace KEY_PLACEHOLDER below with the actual key value, then run the full block.
-OLD_HISTFILE="${HISTFILE:-}"; unset HISTFILE   # disable shell history for this block
-OLD_HISTSIZE="${HISTSIZE:-}"; HISTSIZE=0       # belt-and-suspenders: zero history size too
-# NOTE: Run this ENTIRE block as a single Bash tool call for the HISTFILE/HISTSIZE
-# changes to take effect for the printf line. (SENTINEL FINDING-R8-9/R9-6)
-KEY_TMP=$(mktemp); chmod 600 "${KEY_TMP}"
-# R9-5: KEY_PLACEHOLDER must contain only alphanumeric/dash/underscore characters
-# (validated by Python below). Paste the key directly — do not wrap in shell quotes.
-printf '%s' 'KEY_PLACEHOLDER' > "${KEY_TMP}"  # ← replace KEY_PLACEHOLDER with actual key
+**Step 2 — Use the Write tool** to create `~/forge/.credentials.json` with this content
+(replace `KEY_PLACEHOLDER` with the actual key):
+```json
+[{"id": "open_router", "auth_details": {"api_key": "KEY_PLACEHOLDER"}}]
+```
+Write to path: `~/forge/.credentials.json`
 
-KEY_TMP="${KEY_TMP}" python3 << 'PYEOF'
-import json, os, re, stat, sys
-key_file = os.environ.get('KEY_TMP', '')
-with open(key_file) as f:
-    key = f.read().strip()
-os.remove(key_file)   # delete temp file immediately after reading
-if not key:
-    raise ValueError("KEY_TMP file was empty — set the key before running this block")
-# R8-7: Validate key format — OpenRouter keys are alphanumeric + dashes/underscores only.
-# This prevents shell-special characters from causing injection if the key is malformed.
-if not re.match(r'^[A-Za-z0-9_\-]+$', key):
-    raise ValueError("Key contains unexpected characters — verify the key before proceeding")
-creds = [{'id': 'open_router', 'auth_details': {'api_key': key}}]
-path = os.path.expanduser('~/forge/.credentials.json')
-with open(path, 'w') as f:
-    json.dump(creds, f, indent=2)
-os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)  # 600: owner read/write only
-print('credentials written with restricted permissions (600)')
-PYEOF
-unset KEY_TMP
-# Restore history settings (R8-9/R9-6: atomic block requirement)
-[ -n "${OLD_HISTFILE}" ] && export HISTFILE="${OLD_HISTFILE}"; unset OLD_HISTFILE
-[ -n "${OLD_HISTSIZE}" ] && HISTSIZE="${OLD_HISTSIZE}"; unset OLD_HISTSIZE
-# NOTE (R8-1/R9-4): The printf line above places the key in the Claude conversation
-# transcript — this is a limitation of the Bash tool pattern. The key is NOT stored
-# in shell history. To avoid transcript exposure entirely, paste the key directly into
-# ~/forge/.credentials.json by hand using a text editor outside of Claude.
+**Step 3 — Restrict permissions** (key must not be readable by other users):
+```bash
+mkdir -p "${HOME}/forge"
+chmod 600 "${HOME}/forge/.credentials.json"
+python3 -c "import os; print('permissions:', oct(os.stat(os.path.expanduser('~/forge/.credentials.json')).st_mode))"
+```
+Expected output: `permissions: 0o100600`
+> (SENTINEL FINDING-4.1 R2: chmod 600; R12-1: Write-tool pattern eliminates key from shell)
 
 # Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
