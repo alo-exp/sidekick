@@ -91,9 +91,14 @@ bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 **If install fails silently (binary still missing):**
 ```bash
 ls -la ~/.local/bin/forge 2>/dev/null || echo "not found"
-# Try with verbose output:
+# Try with verbose output — apply the same SHA-256 verification as the main install path:
 FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
 curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL}"
+FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" | awk '{print $1}')
+echo "SHA-256: ${FORGE_SHA}"
+echo "IMPORTANT: Compare against https://forgecode.dev/releases before proceeding."
+echo "Press Ctrl+C to cancel. Proceeding in 5 seconds..."
+sleep 5
 bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ```
 
@@ -216,7 +221,7 @@ forge config set model open_router qwen/qwen3.6-plus
 
 **Fix:** Re-write both files cleanly using the commands in 0A-3. Check file validity:
 ```bash
-python3 -c "import json; json.load(open('${HOME}/forge/.credentials.json')); print('valid')"
+python3 -c "import json, os; json.load(open(os.path.expanduser('~/forge/.credentials.json'))); print('valid')"
 ```
 
 ---
@@ -763,8 +768,7 @@ forge info
 ```bash
 # ── Setup ────────────────────────────────────────────────────────
 forge info                                   # check status
-# Install: download to temp file, check SHA-256, then run (never pipe curl to sh directly)
-# FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh) && curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL}" && bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
+# Install: follow STEP 0A-1 above (SHA-256 verify + Ctrl+C cancel window required)
 forge config set model open_router qwen/qwen3.6-plus  # set model
 
 # ── Delegation ───────────────────────────────────────────────────
