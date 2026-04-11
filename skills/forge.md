@@ -169,24 +169,21 @@ Tell the user:
 > Claude's **Write tool** to write the credentials file directly. The key stays in the
 > file-write parameter only, never in a shell command.
 
-**Step 1 — Validate the key format first** (must be alphanumeric + dashes/underscores):
-```bash
-# Claude: before writing, run this validation with the actual key value
-python3 -c "
-import re, sys
-key = 'KEY_PLACEHOLDER'
-if not re.match(r'^[A-Za-z0-9_\-]+\$', key):
-    sys.exit('Key contains unexpected characters — verify before proceeding')
-print('Key format valid')
-"
-```
+**Step 1 — Visually validate the key format** before writing.
+The key must contain only alphanumeric characters, dashes (`-`), and underscores (`_`).
+Example of a valid key: `sk-or-v1-abc123-XYZ_789`
+If the key contains spaces, quotes, or other special characters, ask the user to re-paste it.
+> NOTE: Do NOT run the key through a bash command for validation — that would expose it in
+> the conversation transcript. Visual inspection is sufficient. (SENTINEL FINDING-R13-1)
 
-**Step 2 — Use the Write tool** to create `~/forge/.credentials.json` with this content
-(replace `KEY_PLACEHOLDER` with the actual key):
+**Step 2 — Use the Write tool** to create `~/forge/.credentials.json` with this JSON content
+(substitute the actual key for `KEY_PLACEHOLDER` in the Write tool call — not in bash):
 ```json
 [{"id": "open_router", "auth_details": {"api_key": "KEY_PLACEHOLDER"}}]
 ```
 Write to path: `~/forge/.credentials.json`
+> The key goes into the Write tool's `content` parameter only — it never appears in any
+> shell command, process argument list, or bash tool call. (SENTINEL FINDING-R12-1)
 
 **Step 3 — Restrict permissions** (key must not be readable by other users):
 ```bash
@@ -195,7 +192,7 @@ chmod 600 "${HOME}/forge/.credentials.json"
 python3 -c "import os; print('permissions:', oct(os.stat(os.path.expanduser('~/forge/.credentials.json')).st_mode))"
 ```
 Expected output: `permissions: 0o100600`
-> (SENTINEL FINDING-4.1 R2: chmod 600; R12-1: Write-tool pattern eliminates key from shell)
+> (SENTINEL FINDING-4.1 R2: chmod 600; R12-1/R13-1: key never in bash commands)
 
 # Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
