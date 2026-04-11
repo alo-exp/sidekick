@@ -91,9 +91,11 @@ echo "  https://forgecode.dev/releases"
 echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
 # NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
 # proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R7-1/R7-7)
-# R10-4: Pinned-hash verification — set EXPECTED_FORGE_SHA to the hash from the releases page:
-#   EXPECTED_FORGE_SHA="<hash from https://forgecode.dev/releases>"
-#   [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ] && echo "MISMATCH — aborting" && exit 1
+# Pinned-hash verification — update hash when upgrading ForgeCode (R10-4/R11-2):
+EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
+  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"; exit 1
+fi
 sleep 5
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 # OR: tell user to manually download from https://forgecode.dev and place in ~/.local/bin/
@@ -112,9 +114,11 @@ echo "  https://forgecode.dev/releases"
 echo "If hashes do not match, press Ctrl+C NOW to cancel. Proceeding in 5 seconds..."
 # NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
 # proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R7-1/R7-7)
-# R10-4: Pinned-hash verification (recommended):
-#   EXPECTED_FORGE_SHA="<hash from https://forgecode.dev/releases>"
-#   [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ] && echo "MISMATCH — aborting" && exit 1
+# Pinned-hash verification — update hash when upgrading ForgeCode (R10-4/R11-2):
+EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
+  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"; exit 1
+fi
 sleep 5
 bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ```
