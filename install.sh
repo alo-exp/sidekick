@@ -68,6 +68,27 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
       exit 1
     fi
     echo "[forge-plugin] SHA-256 verified against pinned hash — OK."
+  else
+    # R9-1/R9-9: Warn when no pin is active so the verification gap is explicit.
+    echo "[forge-plugin] NOTICE: No pinned SHA-256 set — verification is display-only."
+    echo "[forge-plugin]   To enable automated verification, set EXPECTED_FORGE_SHA in install.sh."
+  fi
+
+  # R9-2: Interactive execution gate (co-patch with R9-3 hooks.json change).
+  # When running non-interactively (SessionStart hook) with no pinned hash, skip
+  # execution and ask the user to install manually from an interactive terminal.
+  # This ensures a human can verify the SHA before the downloaded script is run.
+  # When a pinned hash is set and verified above, non-interactive execution is safe.
+  # (SENTINEL FINDING-R9-2/R9-3: interactive gate + sentinel co-patch)
+  if [ ! -t 1 ] && [ -z "${EXPECTED_FORGE_SHA}" ]; then
+    echo "[forge-plugin] NOTICE: Cannot execute downloaded installer without user verification." >&2
+    echo "[forge-plugin]   Running non-interactively with no pinned SHA — skipping auto-install." >&2
+    echo "[forge-plugin]   To install ForgeCode, open a terminal and run:" >&2
+    echo "[forge-plugin]     bash \"${BASH_SOURCE[0]}\"" >&2
+    echo "[forge-plugin]   The SHA-256 will be displayed and you can verify it before proceeding." >&2
+    # Exit 0 so the .installed sentinel IS written (via && in hooks.json) and this
+    # message only appears once — not on every subsequent Claude session.
+    exit 0
   fi
 
   # R6-1: In non-interactive mode Ctrl+C may not be available; give a short window anyway.

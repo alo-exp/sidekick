@@ -62,15 +62,18 @@ Parse the output to confirm: provider, model, and API key are set.
 # This avoids stream-injection attacks and lets you see the SHA-256 before running.
 # (SENTINEL FINDING-7.1/7.2: supply chain hardening)
 FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
-curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL}"
-FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" | awk '{print $1}')
+curl -fsSL --max-time 60 --connect-timeout 15 https://forgecode.dev/cli -o "${FORGE_INSTALL}"
+FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_INSTALL}" | awk '{print $1}')
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases  (or the GitHub releases page)"
 echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
-# NOTE for Claude: When executing this via the Bash tool, the user cannot send Ctrl+C
-# to cancel the subprocess. Show the SHA-256 output to the user BEFORE executing the
-# bash step and ask for explicit confirmation to proceed. (SENTINEL FINDING-R6-2)
+# NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
+# proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R6-2)
+# R9-8: To enable pinned-hash verification (recommended), set EXPECTED_FORGE_SHA to
+# the official release hash from https://forgecode.dev/releases before running:
+#   EXPECTED_FORGE_SHA="<hash from releases page>"
+#   [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ] && echo "MISMATCH — aborting" && exit 1
 sleep 5
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 export PATH="${HOME}/.local/bin:${PATH}"
@@ -160,8 +163,13 @@ mkdir -p "${FORGE_DIR}"
 # (SENTINEL FINDING-4.1 R2: chmod 600; FINDING-R6-7: no inline args; FINDING-R7-3: no history)
 #
 # Claude: replace KEY_PLACEHOLDER below with the actual key value, then run the full block.
-OLD_HISTFILE="${HISTFILE:-}"; unset HISTFILE   # disable history for this block
+OLD_HISTFILE="${HISTFILE:-}"; unset HISTFILE   # disable shell history for this block
+OLD_HISTSIZE="${HISTSIZE:-}"; HISTSIZE=0       # belt-and-suspenders: zero history size too
+# NOTE: Run this ENTIRE block as a single Bash tool call for the HISTFILE/HISTSIZE
+# changes to take effect for the printf line. (SENTINEL FINDING-R8-9/R9-6)
 KEY_TMP=$(mktemp); chmod 600 "${KEY_TMP}"
+# R9-5: KEY_PLACEHOLDER must contain only alphanumeric/dash/underscore characters
+# (validated by Python below). Paste the key directly — do not wrap in shell quotes.
 printf '%s' 'KEY_PLACEHOLDER' > "${KEY_TMP}"  # ← replace KEY_PLACEHOLDER with actual key
 
 KEY_TMP="${KEY_TMP}" python3 << 'PYEOF'
@@ -184,12 +192,13 @@ os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)  # 600: owner read/write only
 print('credentials written with restricted permissions (600)')
 PYEOF
 unset KEY_TMP
-# R8-9: Restore HISTFILE — only works correctly when the full block above runs atomically
-# in a single Bash tool call. If the block is split across calls, HISTFILE stays unset.
+# Restore history settings (R8-9/R9-6: atomic block requirement)
 [ -n "${OLD_HISTFILE}" ] && export HISTFILE="${OLD_HISTFILE}"; unset OLD_HISTFILE
-# NOTE (R8-1): The printf line above places KEY_PLACEHOLDER in the Claude conversation
-# transcript — this is unavoidable when running via the Bash tool. Treat the conversation
-# as a sensitive session and do not share it. The key is NOT stored in shell history.
+[ -n "${OLD_HISTSIZE}" ] && HISTSIZE="${OLD_HISTSIZE}"; unset OLD_HISTSIZE
+# NOTE (R8-1/R9-4): The printf line above places the key in the Claude conversation
+# transcript — this is a limitation of the Bash tool pattern. The key is NOT stored
+# in shell history. To avoid transcript exposure entirely, paste the key directly into
+# ~/forge/.credentials.json by hand using a text editor outside of Claude.
 
 # Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
