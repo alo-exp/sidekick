@@ -83,15 +83,17 @@ forge --version
 **If curl is unavailable:**
 ```bash
 FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
-wget -qO "${FORGE_INSTALL}" https://forgecode.dev/cli
+wget -qO "${FORGE_INSTALL}" --timeout=60 https://forgecode.dev/cli
 FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_INSTALL}" | awk '{print $1}')
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases"
 echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
-# NOTE for Claude: When executing via the Bash tool, the user cannot send Ctrl+C.
-# Show the SHA-256 output to the user and ask for explicit confirmation before proceeding.
-# (SENTINEL FINDING-R7-1/R7-7: Bash tool cancel caveat + user confirmation gate)
+# NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
+# proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R7-1/R7-7)
+# R10-4: Pinned-hash verification — set EXPECTED_FORGE_SHA to the hash from the releases page:
+#   EXPECTED_FORGE_SHA="<hash from https://forgecode.dev/releases>"
+#   [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ] && echo "MISMATCH — aborting" && exit 1
 sleep 5
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 # OR: tell user to manually download from https://forgecode.dev and place in ~/.local/bin/
@@ -102,15 +104,17 @@ bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ls -la ~/.local/bin/forge 2>/dev/null || echo "not found"
 # Try with verbose output — apply the same SHA-256 verification as the main install path:
 FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
-curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL}"
+curl -fsSL --max-time 60 --connect-timeout 15 https://forgecode.dev/cli -o "${FORGE_INSTALL}"
 FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_INSTALL}" | awk '{print $1}')
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases"
 echo "If hashes do not match, press Ctrl+C NOW to cancel. Proceeding in 5 seconds..."
-# NOTE for Claude: When executing via the Bash tool, the user cannot send Ctrl+C.
-# Show the SHA-256 output to the user and ask for explicit confirmation before proceeding.
-# (SENTINEL FINDING-R7-1/R7-7: Bash tool cancel caveat + user confirmation gate)
+# NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
+# proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R7-1/R7-7)
+# R10-4: Pinned-hash verification (recommended):
+#   EXPECTED_FORGE_SHA="<hash from https://forgecode.dev/releases>"
+#   [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ] && echo "MISMATCH — aborting" && exit 1
 sleep 5
 bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ```

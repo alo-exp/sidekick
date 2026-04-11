@@ -13,11 +13,14 @@ set -euo pipefail
 
 FORGE_BIN="${HOME}/.local/bin/forge"
 
-# R8-3: Pin the expected SHA-256 here to enable automated verification.
-# Update this value when upgrading ForgeCode. Leave blank ("") to disable pinned check
-# and fall back to display-only SHA logging.
-# (SENTINEL FINDING-R7-7/R8-3: supply chain hardening)
-EXPECTED_FORGE_SHA=""
+# R8-3/R10-1: Pinned SHA-256 of the ForgeCode install script (https://forgecode.dev/cli).
+# This enables automated mismatch-abort before execution.
+# UPDATE THIS VALUE when upgrading ForgeCode — fetch the new hash with:
+#   curl -fsSL https://forgecode.dev/cli | shasum -a 256
+# Verify the hash matches the official release at: https://forgecode.dev/releases
+# Leave blank ("") only if you intentionally want display-only verification.
+# (SENTINEL FINDING-R7-7/R8-3/R10-1: supply chain hardening)
+EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
 
 echo "[forge-plugin] Checking ForgeCode installation..."
 
