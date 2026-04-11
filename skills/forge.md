@@ -165,13 +165,17 @@ KEY_TMP=$(mktemp); chmod 600 "${KEY_TMP}"
 printf '%s' 'KEY_PLACEHOLDER' > "${KEY_TMP}"  # ← replace KEY_PLACEHOLDER with actual key
 
 KEY_TMP="${KEY_TMP}" python3 << 'PYEOF'
-import json, os, stat
+import json, os, re, stat, sys
 key_file = os.environ.get('KEY_TMP', '')
 with open(key_file) as f:
     key = f.read().strip()
 os.remove(key_file)   # delete temp file immediately after reading
 if not key:
     raise ValueError("KEY_TMP file was empty — set the key before running this block")
+# R8-7: Validate key format — OpenRouter keys are alphanumeric + dashes/underscores only.
+# This prevents shell-special characters from causing injection if the key is malformed.
+if not re.match(r'^[A-Za-z0-9_\-]+$', key):
+    raise ValueError("Key contains unexpected characters — verify the key before proceeding")
 creds = [{'id': 'open_router', 'auth_details': {'api_key': key}}]
 path = os.path.expanduser('~/forge/.credentials.json')
 with open(path, 'w') as f:
@@ -180,10 +184,18 @@ os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)  # 600: owner read/write only
 print('credentials written with restricted permissions (600)')
 PYEOF
 unset KEY_TMP
+# R8-9: Restore HISTFILE — only works correctly when the full block above runs atomically
+# in a single Bash tool call. If the block is split across calls, HISTFILE stays unset.
 [ -n "${OLD_HISTFILE}" ] && export HISTFILE="${OLD_HISTFILE}"; unset OLD_HISTFILE
+# NOTE (R8-1): The printf line above places KEY_PLACEHOLDER in the Claude conversation
+# transcript — this is unavoidable when running via the Bash tool. Treat the conversation
+# as a sensitive session and do not share it. The key is NOT stored in shell history.
 
 # Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
+# $schema fetched from forgecode.dev for IDE validation only — no data is sent at config load time.
+# Review forgecode.dev's privacy policy if operating in a restricted network environment.
+# (SENTINEL FINDING-R8-5: schema URL disclosure)
 "$schema" = "https://forgecode.dev/schema.json"
 max_tokens = 16384
 

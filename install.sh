@@ -3,10 +3,21 @@
 # Called once by SessionStart hook (hooks/hooks.json) via .installed sentinel.
 # Installs the ForgeCode binary and adds it to PATH.
 # Provider/API key setup is guided interactively by the forge skill in Claude.
+#
+# SECURITY NOTE (R8-2): This script runs non-interactively under the SessionStart hook.
+# Ctrl+C is not available to cancel the download. The SHA-256 of the downloaded script is
+# logged to ~/.local/share/forge-plugin-install-sha.log — verify it against the official
+# release hash at https://forgecode.dev/releases after the session starts.
 
 set -euo pipefail
 
 FORGE_BIN="${HOME}/.local/bin/forge"
+
+# R8-3: Pin the expected SHA-256 here to enable automated verification.
+# Update this value when upgrading ForgeCode. Leave blank ("") to disable pinned check
+# and fall back to display-only SHA logging.
+# (SENTINEL FINDING-R7-7/R8-3: supply chain hardening)
+EXPECTED_FORGE_SHA=""
 
 echo "[forge-plugin] Checking ForgeCode installation..."
 
@@ -19,10 +30,11 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
   # (SENTINEL FINDING-7.1: supply chain hardening)
   FORGE_INSTALL_TMP=$(mktemp /tmp/forge-install.XXXXXX.sh)
   trap 'rm -f "${FORGE_INSTALL_TMP}"' EXIT
+  # R8-6: Add download timeouts to prevent indefinite hang on slow/stalled connections.
   if command -v curl &>/dev/null; then
-    curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL_TMP}"
+    curl -fsSL --max-time 60 --connect-timeout 15 https://forgecode.dev/cli -o "${FORGE_INSTALL_TMP}"
   elif command -v wget &>/dev/null; then
-    wget -qO "${FORGE_INSTALL_TMP}" https://forgecode.dev/cli
+    wget -qO "${FORGE_INSTALL_TMP}" --timeout=60 https://forgecode.dev/cli
   else
     echo "[forge-plugin] ERROR: Neither curl nor wget found. Install ForgeCode manually from https://forgecode.dev" >&2
     exit 1
@@ -45,6 +57,19 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
   # Log SHA to a persistent file so the user can verify even in non-interactive contexts
   printf '%s  %s  (downloaded %s)\n' "${FORGE_SHA}" "forgecode-install.sh" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${FORGE_SHA_LOG}"
   echo "[forge-plugin] SHA logged to: ${FORGE_SHA_LOG}"
+
+  # R8-3: If a pinned SHA is set, abort on mismatch before executing the script.
+  if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "UNAVAILABLE" ]; then
+    if [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
+      echo "[forge-plugin] ERROR: SHA-256 MISMATCH — aborting installation." >&2
+      echo "[forge-plugin]   Got:      ${FORGE_SHA}" >&2
+      echo "[forge-plugin]   Expected: ${EXPECTED_FORGE_SHA}" >&2
+      echo "[forge-plugin]   Verify the release at: https://forgecode.dev/releases" >&2
+      exit 1
+    fi
+    echo "[forge-plugin] SHA-256 verified against pinned hash — OK."
+  fi
+
   # R6-1: In non-interactive mode Ctrl+C may not be available; give a short window anyway.
   sleep 5
   bash "${FORGE_INSTALL_TMP}"
