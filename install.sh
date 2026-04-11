@@ -27,7 +27,15 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
     echo "[forge-plugin] ERROR: Neither curl nor wget found. Install ForgeCode manually from https://forgecode.dev" >&2
     exit 1
   fi
-  FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL_TMP}" | awk '{print $1}')
+  # R7-8: shasum availability check with sha256sum fallback
+  if command -v shasum &>/dev/null; then
+    FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL_TMP}" | awk '{print $1}')
+  elif command -v sha256sum &>/dev/null; then
+    FORGE_SHA=$(sha256sum "${FORGE_INSTALL_TMP}" | awk '{print $1}')
+  else
+    echo "[forge-plugin] WARNING: Neither shasum nor sha256sum found — cannot verify download integrity." >&2
+    FORGE_SHA="UNAVAILABLE"
+  fi
   FORGE_SHA_LOG="${HOME}/.local/share/forge-plugin-install-sha.log"
   mkdir -p "$(dirname "${FORGE_SHA_LOG}")"
   echo "[forge-plugin] Install script SHA-256: ${FORGE_SHA}"
@@ -66,6 +74,14 @@ add_to_path() {
         echo "[forge-plugin] WARNING: ${profile} is a symlink pointing outside HOME (${real_target}). Skipping PATH addition." >&2
         return 0
       fi
+    fi
+    # R7-5: Ownership check — refuse to append to a profile not owned by the current user.
+    local file_owner
+    file_owner=$(stat -c '%U' "${profile}" 2>/dev/null || stat -f '%Su' "${profile}" 2>/dev/null || echo "")
+    local current_user="${USER:-$(id -un)}"
+    if [ -n "${file_owner}" ] && [ "${file_owner}" != "${current_user}" ]; then
+      echo "[forge-plugin] WARNING: ${profile} is owned by '${file_owner}', not '${current_user}'. Skipping PATH addition." >&2
+      return 0
     fi
     printf '\n%s\n%s\n' "${marker}" "${line}" >> "${profile}"
     echo "[forge-plugin] Added ~/.local/bin to PATH in ${profile} (marker: 'Added by sidekick/forge plugin')"

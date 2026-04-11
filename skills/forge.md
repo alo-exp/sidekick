@@ -81,11 +81,14 @@ forge --version
 ```bash
 FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
 wget -qO "${FORGE_INSTALL}" https://forgecode.dev/cli
-FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" | awk '{print $1}')
+FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_INSTALL}" | awk '{print $1}')
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases"
 echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
+# NOTE for Claude: When executing via the Bash tool, the user cannot send Ctrl+C.
+# Show the SHA-256 output to the user and ask for explicit confirmation before proceeding.
+# (SENTINEL FINDING-R7-1/R7-7: Bash tool cancel caveat + user confirmation gate)
 sleep 5
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 # OR: tell user to manually download from https://forgecode.dev and place in ~/.local/bin/
@@ -97,11 +100,14 @@ ls -la ~/.local/bin/forge 2>/dev/null || echo "not found"
 # Try with verbose output — apply the same SHA-256 verification as the main install path:
 FORGE_INSTALL=$(mktemp /tmp/forge-install.XXXXXX.sh)
 curl -fsSL https://forgecode.dev/cli -o "${FORGE_INSTALL}"
-FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" | awk '{print $1}')
+FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_INSTALL}" | awk '{print $1}')
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases"
 echo "If hashes do not match, press Ctrl+C NOW to cancel. Proceeding in 5 seconds..."
+# NOTE for Claude: When executing via the Bash tool, the user cannot send Ctrl+C.
+# Show the SHA-256 output to the user and ask for explicit confirmation before proceeding.
+# (SENTINEL FINDING-R7-1/R7-7: Bash tool cancel caveat + user confirmation gate)
 sleep 5
 bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ```
@@ -149,18 +155,23 @@ Tell the user:
 FORGE_DIR="${HOME}/forge"
 mkdir -p "${FORGE_DIR}"
 
-# Write credentials via heredoc + env var so the key never appears in process arguments
-# (visible in ps aux). Set OPENROUTER_KEY before running the python block.
-# (SENTINEL FINDING-4.1 R2: chmod 600; SENTINEL FINDING-R6-7: heredoc pattern)
+# Write the key via a restricted temp file so it never appears in process arguments
+# (visible in ps aux), and disable shell history for this block so it is not saved.
+# (SENTINEL FINDING-4.1 R2: chmod 600; FINDING-R6-7: no inline args; FINDING-R7-3: no history)
 #
-# Claude: assign the user's key to OPENROUTER_KEY, then execute the heredoc below.
-export OPENROUTER_KEY="KEY"   # ← replace KEY with the actual key value
+# Claude: replace KEY_PLACEHOLDER below with the actual key value, then run the full block.
+OLD_HISTFILE="${HISTFILE:-}"; unset HISTFILE   # disable history for this block
+KEY_TMP=$(mktemp); chmod 600 "${KEY_TMP}"
+printf '%s' 'KEY_PLACEHOLDER' > "${KEY_TMP}"  # ← replace KEY_PLACEHOLDER with actual key
 
-python3 << 'PYEOF'
+KEY_TMP="${KEY_TMP}" python3 << 'PYEOF'
 import json, os, stat
-key = os.environ.get('OPENROUTER_KEY', '')
+key_file = os.environ.get('KEY_TMP', '')
+with open(key_file) as f:
+    key = f.read().strip()
+os.remove(key_file)   # delete temp file immediately after reading
 if not key:
-    raise ValueError("OPENROUTER_KEY env var is not set — set it before running this block")
+    raise ValueError("KEY_TMP file was empty — set the key before running this block")
 creds = [{'id': 'open_router', 'auth_details': {'api_key': key}}]
 path = os.path.expanduser('~/forge/.credentials.json')
 with open(path, 'w') as f:
@@ -168,7 +179,8 @@ with open(path, 'w') as f:
 os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)  # 600: owner read/write only
 print('credentials written with restricted permissions (600)')
 PYEOF
-unset OPENROUTER_KEY
+unset KEY_TMP
+[ -n "${OLD_HISTFILE}" ] && export HISTFILE="${OLD_HISTFILE}"; unset OLD_HISTFILE
 
 # Write config
 cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
@@ -820,7 +832,7 @@ forge info
 ```bash
 # ── Setup ────────────────────────────────────────────────────────
 forge info                                   # check status
-# Install: follow STEP 0A-1 above (SHA-256 verify + Ctrl+C cancel window required)
+# Install: follow STEP 0A-1 above (SHA-256 verify + user confirmation required)
 forge config set model open_router qwen/qwen3.6-plus  # set model
 
 # ── Delegation ───────────────────────────────────────────────────
@@ -835,10 +847,15 @@ forge -C "${PROJECT_ROOT}" -p ":commit"      # AI commit message
 
 # ── Recovery ─────────────────────────────────────────────────────
 git diff --stat                              # see what changed
-git checkout -- .                            # discard all changes
+# 🛑 MANDATORY STOP: git checkout -- . discards ALL uncommitted changes permanently.
+#    Show user the file list (git status) and get explicit confirmation before running.
+#    See STEP 5-4 for the full mandatory-stop protocol. (SENTINEL FINDING-R7-4)
+git checkout -- PATH/TO/FILE                 # discard specific file (safer)
 forge config set model open_router google/gemma-4-31b-it  # if 429
 
 # ── Context ──────────────────────────────────────────────────────
 forge -C "${PROJECT_ROOT}" -p "Create/update AGENTS.md with project conventions"
-forge workspace sync -C "${PROJECT_ROOT}"    # semantic index for large codebases
+# Trusted repos: forge workspace sync -C "${PROJECT_ROOT}"
+# Untrusted repos: forge --sandbox index-only -C "${PROJECT_ROOT}" workspace sync
+# (SENTINEL FINDING-R7-9: trust qualifier — see STEP 2 for full guidance)
 ```
