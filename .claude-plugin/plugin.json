@@ -23,7 +23,7 @@
     "_note": "SHA-256 hashes of plugin files — update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
     "install_sh_sha256": "8663dd3deb8581a8d1998b9406643efa0e217c889f10ef0d59e48abf9acc3530",
     "forge_md_sha256": "631f9d5ca68d441d51b46d98dbf6b3b8f7b7a84bf5a8a80bb1b4ef0ca7ae2b22",
-    "forge_skill_md_sha256": "d3d454b2f51f4ba51b507ccf633e926f617ae48389775902c4848093bf4c96d0",
+    "forge_skill_md_sha256": "edf9a2e155109cc26edee7e5350d6f45ecfbaa575f27167a4bc4581dbaa1f61b",
     "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
     "forgecode_installer_sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a",
     "verify_at": "https://forgecode.dev/releases",
