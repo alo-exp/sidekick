@@ -67,6 +67,11 @@ Claude will guide you to:
 Claude configures Forge automatically and delegates all coding work from that point.
 
 ### Models
+### Providers
+- **OpenRouter** (recommended) — sign up at openrouter.ai, routes to Qwen 3.6 Plus ($0.33/$1.95/MTok, 1M context, vision)
+- **MiniMax Coding** — direct API key from platform.minimaxi.com (`model_id = "MiniMax-Text-01"`)
+
+### Models (OpenRouter)
 - Default: **Qwen 3.6 Plus** (`qwen/qwen3.6-plus`) — 1M context, vision, $0.33/$1.95/MTok
 - Alternative: **Gemma 4 31B** (`google/gemma-4-31b-it`) — dense, fast
 

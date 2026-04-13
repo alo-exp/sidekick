@@ -156,7 +156,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="forge-toml">.forge.toml Config</h2>
       <p>Created in the project root on first <code>/forge</code> invocation. Contains compaction settings only — Forge API credentials are stored globally in <code>~/forge/.credentials.json</code> and <code>~/forge/.forge.toml</code>.</p>
-      <div class="code-label">.forge.toml</div>
+      <div class="code-label">.forge.toml (project root — compaction only)</div>
       <div class="code-block"><span class="comment"># API credentials: ~/forge/.credentials.json</span>
 
 <span class="comment"># Context compaction — validated defaults</span>
@@ -164,9 +164,25 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">eviction_window</span> = <span class="val">0.20</span>   <span class="comment"># evict oldest 20%</span>
 <span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># always keep last 6 exchanges</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per call</span></div>
+      <h3>Global provider config (<code>~/forge/.forge.toml</code>)</h3>
+      <p>The global config sets the provider and model. Two providers are supported:</p>
+      <div class="code-label">~/forge/.forge.toml — OpenRouter (recommended)</div>
+      <div class="code-block"><span class="key">"$schema"</span> = <span class="string">"https://forgecode.dev/schema.json"</span>
+<span class="key">max_tokens</span> = <span class="val">16384</span>
+
+[<span class="key">session</span>]
+<span class="key">provider_id</span> = <span class="string">"open_router"</span>
+<span class="key">model_id</span>    = <span class="string">"qwen/qwen3.6-plus"</span></div>
+      <div class="code-label">~/forge/.forge.toml — MiniMax Coding</div>
+      <div class="code-block"><span class="key">"$schema"</span> = <span class="string">"https://forgecode.dev/schema.json"</span>
+<span class="key">max_tokens</span> = <span class="val">16384</span>
+
+[<span class="key">session</span>]
+<span class="key">provider_id</span> = <span class="string">"minimax"</span>
+<span class="key">model_id</span>    = <span class="string">"MiniMax-Text-01"</span></div>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code> (API key) and <code>~/forge/.forge.toml</code> (provider and model config), not in the project root.</div>
+        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code> (API key) and <code>~/forge/.forge.toml</code> (provider and model config), not in the project root. When Claude guides you through setup it writes these files automatically.</div>
       </div>
 
       <h2 id="bootstrap-skills">Bootstrap Skills</h2>

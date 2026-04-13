@@ -150,13 +150,28 @@ And tell user: "Open a new terminal tab or run `exec zsh` to reload PATH."
 
 **Symptom:** `forge info` shows `google_ai_studio` provider or `No default provider set`
 
+Ask the user which provider they want to use:
+
+> "Forge needs an API key. Two providers are supported:
+>
+> **A) OpenRouter** (recommended) — routes to Qwen 3.6 Plus, the best open coding model
+> (#1 open on Terminal-Bench), at $0.33/$1.95 per MTok with 1M context and vision.
+> Sign up at **openrouter.ai** (Google/GitHub OAuth, ~2 minutes).
+>
+> **B) MiniMax Coding** — direct access to MiniMax's coding model via the MiniMax platform.
+> Get a key at **platform.minimaxi.com** → API Keys.
+>
+> Which do you have / prefer? (A or B)"
+
+Then follow **0A-3a** (OpenRouter) or **0A-3b** (MiniMax) based on the answer.
+
+---
+
+### 0A-3a. OpenRouter setup
+
 Tell the user:
 
-> "Forge needs an API key. The recommended provider is **OpenRouter** — it routes to
-> Qwen 3.6 Plus, the best open coding model (#1 open on Terminal-Bench), at
-> $0.33/$1.95 per MTok with 1M context and vision support.
->
-> **Setup takes ~2 minutes:**
+> "**Setup takes ~2 minutes:**
 > 1. Go to **openrouter.ai** → Sign up (Google/GitHub OAuth)
 > 2. Go to **openrouter.ai/settings/credits** → Add $5 (lasts weeks)
 > 3. Go to **openrouter.ai/keys** → Create a key
@@ -194,20 +209,19 @@ python3 -c "import os; print('permissions:', oct(os.stat(os.path.expanduser('~/f
 Expected output: `permissions: 0o100600`
 > (SENTINEL FINDING-4.1 R2: chmod 600; R12-1/R13-1: key never in bash commands)
 
-# Write config
-cat > "${FORGE_DIR}/.forge.toml" << 'TOML'
-# $schema fetched from forgecode.dev for IDE validation only — no data is sent at config load time.
-# Review forgecode.dev's privacy policy if operating in a restricted network environment.
-# (SENTINEL FINDING-R8-5: schema URL disclosure)
+**Step 4 — Use the Write tool** to create `~/forge/.forge.toml`:
+```toml
 "$schema" = "https://forgecode.dev/schema.json"
 max_tokens = 16384
 
 [session]
 provider_id = "open_router"
 model_id = "qwen/qwen3.6-plus"
-TOML
+```
+Write to path: `~/forge/.forge.toml`
 
-# Verify
+**Step 5 — Verify:**
+```bash
 export PATH="${HOME}/.local/bin:${PATH}"
 forge info
 ```
@@ -218,6 +232,70 @@ forge -p "reply with just the word OK" 2>&1
 ```
 
 **Expected success output:** `OK` (within 5 seconds)
+
+---
+
+### 0A-3b. MiniMax Coding setup
+
+Tell the user:
+
+> "**Setup takes ~2 minutes:**
+> 1. Go to **platform.minimaxi.com** → Sign up
+> 2. Go to **platform.minimaxi.com/user-center/basic-information/interface-key** → Create an API key
+> 3. Paste the key here and I'll configure everything."
+
+**When the user pastes the key** — write credentials using the Write tool (not Bash):
+
+> Same security rule as OpenRouter: never embed the key in a Bash command.
+> Use the Write tool only. (SENTINEL FINDING-R12-1/R13-1)
+
+**Step 1 — Visually validate the key format** before writing.
+MiniMax keys are alphanumeric strings (no prefix convention like `sk-or-`).
+If the key contains spaces or unusual characters, ask the user to re-paste it.
+> Do NOT run the key through bash for validation. Visual inspection only. (SENTINEL FINDING-R13-1)
+
+**Step 2 — Use the Write tool** to create `~/forge/.credentials.json`
+(substitute the actual key for `KEY_PLACEHOLDER`):
+```json
+[{"id": "minimax", "auth_details": {"api_key": "KEY_PLACEHOLDER"}}]
+```
+Write to path: `~/forge/.credentials.json`
+
+**Step 3 — Restrict permissions:**
+```bash
+mkdir -p "${HOME}/forge"
+chmod 600 "${HOME}/forge/.credentials.json"
+python3 -c "import os; print('permissions:', oct(os.stat(os.path.expanduser('~/forge/.credentials.json')).st_mode))"
+```
+Expected output: `permissions: 0o100600`
+
+**Step 4 — Use the Write tool** to create `~/forge/.forge.toml`:
+```toml
+"$schema" = "https://forgecode.dev/schema.json"
+max_tokens = 16384
+
+[session]
+provider_id = "minimax"
+model_id = "MiniMax-Text-01"
+```
+Write to path: `~/forge/.forge.toml`
+
+**Step 5 — Verify:**
+```bash
+export PATH="${HOME}/.local/bin:${PATH}"
+forge info
+```
+
+**Test the connection:**
+```bash
+forge -p "reply with just the word OK" 2>&1
+```
+
+**Expected success output:** `OK` (within 5 seconds)
+
+> **Note on MiniMax model IDs:** MiniMax may update available model identifiers.
+> If `forge info` reports an unknown model, check current model names at
+> **platform.minimaxi.com/document/guides** and update `model_id` in `~/forge/.forge.toml`.
 
 > **Privacy note (SENTINEL FINDING-8.1 R2):** The `forge` binary is a third-party tool
 > from forgecode.dev. Before using forge with sensitive or proprietary codebases, review
