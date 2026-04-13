@@ -115,7 +115,8 @@ Reference `skills/forge.md` STEP 5 for existing failure recovery patterns. The c
 
 ## 7. Fallback Ladder Contract
 
-When failure is detected (per section 6), Claude escalates through three levels:
+When failure is detected (per section 6), Claude escalates through three levels sequentially.
+No level may be skipped.
 
 ### Level 1 -- Guide
 
