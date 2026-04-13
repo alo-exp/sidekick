@@ -113,3 +113,57 @@ DEBRIEF:
 The AGENTS_UPDATE is a proposed addition in Forge AGENTS.md format (action-oriented, specific). Claude asks the user to confirm before writing to AGENTS.md.
 
 After Level 3 completes, DLGT-04 is restored -- the marker file remains active.
+
+---
+
+## Skill Injection
+
+Before each delegation, Claude performs a skill injection step to ensure Forge receives only the skills relevant to the current task.
+
+### 1. Determine Task Type
+
+Read the task and classify:
+- **Testing task:** task involves writing or running tests
+- **Code change:** task involves editing or writing files
+- **Security-sensitive:** task involves auth, input validation, credentials, or data handling
+- **Review:** task is a general code review
+- **Research/read-only:** pure file read or research (no injection needed)
+
+Multiple classifications can apply simultaneously.
+
+### 2. Apply Mapping Table
+
+| Task Type | Injected Skills |
+|-----------|----------------|
+| Testing | `testing-strategy` |
+| Code change | `quality-gates`, `code-review` |
+| Security-sensitive | `security` |
+| Review | `code-review` |
+| Research/read-only | (none) |
+
+### 3. Verify Skill Files Exist
+
+For each skill to inject, confirm the file exists at `.forge/skills/<name>/SKILL.md`. These were bootstrapped in Phase 1 activation and should already be present. If missing, log a warning but proceed with delegation.
+
+### 4. Include in Task Prompt
+
+Add the INJECTED SKILLS field to the task prompt listing only the matched skill names:
+
+```
+INJECTED SKILLS: quality-gates, code-review
+```
+
+Forge's Skill Engine auto-detects skills via `trigger` keywords in their YAML frontmatter. The INJECTED SKILLS field serves as an explicit signal reinforcing which skills apply.
+
+### Skill Format Requirements
+
+All files in `.forge/skills/` MUST conform to Forge-compatible SKILL.md format:
+- YAML frontmatter with: `id`, `title`, `description`, `trigger`
+- No `Skill tool` references
+- No `AskUserQuestion` calls
+- No Claude-specific tool names (use generic: "write file", "run command")
+- Imperative language throughout
+
+### Scope Limit
+
+Only the 4 bootstrap skills are in scope: `quality-gates`, `security`, `testing-strategy`, `code-review`. Adding new skills requires a future phase.
