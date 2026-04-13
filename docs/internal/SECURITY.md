@@ -62,3 +62,115 @@
 | docs/help/**/*.html + search.js | PASS | 0 | 0 | 0 | 0 |
 
 **Overall Verdict: PASS** — All 3 areas clear with no findings.
+
+---
+---
+
+# SENTINEL Pass — Deep Security Audit
+
+**Date:** 2026-04-13
+**Auditor:** SENTINEL (automated, second pass)
+**Scope:** skills/forge/SKILL.md, install.sh, hooks/hooks.json, .claude-plugin/plugin.json
+
+This is a supplementary deep audit covering areas not examined in the initial pass, plus a deeper review of previously-examined files.
+
+---
+
+## New Findings
+
+### HIGH
+
+#### H-1: Credential field check requires parsing file contents (SKILL.md:25)
+- **Severity:** HIGH
+- **File:** `skills/forge/SKILL.md:25`
+- **Category:** Credential Leakage
+- **Description:** The health check instructs Claude to verify `~/forge/.credentials.json` "contains a non-empty `api_key` field". Despite the parenthetical "(never read or log the actual key value -- existence check only)", confirming a field is non-empty requires parsing the JSON. An LLM executing this instruction will read the file contents into its context window, where the API key value may persist in memory, appear in error output, or leak into the AGENTS.md mentoring loop (lines 176-229) or session logs (line 226).
+- **Recommendation:** Replace with a shell-only check that never surfaces the value: `jq -e '.api_key | length > 0' ~/forge/.credentials.json >/dev/null 2>&1`. Update the instruction to explicitly say "use a shell command; do not read the file with the Read tool."
+
+---
+
+### MEDIUM
+
+#### M-1: SHA verification bypass when hash utilities unavailable (install.sh:51-99)
+- **Severity:** MEDIUM
+- **File:** `install.sh:51-53, 65, 99`
+- **Category:** Integrity Verification Gap
+- **Description:** When neither `shasum` nor `sha256sum` is available, `FORGE_SHA` is set to `"UNAVAILABLE"`. The comparison on line 65 (`FORGE_SHA != "UNAVAILABLE"`) skips verification, but execution proceeds on line 99 (`bash "${FORGE_INSTALL_TMP}"`). If `EXPECTED_FORGE_SHA` is pinned (non-empty), the user has declared intent to require integrity verification -- yet the script executes the unverified download anyway.
+- **Recommendation:** When `FORGE_SHA == "UNAVAILABLE"` and `EXPECTED_FORGE_SHA` is non-empty, abort with an error: "Cannot verify integrity: no hash utility available. Install shasum or sha256sum, or run manually."
+
+#### M-2: Temp file uses predictable prefix and unnecessary .sh suffix (install.sh:34)
+- **Severity:** MEDIUM
+- **File:** `install.sh:34`
+- **Category:** Unsafe Temp File
+- **Description:** `mktemp /tmp/forge-install.XXXXXX.sh` uses a fixed prefix in a world-writable directory and adds a `.sh` suffix. While `mktemp` provides randomness via `XXXXXX`, the predictable prefix allows targeted monitoring of `/tmp`. The `.sh` suffix is unnecessary since execution is via explicit `bash` invocation.
+- **Recommendation:** Use `mktemp "${TMPDIR:-/tmp}/forge-install.XXXXXX"` to respect `$TMPDIR` and drop the suffix.
+
+#### M-3: Self-asserted integrity hashes in plugin.json (plugin.json:23-31)
+- **Severity:** MEDIUM
+- **File:** `.claude-plugin/plugin.json:23-31`
+- **Category:** Supply Chain
+- **Description:** The `_integrity` block stores SHA-256 hashes of plugin files within the same repository. An attacker who compromises the repo can update both files and their hashes simultaneously. These hashes provide no tamper-evidence against repo-level compromise.
+- **Recommendation:** Add a `_note` clarifying that these hashes detect accidental corruption only. For supply-chain security, publish signed release attestations out-of-band (e.g., GitHub Attestations or Sigstore).
+
+#### M-4: Sleep-based consent window in non-interactive context (install.sh:98)
+- **Severity:** MEDIUM
+- **File:** `install.sh:98`
+- **Category:** Insufficient Consent
+- **Description:** When a pinned SHA is set and verified, the script reaches line 98 (`sleep 5`) even in non-interactive mode (SessionStart hook) before executing the downloaded script. The sleep provides no actual security -- the user cannot press Ctrl+C in a hook context. This is security theater that adds 5 seconds of latency.
+- **Recommendation:** Remove the sleep when the pinned SHA has been verified (the integrity check is the actual gate). Or document explicitly that the sleep is purely cosmetic.
+
+---
+
+### LOW
+
+#### L-1: Hardcoded home-directory paths for plugin state (SKILL.md:40-41, 52)
+- **Severity:** LOW
+- **File:** `skills/forge/SKILL.md:40-41, 52`
+- **Category:** Over-permissive Instructions
+- **Description:** The skill uses `~/.claude/.forge-delegation-active` as a marker file. This hardcodes a path assumption rather than using `$CLAUDE_PLUGIN_ROOT` or `$XDG_STATE_HOME`. Could conflict with other plugins or non-standard setups.
+- **Recommendation:** Use `$CLAUDE_PLUGIN_ROOT/.forge-delegation-active` or `${XDG_STATE_HOME:-$HOME/.local/state}/forge-delegation-active`.
+
+#### L-2: hooks.json lacks integrity hash in plugin.json (hooks/hooks.json)
+- **Severity:** LOW
+- **File:** `hooks/hooks.json` / `.claude-plugin/plugin.json:27`
+- **Category:** Integrity Completeness
+- **Description:** plugin.json includes a `hooks_json_sha256` hash. This is correctly present. No hook injection risk -- the command uses properly quoted `${CLAUDE_PLUGIN_ROOT}` and the hook runner is controlled by the Claude runtime. Noting for completeness: the hooks.json file is minimal and well-formed.
+- **Recommendation:** No action required. PASS.
+
+#### L-3: SKILL.md mentoring loop could persist sensitive context (SKILL.md:176-229)
+- **Severity:** LOW
+- **File:** `skills/forge/SKILL.md:176-229`
+- **Category:** Social Engineering / Data Leakage
+- **Description:** The AGENTS.md mentoring loop extracts "actionable instructions" from every Forge session and writes them to `~/forge/AGENTS.md` and `./AGENTS.md`. If a Forge session involves security-sensitive work (credentials, auth tokens, internal URLs), the extraction step could inadvertently persist sensitive context into plaintext AGENTS.md files.
+- **Recommendation:** Add an extraction filter: "Never extract or persist API keys, tokens, credentials, internal URLs, or PII into AGENTS.md. If a session involved sensitive data, extract only the behavioral pattern, not the data itself."
+
+---
+
+## Areas Reviewed and Confirmed Clean
+
+| Area | Status | Notes |
+|------|--------|-------|
+| hooks.json: shell injection | PASS | Variables properly quoted; command set by runtime, not user input |
+| hooks.json: hook injection | PASS | Only one hook defined; no dynamic command construction |
+| install.sh: command injection | PASS | All variables quoted; `set -euo pipefail`; no eval/exec of user input |
+| install.sh: privilege escalation | PASS | No `sudo`, no setuid; operates in user space only |
+| install.sh: symlink hijack | PASS | Lines 117-125 validate symlink targets stay within HOME |
+| install.sh: file ownership | PASS | Lines 129-134 check file ownership before profile writes |
+| install.sh: download security | PASS | Timeouts set; no pipe-to-shell; temp file with trap cleanup |
+| SKILL.md: prompt injection | PASS | No user-controlled strings interpolated into prompts; task format is structured |
+| SKILL.md: unsafe instructions | PASS | Write/Edit/Bash tools explicitly restricted (DLGT-04); Level 3 fallback is documented |
+| plugin.json: format | PASS | Well-formed JSON; no executable fields |
+
+---
+
+## Updated Summary
+
+| Area | Verdict | Critical | High | Medium | Low |
+|------|---------|----------|------|--------|-----|
+| skills/forge/SKILL.md | PASS (with findings) | 0 | 1 | 0 | 2 |
+| install.sh | PASS (with findings) | 0 | 0 | 3 | 0 |
+| hooks/hooks.json | PASS | 0 | 0 | 0 | 0 |
+| .claude-plugin/plugin.json | PASS (with findings) | 0 | 0 | 1 | 0 |
+| **Total** | **PASS** | **0** | **1** | **4** | **2** |
+
+**Overall Verdict: CONDITIONAL PASS** — No critical or blocking findings. 1 HIGH finding (H-1) should be addressed before release. 4 MEDIUM findings are recommended for v1.1.0 but not blocking. 2 LOW findings are informational.

@@ -66,7 +66,6 @@ Claude will guide you to:
 
 Claude configures Forge automatically and delegates all coding work from that point.
 
-### Models
 ### Providers & Models
 | Provider | Model | Notes |
 |----------|-------|-------|

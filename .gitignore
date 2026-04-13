@@ -1,2 +1,4 @@
 .installed
 *.log
+.forge.toml
+docs/sessions/
