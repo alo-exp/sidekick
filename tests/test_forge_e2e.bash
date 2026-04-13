@@ -45,6 +45,20 @@ run_with_timeout() {
 }
 
 # ---------------------------------------------------------------------------
+# CI guard — skip entire suite if forge binary not present
+# Set FORGE_E2E=1 to force-run in environments where forge is installed.
+# ---------------------------------------------------------------------------
+if [ ! -f "${FORGE}" ] && [ "${FORGE_E2E:-0}" != "1" ]; then
+  skip "E2E suite" "forge binary not found — set FORGE_E2E=1 to run on a machine with forge installed"
+  echo ""
+  echo "======================================="
+  echo "Results: 0 passed, 0 failed, 1 skipped"
+  echo "======================================="
+  echo "Suite SKIPPED: End-to-end forge smoke tests (no forge binary)"
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
 # E1 — Binary exists and is on PATH
 # ---------------------------------------------------------------------------
 echo "=== E1: Binary presence ==="
