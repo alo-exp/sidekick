@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Invoking `/forge` on a machine without Forge installed produces a clear health-check error with install instructions rather than a silent failure
   4. User can deactivate Forge-first mode and Claude acknowledges the return to direct mode
   5. `.forge/agents/forge.md`, `.forge.toml`, and `.forge/skills/` exist after first invocation and are not overwritten on subsequent invocations
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 01-01: Write forge-delegation-spec.md (interaction contracts, prompt format, fallback triggers, injection protocol, AGENTS.md write rules, token budget rules)
@@ -46,7 +46,7 @@ Plans:
   3. If Level 2 fails after reasonable attempts, Claude performs the task directly and produces a debrief including what Forge learned and a proposed AGENTS.md update (Level 3 — Take over)
   4. Failure detection triggers on: explicit Forge error signals, repeated wrong outputs, and stall conditions — not just on non-zero exit codes
   5. Before each delegation, only skills relevant to the task type are injected into `.forge/skills/` — injected files use Forge-compatible SKILL.md format with no Claude-specific syntax
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 02-01: Implement fallback ladder logic in `skills/forge/SKILL.md` — failure detection, Level 1 Guide, Level 2 Handhold, Level 3 Take over + debrief (FALL-01–05)
@@ -62,7 +62,7 @@ Plans:
   3. On first `/forge` invocation with an empty AGENTS.md, Claude bootstraps it from `skills/forge.md` content rather than starting blank
   4. Task prompts submitted to Forge contain only what Forge needs for the task — not full conversation history — and stay within the token budget defined in the spec
   5. `.forge.toml` compaction thresholds (`token_threshold`, `eviction_window`, `retention_window`) are set to tested defaults that prevent Forge context bloat
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 03-01: Implement AGENTS.md mentoring loop — extraction protocol, deduplication logic, three-tier write (global, project, session log), bootstrap from forge.md (AGNT-01–08, TOKN-01)
@@ -78,7 +78,7 @@ Plans:
   3. Running the test suite shows skill injection tests passing — correct SKILL.md files appear in the correct locations (Unit — TEST-03)
   4. Running the test suite shows fallback ladder tests passing — Level 1 → 2 → 3 triggers in the correct order under simulated failure conditions (Unit — TEST-04)
   5. Integration tests verify the full delegation loop against a live Forge session and the overall test suite remains at PASS (Integration — TEST-05)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 04-01: Unit tests for skill activation/deactivation, AGENTS.md deduplication, and skill injection (TEST-01–03)
