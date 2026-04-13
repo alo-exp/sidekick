@@ -36,6 +36,22 @@
   --section-alt:rgba(18,18,26,.7);
   --card-top:rgba(99,102,241,0.6);
   --card-accent:linear-gradient(90deg,#6366f1,#7c3aed);
+  /* ── Derived color tokens ── */
+  --accent-subtle:rgba(99,102,241,.1);
+  --accent-faint:rgba(99,102,241,.08);
+  --accent-border:rgba(99,102,241,.2);
+  --accent-border-md:rgba(99,102,241,.25);
+  --accent-border-lg:rgba(99,102,241,.35);
+  --green-faint:rgba(5,150,105,.06);
+  --green-subtle:rgba(5,150,105,.12);
+  --green-border:rgba(5,150,105,.2);
+  --amber-faint:rgba(217,119,6,.06);
+  --amber-subtle:rgba(217,119,6,.12);
+  --amber-border:rgba(217,119,6,.2);
+  --red-faint:rgba(220,38,38,.06);
+  --red-subtle:rgba(220,38,38,.1);
+  --red-border:rgba(220,38,38,.2);
+  --accent-stripe:rgba(99,102,241,.4);
 }
 
 /* ───── LIGHT THEME ───── */
@@ -66,6 +82,22 @@
   --section-alt:rgba(241,242,248,.7);
   --card-top:rgba(99,102,241,0.5);
   --card-accent:linear-gradient(90deg,#4f46e5,#7c3aed);
+  /* ── Derived color tokens (light overrides) ── */
+  --accent-subtle:rgba(79,70,229,.1);
+  --accent-faint:rgba(79,70,229,.08);
+  --accent-border:rgba(79,70,229,.2);
+  --accent-border-md:rgba(79,70,229,.25);
+  --accent-border-lg:rgba(79,70,229,.35);
+  --green-faint:rgba(5,150,105,.06);
+  --green-subtle:rgba(5,150,105,.12);
+  --green-border:rgba(5,150,105,.2);
+  --amber-faint:rgba(180,83,9,.06);
+  --amber-subtle:rgba(180,83,9,.12);
+  --amber-border:rgba(180,83,9,.2);
+  --red-faint:rgba(220,38,38,.06);
+  --red-subtle:rgba(220,38,38,.1);
+  --red-border:rgba(220,38,38,.2);
+  --accent-stripe:rgba(79,70,229,.4);
 }
 
 /* ───── THEME TRANSITION ───── */
