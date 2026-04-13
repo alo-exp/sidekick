@@ -119,10 +119,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="doc-layout">
     <aside class="doc-sidebar">
       <ul class="sidebar-nav">
+        <li class="sidebar-section">Commands</li>
         <li><a href="#forge-commands">/forge Commands</a></li>
         <li><a href="#task-prompt">Task Prompt Fields</a></li>
+        <li class="sidebar-section">Configuration</li>
         <li><a href="#forge-toml">.forge.toml Config</a></li>
         <li><a href="#bootstrap-skills">Bootstrap Skills</a></li>
+        <li class="sidebar-section">Output &amp; Files</li>
+        <li><a href="#output-format">Output Format</a></li>
         <li><a href="#agents-md-format">AGENTS.md Format</a></li>
         <li><a href="#file-structure">File Structure</a></li>
       </ul>
@@ -179,7 +183,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
 [<span class="key">session</span>]
 <span class="key">provider_id</span> = <span class="string">"minimax"</span>
-<span class="key">model_id</span>    = <span class="string">"MiniMax-Text-01"</span></div>
+<span class="key">model_id</span>    = <span class="string">"MiniMax-M2.7"</span></div>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
         <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code> (API key) and <code>~/forge/.forge.toml</code> (provider and model config), not in the project root. When Claude guides you through setup it writes these files automatically.</div>
@@ -196,6 +200,38 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td>quality-gates</td><td>.forge/skills/quality-gates/SKILL.md</td><td>Multi-phase delivery, release prep</td></tr>
         </tbody>
       </table>
+
+      <h2 id="output-format">Forge Output Format</h2>
+      <p>Every Forge task response includes a structured output block with four mandatory fields. Claude reads these fields to verify success, update AGENTS.md, and detect failures.</p>
+      <table class="ref-table">
+        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>STATUS</td><td><code>SUCCESS</code> or <code>FAILURE</code>. Claude checks this first — a <code>FAILURE</code> immediately triggers the fallback ladder.</td></tr>
+          <tr><td>FILES_CHANGED</td><td>List of every file Forge created, modified, or deleted during the task. Used for output review and session logging.</td></tr>
+          <tr><td>ASSUMPTIONS</td><td>Any assumptions Forge made that were not explicit in the task prompt. Claude surfaces these for user review.</td></tr>
+          <tr><td>PATTERNS_DISCOVERED</td><td>Codebase conventions, architecture patterns, or project quirks Forge noticed during the task. Claude extracts these for AGENTS.md.</td></tr>
+        </tbody>
+      </table>
+      <div class="code-label">Example Forge output block</div>
+      <div class="code-block"><span class="key">STATUS:</span> <span class="val">SUCCESS</span>
+
+<span class="key">FILES_CHANGED:</span>
+<span class="val">  - src/auth/middleware.ts  (modified)</span>
+<span class="val">  - src/auth/middleware.test.ts  (created)</span>
+<span class="val">  - src/types/auth.ts  (modified)</span>
+
+<span class="key">ASSUMPTIONS:</span>
+<span class="val">  - JWT secret read from process.env.JWT_SECRET</span>
+<span class="val">  - Token expiry defaults to 24h if not configured</span>
+
+<span class="key">PATTERNS_DISCOVERED:</span>
+<span class="val">  - Project uses vitest, not jest</span>
+<span class="val">  - All middleware follows Express 5 async error pattern</span>
+<span class="val">  - TypeScript strict mode is enabled globally</span></div>
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>PATTERNS_DISCOVERED feeds AGENTS.md.</strong> After each task, Claude reads this field and writes any new patterns to <code>./AGENTS.md</code> and <code>~/forge/AGENTS.md</code> — this is how Forge's understanding of your codebase grows over time.</div>
+      </div>
 
       <h2 id="agents-md-format">AGENTS.md Format</h2>
       <p>AGENTS.md uses an action-oriented, categorized format. Claude extracts content from sessions and writes it under these categories:</p>

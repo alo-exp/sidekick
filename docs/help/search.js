@@ -69,7 +69,7 @@ var IDX = [
     text:'.forge.toml created on first /forge in project root. Contains compaction settings only: token_threshold 80000, eviction_window 0.20, retention_window 6, max_tokens 16384. API credentials stored globally in ~/forge/.credentials.json and ~/forge/.forge.toml. Two providers supported: open_router with qwen/qwen3.6-plus and minimax with MiniMax-Text-01.' },
   { page:'Getting Started', url:'/help/getting-started/', anchor:'prerequisites',
     title:'MiniMax Coding provider — alternative to OpenRouter',
-    text:'MiniMax Coding is an alternative provider to OpenRouter. Get an API key at platform.minimaxi.com. Claude writes ~/forge/.credentials.json with id minimax and ~/forge/.forge.toml with provider_id minimax and model_id MiniMax-Text-01 during setup.' },
+    text:'MiniMax Coding is an alternative provider to OpenRouter. Get an API key at platform.minimaxi.com. Claude writes ~/forge/.credentials.json with id minimax and ~/forge/.forge.toml with provider_id minimax and model_id MiniMax-M2.7 during setup.' },
   { page:'Reference', url:'/help/reference/', anchor:'bootstrap-skills',
     title:'Bootstrap skills catalog — testing-strategy code-review security quality-gates',
     text:'Four pre-installed skills at .forge/skills/. testing-strategy for tests TDD coverage. code-review for quality refactoring review-driven changes. security for auth input validation secrets. quality-gates for multi-phase delivery release prep.' },

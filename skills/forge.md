@@ -276,7 +276,7 @@ max_tokens = 16384
 
 [session]
 provider_id = "minimax"
-model_id = "MiniMax-Text-01"
+model_id = "MiniMax-M2.7"
 ```
 Write to path: `~/forge/.forge.toml`
 
@@ -898,19 +898,26 @@ git -C "${PROJECT_ROOT}" reset --hard HEAD~1
 
 ## STEP 8 — Model Selection Guide
 
-| Task type | Recommended model | Why |
-|---|---|---|
-| General coding | `qwen/qwen3.6-plus` | Best overall, 1M context |
-| Screenshot/UI analysis | `qwen/qwen3.6-plus` | Has vision |
-| Budget / high volume | `google/gemma-4-31b-it` | Cheaper, still strong |
-| Rate-limited | `google/gemma-4-31b-it` | Separate rate limit bucket |
-| Local / no API cost | Google AI Studio `gemini-2.5-flash` | Free 20 req/day |
+| Task type | Provider | Recommended model | Why |
+|---|---|---|---|
+| General coding | OpenRouter | `qwen/qwen3.6-plus` | Best overall, 1M context |
+| Screenshot/UI analysis | OpenRouter | `qwen/qwen3.6-plus` | Has vision |
+| Budget / high volume | OpenRouter | `google/gemma-4-31b-it` | Cheaper, still strong |
+| Rate-limited | OpenRouter | `google/gemma-4-31b-it` | Separate rate limit bucket |
+| MiniMax direct | MiniMax | `MiniMax-M2.7` | Direct API, no routing overhead |
+| Local / no API cost | Google AI Studio | `gemini-2.5-flash` | Free 20 req/day |
 
 **Switch commands:**
 ```bash
+# OpenRouter
 forge config set model open_router qwen/qwen3.6-plus       # default
 forge config set model open_router google/gemma-4-31b-it   # alternative
-forge config set model google_ai_studio gemini-2.5-flash   # free tier
+
+# MiniMax
+forge config set model minimax MiniMax-M2.7
+
+# Google AI Studio (free tier)
+forge config set model google_ai_studio gemini-2.5-flash
 ```
 
 **Check active model:**
