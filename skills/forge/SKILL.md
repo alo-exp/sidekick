@@ -64,3 +64,52 @@ Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-activ
 1. Check if `~/.claude/.forge-delegation-active` exists.
    - **If yes:** delete it, confirm: **"Forge-first mode deactivated. Claude-direct mode restored."**
    - **If no:** acknowledge: **"Forge-first mode is not currently active."**
+
+---
+
+## Failure Detection
+
+After each Forge output, Claude runs three checks:
+
+1. **Error signal check:** Forge output contains "Error:", "Failed:", "fatal:", or exit code != 0. If detected -> trigger Level 1.
+2. **Wrong output check:** Forge output does not satisfy SUCCESS CRITERIA from the task prompt. If the SAME failure mode appears on retry -> failure confirmed, trigger next level.
+3. **Stall check:** Forge asks a clarifying question back without making progress (behavioral stall in interactive ZSH). Treat as Level 1 trigger -- reframe with more specifics.
+
+Reference: `skills/forge.md` STEP 5 for contextual failure recovery patterns.
+
+---
+
+## Fallback Ladder
+
+When failure is detected, escalate sequentially. No level may be skipped.
+
+### Level 1 -- Guide
+
+On failure detection, Claude rewrites the task prompt with:
+1. A diagnosis of what Forge likely misunderstood
+2. A tighter DESIRED STATE description
+3. A concrete code snippet or file diff as reference
+
+Single retry at this level. If retry fails -> escalate to Level 2.
+
+### Level 2 -- Handhold
+
+Claude decomposes the original task into atomic subtasks (each <= 200 tokens). Each subtask gets its own full 5-field prompt (OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS). Submit sequentially, verify output of each before proceeding.
+
+Maximum 3 subtask attempts total. If all 3 fail -> escalate to Level 3.
+
+### Level 3 -- Take over
+
+DLGT-04 restriction is temporarily lifted. Claude uses Write/Edit/Bash tools directly to complete the task. After completion, produce a structured debrief:
+
+```
+DEBRIEF:
+  TASK: [what the task was]
+  FORGE_FAILURE: [why Forge failed -- specific diagnosis]
+  LEARNED: [what was discovered about Forge's limitations or task characteristics]
+  AGENTS_UPDATE: [exact text proposed for ./AGENTS.md to prevent recurrence]
+```
+
+The AGENTS_UPDATE is a proposed addition in Forge AGENTS.md format (action-oriented, specific). Claude asks the user to confirm before writing to AGENTS.md.
+
+After Level 3 completes, DLGT-04 is restored -- the marker file remains active.
