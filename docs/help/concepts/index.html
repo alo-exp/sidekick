@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
+<title>Core Concepts — Sidekick Help</title>
+<meta name="description" content="Understand Sidekick's core concepts: Forge delegation mode, SKILL.md activation, the fallback ladder, skill injection, AGENTS.md mentoring, and token optimization.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+.container{max-width:860px;margin:0 auto;padding:0 24px}
+.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
+nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:-.02em}
+.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
+.nav-breadcrumb a:hover{color:var(--accent-light)}
+.nav-breadcrumb .sep{color:var(--text-dim)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;top:-200px;right:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.08) 0%,transparent 70%)}
+.page-hero .container{position:relative;z-index:1}
+.breadcrumb-nav{font-size:.82rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
+.breadcrumb-nav a:hover{color:var(--accent-light)}
+.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1}
+.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
+.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
+@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
+.doc-sidebar{position:sticky;top:88px;height:fit-content}
+.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
+.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
+.sidebar-nav li a.active{background:rgba(99,102,241,.1);color:var(--accent-light);font-weight:600}
+.sidebar-nav .sidebar-section{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);padding:16px 12px 4px;margin-top:8px}
+@media(max-width:768px){.doc-sidebar{display:none}}
+.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:16px;margin-top:48px;padding-top:16px}
+.doc-content h2:first-child{margin-top:0}
+.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
+.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
+.doc-content ul,.doc-content ol{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
+.doc-content li{margin-bottom:6px;line-height:1.7}
+.doc-content strong{color:var(--text-primary)}
+.doc-content a{color:var(--accent-light);text-decoration:none}
+.doc-content a:hover{text-decoration:underline}
+.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
+.callout-info{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2)}
+.callout-tip{background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2)}
+.callout-warn{background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.2)}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
+.callout-body strong{color:var(--text-primary)}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size:.82rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
+.code-block .comment{color:var(--text-dim)}
+.code-block .cmd{color:var(--accent-light)}
+.code-block .key{color:var(--cyan)}
+.code-block .val{color:var(--amber)}
+.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
+/* LADDER DIAGRAM */
+.ladder{display:flex;flex-direction:column;gap:0;margin-bottom:24px}
+.ladder-level{padding:20px 24px;border:1px solid var(--border);position:relative}
+.ladder-level:first-child{border-radius:var(--radius) var(--radius) 0 0}
+.ladder-level:last-child{border-radius:0 0 var(--radius) var(--radius)}
+.ladder-level+.ladder-level{border-top:none}
+.ladder-l1{background:rgba(5,150,105,.06);border-color:rgba(5,150,105,.2)}
+.ladder-l2{background:rgba(217,119,6,.06);border-color:rgba(217,119,6,.2)}
+.ladder-l3{background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.2)}
+.ladder-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.l1-color{color:var(--green)}
+.l2-color{color:var(--amber)}
+.l3-color{color:var(--red)}
+.ladder-title{font-size:1rem;font-weight:700;margin-bottom:6px}
+.ladder-desc{font-size:.875rem;color:var(--text-secondary);line-height:1.6}
+/* MAPPING TABLE */
+.skill-table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:.85rem}
+.skill-table th{text-align:left;padding:10px 16px;background:var(--bg-code);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);border-bottom:1px solid var(--border)}
+.skill-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top}
+.skill-table tr:last-child td{border-bottom:none}
+.skill-table td:first-child{color:var(--accent-light);font-family:var(--font-mono);font-size:.8rem}
+footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+footer a{color:var(--text-secondary);text-decoration:none}
+footer a:hover{color:var(--accent-light)}
+.footer-links{display:flex;gap:24px}
+.page-nav-bottom{display:flex;justify-content:space-between;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
+.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div style="display:flex;align-items:center;gap:16px">
+      <a href="../../" class="nav-logo">Sidekick</a>
+      <span class="nav-breadcrumb">
+        <span class="sep">/</span>
+        <a href="../">Help</a>
+        <span class="sep">/</span>
+        Core Concepts
+      </span>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-nav">
+      <a href="../">Help Center</a>
+      <span>/</span>
+      <span>Core Concepts</span>
+    </div>
+    <h1>Core Concepts</h1>
+    <p>The building blocks of Forge delegation — how SKILL.md works, what the fallback ladder does, and how AGENTS.md keeps getting smarter over time.</p>
+  </div>
+</div>
+
+<div class="container-wide">
+  <div class="doc-layout">
+    <aside class="doc-sidebar">
+      <ul class="sidebar-nav">
+        <li><a href="#delegation">Delegation Mode</a></li>
+        <li><a href="#skill-md">SKILL.md</a></li>
+        <li><a href="#failure-detection">Failure Detection</a></li>
+        <li><a href="#fallback-ladder">Fallback Ladder</a></li>
+        <li><a href="#skill-injection">Skill Injection</a></li>
+        <li><a href="#agents-md">AGENTS.md Mentoring</a></li>
+        <li><a href="#token-optimization">Token Optimization</a></li>
+      </ul>
+    </aside>
+
+    <div class="doc-content">
+
+      <h2 id="delegation">Forge Delegation Mode</h2>
+      <p>When you invoke <code>/forge</code>, Claude activates Forge delegation mode. In this mode, Claude does <em>not</em> write code directly. Instead, it acts as a <strong>task orchestrator</strong> — composing structured prompts, submitting them to Forge, monitoring output, and handling failures.</p>
+      <p>The key insight is that Forge (ForgeCode) is a specialized coding agent that operates autonomously. Claude's role is to communicate the task clearly, not to do the implementation itself.</p>
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>Delegation persists until deactivated.</strong> Once <code>/forge</code> is active, all coding tasks are delegated to Forge. To return to Claude doing implementation directly, deactivate with <code>/forge:deactivate</code>.</div>
+      </div>
+
+      <h2 id="skill-md">SKILL.md — The Instruction Set</h2>
+      <p>All Forge delegation behavior is defined in <code>skills/forge/SKILL.md</code>. This file is loaded when you invoke <code>/forge</code> and contains every rule Claude follows: how to write task prompts, when to escalate failures, how to update AGENTS.md, and what token limits to observe.</p>
+      <p>SKILL.md has these sections, added across four implementation phases:</p>
+      <ul>
+        <li><strong>Activation</strong> — health check, bootstrap config, session state</li>
+        <li><strong>Delegation Protocol</strong> — 5-field task prompt structure</li>
+        <li><strong>Deactivation</strong> — clean shutdown</li>
+        <li><strong>Failure Detection</strong> — three signal types</li>
+        <li><strong>Fallback Ladder</strong> — L1/L2/L3 escalation</li>
+        <li><strong>Skill Injection</strong> — mapping table and selector rules</li>
+        <li><strong>AGENTS.md Mentoring Loop</strong> — extraction and three-tier write</li>
+        <li><strong>Token Optimization</strong> — budget constraints and .forge.toml compaction</li>
+      </ul>
+
+      <h2 id="failure-detection">Failure Detection</h2>
+      <p>Claude continuously monitors Forge's output for three failure signals:</p>
+      <ul>
+        <li><strong>Error signal</strong> — Output contains <code>Error:</code>, <code>Failed:</code>, <code>fatal:</code>, or a non-zero exit code</li>
+        <li><strong>Wrong output</strong> — Forge's output does not satisfy the SUCCESS CRITERIA on retry</li>
+        <li><strong>Stall</strong> — Forge asks a clarifying question without making any progress</li>
+      </ul>
+      <p>Any of these signals triggers the fallback ladder.</p>
+
+      <h2 id="fallback-ladder">The Fallback Ladder</h2>
+      <p>The fallback ladder is a three-level automatic recovery system. When Forge fails, Claude escalates through levels rather than immediately taking over or giving up.</p>
+
+      <div class="ladder">
+        <div class="ladder-level ladder-l1">
+          <div class="ladder-label l1-color">Level 1</div>
+          <div class="ladder-title">Guide — Automatic Reframe</div>
+          <div class="ladder-desc">Claude rewrites the task prompt with a diagnosis of what went wrong, a tighter DESIRED STATE, and specific code references. No user input needed. One retry only — if L1 fails, escalate to L2.</div>
+        </div>
+        <div class="ladder-level ladder-l2">
+          <div class="ladder-label l2-color">Level 2</div>
+          <div class="ladder-title">Handhold — Subtask Decomposition</div>
+          <div class="ladder-desc">Claude decomposes the original task into atomic subtasks (≤200 tokens each) and submits them to Forge sequentially with full 5-field prompts. Maximum 3 attempts before escalating to L3.</div>
+        </div>
+        <div class="ladder-level ladder-l3">
+          <div class="ladder-label l3-color">Level 3</div>
+          <div class="ladder-title">Take Over — Direct Action + DEBRIEF</div>
+          <div class="ladder-desc">The delegation restriction is lifted. Claude implements the task directly, then produces a structured DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE) to capture what went wrong and update AGENTS.md.</div>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
+        <div class="callout-body"><strong>L3 takeovers are learning events.</strong> The DEBRIEF from every L3 takeover feeds the AGENTS.md update — so Forge gets better instructions for similar tasks next time.</div>
+      </div>
+
+      <h2 id="skill-injection">Skill Injection</h2>
+      <p>Forge has access to four bootstrap skills that Claude can inject into task prompts via the INJECTED SKILLS field. Claude selects skills based on the task type:</p>
+
+      <table class="skill-table">
+        <thead>
+          <tr><th>Skill</th><th>Task Type</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>testing-strategy</td><td>Writing or fixing tests, TDD tasks</td></tr>
+          <tr><td>code-review</td><td>Code quality, refactoring, review-driven changes</td></tr>
+          <tr><td>security</td><td>Auth, input validation, credential handling</td></tr>
+          <tr><td>quality-gates</td><td>Multi-phase delivery, release preparation</td></tr>
+        </tbody>
+      </table>
+
+      <p>For general code changes and refactoring, inject <code>code-review</code>. Add <code>quality-gates</code> for multi-phase delivery tasks.</p>
+      <p>Claude enforces an <strong>injection budget</strong>: inject ≤2 skills per task unless the task is clearly multi-domain. Over-injection bloats the prompt and degrades Forge's focus.</p>
+
+      <h2 id="agents-md">AGENTS.md Mentoring Loop</h2>
+      <p>After every completed Forge task, Claude extracts learnings and writes them to AGENTS.md. This is the mechanism by which delegation gets smarter over time.</p>
+
+      <h3>What Claude extracts</h3>
+      <ul>
+        <li><strong>Corrections</strong> — mistakes Forge made that Claude had to fix</li>
+        <li><strong>User preferences</strong> — expressed during the session</li>
+        <li><strong>Project patterns</strong> — conventions Forge discovered in this codebase</li>
+        <li><strong>Forge behavior observations</strong> — what Forge does well or poorly here</li>
+      </ul>
+
+      <h3>Three-tier write</h3>
+      <p>Claude writes to three locations after each task:</p>
+      <ul>
+        <li><code>~/forge/AGENTS.md</code> — global cross-project knowledge</li>
+        <li><code>./AGENTS.md</code> — project-specific instructions</li>
+        <li><code>docs/sessions/YYYY-MM-DD-session.md</code> — per-session evolution log</li>
+      </ul>
+
+      <h3>Deduplication</h3>
+      <p>Before every AGENTS.md write, Claude runs a two-phase check: first an exact substring match, then a semantic similarity check. If either matches an existing entry, the write is skipped entirely — no partial appends.</p>
+
+      <h2 id="token-optimization">Token Optimization</h2>
+      <p>Task prompts to Forge are capped at <strong>2,000 tokens</strong>. Claude enforces this by:</p>
+      <ul>
+        <li>Including only the 5 mandatory fields (OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS)</li>
+        <li>Omitting conversation history and unrelated file contents</li>
+        <li>Including only files directly relevant to the task in CONTEXT</li>
+        <li>Keeping INJECTED SKILLS to ≤2 skills unless multi-domain</li>
+      </ul>
+
+      <p>Context compaction in <code>.forge.toml</code> uses validated defaults:</p>
+      <div class="code-label">.forge.toml</div>
+      <div class="code-block"><span class="key">token_threshold</span> = <span class="val">80000</span>   <span class="comment"># trigger compaction at 80k tokens</span>
+<span class="key">eviction_window</span> = <span class="val">0.20</span>   <span class="comment"># evict oldest 20% of context</span>
+<span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># keep last 6 exchanges always</span>
+<span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per Forge call</span></div>
+
+      <div class="page-nav-bottom">
+        <a href="../getting-started/" class="pnav-btn"><i data-lucide="arrow-left"></i> Getting Started</a>
+        <a href="../workflows/" class="pnav-btn">Delegation Workflow <i data-lucide="arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container-wide">
+    <div class="footer-inner">
+      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
+      <div class="footer-links">
+        <a href="../">Help Home</a>
+        <a href="../../">Sidekick Home</a>
+        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.getElementById('icon-sun').style.display=dark?'none':'';
+  document.getElementById('icon-moon').style.display=dark?'':'none';
+  localStorage.setItem('sidekick-theme',dark?'dark':'light');
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
+(function(){const s=localStorage.getItem('sidekick-theme');applyTheme(s==='light'?false:true)})();
+lucide.createIcons();
+</script>
+</body>
+</html>

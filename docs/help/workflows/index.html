@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
+<title>Delegation Workflow — Sidekick Help</title>
+<meta name="description" content="The complete end-to-end Forge delegation workflow — from activating the skill to reviewing output and updating AGENTS.md.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+.container{max-width:860px;margin:0 auto;padding:0 24px}
+.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
+nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:-.02em}
+.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
+.nav-breadcrumb a:hover{color:var(--accent-light)}
+.nav-breadcrumb .sep{color:var(--text-dim)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
+.page-hero .container{position:relative;z-index:1}
+.breadcrumb-nav{font-size:.82rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
+.breadcrumb-nav a:hover{color:var(--accent-light)}
+.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1}
+.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
+.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
+@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
+.doc-sidebar{position:sticky;top:88px;height:fit-content}
+.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
+.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
+.sidebar-nav li a.active{background:rgba(99,102,241,.1);color:var(--accent-light);font-weight:600}
+@media(max-width:768px){.doc-sidebar{display:none}}
+.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:16px;margin-top:48px;padding-top:16px}
+.doc-content h2:first-child{margin-top:0}
+.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
+.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
+.doc-content ul{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
+.doc-content li{margin-bottom:6px;line-height:1.7}
+.doc-content strong{color:var(--text-primary)}
+.doc-content a{color:var(--accent-light);text-decoration:none}
+.doc-content a:hover{text-decoration:underline}
+.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
+.callout-info{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2)}
+.callout-tip{background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2)}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
+.callout-body strong{color:var(--text-primary)}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size:.82rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
+.code-block .comment{color:var(--text-dim)}
+.code-block .key{color:var(--cyan)}
+.code-block .val{color:var(--amber)}
+.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
+/* FLOW DIAGRAM */
+.flow{display:flex;flex-direction:column;gap:0;margin-bottom:32px}
+.flow-step{display:flex;gap:20px;align-items:flex-start}
+.flow-step+.flow-step{margin-top:0}
+.flow-connector{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
+.flow-num{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);flex-shrink:0}
+.flow-line{width:2px;height:32px;background:linear-gradient(180deg,rgba(99,102,241,.4),rgba(99,102,241,.1));margin:0 auto}
+.flow-body{padding-top:6px;padding-bottom:32px}
+.flow-body h4{font-size:.95rem;font-weight:700;margin-bottom:6px}
+.flow-body p{font-size:.875rem;color:var(--text-secondary);margin:0;line-height:1.7}
+footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+footer a{color:var(--text-secondary);text-decoration:none}
+footer a:hover{color:var(--accent-light)}
+.footer-links{display:flex;gap:24px}
+.page-nav-bottom{display:flex;justify-content:space-between;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
+.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div style="display:flex;align-items:center;gap:16px">
+      <a href="../../" class="nav-logo">Sidekick</a>
+      <span class="nav-breadcrumb">
+        <span class="sep">/</span>
+        <a href="../">Help</a>
+        <span class="sep">/</span>
+        Delegation Workflow
+      </span>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-nav">
+      <a href="../">Help Center</a>
+      <span>/</span>
+      <span>Delegation Workflow</span>
+    </div>
+    <h1>Delegation Workflow</h1>
+    <p>The complete flow for delegating a coding task to Forge — from activation through output review and the post-session AGENTS.md update.</p>
+  </div>
+</div>
+
+<div class="container-wide">
+  <div class="doc-layout">
+    <aside class="doc-sidebar">
+      <ul class="sidebar-nav">
+        <li><a href="#activation">Activation</a></li>
+        <li><a href="#task-prompt">Task Prompt</a></li>
+        <li><a href="#monitoring">Monitoring</a></li>
+        <li><a href="#fallback">Fallback Handling</a></li>
+        <li><a href="#review">Output Review</a></li>
+        <li><a href="#agents-update">AGENTS.md Update</a></li>
+        <li><a href="#deactivation">Deactivation</a></li>
+      </ul>
+    </aside>
+
+    <div class="doc-content">
+
+      <h2 id="activation">Step 1 — Activate Forge</h2>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Run /forge</h4>
+            <p>Claude loads SKILL.md, runs the health check (verifies OpenRouter connectivity, model availability, .forge.toml), bootstraps AGENTS.md if absent, and confirms activation. Session state is written to <code>~/.claude/.forge-delegation-active</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="task-prompt">Step 2 — Compose Task Prompt</h2>
+      <p>When you describe a task, Claude builds a structured 5-field prompt capped at 2,000 tokens:</p>
+      <div class="code-label">task prompt structure</div>
+      <div class="code-block"><span class="key">OBJECTIVE:</span>     <span class="val">One-sentence statement of what Forge must accomplish</span>
+<span class="key">CONTEXT:</span>       <span class="val">Only relevant files + their current state</span>
+<span class="key">DESIRED STATE:</span> <span class="val">Specific, verifiable outcome (no ambiguity)</span>
+<span class="key">SUCCESS CRITERIA:</span> <span class="val">Checklist Claude uses to verify Forge succeeded</span>
+<span class="key">INJECTED SKILLS:</span>  <span class="val">≤2 bootstrap skills relevant to the task type</span></div>
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>Claude writes this for you.</strong> You describe what you need in plain language. Claude translates that into the 5-field structure with the right specificity and skill selection.</div>
+      </div>
+
+      <h2 id="monitoring">Step 3 — Monitor Forge Output</h2>
+      <p>Claude streams Forge's output and checks for three failure signals on every response:</p>
+      <ul>
+        <li><strong>Error signal</strong> — <code>Error:</code>, <code>Failed:</code>, <code>fatal:</code>, or non-zero exit</li>
+        <li><strong>Wrong output</strong> — SUCCESS CRITERIA not satisfied on retry</li>
+        <li><strong>Stall</strong> — Forge asks questions without making progress</li>
+      </ul>
+      <p>If no failure signal is detected and SUCCESS CRITERIA are met, the task is complete — skip to Step 5.</p>
+
+      <h2 id="fallback">Step 4 — Fallback Handling (on failure)</h2>
+      <p>Failures trigger the three-level fallback ladder automatically — no user input required until L3:</p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#059669,#047857)">L1</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Guide — Reframe and retry once</h4>
+            <p>Claude diagnoses the failure, rewrites the prompt with a tighter DESIRED STATE and code references, and resubmits. If this succeeds, jump to Step 5. If it fails, escalate to L2.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#d97706,#b45309)">L2</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Handhold — Decompose and sequence</h4>
+            <p>Claude breaks the task into atomic subtasks (≤200 tokens each) and submits them one at a time. Up to 3 attempts. If any subtask fails 3 times, escalate to L3.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#dc2626,#b91c1c)">L3</div></div>
+          <div class="flow-body">
+            <h4>Take over — Claude implements directly</h4>
+            <p>Delegation restriction lifted. Claude implements the task. After completion, produces a DEBRIEF with TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE fields to capture what happened and update AGENTS.md.</p>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="review">Step 5 — Output Review</h2>
+      <p>Whether Forge succeeded or Claude took over at L3, Claude presents the results for your review: files changed, tests run, any assumptions made, and patterns discovered in the codebase.</p>
+      <p>You confirm the output looks correct. If something needs adjustment, describe the change — Claude will compose a follow-up delegation prompt.</p>
+
+      <h2 id="agents-update">Step 6 — AGENTS.md Update</h2>
+      <p>After each task (success or L3 takeover), Claude extracts learnings and updates all three AGENTS.md tiers:</p>
+      <ul>
+        <li>Successful tasks → preferences and project patterns extracted</li>
+        <li>L3 takeovers → DEBRIEF's AGENTS_UPDATE field applied</li>
+        <li>Duplicates detected and skipped via two-phase dedup check</li>
+        <li>Session log written to <code>docs/sessions/YYYY-MM-DD-session.md</code></li>
+      </ul>
+
+      <h2 id="deactivation">Step 7 — Deactivate (optional)</h2>
+      <p>Forge delegation mode persists for the session. To return to direct Claude implementation:</p>
+      <div class="code-block"><span class="key">/forge:deactivate</span></div>
+      <p>This clears the session state and restores normal Claude behavior. Any AGENTS.md updates from the session are preserved.</p>
+
+      <div class="page-nav-bottom">
+        <a href="../concepts/" class="pnav-btn"><i data-lucide="arrow-left"></i> Core Concepts</a>
+        <a href="../reference/" class="pnav-btn">Command Reference <i data-lucide="arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container-wide">
+    <div class="footer-inner">
+      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
+      <div class="footer-links">
+        <a href="../">Help Home</a>
+        <a href="../../">Sidekick Home</a>
+        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.getElementById('icon-sun').style.display=dark?'none':'';
+  document.getElementById('icon-moon').style.display=dark?'':'none';
+  localStorage.setItem('sidekick-theme',dark?'dark':'light');
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
+(function(){const s=localStorage.getItem('sidekick-theme');applyTheme(s==='light'?false:true)})();
+lucide.createIcons();
+</script>
+</body>
+</html>

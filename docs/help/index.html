@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
+<title>Sidekick Help Center</title>
+<meta name="description" content="Comprehensive documentation for Sidekick — AI coding agents for Claude Code. Learn how to delegate with Forge, configure AGENTS.md, and master the fallback ladder.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
+nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:-.02em}
+.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
+.nav-breadcrumb a:hover{color:var(--accent-light)}
+.nav-breadcrumb .sep{color:var(--text-dim)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text-secondary);font-size:.9rem;transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+/* HERO */
+.hero{background:var(--bg-hero);padding:120px 24px 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.08) 0%,transparent 70%)}
+.hero .container{position:relative;z-index:1;text-align:center}
+.hero .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:999px;padding:6px 16px;font-size:.8rem;color:var(--accent-light);font-weight:500;margin-bottom:32px}
+.hero h1{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1}
+.hero p{font-size:1.1rem;color:var(--text-secondary);max-width:560px;margin:0 auto 40px;line-height:1.7}
+/* SEARCH BAR */
+.search-wrap{max-width:480px;margin:0 auto 0;position:relative}
+.search-wrap input{width:100%;padding:14px 20px 14px 48px;border-radius:999px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:.95rem;font-family:var(--font-sans);outline:none;transition:border-color .2s,box-shadow .2s}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.search-wrap .search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--text-dim)}
+/* SECTIONS */
+section{padding:64px 0}
+section:nth-child(even){background:var(--section-alt)}
+.section-label{text-transform:uppercase;font-size:.75rem;font-weight:700;letter-spacing:.12em;color:var(--accent-light);margin-bottom:12px}
+.section-title{font-size:clamp(1.6rem,2.5vw,2rem);font-weight:800;letter-spacing:-.03em;margin-bottom:12px}
+.section-desc{font-size:.95rem;color:var(--text-secondary);max-width:600px;margin-bottom:40px}
+/* HELP CARDS */
+.help-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:900px){.help-grid{grid-template-columns:1fr}}
+@media(min-width:901px) and (max-width:1100px){.help-grid{grid-template-columns:repeat(2,1fr)}}
+.help-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;transition:all .3s;text-decoration:none;color:inherit;display:block;position:relative;overflow:hidden}
+.help-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,linear-gradient(90deg,var(--accent),var(--accent2)));opacity:0;transition:opacity .3s}
+.help-card:hover{border-color:var(--border-hover);box-shadow:var(--shadow-glow);transform:translateY(-4px)}
+.help-card:hover::before{opacity:1}
+.help-card .card-icon{font-size:2rem;margin-bottom:16px}
+.help-card .card-badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.04em;margin-bottom:12px;text-transform:uppercase}
+.help-card h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.help-card p{font-size:.875rem;color:var(--text-secondary);line-height:1.6;margin-bottom:16px}
+.help-card .card-topics{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:5px}
+.help-card .card-topics li{font-size:.8rem;color:var(--text-dim);display:flex;align-items:center;gap:6px}
+.help-card .card-topics li::before{content:'→';color:var(--accent-light);font-weight:700;font-size:.75rem}
+.help-card .card-cta{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:.82rem;font-weight:600;color:var(--accent-light);display:flex;align-items:center;gap:6px}
+/* QUICK LINKS */
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.quick-grid{grid-template-columns:repeat(2,1fr)}}
+.quick-link{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;text-decoration:none;color:var(--text-secondary);font-size:.85rem;font-weight:500;display:flex;align-items:center;gap:10px;transition:all .2s}
+.quick-link:hover{border-color:var(--accent);color:var(--accent-light);transform:translateX(2px)}
+.quick-link .ql-icon{font-size:1.1rem}
+/* CALLOUT */
+.callout{background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(124,58,237,.05) 50%,rgba(99,102,241,.07));border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-lg);padding:40px;text-align:center;max-width:680px;margin:0 auto}
+.callout p{font-size:1rem;color:var(--text-secondary);line-height:1.7}
+.callout strong{color:var(--text-primary)}
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+footer a{color:var(--text-secondary);text-decoration:none}
+footer a:hover{color:var(--accent-light)}
+.footer-links{display:flex;gap:24px}
+@media(max-width:600px){.footer-inner{flex-direction:column;align-items:flex-start;gap:12px}.footer-links{flex-wrap:wrap;gap:16px}}
+/* SEARCH RESULTS */
+svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#search-results-section{padding:40px 0}
+.sr-list{display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto}
+.sr-item{display:flex;flex-direction:column;gap:4px;padding:20px 24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:inherit;transition:all .2s}
+.sr-item:hover{border-color:var(--accent);box-shadow:var(--shadow-glow);transform:translateY(-2px)}
+.sr-page{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent-light)}
+.sr-title{font-size:1rem;font-weight:700;color:var(--text-primary)}
+.sr-excerpt{font-size:.875rem;color:var(--text-secondary);line-height:1.5}
+.sr-none{text-align:center;color:var(--text-dim);padding:48px 0;font-size:.95rem}
+.sr-heading{font-size:1.2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:24px;text-align:center}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div style="display:flex;align-items:center;gap:16px">
+      <a href="../" class="nav-logo">Sidekick</a>
+      <span class="nav-breadcrumb"><span class="sep">/</span> Help Center</span>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="badge"><i data-lucide="book-open"></i> Help Center</div>
+    <h1>How Can We Help You?</h1>
+    <p>Everything you need to delegate coding work to Forge — from first install to mastering the fallback ladder and AGENTS.md mentoring.</p>
+    <div class="search-wrap">
+      <span class="search-icon"><i data-lucide="search"></i></span>
+      <input type="text" placeholder="Search topics, commands, concepts…" id="search-input" autocomplete="off">
+    </div>
+  </div>
+</section>
+
+<!-- SEARCH RESULTS (shown when typing) -->
+<div id="search-results-section" style="display:none">
+  <div class="container">
+    <p class="sr-heading">Search results</p>
+    <div class="sr-list" id="search-results-list"></div>
+  </div>
+</div>
+
+<div id="main-help-content">
+<!-- QUICK LINKS -->
+<section style="padding:40px 0">
+  <div class="container">
+    <div class="quick-grid">
+      <a href="getting-started/" class="quick-link"><span class="ql-icon"><i data-lucide="rocket"></i></span> Quick Start</a>
+      <a href="getting-started/#install" class="quick-link"><span class="ql-icon"><i data-lucide="package"></i></span> Installation</a>
+      <a href="getting-started/#first-forge" class="quick-link"><span class="ql-icon"><i data-lucide="play"></i></span> First /forge</a>
+      <a href="concepts/#delegation" class="quick-link"><span class="ql-icon"><i data-lucide="send"></i></span> Delegation Mode</a>
+      <a href="concepts/#fallback-ladder" class="quick-link"><span class="ql-icon"><i data-lucide="layers"></i></span> Fallback Ladder</a>
+      <a href="concepts/#agents-md" class="quick-link"><span class="ql-icon"><i data-lucide="brain"></i></span> AGENTS.md Mentoring</a>
+      <a href="reference/" class="quick-link"><span class="ql-icon"><i data-lucide="clipboard-list"></i></span> Command Reference</a>
+      <a href="troubleshooting/" class="quick-link"><span class="ql-icon"><i data-lucide="wrench"></i></span> Troubleshooting</a>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN CARDS -->
+<section>
+  <div class="container">
+    <div class="section-label">Documentation</div>
+    <h2 class="section-title">Browse by Topic</h2>
+    <p class="section-desc">Pick where you want to start — or read all sections end-to-end for a complete picture.</p>
+    <div class="help-grid" id="help-grid">
+
+      <a href="getting-started/" class="help-card" data-keywords="install setup prerequisites beginner first run forge invocation openrouter health check">
+        <div class="card-icon"><i data-lucide="rocket"></i></div>
+        <span class="card-badge" style="background:rgba(5,150,105,.12);color:var(--green)">Start here</span>
+        <h3>Getting Started</h3>
+        <p>New to Sidekick? Install the plugin, configure Forge via OpenRouter, and delegate your first coding task in minutes.</p>
+        <ul class="card-topics">
+          <li>Installing Sidekick via /plugin install</li>
+          <li>Forge prerequisites — OpenRouter API key</li>
+          <li>Running /forge health check</li>
+          <li>Your first delegation task</li>
+          <li>Understanding AGENTS.md bootstrap</li>
+        </ul>
+        <div class="card-cta">Read guide →</div>
+      </a>
+
+      <a href="concepts/" class="help-card" data-keywords="concepts forge delegation skill injection fallback ladder agents mentoring token optimization">
+        <div class="card-icon"><i data-lucide="brain"></i></div>
+        <span class="card-badge" style="background:rgba(99,102,241,.12);color:var(--accent-light)">Fundamentals</span>
+        <h3>Core Concepts</h3>
+        <p>Understand how Forge delegation works — SKILL.md activation, the fallback ladder, AGENTS.md mentoring, and token budgets.</p>
+        <ul class="card-topics">
+          <li>Forge delegation mode and SKILL.md</li>
+          <li>Fallback ladder: L1 Guide → L2 Handhold → L3 Take over</li>
+          <li>Skill injection and the mapping table</li>
+          <li>AGENTS.md three-tier mentoring loop</li>
+          <li>Token optimization and .forge.toml</li>
+        </ul>
+        <div class="card-cta">Read concepts →</div>
+      </a>
+
+      <a href="workflows/" class="help-card" data-keywords="delegation workflow delegate monitor review debrief session loop forge task prompt">
+        <div class="card-icon"><i data-lucide="git-branch-plus"></i></div>
+        <span class="card-badge" style="background:rgba(99,102,241,.12);color:var(--accent-light)">Workflow</span>
+        <h3>Delegation Workflow</h3>
+        <p>The end-to-end flow for delegating a task to Forge — from activating the skill to reviewing output and updating AGENTS.md.</p>
+        <ul class="card-topics">
+          <li>Activating Forge delegation mode</li>
+          <li>Crafting the 5-field task prompt</li>
+          <li>Monitoring Forge output and detecting failures</li>
+          <li>DEBRIEF template on L3 takeover</li>
+          <li>Post-session AGENTS.md update</li>
+        </ul>
+        <div class="card-cta">View workflow →</div>
+      </a>
+
+      <a href="reference/" class="help-card" data-keywords="reference commands forge config toml bootstrap skills health check options yaml frontmatter">
+        <div class="card-icon"><i data-lucide="clipboard-list"></i></div>
+        <span class="card-badge" style="background:rgba(217,119,6,.12);color:var(--amber)">Reference</span>
+        <h3>Command Reference</h3>
+        <p>Every /forge command, SKILL.md section, .forge.toml option, and bootstrap skill — all in one place.</p>
+        <ul class="card-topics">
+          <li>/forge activation and deactivation</li>
+          <li>5-field task prompt structure</li>
+          <li>.forge.toml compaction defaults</li>
+          <li>Bootstrap skills catalog</li>
+          <li>AGENTS.md format and categories</li>
+        </ul>
+        <div class="card-cta">Open reference →</div>
+      </a>
+
+      <a href="troubleshooting/" class="help-card" data-keywords="troubleshoot debug error health check openrouter api key fallback forge failure recovery">
+        <div class="card-icon"><i data-lucide="wrench"></i></div>
+        <span class="card-badge" style="background:rgba(220,38,38,.1);color:var(--red)">Help</span>
+        <h3>Troubleshooting</h3>
+        <p>Common issues with Forge health checks, OpenRouter configuration, fallback ladder triggers, and session recovery.</p>
+        <ul class="card-topics">
+          <li>Health check failures and fixes</li>
+          <li>OpenRouter API key and model config</li>
+          <li>Fallback ladder not triggering</li>
+          <li>AGENTS.md dedup false positives</li>
+          <li>Recovery from L3 takeover sessions</li>
+        </ul>
+        <div class="card-cta">Troubleshoot issues →</div>
+      </a>
+
+    </div>
+  </div>
+</section>
+</div><!-- #main-help-content -->
+
+<!-- CALLOUT -->
+<section style="padding:64px 0;background:var(--section-alt)">
+  <div class="container">
+    <div class="callout">
+      <div style="font-size:2rem;margin-bottom:12px"><i data-lucide="lightbulb"></i></div>
+      <p><strong>New to AI delegation?</strong> Sidekick works best when you understand what Forge is doing and why. Start with <a href="getting-started/" style="color:var(--accent-light);font-weight:600">Getting Started</a>, then <a href="concepts/" style="color:var(--accent-light);font-weight:600">Core Concepts</a> before diving into advanced delegation patterns. The fallback ladder and AGENTS.md mentoring are where the real power is.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
+      <div style="font-size:.9rem;color:var(--text-secondary)">
+        Built at <a href="https://alolabs.dev" target="_blank" style="font-weight:700;text-decoration:none">&#256;lo Labs</a>
+      </div>
+      <div class="footer-links">
+        <a href="../">Home</a>
+        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
+        <a href="https://github.com/alo-exp/sidekick/blob/main/LICENSE" target="_blank">MIT License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script src="search.js"></script>
+<script>
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.getElementById('icon-sun').style.display=dark?'none':'';
+  document.getElementById('icon-moon').style.display=dark?'':'none';
+  localStorage.setItem('sidekick-theme',dark?'dark':'light');
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
+(function(){const s=localStorage.getItem('sidekick-theme');applyTheme(s==='light'?false:true)})();
+lucide.createIcons();
+</script>
+</body>
+</html>

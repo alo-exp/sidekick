@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
+<title>Getting Started — Sidekick Help</title>
+<meta name="description" content="Get started with Sidekick. Install the plugin, configure Forge via OpenRouter, run your first health check, and delegate your first coding task.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+.container{max-width:860px;margin:0 auto;padding:0 24px}
+.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
+nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:-.02em}
+.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
+.nav-breadcrumb a:hover{color:var(--accent-light)}
+.nav-breadcrumb .sep{color:var(--text-dim)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;top:-200px;right:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.08) 0%,transparent 70%)}
+.page-hero .container{position:relative;z-index:1}
+.breadcrumb-nav{font-size:.82rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
+.breadcrumb-nav a:hover{color:var(--accent-light)}
+.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:-.04em;margin-bottom:16px;line-height:1.1}
+.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
+.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
+@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
+.doc-sidebar{position:sticky;top:88px;height:fit-content}
+.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
+.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
+.sidebar-nav li a.active{background:rgba(99,102,241,.1);color:var(--accent-light);font-weight:600}
+.sidebar-nav .sidebar-section{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);padding:16px 12px 4px;margin-top:8px}
+@media(max-width:768px){.doc-sidebar{display:none}}
+.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:16px;margin-top:48px;padding-top:16px}
+.doc-content h2:first-child{margin-top:0}
+.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
+.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
+.doc-content ul,.doc-content ol{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
+.doc-content li{margin-bottom:6px;line-height:1.7}
+.doc-content strong{color:var(--text-primary)}
+.doc-content a{color:var(--accent-light);text-decoration:none}
+.doc-content a:hover{text-decoration:underline}
+.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
+.callout-info{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2)}
+.callout-tip{background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2)}
+.callout-warn{background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.2)}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
+.callout-body strong{color:var(--text-primary)}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size:.82rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
+.code-block .comment{color:var(--text-dim)}
+.code-block .cmd{color:var(--accent-light)}
+.code-block .string{color:var(--amber)}
+.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
+.step-list{list-style:none;padding:0;margin:0 0 24px;counter-reset:step-counter}
+.step-list li{display:flex;gap:16px;margin-bottom:20px}
+.step-num{min-width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);flex-shrink:0;margin-top:2px}
+.step-body h4{font-size:.95rem;font-weight:700;margin-bottom:6px}
+.step-body p{font-size:.875rem;color:var(--text-secondary);margin:0;line-height:1.7}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px}
+.card h4{font-size:.95rem;font-weight:700;margin-bottom:8px}
+.card p{font-size:.875rem;color:var(--text-secondary);line-height:1.6;margin:0}
+footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+footer a{color:var(--text-secondary);text-decoration:none}
+footer a:hover{color:var(--accent-light)}
+.footer-links{display:flex;gap:24px}
+.page-nav-bottom{display:flex;justify-content:flex-end;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
+.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div style="display:flex;align-items:center;gap:16px">
+      <a href="../../" class="nav-logo">Sidekick</a>
+      <span class="nav-breadcrumb">
+        <span class="sep">/</span>
+        <a href="../">Help</a>
+        <span class="sep">/</span>
+        Getting Started
+      </span>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-nav">
+      <a href="../">Help Center</a>
+      <span>/</span>
+      <span>Getting Started</span>
+    </div>
+    <h1>Getting Started</h1>
+    <p>Install Sidekick, connect Forge via OpenRouter, and delegate your first coding task — all in under 10 minutes.</p>
+  </div>
+</div>
+
+<div class="container-wide">
+  <div class="doc-layout">
+    <aside class="doc-sidebar">
+      <ul class="sidebar-nav">
+        <li><a href="#what-is-sidekick">What is Sidekick?</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#install">Installation</a></li>
+        <li><a href="#health-check">Health Check</a></li>
+        <li><a href="#first-forge" class="active">First /forge</a></li>
+        <li><a href="#agents-md-bootstrap">AGENTS.md Bootstrap</a></li>
+        <li><a href="#whats-next">What's Next</a></li>
+      </ul>
+    </aside>
+
+    <div class="doc-content">
+
+      <h2 id="what-is-sidekick">What is Sidekick?</h2>
+      <p>Sidekick is a Claude Code plugin that gives Claude a team of specialized AI coding agents. <strong>Forge</strong> is the first sidekick — it's ForgeCode, the #2 ranked model on Terminal-Bench 2.0 (81.8% score), configured as a Claude Code sub-agent that Claude can delegate entire coding tasks to.</p>
+      <p>When you activate Forge delegation mode, Claude stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures automatically using a three-level fallback ladder.</p>
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="zap"></i></span>
+        <div class="callout-body"><strong>Why delegate to Forge?</strong> Forge is optimized for agentic coding tasks — it operates autonomously, makes atomic commits, and handles multi-file changes without supervision. Delegation frees Claude to focus on task composition, quality review, and learning from failures.</div>
+      </div>
+
+      <h2 id="prerequisites">Prerequisites</h2>
+      <p>You need the following before installing Sidekick:</p>
+      <ul>
+        <li><strong>Claude Code</strong> — <code>npm install -g @anthropic-ai/claude-code</code></li>
+        <li><strong>OpenRouter API key</strong> — Forge runs via OpenRouter. Sign up at <a href="https://openrouter.ai" target="_blank">openrouter.ai</a> and create an API key.</li>
+        <li><strong>Node.js 18+</strong> — Required by Claude Code</li>
+      </ul>
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>No separate Forge install needed.</strong> Sidekick auto-installs and configures ForgeCode when you first run <code>/forge</code>. Just have your OpenRouter API key ready.</div>
+      </div>
+
+      <h2 id="install">Installation</h2>
+      <p>Install Sidekick inside a Claude Code session:</p>
+      <div class="code-label">inside Claude Code</div>
+      <div class="code-block"><span class="cmd">/plugin install alo-exp/sidekick</span></div>
+      <p>This installs the plugin and makes the <code>/forge</code> skill available in all future sessions. No project-specific setup is required — Sidekick works in any git repository.</p>
+
+      <h2 id="health-check">Health Check</h2>
+      <p>After installing, verify Forge is ready by running the health check:</p>
+      <div class="code-label">in any Claude Code session</div>
+      <div class="code-block"><span class="cmd">/forge</span>
+<span class="comment"># Claude will activate Forge delegation mode and run a health check</span></div>
+      <p>On first activation, Forge checks <code>~/forge/.credentials.json</code> for your API key and <code>~/forge/.forge.toml</code> for the configured provider. If absent, it guides you through <code>skills/forge.md</code> STEP 0A setup.</p>
+      <p>A successful health check looks like:</p>
+      <div class="code-block"><span class="comment">✓ Forge binary found (~/.local/bin/forge)</span>
+<span class="comment">✓ Provider configured (forge info exit 0)</span>
+<span class="comment">✓ Credentials present (~/forge/.credentials.json has api_key)</span>
+<span class="comment">✓ Config valid (~/forge/.forge.toml has provider_id and model_id)</span>
+<span class="comment">✓ Bootstrap skills loaded (4 skills)</span>
+<span class="comment">✓ Forge delegation mode active</span></div>
+      <div class="callout callout-warn">
+        <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
+        <div class="callout-body"><strong>Health check failing?</strong> See <a href="../troubleshooting/#health-check">Troubleshooting → Health check failures</a> for common causes and fixes.</div>
+      </div>
+
+      <h2 id="first-forge">Your First /forge Task</h2>
+      <p>Once the health check passes, Claude is in Forge delegation mode. Every task you give Claude will be delegated to Forge via a structured 5-field task prompt.</p>
+      <ol class="step-list">
+        <li>
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Describe what to build</h4>
+            <p>Tell Claude what you need in plain language. Claude will compose the OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, and INJECTED SKILLS fields automatically.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Claude submits to Forge</h4>
+            <p>Claude sends the structured prompt to Forge (max 2,000 tokens). Forge works autonomously — making changes, running tests, creating commits.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Claude monitors output</h4>
+            <p>Claude watches for three failure signals: error output, SUCCESS CRITERIA not met, or Forge asking a clarifying question without progress.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Review and confirm</h4>
+            <p>Claude presents Forge's output for your review. If Forge succeeded, the task is done. If Forge failed, the fallback ladder kicked in automatically.</p>
+          </div>
+        </li>
+      </ol>
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
+        <div class="callout-body"><strong>First task recommendation:</strong> Start with a small, well-scoped task like "add a --verbose flag to the CLI" or "write unit tests for the auth module." This lets you observe the delegation flow without risking complex failures.</div>
+      </div>
+
+      <h2 id="agents-md-bootstrap">AGENTS.md Bootstrap</h2>
+      <p>On your first <code>/forge</code> invocation, if no <code>AGENTS.md</code> exists in the project root, Sidekick creates one. This file accumulates standing instructions for Forge — project conventions, preferences, and patterns Claude discovers over time.</p>
+      <p>The bootstrap file contains the default Forge output format expectations (STATUS, FILES_CHANGED, ASSUMPTIONS, PATTERNS_DISCOVERED) and delegation principles. You can edit it at any time to add project-specific rules.</p>
+      <div class="card">
+        <h4>AGENTS.md tiers</h4>
+        <p>Sidekick maintains instructions at three levels: <strong>Global</strong> (~/.forge/AGENTS.md — cross-project), <strong>Project</strong> (./AGENTS.md — this repo), and <strong>Session log</strong> (docs/sessions/ — per-session evolution). Claude writes to all three after each completed task.</p>
+      </div>
+
+      <h2 id="whats-next">What's Next</h2>
+      <p>Now that Forge is running, explore the rest of the documentation:</p>
+      <ul>
+        <li><a href="../concepts/">Core Concepts</a> — understand the fallback ladder, skill injection, and token budgets</li>
+        <li><a href="../workflows/">Delegation Workflow</a> — the complete end-to-end delegation flow</li>
+        <li><a href="../reference/">Command Reference</a> — all /forge options and .forge.toml config</li>
+        <li><a href="../troubleshooting/">Troubleshooting</a> — if something isn't working</li>
+      </ul>
+
+      <div class="page-nav-bottom">
+        <a href="../concepts/" class="pnav-btn">Core Concepts <i data-lucide="arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container-wide">
+    <div class="footer-inner">
+      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
+      <div class="footer-links">
+        <a href="../">Help Home</a>
+        <a href="../../">Sidekick Home</a>
+        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.getElementById('icon-sun').style.display=dark?'none':'';
+  document.getElementById('icon-moon').style.display=dark?'':'none';
+  localStorage.setItem('sidekick-theme',dark?'dark':'light');
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
+(function(){const s=localStorage.getItem('sidekick-theme');applyTheme(s==='light'?false:true)})();
+lucide.createIcons();
+</script>
+</body>
+</html>

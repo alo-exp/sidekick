@@ -43,6 +43,10 @@ On the next Claude session, all sidekicks install automatically.
 - **Auto-installs** ForgeCode on first session start
 - **Guides** OpenRouter API key setup (Qwen 3.6 Plus — best coding model, $0.33/$1.95/MTok)
 - **Turns Claude into an orchestrator**: Claude plans and communicates, Forge executes all file changes, tests, and commits
+- **Fallback ladder**: automatic 3-level recovery on failure — L1 Guide (reframe), L2 Handhold (decompose), L3 Take over (Claude acts directly + DEBRIEF)
+- **AGENTS.md mentoring**: after every task, Claude extracts learnings and writes them to a 3-tier instruction store (`~/forge/AGENTS.md`, `./AGENTS.md`, session logs) — delegation gets smarter over time
+- **Skill injection**: 4 bootstrap skills (testing-strategy, code-review, security, quality-gates) auto-injected into task prompts based on task type
+- **Token optimization**: task prompts capped at 2,000 tokens with validated `.forge.toml` compaction defaults
 
 ### How it works
 
