@@ -121,13 +121,16 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="doc-layout">
     <aside class="doc-sidebar">
       <ul class="sidebar-nav">
-        <li><a href="#activation">Activation</a></li>
-        <li><a href="#task-prompt">Task Prompt</a></li>
-        <li><a href="#monitoring">Monitoring</a></li>
-        <li><a href="#fallback">Fallback Handling</a></li>
-        <li><a href="#review">Output Review</a></li>
-        <li><a href="#agents-update">AGENTS.md Update</a></li>
-        <li><a href="#deactivation">Deactivation</a></li>
+        <li class="sidebar-section">Setup</li>
+        <li><a href="#activation">1. Activation</a></li>
+        <li class="sidebar-section">Delegation</li>
+        <li><a href="#task-prompt">2. Task Prompt</a></li>
+        <li><a href="#monitoring">3. Monitoring</a></li>
+        <li><a href="#fallback">4. Fallback Handling</a></li>
+        <li class="sidebar-section">Completion</li>
+        <li><a href="#review">5. Output Review</a></li>
+        <li><a href="#agents-update">6. AGENTS.md Update</a></li>
+        <li><a href="#deactivation">7. Deactivation</a></li>
       </ul>
     </aside>
 
@@ -139,9 +142,35 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Run /forge</h4>
-            <p>Claude loads SKILL.md, runs the health check (verifies OpenRouter connectivity, model availability, .forge.toml), bootstraps AGENTS.md if absent, and confirms activation. Session state is written to <code>~/.claude/.forge-delegation-active</code>.</p>
+            <p>Type <code>/forge</code> in Claude Code. Claude loads <code>skills/forge/SKILL.md</code> and executes the activation sequence:</p>
           </div>
         </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Health check</h4>
+            <p>Claude verifies: (1) the Forge binary is on PATH, (2) <code>~/forge/.credentials.json</code> has a valid <code>api_key</code>, (3) <code>~/forge/.forge.toml</code> has a valid <code>provider_id</code> and <code>model_id</code>, (4) OpenRouter (or MiniMax) is reachable, and (5) the configured model is available. Any failure halts activation with a specific error message.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">3</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Bootstrap AGENTS.md (first run only)</h4>
+            <p>If <code>./AGENTS.md</code> does not exist, Claude creates it with a project-specific template: Code Style, Testing, Git Workflow, Forge Behavior, and Project Conventions sections. If <code>~/forge/AGENTS.md</code> doesn't exist, it creates that too.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">4</div></div>
+          <div class="flow-body">
+            <h4>Confirm activation</h4>
+            <p>Claude writes a zero-byte marker to <code>~/.claude/.forge-delegation-active</code> and confirms: "Forge delegation mode active." All subsequent coding tasks in this session will be delegated to Forge until you run <code>/forge:deactivate</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
+        <div class="callout-body"><strong>Health check failing?</strong> See <a href="../troubleshooting/#health-check">Troubleshooting → Health Check Failures</a> for step-by-step fixes. The most common cause is a missing or misconfigured <code>~/forge/.credentials.json</code>.</div>
       </div>
 
       <h2 id="task-prompt">Step 2 — Compose Task Prompt</h2>
@@ -194,22 +223,52 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="review">Step 5 — Output Review</h2>
-      <p>Whether Forge succeeded or Claude took over at L3, Claude presents the results for your review: files changed, tests run, any assumptions made, and patterns discovered in the codebase.</p>
-      <p>You confirm the output looks correct. If something needs adjustment, describe the change — Claude will compose a follow-up delegation prompt.</p>
+      <p>Whether Forge succeeded or Claude took over at L3, Claude presents a structured output summary for your review. The summary is drawn from Forge's output block fields:</p>
+      <ul>
+        <li><strong>FILES_CHANGED</strong> — every file Forge created, modified, or deleted</li>
+        <li><strong>ASSUMPTIONS</strong> — anything Forge inferred that wasn't explicit in the prompt (review these carefully)</li>
+        <li><strong>PATTERNS_DISCOVERED</strong> — codebase conventions Forge noticed during the task</li>
+        <li><strong>Test results</strong> — if Forge ran tests, pass/fail summary</li>
+      </ul>
+      <p>Confirm the output looks correct. If something needs adjustment, describe the change in plain language — Claude will compose a new 5-field delegation prompt for the follow-up task. There is no need to re-activate; delegation mode remains active.</p>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
+        <div class="callout-body"><strong>Always review ASSUMPTIONS.</strong> If Forge made an incorrect assumption (wrong env variable name, wrong test framework, etc.), correct it now. Claude will add the correction to AGENTS.md so Forge doesn't repeat the assumption.</div>
+      </div>
 
       <h2 id="agents-update">Step 6 — AGENTS.md Update</h2>
-      <p>After each task (success or L3 takeover), Claude extracts learnings and updates all three AGENTS.md tiers:</p>
+      <p>After each task (success or L3 takeover), Claude runs the AGENTS.md mentoring loop. This is automatic — you don't need to trigger it.</p>
+
+      <h3>What gets written</h3>
       <ul>
-        <li>Successful tasks → preferences and project patterns extracted</li>
-        <li>L3 takeovers → DEBRIEF's AGENTS_UPDATE field applied</li>
-        <li>Duplicates detected and skipped via two-phase dedup check</li>
-        <li>Session log written to <code>docs/sessions/YYYY-MM-DD-session.md</code></li>
+        <li><strong>Successful tasks</strong> — PATTERNS_DISCOVERED and any user preferences expressed during review are extracted and written to <code>./AGENTS.md</code> and <code>~/forge/AGENTS.md</code></li>
+        <li><strong>L3 takeovers</strong> — the DEBRIEF's <code>AGENTS_UPDATE</code> field is applied directly, capturing what Forge failed on and what the correct approach is</li>
+        <li><strong>Session log</strong> — a full evolution log is appended to <code>docs/sessions/YYYY-MM-DD-session.md</code>, recording every task, outcome, and AGENTS.md change from the session</li>
       </ul>
 
+      <h3>Deduplication</h3>
+      <p>Before every write, Claude runs a two-phase dedup check: exact substring match first, then semantic similarity. If either matches an existing AGENTS.md entry, the write is skipped — preventing duplicate or contradictory instructions from accumulating.</p>
+
+      <div class="code-label">AGENTS.md three-tier write targets</div>
+      <div class="code-block"><span class="comment"># Global — applies to all projects</span>
+<span class="key">~/forge/AGENTS.md</span>
+
+<span class="comment"># Project — applies to this repo only</span>
+<span class="key">./AGENTS.md</span>
+
+<span class="comment"># Session log — audit trail</span>
+<span class="key">docs/sessions/YYYY-MM-DD-session.md</span></div>
+
       <h2 id="deactivation">Step 7 — Deactivate (optional)</h2>
-      <p>Forge delegation mode persists for the session. To return to direct Claude implementation:</p>
+      <p>Forge delegation mode persists for the entire session. You can delegate as many tasks as needed without re-running <code>/forge</code>. To return to direct Claude implementation:</p>
       <div class="code-block"><span class="key">/forge:deactivate</span></div>
-      <p>This clears the session state and restores normal Claude behavior. Any AGENTS.md updates from the session are preserved.</p>
+      <p>This removes the <code>~/.claude/.forge-delegation-active</code> marker and restores normal Claude behavior. All AGENTS.md updates from the session are preserved and will be loaded on the next <code>/forge</code> invocation.</p>
+
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>You don't have to deactivate between tasks.</strong> Forge delegation mode is designed to stay active for a full working session. Only deactivate if you specifically want Claude to implement something directly — for example, a quick one-liner that doesn't warrant the delegation overhead.</div>
+      </div>
 
       <div class="page-nav-bottom">
         <a href="../concepts/" class="pnav-btn"><i data-lucide="arrow-left"></i> Core Concepts</a>

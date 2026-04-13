@@ -119,16 +119,53 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="doc-layout">
     <aside class="doc-sidebar">
       <ul class="sidebar-nav">
+        <li class="sidebar-section">Installation</li>
+        <li><a href="#forge-not-found">forge not found</a></li>
+        <li class="sidebar-section">Health &amp; Config</li>
         <li><a href="#health-check">Health Check Failures</a></li>
         <li><a href="#openrouter">OpenRouter Config</a></li>
+        <li class="sidebar-section">API Errors</li>
+        <li><a href="#rate-limit">429 Rate Limit</a></li>
+        <li><a href="#payment-required">402 Payment Required</a></li>
+        <li class="sidebar-section">Behavior</li>
+        <li><a href="#forge-loop">Forge Stuck in Loop</a></li>
         <li><a href="#fallback">Fallback Not Triggering</a></li>
         <li><a href="#agents-md">AGENTS.md Issues</a></li>
+        <li class="sidebar-section">Recovery</li>
         <li><a href="#recovery">Session Recovery</a></li>
         <li><a href="#reinstall">Reinstall / Reset</a></li>
       </ul>
     </aside>
 
     <div class="doc-content">
+
+      <h2 id="forge-not-found"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> "forge not found" After Install</h2>
+
+      <h3>forge binary not on PATH</h3>
+      <p><strong>Cause:</strong> The Forge binary was installed but your shell's <code>PATH</code> doesn't include the install directory. This is the most common post-install issue.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Check where Forge was installed: <code>which forge</code> or <code>ls ~/.forge/bin/forge</code></li>
+        <li>If found, add the install directory to your PATH in <code>~/.zshrc</code> or <code>~/.bashrc</code>:</li>
+      </ul>
+      <div class="code-label">~/.zshrc — add Forge to PATH</div>
+      <div class="code-block"><span class="comment"># Add Forge binary to PATH</span>
+<span class="cmd">export PATH="$HOME/.forge/bin:$PATH"</span>
+<span class="comment"># Then reload your shell</span>
+<span class="cmd">source ~/.zshrc</span></div>
+      <ul>
+        <li>If Forge is not found at all, re-run the install script:</li>
+      </ul>
+      <div class="code-block"><span class="cmd">curl -fsSL https://forgecode.dev/install.sh | bash</span></div>
+
+      <h3>Sidekick installed but forge binary was not</h3>
+      <p><strong>Cause:</strong> The Sidekick plugin was installed in Claude Code but the Forge binary itself was never installed on your machine. Sidekick needs both the plugin <em>and</em> the Forge binary.</p>
+      <p><strong>Fix:</strong> Follow the full install sequence in <a href="../getting-started/#install">Getting Started → Installation</a>. Install the Forge binary first, then install the Sidekick plugin.</p>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
+        <div class="callout-body"><strong>After installing, always run <code>/forge</code> health check.</strong> This verifies the binary is reachable, credentials are configured, and OpenRouter is responding before you delegate any task.</div>
+      </div>
 
       <h2 id="health-check"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> Health Check Failures</h2>
 
@@ -165,6 +202,60 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
         <div class="callout-body"><strong>Never commit API credentials.</strong> Your OpenRouter API key lives in <code>~/forge/.credentials.json</code> (global, never in the repo). The project-root <code>.forge.toml</code> contains only compaction settings and is gitignored automatically.</div>
+      </div>
+
+      <h2 id="rate-limit"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 429 Rate Limit from Forge</h2>
+
+      <h3>Too many requests — OpenRouter rate limit hit</h3>
+      <p><strong>Cause:</strong> Your OpenRouter account has hit its per-minute or per-day request limit. Free tier accounts have much lower limits than paid accounts.</p>
+      <p><strong>Symptoms:</strong> Forge returns a 429 error mid-task, or the health check fails with a rate limit message.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Wait 60 seconds and retry — per-minute limits reset quickly</li>
+        <li>If you hit daily limits frequently, upgrade your OpenRouter account at <a href="https://openrouter.ai/credits" target="_blank">openrouter.ai/credits</a></li>
+        <li>Switch to MiniMax provider if it has better rate limits for your usage pattern (see <a href="../concepts/#provider-config">Provider Config</a>)</li>
+      </ul>
+      <div class="callout callout-warn">
+        <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
+        <div class="callout-body"><strong>L2 subtask decomposition can spike request counts.</strong> When the fallback ladder reaches L2, Claude submits multiple atomic subtasks sequentially. If you're near your rate limit, L2 escalation may trigger a 429. Deactivate with <code>/forge:deactivate</code>, wait a minute, then reactivate and retry.</div>
+      </div>
+
+      <h2 id="payment-required"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 402 Payment Required</h2>
+
+      <h3>OpenRouter account has no credits</h3>
+      <p><strong>Cause:</strong> Your OpenRouter account balance is zero or below the minimum required to run the <code>forge/forge-code</code> model. This model is not on the free tier.</p>
+      <p><strong>Symptoms:</strong> Health check passes (credentials valid) but the first task delegation immediately returns 402.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Add credits to your OpenRouter account at <a href="https://openrouter.ai/credits" target="_blank">openrouter.ai/credits</a></li>
+        <li>A small top-up ($5–10) is typically enough for extensive Forge usage</li>
+        <li>After adding credits, rerun <code>/forge</code> — the health check will confirm the model is now accessible</li>
+      </ul>
+      <div class="code-label">Check your balance before delegating</div>
+      <div class="code-block"><span class="comment"># Visit your OpenRouter dashboard</span>
+<span class="cmd">open https://openrouter.ai/credits</span>
+<span class="comment"># Then re-run the Sidekick health check</span>
+<span class="cmd">/forge</span></div>
+
+      <h2 id="forge-loop"><span class="issue-badge badge-behavior"><i data-lucide="refresh-cw"></i> Behavior</span> Forge Stuck in a Loop</h2>
+
+      <h3>Forge keeps repeating the same action without progress</h3>
+      <p><strong>Cause:</strong> Forge entered a loop — typically trying the same fix repeatedly, or oscillating between two states. This is a known edge case in agentic coding systems when the DESIRED STATE is ambiguous or the SUCCESS CRITERIA is underspecified.</p>
+      <p><strong>Symptoms:</strong> Forge output shows the same file being edited multiple times with no net change, or the same error appearing after each attempt.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Interrupt the current task by telling Claude: "Forge is looping — trigger L3 takeover"</li>
+        <li>Claude will lift the delegation restriction, implement the task directly, and produce a DEBRIEF</li>
+        <li>The DEBRIEF's AGENTS_UPDATE field will add instructions to AGENTS.md to prevent the loop pattern on similar future tasks</li>
+      </ul>
+
+      <h3>Forge loops on test failures</h3>
+      <p><strong>Cause:</strong> Forge is trying to fix a failing test but the test itself has a bug, or the test expects behaviour that conflicts with what's in AGENTS.md.</p>
+      <p><strong>Fix:</strong> Tell Claude: "The test has a bug, not the implementation." Claude will inspect both, fix the root cause, and update AGENTS.md with the correct testing pattern.</p>
+
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>Loops are L3 learning events.</strong> Every time Forge loops and Claude takes over, the DEBRIEF captures what pattern caused the loop. After a few sessions, AGENTS.md accumulates enough loop-prevention instructions that the same pattern rarely triggers a loop again.</div>
       </div>
 
       <h2 id="fallback"><span class="issue-badge badge-behavior"><i data-lucide="layers"></i> Behavior</span> Fallback Ladder Not Triggering</h2>

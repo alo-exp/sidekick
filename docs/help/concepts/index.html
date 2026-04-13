@@ -136,13 +136,17 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="doc-layout">
     <aside class="doc-sidebar">
       <ul class="sidebar-nav">
+        <li class="sidebar-section">Delegation</li>
         <li><a href="#delegation">Delegation Mode</a></li>
         <li><a href="#skill-md">SKILL.md</a></li>
         <li><a href="#failure-detection">Failure Detection</a></li>
         <li><a href="#fallback-ladder">Fallback Ladder</a></li>
+        <li class="sidebar-section">Skills &amp; Memory</li>
         <li><a href="#skill-injection">Skill Injection</a></li>
         <li><a href="#agents-md">AGENTS.md Mentoring</a></li>
+        <li class="sidebar-section">Configuration</li>
         <li><a href="#token-optimization">Token Optimization</a></li>
+        <li><a href="#provider-config">Provider Config</a></li>
       </ul>
     </aside>
 
@@ -260,6 +264,36 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">eviction_window</span> = <span class="val">0.20</span>   <span class="comment"># evict oldest 20% of context</span>
 <span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># keep last 6 exchanges always</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per Forge call</span></div>
+
+      <h2 id="provider-config">Provider Configuration</h2>
+      <p>Sidekick supports two providers for Forge. The provider and model are set in <code>~/forge/.forge.toml</code> (global, not per-project). API credentials are stored separately in <code>~/forge/.credentials.json</code>.</p>
+
+      <h3>OpenRouter (recommended)</h3>
+      <p>OpenRouter routes requests to the <code>forge/forge-code</code> model. This is the default and recommended provider — it has the broadest availability and is the model Sidekick is optimized for.</p>
+      <div class="code-label">~/forge/.forge.toml — OpenRouter</div>
+      <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
+<span class="key">max_tokens</span> = <span class="val">16384</span>
+
+[<span class="key">session</span>]
+<span class="key">provider_id</span> = <span class="val">"open_router"</span>
+<span class="key">model_id</span>    = <span class="val">"qwen/qwen3.6-plus"</span></div>
+      <div class="code-label">~/forge/.credentials.json — OpenRouter API key</div>
+      <div class="code-block">{ <span class="key">"api_key"</span>: <span class="val">"sk-or-your-key-here"</span> }</div>
+
+      <h3>MiniMax Coding</h3>
+      <p>MiniMax is an alternative provider with different rate limits and pricing. Use it if you have a MiniMax account or prefer its model characteristics. Switch by updating <code>~/forge/.forge.toml</code>:</p>
+      <div class="code-label">~/forge/.forge.toml — MiniMax Coding</div>
+      <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
+<span class="key">max_tokens</span> = <span class="val">16384</span>
+
+[<span class="key">session</span>]
+<span class="key">provider_id</span> = <span class="val">"minimax"</span>
+<span class="key">model_id</span>    = <span class="val">"MiniMax-Text-01"</span></div>
+
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>Credentials are global, never per-project.</strong> <code>~/forge/.credentials.json</code> and <code>~/forge/.forge.toml</code> live in your home directory and apply to all projects. The project-root <code>.forge.toml</code> contains only compaction settings and is gitignored automatically.</div>
+      </div>
 
       <div class="page-nav-bottom">
         <a href="../getting-started/" class="pnav-btn"><i data-lucide="arrow-left"></i> Getting Started</a>
