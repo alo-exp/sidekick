@@ -275,3 +275,47 @@ On first `/forge` invocation when `./AGENTS.md` is empty or absent:
 ## Forge Corrections
 [specific corrections for this codebase]
 ```
+
+---
+
+## Token Optimization
+
+Keep Forge context lean by enforcing prompt size limits, selective injection budgets, and validated compaction settings.
+
+### Minimal Task Prompt Construction
+
+Every task prompt to Forge MUST:
+
+1. Use ONLY the 5 mandatory fields: OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS
+2. Stay within **2,000 tokens** maximum
+3. CONTEXT field: include ONLY files directly relevant to the task (list paths + brief current state)
+4. OMIT entirely: conversation history, unrelated file contents, verbose error logs, prior task outputs
+5. If a task requires more context than fits in 2,000 tokens, split it into subtasks (each under budget)
+
+### Injection Budget Check
+
+Before submitting any task prompt, verify:
+
+1. INJECTED SKILLS field lists **at most 2 skills** unless the task clearly spans multiple domains (e.g., a security-sensitive test = security + testing-strategy)
+2. If more than 2 skills would apply, prioritize by: security > task-specific > general quality
+3. Research/read-only tasks: inject NO skills (empty INJECTED SKILLS field)
+
+### .forge.toml Compaction Defaults
+
+The following values in `.forge.toml` are **tested defaults** that prevent Forge context bloat:
+
+```toml
+max_tokens = 16384          # Conservative output limit; raise if Forge truncates
+[compact]
+token_threshold = 80000     # Trigger compaction at 80k tokens (before hitting model limit)
+eviction_window = 0.20      # Summarize oldest 20% of context on compaction
+retention_window = 6        # Always keep 6 most recent messages intact
+```
+
+**Rationale:**
+- `token_threshold = 80000`: Most models have 128k context; 80k triggers cleanup with headroom
+- `eviction_window = 0.20`: Aggressive enough to free space, conservative enough to retain useful context
+- `retention_window = 6`: Keeps current task chain intact (typical: prompt + 2 retries + outputs)
+- `max_tokens = 16384`: Prevents single Forge response from consuming too much context
+
+**User tuning:** If Forge frequently hits compaction mid-task, raise `token_threshold`. If context feels stale, lower `retention_window` to 4.
