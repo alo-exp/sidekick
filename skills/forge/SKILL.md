@@ -167,3 +167,111 @@ All files in `.forge/skills/` MUST conform to Forge-compatible SKILL.md format:
 ### Scope Limit
 
 Only the 4 bootstrap skills are in scope: `quality-gates`, `security`, `testing-strategy`, `code-review`. Adding new skills requires a future phase.
+
+---
+
+## AGENTS.md Mentoring Loop
+
+After every Forge task, Claude extracts standing instructions and writes them to the appropriate tier. This enables Forge to accumulate knowledge over time without unbounded growth.
+
+### Post-Task Extraction
+
+After every Forge task completion (success OR failure), Claude extracts actionable instructions from the session. Categories:
+
+1. **Corrections** -- mistakes Forge made that Claude fixed. Format as "Do X instead of Y when Z."
+2. **User preferences** -- conventions the user expressed during the session. Format as "Always/Never do X."
+3. **Project patterns** -- conventions Forge discovered in the codebase. Format as "This project uses X for Y."
+4. **Forge behavior observations** -- what Forge does well or poorly in this codebase. Format as "Forge tends to X; counteract by Y."
+
+Each extraction must be action-oriented and specific -- not observations or summaries. If nothing new was learned, skip the write entirely.
+
+### Deduplication Algorithm
+
+Before every AGENTS.md write, run a two-phase check to prevent duplicate content:
+
+1. **Primary -- Exact substring match:** Scan the target AGENTS.md file for the instruction text. If the exact string (ignoring leading/trailing whitespace) already appears, it is a duplicate.
+2. **Secondary -- Semantic similarity:** If no exact match, check whether an equivalent instruction exists phrased differently. Compare the intent: does an existing instruction already achieve the same behavioral outcome?
+3. **Decision:** If either check matches, skip the write entirely. Do not partially append or rephrase -- the existing instruction is sufficient.
+
+Apply this algorithm independently for each tier (global and project). Session logs are append-only and do not require deduplication.
+
+### Three-Tier Write Protocol
+
+After extraction and deduplication, write to all applicable tiers:
+
+1. **Global tier -- `~/forge/AGENTS.md`**
+   Append cross-project knowledge: coding style rules, testing conventions, git workflow patterns, and Forge behavior corrections that apply to any codebase.
+   If `~/forge/AGENTS.md` does not exist, create it with these category headers:
+   ```
+   # Forge Global Instructions
+
+   ## Code Style
+
+   ## Testing
+
+   ## Git Workflow
+
+   ## Forge Behavior
+   ```
+   Then append the extracted instructions under the appropriate category.
+
+2. **Project tier -- `./AGENTS.md`**
+   Append project-specific conventions: project structure patterns, naming conventions, task patterns, and Forge behavior corrections specific to this codebase.
+   Append under the appropriate section header (Project Conventions, Task Patterns, or Forge Corrections).
+
+3. **Session log -- `docs/sessions/YYYY-MM-DD-session.md`**
+   Append an entry with:
+   - **Task name:** what Forge was asked to do
+   - **Extracted instructions:** the new instructions identified (if any)
+   - **Deduplication decisions:** which instructions were skipped and why (exact match or semantic match)
+   - **Tiers written:** which AGENTS.md files were updated
+
+   If the session log file does not exist for today's date, create it with a date header.
+
+### Bootstrap Behavior
+
+On first `/forge` invocation when `./AGENTS.md` is empty or absent:
+
+1. Check if `./AGENTS.md` exists and has content (file size > 0). If it does, skip bootstrap entirely.
+2. Read `skills/forge.md` for key conventions:
+   - Output format expectations: STATUS, FILES_CHANGED, ASSUMPTIONS, PATTERNS_DISCOVERED
+   - Delegation principles: Claude = Brain (plan, communicate, review), Forge = Hands (write, edit, run)
+   - Structured response requirements from STEP 6
+3. Write these as the initial content of `./AGENTS.md` under "## Project Conventions" and "## Forge Output Format".
+4. Include empty "## Task Patterns" and "## Forge Corrections" sections for future population by the mentoring loop.
+
+### AGENTS.md Format
+
+**Global `~/forge/AGENTS.md` format:**
+```
+# Forge Global Instructions
+
+## Code Style
+[action-oriented rules -- e.g., "Use early returns instead of nested if/else"]
+
+## Testing
+[action-oriented rules -- e.g., "Always run existing tests before writing new ones"]
+
+## Git Workflow
+[action-oriented rules -- e.g., "Commit after each logical change, not at end of task"]
+
+## Forge Behavior
+[action-oriented rules -- e.g., "Forge overwrites files instead of editing; provide diffs as context"]
+```
+
+**Project `./AGENTS.md` format:**
+```
+# Project: [name]
+
+## Project Conventions
+[project structure, naming, patterns]
+
+## Forge Output Format
+[STATUS/FILES_CHANGED/ASSUMPTIONS/PATTERNS_DISCOVERED]
+
+## Task Patterns
+[recurring task types and how to handle them]
+
+## Forge Corrections
+[specific corrections for this codebase]
+```
