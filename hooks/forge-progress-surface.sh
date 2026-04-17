@@ -30,11 +30,32 @@ IFS=$'\n\t'
 MARKER_FILE="${HOME}/.claude/.forge-delegation-active"
 
 # -----------------------------------------------------------------------------
-# strip_ansi — strip ANSI SGR color escapes from stdin.
-# Regex: \x1b\[[0-9;]*m
+# strip_ansi — strip a broad set of terminal control sequences from stdin.
+# Covers:
+#   - CSI sequences  \x1b[...  terminated by @–~ (includes SGR colors, cursor
+#     moves, erase, etc.)
+#   - OSC sequences  \x1b]... terminated by BEL or ST
+#   - Other C1 escape introducers (\x1b followed by a single letter)
+#   - Backspace, CR, and the other C0 control chars except TAB (0x09) and
+#     newline (0x0a). This prevents fake-prompt / line-overwrite tricks from
+#     attacker-controlled output landing in the transcript.
+# SENTINEL v2.3 FINDING-R15-M6: previous SGR-only strip let CSI cursor moves
+# and OSC title-set sequences pass through additionalContext.
 # -----------------------------------------------------------------------------
 strip_ansi() {
-  sed $'s/\x1b\\[[0-9;]*m//g'
+  # perl is portable across macOS and Linux; sed bracket-class handling
+  # differs between BSD and GNU for the `[ -/]` range. The single perl call
+  # is simpler and consistently strips:
+  #   CSI   \x1b[ ... (any intermediate bytes) final byte @-~
+  #   OSC   \x1b] ... terminated by BEL or ESC-\
+  #   7-bit C1 single-char escapes (\x1b[@-Z\\-_])
+  #   C0 controls except TAB(09) and LF(0a)
+  perl -pe '
+    s/\x1b\[[0-9;?]*[ -\/]*[@-~]//g;
+    s/\x1b\][^\x07\x1b]*(\x07|\x1b\\)//g;
+    s/\x1b[@-Z\\-_]//g;
+    s/[\x00-\x08\x0b-\x1f\x7f]//g;
+  '
 }
 
 # -----------------------------------------------------------------------------
@@ -67,7 +88,11 @@ main() {
   [[ -f "$MARKER_FILE" ]] || exit 0
 
   local input tool_name cmd output
-  input="$(cat)"
+  # SENTINEL v2.3 FINDING-R15-M5: cap stdin at 2 MiB so a malicious / runaway
+  # Forge subprocess cannot force the hook to buffer hundreds of megabytes
+  # in shell memory. The STATUS block is capped at 20 lines downstream;
+  # 2 MiB is ~10× the largest plausible legitimate payload.
+  input="$(head -c 2097152)"
   tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
   [[ "$tool_name" = "Bash" ]] || exit 0
 

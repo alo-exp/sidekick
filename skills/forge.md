@@ -67,15 +67,26 @@ FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_I
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases  (or the GitHub releases page)"
-echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
-# NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
-# proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R6-2)
+# MANDATORY STOP for Claude: compute + display hash, then return to the user.
+# Do NOT pipe into a second Bash call — the user must explicitly confirm after
+# seeing the SHA-256. `sleep 5` does NOT gate execution in Claude's Bash tool
+# (no Ctrl+C). (SENTINEL FINDING-R6-2/R15-H1)
 # Pinned-hash verification — update hash when upgrading ForgeCode (R9-8/R12-2):
 EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
 if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
-  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"; exit 1
+  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"
+  echo "Installer path: ${FORGE_INSTALL}"
+  rm -f "${FORGE_INSTALL}"
+  exit 1
 fi
-sleep 5
+echo "READY_TO_INSTALL path=${FORGE_INSTALL}"
+```
+
+Claude MUST then show the user the SHA-256 and ask "Proceed with installation?"
+Only after explicit user confirmation, run the second block below (one Bash call):
+
+```bash
+# Second Bash call — only after explicit user confirmation.
 bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 export PATH="${HOME}/.local/bin:${PATH}"
 forge --version
@@ -89,16 +100,17 @@ FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_I
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases"
-echo "If hashes do not match, press Ctrl+C NOW. Proceeding in 5 seconds..."
-# NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
-# proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R7-1/R7-7)
+# MANDATORY STOP for Claude: display the SHA-256 and require explicit user
+# confirmation before the next Bash call. (SENTINEL FINDING-R7-1/R7-7/R15-H1)
 # Pinned-hash verification — update hash when upgrading ForgeCode (R10-4/R11-2):
 EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
 if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
-  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"; exit 1
+  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"
+  rm -f "${FORGE_INSTALL}"
+  exit 1
 fi
-sleep 5
-bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
+echo "READY_TO_INSTALL path=${FORGE_INSTALL}"
+# After user confirms: bash "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 # OR: tell user to manually download from https://forgecode.dev and place in ~/.local/bin/
 ```
 
@@ -112,16 +124,17 @@ FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL}" 2>/dev/null || sha256sum "${FORGE_I
 echo "SHA-256: ${FORGE_SHA}"
 echo "IMPORTANT: Compare this SHA-256 against the official release hash at:"
 echo "  https://forgecode.dev/releases"
-echo "If hashes do not match, press Ctrl+C NOW to cancel. Proceeding in 5 seconds..."
-# NOTE for Claude: Show the SHA-256 to the user and get explicit confirmation before
-# proceeding — Ctrl+C is not available in the Bash tool. (SENTINEL FINDING-R7-1/R7-7)
+# MANDATORY STOP for Claude: display the SHA-256 and require explicit user
+# confirmation before the next Bash call. (SENTINEL FINDING-R7-1/R7-7/R15-H1)
 # Pinned-hash verification — update hash when upgrading ForgeCode (R10-4/R11-2):
 EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
 if [ -n "${EXPECTED_FORGE_SHA}" ] && [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
-  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"; exit 1
+  echo "SHA-256 MISMATCH — aborting. Expected: ${EXPECTED_FORGE_SHA}"
+  rm -f "${FORGE_INSTALL}"
+  exit 1
 fi
-sleep 5
-bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
+echo "READY_TO_INSTALL path=${FORGE_INSTALL}"
+# After user confirms: bash -x "${FORGE_INSTALL}"; rm -f "${FORGE_INSTALL}"
 ```
 
 **After install, add to PATH permanently:**
@@ -422,8 +435,14 @@ cannot be influenced by malicious project files to produce a tainted AGENTS.md:
 ```bash
 forge --sandbox bootstrap-agents -C "${PROJECT_ROOT}" -p "Explore this codebase and create AGENTS.md at the project root. Include: tech stack, key dependencies, project structure summary, naming conventions, how to run tests, how to build/run the project, and any important patterns you notice."
 ```
-Review the generated AGENTS.md before merging it into the main branch.
-*(SENTINEL FINDING-1.2 R4: sandbox-first for bootstrap on untrusted repos)*
+
+> **MANDATORY STOP before any non-sandboxed use.** The generated AGENTS.md is
+> untrusted output derived from untrusted inputs. Claude MUST:
+> 1. Present the full generated `AGENTS.md` to the user.
+> 2. Obtain explicit user approval of its contents.
+> 3. Only after approval, proceed with non-sandboxed forge invocations that read it.
+> Non-negotiable — skipping this step voids the Trust Gate.
+> *(SENTINEL FINDING-1.2 R4 / R15-M2: sandbox + mandatory human review for bootstrap on untrusted repos)*
 
 This pays off on every subsequent forge invocation.
 
@@ -470,8 +489,11 @@ upstream cannot produce a tainted AGENTS.md that bypasses the Trust Gate:
 ```bash
 forge --sandbox update-agents -C "${PROJECT_ROOT}" -p "Update AGENTS.md — the project has changed. Review the current codebase and refresh all sections."
 ```
-Review the updated AGENTS.md before merging.
-*(SENTINEL FINDING-1.3 R5: mirror R4 sandbox-first for stale-update on untrusted repos)*
+
+> **MANDATORY STOP before any non-sandboxed use.** Updated AGENTS.md must be
+> reviewed and explicitly approved by the user before any subsequent
+> non-sandboxed forge invocation reads it. Non-negotiable.
+> *(SENTINEL FINDING-1.3 R5 / R15-M2: mirror bootstrap gate for stale-update on untrusted repos)*
 
 ### Large codebases (>500 files)
 Index semantically first for concept-based search.
@@ -776,22 +798,28 @@ echo "HTTP status: ${HTTP_CODE}  (401=network OK · 000=connection failed · 5xx
 
 ```bash
 # Step 2: If the network is fine but forge still fails, test with credentials.
-# Read the key into a shell variable — do NOT echo or print it.
-# The key is passed to curl via the variable and never appears in command output.
-# (SENTINEL FINDING-4.1/8.1: credential exposure hardening)
-OPENROUTER_KEY=$(python3 -c "
+# The key is piped to curl via a temporary chmod-600 header file, so it
+# never appears in argv (where `ps aux` could read it on multi-user boxes)
+# and never lands in the shell transcript.
+# (SENTINEL FINDING-4.1/8.1/R15-M3: credential-in-argv hardening)
+HEADER_FILE=$(mktemp -t forge-auth.XXXXXX)
+chmod 600 "${HEADER_FILE}"
+trap 'rm -f "${HEADER_FILE}"' EXIT INT TERM
+python3 -c "
 import json, os
 path = os.path.expanduser('~/forge/.credentials.json')
-print(json.load(open(path))[0]['auth_details']['api_key'])
-" 2>/dev/null)
-if [ -z "${OPENROUTER_KEY}" ]; then
+key = json.load(open(path))[0]['auth_details']['api_key']
+print(f'Authorization: Bearer {key}')
+" > "${HEADER_FILE}" 2>/dev/null
+if [ ! -s "${HEADER_FILE}" ]; then
   echo "Could not read credentials — re-run setup from step 0A-3"
 else
   HTTP_AUTH=$(curl -s -o /dev/null -w "%{http_code}" https://openrouter.ai/api/v1/models \
-    -H "Authorization: Bearer ${OPENROUTER_KEY}")
-  unset OPENROUTER_KEY
+    -H @"${HEADER_FILE}")
   echo "Authenticated HTTP status: ${HTTP_AUTH}  (200=OK · 401=invalid key · 402=no credits)"
 fi
+rm -f "${HEADER_FILE}"
+trap - EXIT INT TERM
 ```
 
 If SSL errors: check system date/time (SSL certs fail if clock is wrong). If behind a proxy, OpenRouter may be blocked.
