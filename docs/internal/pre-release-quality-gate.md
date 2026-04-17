@@ -210,7 +210,7 @@ Read `README.md` in full and verify/update:
 
 - **Version badge**: The version badge at the top matches the release being cut. Update the badge URL and the badge text.
 - **Sidekick description**: The description accurately reflects the current feature set. No features that were removed. No existing features missing from the description.
-- **Provider options**: Both OpenRouter and MiniMax are listed. The model IDs shown (`qwen/qwen3.6-plus` for OpenRouter, `MiniMax-Text-01` for MiniMax) are current.
+- **Provider options**: Both OpenRouter and MiniMax are listed. The model IDs shown (`qwen/qwen3-coder-plus` for OpenRouter, `MiniMax-Text-01` for MiniMax) are current.
 - **Install command**: The install command is copy-pasteable, tested on a clean machine (or equivalent), and resolves to the correct URL.
 - **Prerequisites**: The Forge binary version requirement and the Claude Code version requirement are current.
 - **Benchmarks or metrics**: If any numbers are cited (task success rate, token savings, model performance, etc.), verify they reflect current observed behavior. Remove or update stale numbers.

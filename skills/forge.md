@@ -154,7 +154,7 @@ Ask the user which provider they want to use:
 
 > "Forge needs an API key. Two providers are supported:
 >
-> **A) OpenRouter** (recommended) — routes to Qwen 3.6 Plus, the best open coding model
+> **A) OpenRouter** (recommended) — routes to Qwen3 Coder Plus, the best open coding model
 > (#1 open on Terminal-Bench), at $0.33/$1.95 per MTok with 1M context and vision.
 > Sign up at **openrouter.ai** (Google/GitHub OAuth, ~2 minutes).
 >
@@ -310,7 +310,7 @@ forge -p "reply with just the word OK" 2>&1
 
 **Symptom:** `402 Payment Required: This request requires more credits`
 
-**Cause:** Free signup credits (~$0.01) exhausted. Qwen 3.6 Plus requires paid credits.
+**Cause:** Free signup credits (~$0.01) exhausted. Qwen3 Coder Plus requires paid credits.
 
 **Fix:** Tell user: "Please add $5 at **openrouter.ai/settings/credits** — that's the minimum and will last weeks of daily use."
 
@@ -617,7 +617,7 @@ If it still fails after retries:
 forge config set model open_router google/gemma-4-31b-it
 
 # Option B: Wait ~60 seconds and retry
-# Option C: If on free tier, switch to paid Qwen 3.6 Plus after adding credits
+# Option C: If on free tier, switch to paid Qwen3 Coder Plus after adding credits
 ```
 
 Tell the user which model is now active.

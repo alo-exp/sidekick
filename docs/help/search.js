@@ -66,7 +66,7 @@ var IDX = [
     text:'/forge activate Forge delegation mode runs health check. /forge:deactivate return to direct Claude implementation. /forge status show current activation state model and config summary.' },
   { page:'Reference', url:'/help/reference/', anchor:'forge-toml',
     title:'.forge.toml config — model API key compaction providers',
-    text:'.forge.toml created on first /forge in project root. Contains compaction settings only: token_threshold 80000, eviction_window 0.20, retention_window 6, max_tokens 16384. API credentials stored globally in ~/forge/.credentials.json and ~/forge/.forge.toml. Two providers supported: open_router with qwen/qwen3.6-plus and minimax with MiniMax-Text-01.' },
+    text:'.forge.toml created on first /forge in project root. Contains compaction settings only: token_threshold 80000, eviction_window 0.20, retention_window 6, max_tokens 16384. API credentials stored globally in ~/forge/.credentials.json and ~/forge/.forge.toml. Two providers supported: open_router with qwen/qwen3-coder-plus and minimax with MiniMax-Text-01.' },
   { page:'Getting Started', url:'/help/getting-started/', anchor:'prerequisites',
     title:'MiniMax Coding provider — alternative to OpenRouter',
     text:'MiniMax Coding is an alternative provider to OpenRouter. Get an API key at platform.minimaxi.com. Claude writes ~/forge/.credentials.json with id minimax and ~/forge/.forge.toml with provider_id minimax and model_id MiniMax-M2.7 during setup.' },

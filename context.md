@@ -18,7 +18,7 @@ Claude = Brain  (plan, communicate, review, research)
 Forge  = Hands  (write, edit, run, commit, test)
 ```
 
-Forge ranks **#2 on Terminal-Bench 2.0 (81.8%)**. The recommended provider is **OpenRouter** routing to `qwen/qwen3.6-plus`.
+Forge ranks **#2 on Terminal-Bench 2.0 (81.8%)**. The recommended provider is **OpenRouter** routing to `qwen/qwen3-coder-plus`.
 
 ---
 
@@ -157,7 +157,7 @@ E2E tests confirmed:
 | ForgeCode version | `2.9.9` |
 | Binary path | `~/.local/bin/forge` |
 | Provider | OpenRouter (`open_router`) |
-| Model | `qwen/qwen3.6-plus` |
+| Model | `qwen/qwen3-coder-plus` |
 | Credentials | `~/forge/.credentials.json` (chmod 600) |
 | Config | `~/forge/.forge.toml` |
 | Plugin cache | `~/.claude/plugins/cache/alo-exp/sidekick/1.0.0/` |

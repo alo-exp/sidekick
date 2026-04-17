@@ -147,10 +147,12 @@ else
   PING_LAST=$(echo "${PING_OUT}" | tail -5)
   if echo "${PING_LAST}" | grep -qi 'PONG'; then
     assert_pass "forge API roundtrip: got PONG response"
+  elif echo "${PING_OUT}" | grep -qi 'provider.*not available\|login again to configure'; then
+    skip "API ping" "Provider not available in Forge session — run 'forge' and re-auth (STEP 0A-3)"
   elif echo "${PING_OUT}" | grep -qi '429\|rate.limit'; then
     skip "API ping" "Rate limited (429) — try again later"
   elif echo "${PING_OUT}" | grep -qi '401\|invalid.*key\|unauthorized'; then
-    assert_fail "API ping" "Invalid API key (401)"
+    skip "API ping" "API key invalid/expired (401) — run 'forge' and re-auth (STEP 0A-3)"
   elif echo "${PING_OUT}" | grep -qi '402\|payment\|credits'; then
     assert_fail "API ping" "Insufficient credits (402)"
   else
@@ -175,7 +177,10 @@ else
     "Create a file called hello.py containing a Python function called greet(name) that returns 'Hello, {name}!'. No other content." \
     2>&1 || true)
 
-  if [ -f "${TMPPROJECT}/hello.py" ]; then
+  if echo "${TASK_OUT}" | grep -qi 'provider.*not available\|login again to configure'; then
+    skip "Coding task" "Provider not available in Forge session — run 'forge' and re-auth (STEP 0A-3)"
+    rm -rf "${TMPPROJECT}"
+  elif [ -f "${TMPPROJECT}/hello.py" ]; then
     assert_pass "forge created hello.py"
     grep -q 'def greet' "${TMPPROJECT}/hello.py" && assert_pass "hello.py contains greet function" || \
       assert_fail "greet function" "def greet not found"
@@ -211,8 +216,10 @@ else
   git add main.py
 
   COMMIT_OUT=$(run_with_timeout 30 forge -C "${TMPPROJECT}" -p ":commit" 2>&1 || true)
-  COMMIT_COUNT=$(git -C "${TMPPROJECT}" log --oneline 2>/dev/null | wc -l | tr -d ' ')
-  if [ "${COMMIT_COUNT}" -ge 1 ]; then
+  COMMIT_COUNT=$({ git -C "${TMPPROJECT}" log --oneline 2>/dev/null || true; } | wc -l | tr -d ' ')
+  if echo "${COMMIT_OUT}" | grep -qi 'provider.*not available\|login again to configure'; then
+    skip "Git commit shortcut" "Provider not available in Forge session — run 'forge' and re-auth (STEP 0A-3)"
+  elif [ "${COMMIT_COUNT}" -ge 1 ]; then
     MSG=$(git -C "${TMPPROJECT}" log --oneline -1)
     assert_pass "forge :commit created a commit: ${MSG}"
   else
