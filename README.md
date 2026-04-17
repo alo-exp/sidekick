@@ -75,6 +75,26 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 ---
 
+## Testing
+
+Three-tier pyramid. All three stages are chained by `tests/run_release.bash`, which is the gate every release must pass.
+
+| Tier | Script | Runs without Forge | Purpose |
+|------|--------|:---:|---------|
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 13 suites, ~80+ assertions — hook classifiers, idx audit, plugin integrity, slash commands, v1.2 coverage gaps. |
+| **Smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
+| **Live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
+
+Stages 2 and 3 are gated behind `SIDEKICK_LIVE_FORGE=1` so they never run in CI. Before tagging a new version:
+
+```bash
+SIDEKICK_LIVE_FORGE=1 bash tests/run_release.bash
+```
+
+Without the env var the gate still runs stage 1 and cleanly skips 2+3 (exit 0), so it's safe to wire into CI.
+
+---
+
 ## License
 
 MIT — Ālo Labs
