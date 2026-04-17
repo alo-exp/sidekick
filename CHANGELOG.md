@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 — 2026-04-17
+
+- **Fix**: `/forge` activation health check #3 (credentials present) now correctly validates Forge's current credentials schema (`[{id, auth_details}, ...]`). Prior check only matched the legacy flat `{api_key}` schema, causing false-negative activation failures on valid installs. Both schemas now supported; malformed files fail cleanly instead of producing a jq type error.
+
 ## 1.1.0 — 2026-04-13
 
 - **Forge delegation mode** (`/forge` skill): explicit activation/deactivation with health check and session state

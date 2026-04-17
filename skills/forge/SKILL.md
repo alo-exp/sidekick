@@ -22,7 +22,7 @@ All 4 criteria must pass before activation proceeds:
 
 1. **Binary exists:** `~/.local/bin/forge` exists OR `which forge` succeeds
 2. **Provider configured:** `forge info` exits 0 and output contains a provider name (non-empty line after "Provider:")
-3. **Credentials present:** Run `jq -e '.api_key and (.api_key | length > 0)' ~/forge/.credentials.json > /dev/null 2>&1` — exits 0 if key is set. Never read, display, or include the key value in any output or context.
+3. **Credentials present:** Run `jq -e 'if type == "array" then (length > 0 and all(.[]; (.id | type == "string" and length > 0) and (.auth_details | type == "object" and (keys | length > 0)))) elif type == "object" then (.api_key | type == "string" and length > 0) else false end' ~/forge/.credentials.json > /dev/null 2>&1` — exits 0 if credentials are present. Supports both the current Forge schema (array of `{id, auth_details}` entries with non-empty `id` and non-empty `auth_details`) and the legacy flat `{api_key}` schema. Returns false (not a jq error) on malformed files. Never read, display, or include credential values in any output or context.
 4. **Config valid:** `~/forge/.forge.toml` contains non-empty `provider_id` and `model_id`
 
 If ANY check fails: print which check failed and direct the user to `skills/forge.md` STEP 0A for setup instructions. Stop activation.
