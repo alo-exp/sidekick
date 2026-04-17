@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.2.0 — 2026-04-18
+
+### Forge Delegation + Live Visibility
+
+When `/forge` mode is active, delegation is now **harness-enforced**, not just suggested. Forge subprocess output streams into the transcript in real time and every task is durably indexed for replay.
+
+- **PreToolUse enforcer hook** (`hooks/forge-delegation-enforcer.sh`): while the `/forge` marker exists, direct `Write`/`Edit`/`NotebookEdit` calls are blocked with a `permissionDecision: deny` reason; `Bash forge -p "…"` invocations are transparently rewritten to inject a valid RFC 4122 UUID `--conversation-id` plus `--verbose` and an output pipe that prefixes stdout with `[FORGE]` and stderr with `[FORGE-LOG]`. Read-only Brain-role commands (`git status`, `ls`, `grep`, `cat`, `find`) pass through unmodified.
+- **Audit index** (`.forge/conversations.idx`): every rewritten Forge invocation appends an ISO 8601 UTC row with UUID, sidekick-`<ts>`-`<hash>` tag, and task hint. Idempotent on already-present UUIDs.
+- **PostToolUse progress-surface hook** (`hooks/forge-progress-surface.sh`): after each Forge task, parses the `STATUS:` block (ANSI-stripped), emits a `[FORGE-SUMMARY]` additionalContext to the transcript, and surfaces a `/forge:replay <UUID>` hint.
+- **`/forge:replay <uuid>`** (`commands/forge-replay.md`): validates the UUID, runs `forge conversation dump <uuid> --html` into `/tmp`, opens in the default browser, and renders `forge conversation stats <uuid> --porcelain` inline.
+- **`/forge:history`** (`commands/forge-history.md`): renders the last 20 rows of `.forge/conversations.idx` as a markdown table joined with `forge conversation info`; prunes entries older than 30 days on each call via portable ISO 8601 lexical compare (BSD/macOS + GNU `date` both supported).
+- **Output style** (`output-styles/forge.md`): narration contract for Claude's prose while `/forge` mode is active. Documents the `[FORGE]` / `[FORGE-LOG]` / `[FORGE-SUMMARY]` markers as reference-only — Claude Code output styles shape assistant prose, not raw tool output by line prefix.
+- **SKILL.md STEP 5 + 6**: documents auto-injection of `--conversation-id` + `--verbose` (don't add manually), and `run_in_background: true` + Monitor guidance for tasks >10s with a foreground fallback for Bedrock/Vertex/Foundry hosts.
+- **Plugin manifest v1.2.0**: directory-style registration for `commands/` and `output-styles/`, `PostToolUse` hook added alongside existing `PreToolUse`, `_integrity` refreshed with SHA-256 for `skills/forge/SKILL.md`, both hook scripts, the output style, and both new command files.
+- **Test suite expansion**: +47 assertions across 3 new suites — enforcer hook (20), progress surface (7), v1.2 slash commands (12), v1.2 E2E integration (8). Run via `bash tests/run_all.bash`.
+
+### Corrections merged from research
+
+- `--conversation-id` must be a valid lowercase RFC 4122 UUID (Forge 2.11.3 rejects custom formats). The human-readable `sidekick-<ts>-<hash>` label is preserved as a separate column in `.forge/conversations.idx`.
+- Claude Code PreToolUse hook JSON uses `hookSpecificOutput.{hookEventName, permissionDecision, permissionDecisionReason, updatedInput.command}` — not `decision` / `modifiedCommand` as drafted in the spec.
+- Output styles do not style tool output by prefix; the narration contract was reframed accordingly.
+
 ## 1.1.2 — 2026-04-17
 
 - **Fix (CRITICAL)**: Forge agent template was missing the `tools: ["*"]` frontmatter field. Without it, Forge provisioned the agent with zero tools and any model — no matter how capable — emitted XML/markdown text that looked like tool calls but never executed. `/forge` delegation reported `STATUS: SUCCESS` while no files were actually created. Fixed in `.forge/agents/forge.md` and in the Plan 01-03 template so fresh installs inherit the correct configuration.

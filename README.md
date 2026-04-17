@@ -6,7 +6,7 @@
 
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
-| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.1.2 |
+| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.2.0 |
 
 More sidekicks planned.
 
