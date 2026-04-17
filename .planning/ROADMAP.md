@@ -104,5 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 **Plans:** 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Patch shipped artifacts: add `tools: ["*"]` to Forge agent template and replace invalid model ID across 10 references (single atomic fix commit)
-- [ ] 05-02-PLAN.md — Release prep: bump README version badge to v1.1.2 and add CHANGELOG 1.1.2 entry (single release-prep commit; user runs `/create-release v1.1.2` afterward)
+- [x] 05-01-PLAN.md — Patch shipped artifacts: add `tools: ["*"]` to Forge agent template and replace invalid model ID across 10 references (single atomic fix commit)  _(shipped in 354d001)_
+- [x] 05-02-PLAN.md — Release prep: bump README version badge to v1.1.2 and add CHANGELOG 1.1.2 entry (single release-prep commit; user runs `/create-release v1.1.2` afterward)  _(shipped in 3eee7ce)_
+
+**Status:** SHIPPED on 2026-04-17 as v1.1.2. GitHub Release: https://github.com/alo-exp/sidekick/releases/tag/v1.1.2

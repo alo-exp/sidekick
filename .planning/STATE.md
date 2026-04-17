@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 
 ## Current Position
 
-Phase: 1 of 4 (Spec, Core Skill, and Forge Config)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-04-13 — Roadmap and state initialized
+Phase: 5 of 5 (v1.1.2 Forge delegation fix — SHIPPED)
+Plan: 2 of 2 in Phase 5 (complete)
+Status: v1.1.2 released on 2026-04-17 — https://github.com/alo-exp/sidekick/releases/tag/v1.1.2
+Last activity: 2026-04-17 — Phase 5 shipped; `/forge` delegation restored end-to-end. Phases 1-4 not yet executed.
 
-Progress: [░░░░░░░░░░] 0%
+Progress: Phase 5 shipped out-of-order as a critical patch. Phases 1-4 remain unplanned.
 
 ## Performance Metrics
 
@@ -52,7 +52,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- Capture Phase 5 AGENTS.md pattern at repo root: "Forge agent frontmatter MUST include tools: ["*"] or agent is provisioned with zero tools (silent failure mode)."
+- Consider scoping Bug 3 (bundle vision agent template via install.sh) for a future minor release.
+- Phases 1-4 still require planning and execution per original roadmap.
 
 ### Blockers/Concerns
 
@@ -60,6 +62,11 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13
-Stopped at: Roadmap created, ready to plan Phase 1
+Last session: 2026-04-17
+Stopped at: Phase 5 (v1.1.2) shipped and verified. Phases 1-4 still unplanned.
 Resume file: None
+
+Next likely actions:
+- Plan Phase 1 via /gsd-plan-phase 1 (original roadmap goal: spec + core skill + forge config)
+- Or capture AGENTS.md pattern from Phase 5 CONTEXT.md (forge frontmatter tools field lesson)
+- Or backfill Bug 3 (bundle vision agent via install.sh) as a separate phase
