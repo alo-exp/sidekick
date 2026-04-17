@@ -19,6 +19,19 @@
     "orchestration"
   ],
   "skills": "./skills/",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-delegation-enforcer.sh\""
+          }
+        ]
+      }
+    ]
+  },
   "_integrity": {
     "_note": "SHA-256 hashes of plugin files — update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
     "install_sh_sha256": "8663dd3deb8581a8d1998b9406643efa0e217c889f10ef0d59e48abf9acc3530",
