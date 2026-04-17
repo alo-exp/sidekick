@@ -7,6 +7,13 @@
 - **`docs/pre-release-quality-gate.md`**: 4-stage pre-release audit document (Code Review Triad → Big-Picture Consistency → Public-Facing Content → SENTINEL). Stages 1/3/4 dispatch reviewers in parallel; Stage 1 loops to zero accepted items across `/engineering:code-review`, `/gsd-code-review`, `/superpowers:requesting-code-review`, and `/superpowers:receiving-code-review`. Each stage writes a `quality-gate-stage-N` marker to `~/.claude/.sidekick/quality-gate-state` after `/superpowers:verification-before-completion`. Kept separate from Silver Bullet's own state file so its tamper hook does not reject the writes.
 - **`hooks/validate-release-gate.sh`**: PreToolUse guard registered in `plugin.json` (matcher `Bash`). Intercepts `gh release create` Bash calls and emits the canonical `permissionDecision: deny` envelope unless all four stage markers are present (anchored whole-line match) in the Sidekick state file. Gated on `tool_name == "Bash"` so reads/edits of files containing the literal string don't trigger false blocks. Uses `jq` (fails closed if absent). Marker set is keyed to `STAGE_COUNT` in the hook — update both files together if stages are added or removed.
 
+### Consistency sweep
+
+- **Model ID drift fixed**: Swept `qwen/qwen3-coder-plus` / display name "Qwen3 Coder Plus" across all shipped surfaces (`README.md`, `context.md`, `skills/forge.md`, `.claude-plugin/marketplace.json`, `docs/index.html`, `docs/help/getting-started/`, `docs/help/reference/`, `docs/help/concepts/`, `docs/help/search.js`, `docs/internal/pre-release-quality-gate.md`). Eliminated the hallucinated `qwen/qwen3.6-plus` / "Qwen 3.6 Plus" from user-visible content. `CHANGELOG.md` retains the historical v1.1.2 reference.
+- **`_integrity` manifest refresh**: Added `validate_release_gate_sha256` entry (for `hooks/validate-release-gate.sh`) and refreshed `forge_md_sha256` to match the updated `skills/forge.md`. `tests/test_plugin_integrity.bash` now asserts the new hook's hash.
+- **`tests/test_validate_release_gate_hook.bash`**: 7-scenario unit suite for the release-gate hook (non-Bash pass-through, non-target Bash pass-through, no-markers deny, all-markers pass, anchored match excluding stage-10, partial-markers deny with correct missing list, `hookEventName=PreToolUse` envelope). Wired into `tests/run_all.bash`.
+- **`tests/test_forge_e2e.bash`**: Added graceful skips for "provider not available" / "login again to configure" / 401 so a stale Forge session can't fail CI; `git log --oneline` guarded with `|| true` to survive `set -euo pipefail` on empty repos.
+
 ## 1.2.0 — 2026-04-18
 
 ### Forge Delegation + Live Visibility

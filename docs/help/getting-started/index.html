@@ -156,10 +156,23 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="install">Installation</h2>
-      <p>Install Sidekick inside a Claude Code session:</p>
-      <div class="code-label">inside Claude Code</div>
-      <div class="code-block"><span class="cmd">/plugin install alo-exp/sidekick</span></div>
-      <p>This installs the plugin and makes the <code>/forge</code> skill available in all future sessions. No project-specific setup is required — Sidekick works in any git repository.</p>
+      <p>Add the following to <code>~/.claude/settings.json</code>:</p>
+      <div class="code-label">~/.claude/settings.json</div>
+      <div class="code-block"><span class="comment">{
+  "extraKnownMarketplaces": {
+    "alo-exp": {
+      "source": {
+        "source": "github",
+        "repo": "alo-exp/sidekick"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "sidekick@alo-exp": true
+  }
+}</span></div>
+      <p>On the next Claude Code session, Sidekick installs automatically and makes the <code>/forge</code> skill available in all future sessions. No project-specific setup is required — Sidekick works in any git repository.</p>
 
       <h2 id="health-check">Health Check</h2>
       <p>After installing, verify Forge is ready by running the health check:</p>

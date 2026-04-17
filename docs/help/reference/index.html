@@ -142,6 +142,19 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td>/forge</td><td>Activate Forge delegation mode. Runs health check, bootstraps AGENTS.md if absent, loads SKILL.md.</td></tr>
           <tr><td>/forge:deactivate</td><td>Deactivate Forge delegation mode and return to direct Claude implementation.</td></tr>
           <tr><td>/forge status</td><td>Show current activation state, model, and .forge.toml config summary.</td></tr>
+          <tr><td>/forge-history</td><td>List recent Forge conversations indexed by the progress-surface hook. Shows UUID, timestamp, tool counts, and token usage via <code>forge conversation stats &lt;uuid&gt; --porcelain</code>.</td></tr>
+          <tr><td>/forge-replay &lt;uuid&gt;</td><td>Replay a prior Forge conversation by UUID. Dumps the full transcript via <code>forge conversation dump &lt;uuid&gt; --html</code> for inspection.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="forge-hooks">Plugin Hooks</h2>
+      <p>Three hooks ship in <code>plugin.json</code> and run automatically under the forge-delegation skill:</p>
+      <table class="ref-table">
+        <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When delegation mode is active, rewrites <code>forge -p</code> calls to inject a UUID conversation ID and appends an entry to the idx file so each task is durably trackable.</td></tr>
+          <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output and surfaces a compact STATUS block into the transcript so long-running delegations stream visible progress.</td></tr>
+          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code>.</td></tr>
         </tbody>
       </table>
 
