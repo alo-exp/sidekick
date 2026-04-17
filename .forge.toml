@@ -8,4 +8,4 @@ retention_window = 6
 
 [session]
 provider_id = "open_router"
-model_id = "qwen/qwen3.6-plus"
+model_id = "qwen/qwen3-coder-plus"

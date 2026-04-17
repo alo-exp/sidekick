@@ -216,7 +216,7 @@ max_tokens = 16384
 
 [session]
 provider_id = "open_router"
-model_id = "qwen/qwen3.6-plus"
+model_id = "qwen/qwen3-coder-plus"
 ```
 Write to path: `~/forge/.forge.toml`
 
@@ -320,7 +320,7 @@ forge config set model open_router "google/gemma-4-31b-it:free"
 ```
 Note: free tier uses Google AI Studio's shared pool and is heavily rate-limited during peak hours. Switch back to paid Qwen after adding credits:
 ```bash
-forge config set model open_router qwen/qwen3.6-plus
+forge config set model open_router qwen/qwen3-coder-plus
 ```
 
 ---
@@ -727,7 +727,7 @@ forge -C "${PROJECT_ROOT}" -p "The previous approach of APPROACH didn't work. Tr
 
 ```bash
 # Quick fix
-forge config set model open_router qwen/qwen3.6-plus
+forge config set model open_router qwen/qwen3-coder-plus
 
 # If that errors, re-run full setup from 0A-3
 ```
@@ -758,7 +758,7 @@ max_tokens = 16384
 
 [session]
 provider_id = "open_router"
-model_id = "qwen/qwen3.6-plus"
+model_id = "qwen/qwen3-coder-plus"
 TOML
 ```
 
@@ -900,8 +900,8 @@ git -C "${PROJECT_ROOT}" reset --hard HEAD~1
 
 | Task type | Provider | Recommended model | Why |
 |---|---|---|---|
-| General coding | OpenRouter | `qwen/qwen3.6-plus` | Best overall, 1M context |
-| Screenshot/UI analysis | OpenRouter | `qwen/qwen3.6-plus` | Has vision |
+| General coding | OpenRouter | `qwen/qwen3-coder-plus` | Best overall, 1M context |
+| Screenshot/UI analysis | OpenRouter | `qwen/qwen3-coder-plus` | Has vision |
 | Budget / high volume | OpenRouter | `google/gemma-4-31b-it` | Cheaper, still strong |
 | Rate-limited | OpenRouter | `google/gemma-4-31b-it` | Separate rate limit bucket |
 | MiniMax direct | MiniMax | `MiniMax-M2.7` | Direct API, no routing overhead |
@@ -910,7 +910,7 @@ git -C "${PROJECT_ROOT}" reset --hard HEAD~1
 **Switch commands:**
 ```bash
 # OpenRouter
-forge config set model open_router qwen/qwen3.6-plus       # default
+forge config set model open_router qwen/qwen3-coder-plus       # default
 forge config set model open_router google/gemma-4-31b-it   # alternative
 
 # MiniMax
@@ -933,7 +933,7 @@ forge info
 # ── Setup ────────────────────────────────────────────────────────
 forge info                                   # check status
 # Install: follow STEP 0A-1 above (SHA-256 verify + user confirmation required)
-forge config set model open_router qwen/qwen3.6-plus  # set model
+forge config set model open_router qwen/qwen3-coder-plus  # set model
 
 # ── Delegation ───────────────────────────────────────────────────
 export PATH="${HOME}/.local/bin:${PATH}"

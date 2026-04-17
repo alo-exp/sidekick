@@ -2,6 +2,7 @@
 id: forge
 title: Forge (Sidekick-Orchestrated)
 description: Default Forge agent with Sidekick delegation awareness
+tools: ["*"]
 ---
 
 # Forge Agent -- Sidekick Project Override

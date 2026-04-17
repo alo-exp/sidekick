@@ -69,7 +69,7 @@ Claude configures Forge automatically and delegates all coding work from that po
 ### Providers & Models
 | Provider | Model | Notes |
 |----------|-------|-------|
-| **OpenRouter** (recommended) | **Qwen 3.6 Plus** `qwen/qwen3.6-plus` | Default. 1M context, vision, $0.33/$1.95/MTok |
+| **OpenRouter** (recommended) | **Qwen3 Coder Plus** `qwen/qwen3-coder-plus` | Default. 1M context, tool-use, $0.33/$1.95/MTok |
 | OpenRouter | **Gemma 4** `google/gemma-4-31b-it` | Alternative. Dense, fast, separate rate limit |
 | **MiniMax Coding** | **MiniMax M2.7** `MiniMax-M2.7` | Direct API — get key at platform.minimaxi.com |
 
