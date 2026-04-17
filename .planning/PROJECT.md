@@ -107,7 +107,7 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 ### Active
 
-_(none — awaiting v1.2 milestone requirements definition)_
+_(none — v1.2 milestone shipped 2026-04-18; no v1.3 scope defined yet)_
 
 ### Out of Scope
 
@@ -134,4 +134,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 — Phases 1-4 shipped (v1.1.0, 2026-04-13), Phase 5 shipped (v1.1.2, 2026-04-17); all v1 requirements validated*
+*Last updated: 2026-04-18 — Phases 1-4 shipped (v1.1.0, 2026-04-13), Phase 5 shipped (v1.1.2, 2026-04-17), Phases 6-9 shipped (v1.2.0, 2026-04-18); all 77 requirements validated*
