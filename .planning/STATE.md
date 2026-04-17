@@ -4,17 +4,20 @@
 
 See: .planning/PROJECT.md (updated 2026-04-13)
 
-**Core value:** When `/forge` is active, Claude is a thin orchestrator and Forge does 100% of implementation — with Claude mentoring Forge via AGENTS.md accumulation and acting as fallback only when Forge truly cannot succeed.
-**Current focus:** Phase 1 — Spec, Core Skill, and Forge Config
+**Core value:** Forge is the execution engine; Claude is the process orchestrator. When `/forge` is active, delegation is harness-enforced (PreToolUse hook), Forge work is live-visible in the transcript, and every task is durably recorded for replay.
+**Current focus:** Milestone v1.2 — Forge Delegation + Live Visibility (requirements + roadmap)
 
 ## Current Position
 
-Phase: All (Phases 1-5) shipped; milestone v1.1.2 complete
+Milestone: v1.2 — Forge Delegation + Live Visibility (opened 2026-04-18)
+Phase: Not yet planned (next phase number: 6 — continuing from Phase 5 shipped in v1.1.2)
 Plan: —
-Status: v1.1.2 released on 2026-04-17 — https://github.com/alo-exp/sidekick/releases/tag/v1.1.2
-Last activity: 2026-04-17 — Phase 5 (v1.1.2) shipped. Phases 1-4 previously shipped in v1.1.0 on 2026-04-13.
+Status: Milestone opened; scoped research + requirements + roadmap pending
+Last activity: 2026-04-18 — Backfilled Phases 1-5 shipped state; opened milestone v1.2 with spec locked
 
-Progress: Phases 1-4 shipped as v1.1.0 on 2026-04-13. Phase 5 (v1.1.2 patch) shipped 2026-04-17. Ready for next milestone.
+Progress:
+- v1.1: Phases 1-4 shipped as v1.1.0 on 2026-04-13; Phase 5 (bugfix patch) shipped as v1.1.2 on 2026-04-17. All 34 v1 requirements validated.
+- v1.2: Spec is implementation-ready (11 sections: enforcement hook, live visibility, output style, slash commands, plugin.json updates). Requirements and roadmap to be defined.
 
 ## Performance Metrics
 
@@ -42,28 +45,33 @@ Progress: Phases 1-4 shipped as v1.1.0 on 2026-04-13. Phase 5 (v1.1.2 patch) shi
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Spec first: produce forge-delegation-spec.md before any implementation (Phase 1)
-- New skill at `skills/forge/SKILL.md` — does not replace `skills/forge.md`
-- Forge interaction model is ZSH-interactive only; no headless CLI flags
+- v1.2: Enforce delegation via PreToolUse hook at the Claude Code harness level — not via skill prompting alone
+- v1.2: Live-stream Forge output via `run_in_background: true` + Monitor; prefix lines with `[FORGE]` / `[FORGE-LOG]` for the output style to render
+- v1.2: Leverage `forge conversation` (dump/stats/info) and `~/forge/.forge.db` natively — Sidekick only injects UUIDs and maintains `.forge/conversations.idx`
+- v1.2: Correction to spec — `--conversation-id` must be a real UUID (Forge 2.11.3 requirement); sidekick-style tag becomes a separate human-readable label
 
 ### Roadmap Evolution
 
-- Phase 5 added: Fix Forge delegation-blocking bugs (v1.1.2 patch) — missing tools frontmatter, invalid model IDs in README and vision agent
+- v1.2 milestone opened 2026-04-18: Forge Delegation + Live Visibility — pivots from skill-only delegation (v1.1) to harness-enforced delegation with live-streamed Forge output
 
 ### Pending Todos
 
-- Capture Phase 5 AGENTS.md pattern at repo root: "Forge agent frontmatter MUST include tools: ["*"] or agent is provisioned with zero tools (silent failure mode)."
+- Capture Phase 5 AGENTS.md pattern at repo root: "Forge agent frontmatter MUST include tools: [\"*\"] or agent is provisioned with zero tools (silent failure mode)."
 - Consider scoping Bug 3 (bundle vision agent template via install.sh) for a future minor release.
+- Define v1.2 REQUIREMENTS.md (new REQ-ID categories anticipated: HOOK-*, VIS-*, AUDIT-*, REPLAY-*, STYLE-*)
+- Create v1.2 roadmap via gsd-roadmapper starting at Phase 6
 
 ### Blockers/Concerns
 
-None yet.
+- Spec's `--conversation-id sidekick-<ts>-<hash>` format invalid → must be UUID. Call out in Phase plan for hook implementation.
 
 ## Session Continuity
 
-Last session: 2026-04-17
-Stopped at: v1.1.2 shipped. Milestone v1.1 complete. Ready to start new milestone.
+Last session: 2026-04-18
+Stopped at: Milestone v1.2 opened; backfill committed ([bf22289](https://github.com/alo-exp/sidekick/commit/bf22289)); PROJECT.md updated with v1.2 milestone section; STATE.md reset.
 Resume file: None
 
 Next likely actions:
-- Start new milestone via /gsd-new-milestone
+- Run scoped technical research on v1.2 unknowns (Claude Code PreToolUse hook JSON decision API, output style line-prefix rendering, `run_in_background` + Monitor live-streaming)
+- Define v1.2 REQUIREMENTS.md
+- Spawn gsd-roadmapper for v1.2 phases

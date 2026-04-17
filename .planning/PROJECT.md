@@ -4,9 +4,11 @@
 
 Sidekick is a Claude Code plugin that installs ForgeCode (`forge`) and exposes a `/forge` skill that activates **Forge-first delegation mode** — Claude becomes a thin orchestrator and user-facing agent while Forge performs 100% of actual implementation work. Claude monitors Forge, guides it on failures, and acts as last-resort fallback only when Forge cannot succeed after active intervention.
 
+As of milestone v1.2, delegation is **harness-enforced** via PreToolUse hooks (not just skill-suggested), and Forge's subprocess output is **live-streamed** into the Claude Code transcript with visual distinction, plus a durable audit trail (`forge conversation`-backed) for replay.
+
 ## Core Value
 
-When `/forge` is active, every implementation task goes to Forge. Claude never writes code, edits files, or runs commands itself — it plans, delegates, monitors, mentors, and communicates. Token efficiency and instruction accumulation (via AGENTS.md evolution) are first-class concerns.
+When `/forge` is active, every implementation task goes to Forge. Claude never writes code, edits files, or runs commands itself — it plans, delegates, monitors, mentors, and communicates. Token efficiency and instruction accumulation (via AGENTS.md evolution) are first-class concerns. **Forge is the execution engine; Claude is the process orchestrator** — Claude's direct tool use is reserved for Brain-role work (planning, inspection, verification, GSD/Silver Bullet workflow maintenance).
 
 ## Context
 
@@ -36,6 +38,34 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 5. **Token optimization**: Keep global/project AGENTS.md compact and deduplicated. Claude deduplicates before every write. Selective skill injection — only inject skills relevant to the current task.
 
+## Current Milestone: v1.2 — Forge Delegation + Live Visibility
+
+**Status:** Spec locked; requirements and roadmap in progress
+**Target plugin version:** `sidekick` v1.2.0
+
+**Goals:**
+
+1. **Enforce delegation** — when `/forge` mode is active, all implementation work routes to Forge via a PreToolUse hook; direct `Write`/`Edit`/`NotebookEdit` are blocked, and `Bash forge -p …` commands are rewritten to inject `--conversation-id` + `--verbose` and prefix output with `[FORGE]`/`[FORGE-LOG]` markers.
+2. **Live visibility** — Forge progress streams into the Claude Code transcript in real time via `run_in_background: true` + Monitor, rendered distinctly from Claude narration.
+3. **Audit trail** — every Forge task has a stable conversation ID indexed to `.forge/conversations.idx`, durably stored in `~/forge/.forge.db`, replayable as HTML.
+4. **Visual distinction** — a new output style (`output-styles/forge.md`) renders `[FORGE]` lines in cyan with left border, `[FORGE-LOG]` dim gray, `[FORGE-SUMMARY]` boxed green.
+5. **No duplication of Forge natives** — leverage `forge conversation dump/stats/info` and `~/forge/.forge.db`; Sidekick injects IDs and indexes them, nothing more.
+
+**Target artifacts added:**
+
+- `hooks/forge-delegation-enforcer.sh` (PreToolUse — block bypass + rewrite `forge -p`)
+- `hooks/forge-progress-surface.sh` (PostToolUse — parse STATUS block, emit `[FORGE-SUMMARY]`)
+- `output-styles/forge.md`
+- `commands/forge-replay.md`, `commands/forge-history.md`
+- Updated `skills/forge/SKILL.md` (STEP 4 — `run_in_background` + conversation-id auto-injection note)
+- `.claude-plugin/plugin.json` — register hooks, outputStyles, new commands; bump to v1.2.0
+
+**Known spec corrections (pre-execution):**
+
+- The spec's `--conversation-id sidekick-<ts>-<hash>` format is rejected by Forge CLI 2.11.3 (requires UUID). Hook must generate a valid UUID via `uuidgen | tr 'A-Z' 'a-z'` and pass as `--conversation-id`; the sidekick-style tag is kept as a separate human-readable label alongside the UUID in `.forge/conversations.idx` for `/forge:history` display.
+
+**Out of scope for v1.2:** multi-Forge parallelism, cross-machine conversation sync, custom output style for non-/forge mode, Forge runtime patching, web UI replay viewer.
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
@@ -48,6 +78,10 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 | Global + project AGENTS.md + session log | Three-tier instruction accumulation matches Forge's own priority hierarchy | All three tiers implemented |
 | Guide → Handhold → Take over fallback | Balance autonomy with reliability | Three-level ladder, each level explicit |
 | Version-agnostic spec | Targets behaviors, not CLI flags that may change | Implementation adapts to installed Forge version |
+| v1.2: Harness-level enforcement (PreToolUse hook) vs. skill-only | Skill suggests; hook enforces deterministically at zero latency, ruling out subagent/MCP alternatives | Delegation becomes unbypassable when `/forge` is active |
+| v1.2: Live-stream via `run_in_background` + Monitor | Users need to see Forge work in real time, not a post-hoc summary | Output style with `[FORGE]` line prefixes, rendered distinctly |
+| v1.2: Leverage `forge conversation` natively | Don't rebuild storage, snapshots, stats — Forge already has them | Sidekick injects UUIDs and maintains `.forge/conversations.idx` only |
+| v1.2: Conversation-id must be UUID | Forge 2.11.3 rejects non-UUID custom formats | Hook generates UUID; human-readable tag stored separately in idx |
 
 ## Requirements
 
