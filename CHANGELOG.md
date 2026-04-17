@@ -16,6 +16,15 @@ When `/forge` mode is active, delegation is now **harness-enforced**, not just s
 - **Plugin manifest v1.2.0**: directory-style registration for `commands/` and `output-styles/`, `PostToolUse` hook added alongside existing `PreToolUse`, `_integrity` refreshed with SHA-256 for `skills/forge/SKILL.md`, both hook scripts, the output style, and both new command files.
 - **Test suite expansion**: +47 assertions across 3 new suites — enforcer hook (20), progress surface (7), v1.2 slash commands (12), v1.2 E2E integration (8). Run via `bash tests/run_all.bash`.
 
+### Pre-release hardening (post-initial-tag)
+
+- **Classifier fix** (`hooks/forge-delegation-enforcer.sh`): `is_read_only()` now explicitly rejects `sed -i` and `awk -i inplace` before the single-word fallback match. Surfaced by the coverage audit — the original 20-assertion enforcer suite only exercised the canonical read-only list and missed the edge case where a mutating flag on an otherwise-read-only first token slipped past `decide_bash`'s ordered dispatch. Plugin manifest `_integrity.forge_delegation_enforcer_sha256` refreshed.
+- **v1.2 coverage gap suite** (`tests/test_v12_coverage.bash`): 12 new assertions targeting the enforcer + progress-surface branches not yet exercised (sed -i / awk -i inplace, `>>` append, `> /dev/null` passthrough in three forms, env-var prefix before `forge -p`, 80-char task-hint truncation, tab/newline strip in the hint column, unknown tool_name silent passthrough, broader read-only allowlist, unclassified mutating deny, 20-line STATUS cap, stdout-only summary fallback).
+- **Live-Forge smoke harness** (`tests/smoke/run_smoke.bash`): 3 assertions gated behind `SIDEKICK_LIVE_FORGE=1` — `forge --version`, a minimal `forge -p` round-trip that forces a `STATUS:` block, and UUID-format validation on the auto-injected conversation id. Skipped cleanly (exit 0) when the env var is absent so it is safe to wire into CI.
+- **Live E2E driver** (`tests/testapp/` + `tests/run_live_e2e.bash`): seeded-buggy Python testapp (`add` returns `a - b`) with pure-stdlib unittest. Driver copies the app to `$TMPDIR`, verifies the baseline fails, sends a real 5-field prompt through `forge -C <sandbox> -p`, asserts `calc.py` was patched to `a + b`, `sub` was not touched, and all 3 tests now pass. 180s timeout wrapper; sandbox preserved for inspection. Also gated behind `SIDEKICK_LIVE_FORGE=1`.
+- **Pre-release gate** (`tests/run_release.bash`): chains `run_all.bash` → `smoke/run_smoke.bash` → `run_live_e2e.bash` with fail-fast stage aborts. Without the env var, stage 1 runs and stages 2+3 skip cleanly (exit 0). Before tagging: `SIDEKICK_LIVE_FORGE=1 bash tests/run_release.bash`.
+- **README Testing section**: documents the 3-tier pyramid, the release-gate invocation, and the CI-vs-local split.
+
 ### Corrections merged from research
 
 - `--conversation-id` must be a valid lowercase RFC 4122 UUID (Forge 2.11.3 rejects custom formats). The human-readable `sidekick-<ts>-<hash>` label is preserved as a separate column in `.forge/conversations.idx`.
