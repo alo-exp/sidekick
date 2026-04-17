@@ -95,3 +95,14 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Fallback Ladder and Skill Injection | 0/2 | Not started | - |
 | 3. AGENTS.md Mentoring and Token Optimization | 0/2 | Not started | - |
 | 4. Test Suite | 0/2 | Not started | - |
+
+### Phase 5: Fix Forge delegation-blocking bugs (v1.1.2 patch): missing tools frontmatter, invalid model IDs in README and vision agent
+
+**Goal:** Ship v1.1.2 patch that restores `/forge` delegation from silent-failure to working end-to-end on fresh installs by adding `tools: ["*"]` to the shipped Forge agent template and correcting the invalid OpenRouter model ID (`qwen/qwen3.6-plus` → `qwen/qwen3-coder-plus`) across README, `skills/forge.md`, `.forge.toml`, and Plan 01-03. Leave the repo ready for `/create-release v1.1.2`.
+**Requirements**: FCFG-01, FCFG-02
+**Depends on:** Phase 4
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Patch shipped artifacts: add `tools: ["*"]` to Forge agent template and replace invalid model ID across 10 references (single atomic fix commit)
+- [ ] 05-02-PLAN.md — Release prep: bump README version badge to v1.1.2 and add CHANGELOG 1.1.2 entry (single release-prep commit; user runs `/create-release v1.1.2` afterward)

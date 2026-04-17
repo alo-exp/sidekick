@@ -46,6 +46,10 @@ Recent decisions affecting current work:
 - New skill at `skills/forge/SKILL.md` — does not replace `skills/forge.md`
 - Forge interaction model is ZSH-interactive only; no headless CLI flags
 
+### Roadmap Evolution
+
+- Phase 5 added: Fix Forge delegation-blocking bugs (v1.1.2 patch) — missing tools frontmatter, invalid model IDs in README and vision agent
+
 ### Pending Todos
 
 None yet.
