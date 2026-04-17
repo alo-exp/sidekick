@@ -28,6 +28,7 @@ run_suite "Forge skill structure tests"      "test_forge_skill.bash"
 run_suite "AGENTS.md deduplication tests"    "test_agents_md_dedup.bash"
 run_suite "Skill injection tests"            "test_skill_injection.bash"
 run_suite "Fallback ladder tests"            "test_fallback_ladder.bash"
+run_suite "Forge delegation enforcer hook tests" "test_forge_enforcer_hook.bash"
 
 echo ""
 echo -e "${bold}══════════════════════════════════════════${reset}"

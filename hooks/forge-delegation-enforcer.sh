@@ -84,6 +84,112 @@ decide_write_edit()    { deny_direct_edit; }
 decide_notebook_edit() { deny_direct_edit; }
 
 # -----------------------------------------------------------------------------
+# Audit index + activation-lifecycle helpers (Plan 06-03).
+# -----------------------------------------------------------------------------
+
+# resolve_forge_dir — prints the `.forge/` directory path, preferring
+# CLAUDE_PROJECT_DIR when set (Claude Code populates this to the project root).
+resolve_forge_dir() {
+  printf '%s/.forge' "${CLAUDE_PROJECT_DIR:-$PWD}"
+}
+
+# ensure_forge_dir_and_idx — idempotent lazy init of .forge/ and
+# .forge/conversations.idx. Called only after a successful db_precheck.
+ensure_forge_dir_and_idx() {
+  local dir
+  dir="$(resolve_forge_dir)"
+  mkdir -p "$dir" 2>/dev/null || return 1
+  touch -a "$dir/conversations.idx" 2>/dev/null || return 1
+  return 0
+}
+
+# db_precheck — one-shot `forge conversation list` health check gated by a
+# sentinel file. Sentinel mtime is compared against the marker file via the
+# portable bash built-in `-nt` operator (works on bash 3.2+ across macOS/Linux
+# — avoids the GNU `stat -c %Y` vs BSD `stat -f %m` divergence).
+# Returns 0 if DB writable (or sentinel still fresh), 1 if forge invocation
+# failed.
+db_precheck() {
+  local dir sentinel
+  dir="$(resolve_forge_dir)"
+  sentinel="$dir/.db_check_ok"
+  # If sentinel exists AND marker is NOT newer than sentinel → short-circuit.
+  # The -nt test returns false when sentinel is missing (arg2 missing), which
+  # is why we check existence first.
+  if [[ -f "$sentinel" ]] && ! [[ "$MARKER_FILE" -nt "$sentinel" ]]; then
+    return 0
+  fi
+  # Either sentinel missing or marker newer → run the health check.
+  if forge conversation list >/dev/null 2>&1; then
+    mkdir -p "$dir" 2>/dev/null || true
+    touch "$sentinel" 2>/dev/null || true
+    return 0
+  fi
+  return 1
+}
+
+# extract_task_hint — derive the `-p` argument from a Bash command, using
+# python3 shlex (non-eval, injection-safe). Falls back to the literal string
+# `(task hint unavailable)` if python3 is missing. The eval-based bash parser
+# from the research draft was REJECTED on security grounds — $cmd is
+# untrusted input from Claude Code.
+# See <task_hint_extraction_design> in 06-03-audit-index-and-activation.md.
+extract_task_hint() {
+  local cmd="$1"
+  local hint=""
+  if command -v python3 >/dev/null 2>&1; then
+    hint="$(python3 -c '
+import shlex, sys
+try:
+    toks = shlex.split(sys.argv[1])
+    if "-p" in toks:
+        i = toks.index("-p")
+        if i + 1 < len(toks):
+            sys.stdout.write(toks[i+1])
+except Exception:
+    pass
+' "$cmd" 2>/dev/null || true)"
+  fi
+  if [[ -z "$hint" ]]; then
+    hint="(task hint unavailable)"
+  fi
+  # Replace tabs/newlines with spaces; truncate to 80 chars.
+  hint="${hint//$'\t'/ }"
+  hint="${hint//$'\n'/ }"
+  printf '%s' "${hint:0:80}"
+}
+
+# append_idx_row — write one tab-separated line to .forge/conversations.idx.
+# Dedupes on UUID (grep -qF matches the exact UUID anywhere in the file).
+# All file I/O is wrapped in `|| true` so a filesystem hiccup never causes
+# the hook to exit non-zero AFTER emit_decision has already printed.
+append_idx_row() {
+  local uuid hint dir idx
+  uuid="$1"
+  hint="$2"
+  dir="$(resolve_forge_dir)"
+  idx="$dir/conversations.idx"
+
+  # Dedup: if this UUID is already in the idx, skip.
+  if [[ -f "$idx" ]] && grep -qF "$uuid" "$idx" 2>/dev/null; then
+    return 0
+  fi
+
+  # Portable sidekick-tag (bash 3.2+): take the UUID's last dash-delimited
+  # segment, then the first 8 chars. DO NOT use `${uuid: -8}` — negative-offset
+  # substring requires bash 4+ and fails on macOS stock /bin/bash (3.2).
+  local tag_suffix sidekick_tag
+  tag_suffix="${uuid##*-}"
+  tag_suffix="${tag_suffix:0:8}"
+  sidekick_tag="sidekick-$(date +%s)-$tag_suffix"
+
+  {
+    printf '%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$uuid" "$sidekick_tag" "$hint" >> "$idx"
+  } 2>/dev/null || true
+  return 0
+}
+
+# -----------------------------------------------------------------------------
 # Bash classifier + forge -p rewrite (Plan 06-02).
 #
 # Returns one of five classifications by dispatching to emit_decision or
@@ -224,17 +330,27 @@ decide_bash() {
     if has_conversation_id "$cmd"; then
       return 0  # idempotent passthrough
     fi
-    local rewritten
-    rewritten="$(rewrite_forge_p "$cmd")"
-    emit_decision "allow" "Sidekick: injected --conversation-id + --verbose + output prefixing." "$rewritten"
-    # Hook into audit-index append (Plan 06-03).
-    if declare -f append_idx_row >/dev/null 2>&1; then
-      # Extract UUID from the rewritten command for indexing.
-      local rewritten_uuid hint
-      rewritten_uuid="$(printf '%s' "$rewritten" | grep -oE -- '--conversation-id [0-9a-f-]{36}' | awk '{print $2}')"
-      hint="$(extract_task_hint "$cmd" 2>/dev/null || echo '(task hint unavailable)')"
-      append_idx_row "$rewritten_uuid" "$hint" >/dev/null 2>&1 || true
+    # Strict execution order (see <activation_lifecycle_design> in
+    # 06-03-audit-index-and-activation.md):
+    #   (a) db_precheck — if fails, deny and RETURN. Nothing under .forge/
+    #       is created on this code path.
+    #   (b) ensure_forge_dir_and_idx — lazy init of .forge/ and idx.
+    #   (c) generate UUID + build rewritten command.
+    #   (d) emit_decision.
+    #   (e) append_idx_row.
+    if ! db_precheck; then
+      emit_decision "deny" "Sidekick: Forge DB not writable ('forge conversation list' failed). Deactivate via /forge:deactivate, resolve the Forge state, and re-activate." ""
+      return 0
     fi
+    ensure_forge_dir_and_idx || true
+    local uuid rewritten pipes hint
+    uuid="$(gen_uuid)"
+    rewritten="${cmd/forge /forge --conversation-id $uuid --verbose }"
+    pipes=" 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
+    rewritten="${rewritten}${pipes}"
+    emit_decision "allow" "Sidekick: injected --conversation-id + --verbose + output prefixing." "$rewritten"
+    hint="$(extract_task_hint "$cmd")"
+    append_idx_row "$uuid" "$hint"
     return 0
   fi
 
