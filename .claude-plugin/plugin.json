@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Starting with Forge (ForgeCode), each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
   "author": {
     "name": "Ālo Labs",
@@ -19,6 +19,8 @@
     "orchestration"
   ],
   "skills": "./skills/",
+  "commands": "./commands/",
+  "outputStyles": "./output-styles/",
   "hooks": {
     "PreToolUse": [
       {
@@ -30,14 +32,30 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-progress-surface.sh\""
+          }
+        ]
+      }
     ]
   },
   "_integrity": {
     "_note": "SHA-256 hashes of plugin files — update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
     "install_sh_sha256": "8663dd3deb8581a8d1998b9406643efa0e217c889f10ef0d59e48abf9acc3530",
     "forge_md_sha256": "4aa821e79612cfecf866a8fc59465af66cb1848603b74194cfc14d092e8ad66d",
-    "forge_skill_md_sha256": "473b26299c6d9090c2735ed2c71e53fab2aaac7540eea7b223f56478e0f852a2",
+    "forge_skill_md_sha256": "968e95a5f156ffdb2a3d61bc92aaf34dd579ec6e4a29e2edda212514f00bcf26",
     "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
+    "forge_delegation_enforcer_sha256": "1a0b6b7e3c9c56d17aa4de74544a9f4ff121a6ff1be7f018321148ef038a7cf2",
+    "forge_progress_surface_sha256": "1a4d9038441163fb32023e0f9cc873fa07e1e59876a3d180c59ff0a27fca48f4",
+    "output_style_forge_sha256": "5740c9e2918b65225f5dda31c587aeb0fd4f3d93a61b653d491f8f4a4e87fc77",
+    "command_forge_replay_sha256": "3eb8f37e1274f2aca7e8a9a270ce83146f3e7f5f3c2949f7aa722dd42760ab84",
+    "command_forge_history_sha256": "c35654d04bc73ac94faf6a587964dc235f3abda65b4232531c280dd63f59ff71",
     "forgecode_installer_sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a",
     "verify_at": "https://forgecode.dev/releases",
     "source": "https://github.com/alo-exp/sidekick"

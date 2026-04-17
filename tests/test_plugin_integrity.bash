@@ -72,6 +72,48 @@ else
   assert_fail "forge.md hash consistency" "found ${COUNT} distinct hashes or mismatch with manifest: ${FORGE_HASHES}"
 fi
 
+# =============================================================================
+# v1.2 integrity additions — verify new artifact hashes match manifest claims.
+# These keys were added when the plugin bumped to 1.2.0; older manifests used
+# only the four keys above. Missing keys fail fast.
+# =============================================================================
+echo ""
+echo "=== v1.2 artifact integrity verification ==="
+
+check_v12_hash() {
+  local key="$1" path="$2"
+  local claimed actual
+  claimed=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity'].get('${key}',''))" 2>/dev/null)
+  actual=$(sha256 "${PLUGIN_DIR}/${path}")
+  if [ -z "${claimed}" ]; then
+    assert_fail "v1.2 integrity key ${key}" "missing from manifest"
+    return
+  fi
+  if [ -z "${actual}" ]; then
+    assert_fail "v1.2 integrity file ${path}" "not present on disk"
+    return
+  fi
+  if [ "${claimed}" = "${actual}" ]; then
+    assert_pass "${path} hash matches manifest (${key})"
+  else
+    assert_fail "${path} hash" "claimed=${claimed:0:16}… actual=${actual:0:16}…"
+  fi
+}
+
+check_v12_hash "forge_skill_md_sha256"          "skills/forge/SKILL.md"
+check_v12_hash "forge_delegation_enforcer_sha256" "hooks/forge-delegation-enforcer.sh"
+check_v12_hash "forge_progress_surface_sha256"  "hooks/forge-progress-surface.sh"
+check_v12_hash "output_style_forge_sha256"      "output-styles/forge.md"
+check_v12_hash "command_forge_replay_sha256"    "commands/forge-replay.md"
+check_v12_hash "command_forge_history_sha256"   "commands/forge-history.md"
+
+# Verify plugin version was bumped alongside v1.2 artifacts.
+PLUGIN_VERSION=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d.get('version',''))")
+case "${PLUGIN_VERSION}" in
+  1.2.*) assert_pass "plugin.json version is 1.2.x (${PLUGIN_VERSION})" ;;
+  *)     assert_fail "plugin.json version" "expected 1.2.x, got ${PLUGIN_VERSION}" ;;
+esac
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"
