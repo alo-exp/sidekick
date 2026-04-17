@@ -4,8 +4,8 @@
 
 ### Pre-release quality gate
 
-- **`docs/pre-release-quality-gate.md`**: 4-stage pre-release audit document (Code Review Triad → Big-Picture Consistency → Public-Facing Content → SENTINEL). Stages 1/3/4 dispatch reviewers in parallel; Stage 1 loops to zero accepted items across `/engineering:code-review`, `/gsd-code-review`, `/requesting-code-review`, and `/receiving-code-review`. Each stage writes a `quality-gate-stage-N` marker to `~/.claude/.silver-bullet/state` after `/superpowers:verification-before-completion`.
-- **`hooks/validate-release-gate.sh`**: PreToolUse guard wired into the user's `~/.claude/settings.json`. Intercepts `gh release create` Bash calls and blocks them with a `permissionDecision: deny` unless all four stage markers are present in the state file. Marker set is keyed to the stage count in the doc — update both files together if stages are added or removed.
+- **`docs/pre-release-quality-gate.md`**: 4-stage pre-release audit document (Code Review Triad → Big-Picture Consistency → Public-Facing Content → SENTINEL). Stages 1/3/4 dispatch reviewers in parallel; Stage 1 loops to zero accepted items across `/engineering:code-review`, `/gsd-code-review`, `/superpowers:requesting-code-review`, and `/superpowers:receiving-code-review`. Each stage writes a `quality-gate-stage-N` marker to `~/.claude/.sidekick/quality-gate-state` after `/superpowers:verification-before-completion`. Kept separate from Silver Bullet's own state file so its tamper hook does not reject the writes.
+- **`hooks/validate-release-gate.sh`**: PreToolUse guard registered in `plugin.json` (matcher `Bash`). Intercepts `gh release create` Bash calls and emits the canonical `permissionDecision: deny` envelope unless all four stage markers are present (anchored whole-line match) in the Sidekick state file. Gated on `tool_name == "Bash"` so reads/edits of files containing the literal string don't trigger false blocks. Uses `jq` (fails closed if absent). Marker set is keyed to `STAGE_COUNT` in the hook — update both files together if stages are added or removed.
 
 ## 1.2.0 — 2026-04-18
 

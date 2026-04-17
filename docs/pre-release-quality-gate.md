@@ -8,7 +8,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 
 ## Enforcement
 
-**State file**: `~/.claude/.silver-bullet/state`
+**State file**: `~/.claude/.sidekick/quality-gate-state` (kept separate from Silver Bullet's state file because Silver Bullet's `dev-cycle-check.sh` hook blocks direct writes to its own state path)
 
 **Required markers** (must all be present before release):
 - `quality-gate-stage-1`
@@ -21,7 +21,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 Each stage is complete only when:
 1. The work is done and verified
 2. The `/superpowers:verification-before-completion` skill has been invoked
-3. The marker is written: `echo "quality-gate-stage-N" >> ~/.claude/.silver-bullet/state`
+3. The marker is written: `echo "quality-gate-stage-N" >> ~/.claude/.sidekick/quality-gate-state`
 
 **Violating the verification rule is equivalent to skipping the stage.**
 
@@ -34,11 +34,11 @@ Each stage is complete only when:
 1. **Dispatch in parallel** — invoke all three reviewers simultaneously as subagents:
    - `/engineering:code-review` — structured quality review: security, performance, correctness, maintainability
    - `/gsd-code-review` — GSD automated code reviewer
-   - `/requesting-code-review` — dispatches `superpowers:code-reviewer` automated reviewer
+   - `/superpowers:requesting-code-review` — dispatches `superpowers:code-reviewer` automated reviewer
 2. **Collect all findings** — wait for all three to complete, then aggregate their output
-3. Invoke `/receiving-code-review` — triage the combined findings from all three reviewers
+3. Invoke `/superpowers:receiving-code-review` — triage the combined findings from all three reviewers
 4. Fix all accepted issues
-5. **Loop**: repeat steps 1–4 until `/receiving-code-review` produces zero accepted items
+5. **Loop**: repeat steps 1–4 until `/superpowers:receiving-code-review` produces zero accepted items
 
 Use the checklists below as review guidance for the parallel reviewers in step 1.
 
@@ -129,7 +129,7 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 
 2. **No model IDs in credential position**: Verify no file stores an OpenRouter model ID in a field named `api_key`, `token`, or `secret`.
 
-3. **Forge credentials path**: Verify `skills/forge/SKILL.md` reads the OpenRouter key from `~/.forge/.credentials.json` using the list-format schema `[{id, auth_details}]` — not the legacy flat dict schema.
+3. **Forge credentials path**: Verify `skills/forge/SKILL.md` reads the OpenRouter key from `~/forge/.credentials.json` using the list-format schema `[{id, auth_details}]` — not the legacy flat dict schema. (Forge uses `~/forge/`, not `~/.forge/` — no leading dot.)
 
 4. **SKILL.md credential scope**: Verify no SKILL.md ever instructs Claude to display, log, or echo retrieved API key values into the transcript — only to verify the key exists.
 
@@ -145,10 +145,11 @@ After the review loop produces zero accepted items AND the structure + security 
    `record-skill.sh` tracks it. Do NOT record the stage marker until BOTH are done.
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-1" >> ~/.claude/.silver-bullet/state
+   mkdir -p ~/.claude/.sidekick
+   echo "quality-gate-stage-1" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
-**Exit criteria**: Zero accepted items from `/receiving-code-review` on two consecutive loop passes, structure and security checks clean, verification skill invoked, marker written.
+**Exit criteria**: Zero accepted items from `/superpowers:receiving-code-review` on two consecutive loop passes, structure and security checks clean, verification skill invoked, marker written.
 
 ---
 
@@ -188,7 +189,7 @@ Audit test coverage across all test files:
 Audit the end-to-end security posture of the Forge delegation flow:
 
 - **Hook output truncation**: `forge-progress-surface.sh` caps STATUS output at 20 lines — no unbounded Forge output reaches the transcript
-- **Credential file path**: The credentials path used in `skills/forge/SKILL.md` (`~/.forge/.credentials.json`) is the correct current path (not `~/forge/.credentials.json` or any variant)
+- **Credential file path**: The credentials path used in `skills/forge/SKILL.md` (`~/forge/.credentials.json`) is the correct current path (Forge's config dir is `~/forge/`, not `~/.forge/` — no leading dot)
 - **Credentials schema**: The list-format extraction `[{id, auth_details}]` is correctly documented — not the legacy flat dict. Both schemas are not simultaneously supported without explicit disambiguation.
 - **Forge subprocess isolation**: Verify the enforcer hook does not pass any Claude session context (API keys, current project path beyond CWD) to the `forge -p` subprocess
 - **`.forge/conversations.idx` scope**: Index rows contain UUID, human tag, task hint (≤80 chars, tabs/newlines stripped) — no credential values, no full prompt text
@@ -221,7 +222,8 @@ After two consecutive clean passes across all 5 dimensions:
 1. Invoke `/superpowers:verification-before-completion`
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-2" >> ~/.claude/.silver-bullet/state
+   mkdir -p ~/.claude/.sidekick
+   echo "quality-gate-stage-2" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: Two consecutive clean passes, no consistency gaps remain, marker written.
@@ -287,7 +289,8 @@ All 13 suites must pass with 0 failures. Then push to main and wait for CI green
 1. Invoke `/superpowers:verification-before-completion`
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-3" >> ~/.claude/.silver-bullet/state
+   mkdir -p ~/.claude/.sidekick
+   echo "quality-gate-stage-3" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: All public-facing content accurate and current, `run_all.bash` passes, CI green on main, marker written.
@@ -346,7 +349,8 @@ After all three targets are clean with no blocking issues:
 2. Invoke `/superpowers:verification-before-completion`
 3. Write the marker:
    ```bash
-   echo "quality-gate-stage-4" >> ~/.claude/.silver-bullet/state
+   mkdir -p ~/.claude/.sidekick
+   echo "quality-gate-stage-4" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: Zero blocking security findings, all three targets pass clean, marker written.
@@ -355,12 +359,12 @@ After all three targets are clean with no blocking issues:
 
 ## Release
 
-After all 4 markers are written to `~/.claude/.silver-bullet/state`:
+After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`:
 
 ```bash
-# Verify all 4 markers are present
-grep -c "quality-gate-stage-" ~/.claude/.silver-bullet/state
-# Must output 4
+# Verify all 4 distinct markers are present (handles duplicated rows)
+count=$(grep -oE '^quality-gate-stage-[1-4]$' ~/.claude/.sidekick/quality-gate-state | sort -u | wc -l | tr -d ' ')
+[ "$count" -eq 4 ] || { echo "Quality gate incomplete: $count/4 stages present"; exit 1; }
 
 # Create the GitHub release
 gh release create v<version> \

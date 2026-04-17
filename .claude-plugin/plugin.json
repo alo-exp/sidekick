@@ -31,6 +31,15 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-delegation-enforcer.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-release-gate.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -53,6 +62,7 @@
     "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
     "forge_delegation_enforcer_sha256": "b570cae6c629c1f033367e4cea5caa4faea7603d8e6718f772ee1c380fe01b45",
     "forge_progress_surface_sha256": "1a4d9038441163fb32023e0f9cc873fa07e1e59876a3d180c59ff0a27fca48f4",
+    "validate_release_gate_sha256": "cce77224d7ff340f296f78e35efd3f073cea4e61f0065c97f1d7d53cb660faa9",
     "output_style_forge_sha256": "5740c9e2918b65225f5dda31c587aeb0fd4f3d93a61b653d491f8f4a4e87fc77",
     "command_forge_replay_sha256": "3eb8f37e1274f2aca7e8a9a270ce83146f3e7f5f3c2949f7aa722dd42760ab84",
     "command_forge_history_sha256": "c35654d04bc73ac94faf6a587964dc235f3abda65b4232531c280dd63f59ff71",
