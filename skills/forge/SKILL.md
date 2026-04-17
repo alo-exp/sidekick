@@ -45,6 +45,23 @@ Per the non-destructive rule, create only if absent -- never overwrite existing 
 > "Forge-first delegation mode activated. All implementation tasks will be routed to Forge."
 > "To deactivate: `/forge:deactivate`"
 
+### 5. Output style + audit index (v1.2)
+
+After the marker file is written, the PreToolUse enforcer hook and PostToolUse progress-surface hook both activate automatically — they are gated on the same marker.
+
+- **Output style:** attempt to switch the active output style to `forge` (the file at `output-styles/forge.md`). If the host does not support programmatic output-style switching, leave the user a one-line note — the hook still prefixes Forge output with `[FORGE]` / `[FORGE-LOG]` regardless of style.
+- **Audit index:** `.forge/conversations.idx` is created lazily on first `forge -p` invocation by the enforcer hook. No action required here.
+
+Deactivation reverts the output style to the prior one; see `## Deactivation` below.
+
+### 6. Invocation mode — `run_in_background` for long tasks (v1.2)
+
+When composing a `Bash` tool call to invoke `forge -p "..."`:
+
+- **For tasks expected to exceed 10 seconds** (most refactors, multi-file edits, test runs): prefer `Bash({ command: "forge -p '...'", run_in_background: true })` followed by `Monitor({ shell_id })`. Each line of Forge stdout streams to the transcript live, prefixed by `[FORGE]` (and stderr by `[FORGE-LOG]`) via the enforcer hook's tee pipes.
+- **For short tasks (<10 s)** or when the host is Bedrock / Vertex / Foundry (where `Monitor` may be unavailable): fall back to foreground `Bash({ command: "forge -p '...'" })`. The user sees only the completed output, but correctness is unaffected — the PostToolUse hook still emits a `[FORGE-SUMMARY]` block.
+- **Do NOT manually add** `--conversation-id` or `--verbose` to the command. The PreToolUse enforcer injects both automatically. If you need to resume a prior conversation, pass `--conversation-id <existing-uuid>` and the hook will detect it and pass through unchanged (idempotent).
+
 ---
 
 ## Delegation Protocol (while active)
@@ -62,8 +79,10 @@ Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-activ
 ## Deactivation (`/forge:deactivate`)
 
 1. Check if `~/.claude/.forge-delegation-active` exists.
-   - **If yes:** delete it, confirm: **"Forge-first mode deactivated. Claude-direct mode restored."**
+   - **If yes:** delete it, then attempt to revert the active output style to `default` (or the prior style if tracked). Confirm: **"Forge-first mode deactivated. Claude-direct mode restored."**
    - **If no:** acknowledge: **"Forge-first mode is not currently active."**
+
+Note (v1.2): `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is read by `/forge:history` and `/forge:replay`.
 
 ---
 
