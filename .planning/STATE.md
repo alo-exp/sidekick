@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1.2
-milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
-status: executing
-stopped_at: "Milestone v1.2 opened; backfill committed ([bf22289](https://github.com/alo-exp/sidekick/commit/bf22289)); PROJECT.md updated with v1.2 milestone section; STATE.md reset."
-last_updated: "2026-04-17T16:09:48.597Z"
-last_activity: 2026-04-17 -- Phase 6 planning complete
+milestone: v1.2.0
+milestone_name: "Forge Delegation + Live Visibility"
+status: shipped
+stopped_at: "v1.2.0 released — CHANGELOG + README + tag + integrity hashes updated, all test suites pass."
+last_updated: "2026-04-18T04:00:00.000Z"
+last_activity: 2026-04-18 -- v1.2.0 shipped (Phases 6-9)
 progress:
   total_phases: 9
-  completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
+  completed_phases: 9
+  total_plans: 18
+  completed_plans: 18
   percent: 100
 ---
 
@@ -18,80 +18,77 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-13)
+See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Forge is the execution engine; Claude is the process orchestrator. When `/forge` is active, delegation is harness-enforced (PreToolUse hook), Forge work is live-visible in the transcript, and every task is durably recorded for replay.
-**Current focus:** Milestone v1.2 — Forge Delegation + Live Visibility (requirements + roadmap)
+**Current focus:** v1.2.0 shipped; no milestone currently open.
 
 ## Current Position
 
-Milestone: v1.2 — Forge Delegation + Live Visibility (opened 2026-04-18)
-Phase: Not yet planned (next phase number: 6 — continuing from Phase 5 shipped in v1.1.2)
+Milestone: v1.2.0 — Forge Delegation + Live Visibility — SHIPPED 2026-04-18
+Phase: All v1.2 phases complete (6, 7, 8, 9)
 Plan: —
-Status: Ready to execute
-Last activity: 2026-04-17 -- Phase 6 planning complete
+Status: Released
+Last activity: 2026-04-18 -- Cut v1.2.0 release
 
 Progress:
 
 - v1.1: Phases 1-4 shipped as v1.1.0 on 2026-04-13; Phase 5 (bugfix patch) shipped as v1.1.2 on 2026-04-17. All 34 v1 requirements validated.
-- v1.2: Spec is implementation-ready (11 sections: enforcement hook, live visibility, output style, slash commands, plugin.json updates). Requirements and roadmap to be defined.
+- v1.2: Phases 6-9 shipped as v1.2.0 on 2026-04-18. PreToolUse enforcement + PostToolUse progress surface + /forge:replay + /forge:history + plugin manifest v1.2.0 + full v1.2 test suite (47 new tests, all green).
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: -
+- Total plans completed: 18 (across v1.1 + v1.2)
+- v1.2 plan throughput: 10 plans in 1 day (Phases 6 Wave 1-3, Phase 7, Phase 8 x2, Phase 9 x2, release)
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 6 | 3 | Shipped 2026-04-18 |
+| 7 | 3 | Shipped 2026-04-18 |
+| 8 | 2 | Shipped 2026-04-18 |
+| 9 | 2 | Shipped 2026-04-18 |
 
 **Recent Trend:**
 
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
+- Phases 6-9 executed autonomously in a single pass with 1 round of corrections (hook pipeline hardening under `set -euo pipefail`).
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Key v1.2 decisions:
 
-- v1.2: Enforce delegation via PreToolUse hook at the Claude Code harness level — not via skill prompting alone
-- v1.2: Live-stream Forge output via `run_in_background: true` + Monitor; prefix lines with `[FORGE]` / `[FORGE-LOG]` for the output style to render
-- v1.2: Leverage `forge conversation` (dump/stats/info) and `~/forge/.forge.db` natively — Sidekick only injects UUIDs and maintains `.forge/conversations.idx`
-- v1.2: Correction to spec — `--conversation-id` must be a real UUID (Forge 2.11.3 requirement); sidekick-style tag becomes a separate human-readable label
+- Enforce delegation via PreToolUse hook at the Claude Code harness level — not via skill prompting alone
+- Live-stream Forge output via `run_in_background: true` + Monitor; prefix lines with `[FORGE]` / `[FORGE-LOG]` for the output style to render
+- Leverage `forge conversation` (dump/stats/info) and `~/forge/.forge.db` natively — Sidekick only injects UUIDs and maintains `.forge/conversations.idx`
+- Correction: `--conversation-id` must be a real UUID (Forge 2.11.3 requirement); the sidekick-`<ts>`-`<hash>` tag is stored as a separate human-readable label column in the idx
+- Correction: Claude Code output styles shape assistant prose, not raw tool output — `output-styles/forge.md` reframed as a narration contract, not a color renderer
 
 ### Roadmap Evolution
 
-- v1.2 milestone opened 2026-04-18: Forge Delegation + Live Visibility — pivots from skill-only delegation (v1.1) to harness-enforced delegation with live-streamed Forge output
+- v1.2 milestone opened 2026-04-18: Forge Delegation + Live Visibility
+- v1.2 milestone closed 2026-04-18: all 4 phases shipped, v1.2.0 released
 
 ### Pending Todos
 
-- Capture Phase 5 AGENTS.md pattern at repo root: "Forge agent frontmatter MUST include tools: [\"*\"] or agent is provisioned with zero tools (silent failure mode)."
-- Consider scoping Bug 3 (bundle vision agent template via install.sh) for a future minor release.
-- Define v1.2 REQUIREMENTS.md (new REQ-ID categories anticipated: HOOK-*, VIS-*, AUDIT-*, REPLAY-*, STYLE-*)
-- Create v1.2 roadmap via gsd-roadmapper starting at Phase 6
+- Next milestone planning (no v1.3 scope defined yet)
 
 ### Blockers/Concerns
 
-- Spec's `--conversation-id sidekick-<ts>-<hash>` format invalid → must be UUID. Call out in Phase plan for hook implementation.
+- None — all v1.2 success criteria met, full test suite green, release artifacts consistent.
 
 ## Session Continuity
 
 Last session: 2026-04-18
-Stopped at: Milestone v1.2 opened; backfill committed ([bf22289](https://github.com/alo-exp/sidekick/commit/bf22289)); PROJECT.md updated with v1.2 milestone section; STATE.md reset.
+Stopped at: v1.2.0 released; CHANGELOG + README badge + git tag v1.2.0 + STATE.md + PROJECT.md updates complete.
 Resume file: None
 
 Next likely actions:
 
-- Run scoped technical research on v1.2 unknowns (Claude Code PreToolUse hook JSON decision API, output style line-prefix rendering, `run_in_background` + Monitor live-streaming)
-- Define v1.2 REQUIREMENTS.md
-- Spawn gsd-roadmapper for v1.2 phases
+- Monitor field usage of `/forge:replay` and `/forge:history` for UX refinement signals
+- Scope v1.3 (potential topics: multi-Forge parallelism, cross-machine conversation sync, web UI replay viewer — all explicitly out of scope for v1.2)

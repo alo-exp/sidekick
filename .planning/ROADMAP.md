@@ -17,10 +17,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: AGENTS.md Mentoring and Token Optimization** - Three-tier instruction accumulation + deduplication  _(shipped in v1.1.0, 2026-04-13)_
 - [x] **Phase 4: Test Suite** - Full coverage for activation, fallback, injection, and mentoring loop  _(shipped in v1.1.0, 2026-04-13)_
 - [x] **Phase 5: Forge Agent Frontmatter + Model ID Patch** - `tools: ["*"]` frontmatter fix + invalid model ID corrections across repo  _(shipped in v1.1.2, 2026-04-17)_
-- [ ] **Phase 6: Delegation Enforcement Hook + Audit Index** - PreToolUse enforcer hook (`forge-delegation-enforcer.sh`) + UUID injection + `.forge/conversations.idx` audit trail + activation/deactivation lifecycle
-- [ ] **Phase 7: Live Visibility + Progress Surface + Output Style** - PostToolUse progress-surface hook (`forge-progress-surface.sh`) + SKILL.md STEP 4 update + `output-styles/forge.md` narration override + Monitor streaming guidance
-- [ ] **Phase 8: Slash Commands + Plugin Manifest** - `forge-replay.md` + `forge-history.md` commands + `plugin.json` bumped to v1.2.0 with all new artifacts registered and integrity hashes refreshed
-- [ ] **Phase 9: v1.2 Test Suite** - Unit + integration tests covering enforcer hook, progress surface, UUID generation, history pruning, and full end-to-end v1.2 delegation flow
+- [x] **Phase 6: Delegation Enforcement Hook + Audit Index** - PreToolUse enforcer hook (`forge-delegation-enforcer.sh`) + UUID injection + `.forge/conversations.idx` audit trail + activation/deactivation lifecycle  _(shipped 2026-04-18)_
+- [x] **Phase 7: Live Visibility + Progress Surface + Output Style** - PostToolUse progress-surface hook (`forge-progress-surface.sh`) + SKILL.md STEP 5/6 update + `output-styles/forge.md` narration override + Monitor streaming guidance  _(shipped 2026-04-18)_
+- [x] **Phase 8: Slash Commands + Plugin Manifest** - `forge-replay.md` + `forge-history.md` commands + `plugin.json` bumped to v1.2.0 with all new artifacts registered and integrity hashes refreshed  _(shipped 2026-04-18)_
+- [x] **Phase 9: v1.2 Test Suite** - Unit + integration tests covering enforcer hook, progress surface, UUID generation, history pruning, and full end-to-end v1.2 delegation flow  _(shipped 2026-04-18)_
 
 ## Phase Details
 
@@ -120,10 +120,10 @@ Plans:
 
 ### Phase Summary
 
-- [ ] **Phase 6: Delegation Enforcement Hook + Audit Index** - PreToolUse enforcer hook with UUID injection, allow/deny/rewrite logic, and append-only `.forge/conversations.idx` audit trail; activation/deactivation lifecycle commands updated
-- [ ] **Phase 7: Live Visibility + Progress Surface + Output Style** - PostToolUse progress-surface hook parsing Forge STATUS blocks; `skills/forge/SKILL.md` STEP 4 updated with `run_in_background` + Monitor guidance; `output-styles/forge.md` narration override shipped
-- [ ] **Phase 8: Slash Commands + Plugin Manifest** - `/forge:replay` and `/forge:history` commands; `plugin.json` bumped to v1.2.0 with all hooks, output style, and commands registered; integrity hashes refreshed
-- [ ] **Phase 9: v1.2 Test Suite** - Unit tests for both hooks, UUID generation, and history pruning; integration test for full v1.2 end-to-end delegation flow
+- [x] **Phase 6: Delegation Enforcement Hook + Audit Index** - PreToolUse enforcer hook with UUID injection, allow/deny/rewrite logic, and append-only `.forge/conversations.idx` audit trail; activation/deactivation lifecycle commands updated  _(shipped 2026-04-18)_
+- [x] **Phase 7: Live Visibility + Progress Surface + Output Style** - PostToolUse progress-surface hook parsing Forge STATUS blocks; `skills/forge/SKILL.md` STEP 5/6 updated with `run_in_background` + Monitor guidance; `output-styles/forge.md` narration override shipped  _(shipped 2026-04-18)_
+- [x] **Phase 8: Slash Commands + Plugin Manifest** - `/forge:replay` and `/forge:history` commands; `plugin.json` bumped to v1.2.0 with all hooks, output style, and commands registered; integrity hashes refreshed  _(shipped 2026-04-18)_
+- [x] **Phase 9: v1.2 Test Suite** - Unit tests for both hooks, UUID generation, and history pruning; integration test for full v1.2 end-to-end delegation flow  _(shipped 2026-04-18)_
 
 ### Phase Details
 
@@ -184,10 +184,10 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Delegation Enforcement Hook + Audit Index | 0/3 | Not started | - |
-| 7. Live Visibility + Progress Surface + Output Style | 0/3 | Not started | - |
-| 8. Slash Commands + Plugin Manifest | 0/2 | Not started | - |
-| 9. v1.2 Test Suite | 0/2 | Not started | - |
+| 6. Delegation Enforcement Hook + Audit Index | 3/3 | Shipped | 2026-04-18 |
+| 7. Live Visibility + Progress Surface + Output Style | 3/3 | Shipped | 2026-04-18 |
+| 8. Slash Commands + Plugin Manifest | 2/2 | Shipped | 2026-04-18 |
+| 9. v1.2 Test Suite | 2/2 | Shipped | 2026-04-18 |
 
 ### v1.2 Requirement Coverage
 

@@ -40,8 +40,8 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 ## Current Milestone: v1.2 — Forge Delegation + Live Visibility
 
-**Status:** Spec locked; requirements and roadmap in progress
-**Target plugin version:** `sidekick` v1.2.0
+**Status:** SHIPPED on 2026-04-18 as v1.2.0. GitHub Release: https://github.com/alo-exp/sidekick/releases/tag/v1.2.0
+**Plugin version:** `sidekick` v1.2.0
 
 **Goals:**
 
