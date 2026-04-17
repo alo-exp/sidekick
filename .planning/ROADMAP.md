@@ -2,7 +2,7 @@
 
 ## Overview
 
-This roadmap delivers the `/forge` skill and its full supporting infrastructure across four phases. Phase 1 produces a detailed spec and the core skill with Forge configuration files before any implementation touches the running plugin. Phase 2 adds the fallback ladder and skill injection layer. Phase 3 adds the AGENTS.md mentoring loop and token optimization. Phase 4 closes with a test suite that covers all new behavior. The existing `install.sh`, `hooks/hooks.json`, and `skills/forge.md` are never modified.
+This roadmap delivers the `/forge` skill and its full supporting infrastructure across four phases. Phase 1 produces a detailed spec and the core skill with Forge configuration files before any implementation touches the running plugin. Phase 2 adds the fallback ladder and skill injection layer. Phase 3 adds the AGENTS.md mentoring loop and token optimization. Phase 4 closes with a test suite that covers all new behavior. The existing `install.sh`, `hooks/hooks.json`, and `skills/forge.md` are never modified. Milestone v1.2 (Phases 6–9) extends the plugin with harness-level delegation enforcement via PreToolUse/PostToolUse hooks, live Forge output visibility, a durable conversation audit index, slash commands for replay and history, and a full v1.2 test suite.
 
 ## Phases
 
@@ -16,6 +16,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Fallback Ladder and Skill Injection** - Guide → Handhold → Take over + selective SKILL.md injection  _(shipped in v1.1.0, 2026-04-13)_
 - [x] **Phase 3: AGENTS.md Mentoring and Token Optimization** - Three-tier instruction accumulation + deduplication  _(shipped in v1.1.0, 2026-04-13)_
 - [x] **Phase 4: Test Suite** - Full coverage for activation, fallback, injection, and mentoring loop  _(shipped in v1.1.0, 2026-04-13)_
+- [x] **Phase 5: Forge Agent Frontmatter + Model ID Patch** - `tools: ["*"]` frontmatter fix + invalid model ID corrections across repo  _(shipped in v1.1.2, 2026-04-17)_
+- [ ] **Phase 6: Delegation Enforcement Hook + Audit Index** - PreToolUse enforcer hook (`forge-delegation-enforcer.sh`) + UUID injection + `.forge/conversations.idx` audit trail + activation/deactivation lifecycle
+- [ ] **Phase 7: Live Visibility + Progress Surface + Output Style** - PostToolUse progress-surface hook (`forge-progress-surface.sh`) + SKILL.md STEP 4 update + `output-styles/forge.md` narration override + Monitor streaming guidance
+- [ ] **Phase 8: Slash Commands + Plugin Manifest** - `forge-replay.md` + `forge-history.md` commands + `plugin.json` bumped to v1.2.0 with all new artifacts registered and integrity hashes refreshed
+- [ ] **Phase 9: v1.2 Test Suite** - Unit + integration tests covering enforcer hook, progress surface, UUID generation, history pruning, and full end-to-end v1.2 delegation flow
 
 ## Phase Details
 
@@ -108,3 +113,126 @@ Plans:
 - [x] 05-02-PLAN.md — Release prep: bump README version badge to v1.1.2 and add CHANGELOG 1.1.2 entry (single release-prep commit; user runs `/create-release v1.1.2` afterward)  _(shipped in 3eee7ce)_
 
 **Status:** SHIPPED on 2026-04-17 as v1.1.2. GitHub Release: https://github.com/alo-exp/sidekick/releases/tag/v1.1.2
+
+---
+
+## v1.2 — Forge Delegation + Live Visibility
+
+### Phase Summary
+
+- [ ] **Phase 6: Delegation Enforcement Hook + Audit Index** - PreToolUse enforcer hook with UUID injection, allow/deny/rewrite logic, and append-only `.forge/conversations.idx` audit trail; activation/deactivation lifecycle commands updated
+- [ ] **Phase 7: Live Visibility + Progress Surface + Output Style** - PostToolUse progress-surface hook parsing Forge STATUS blocks; `skills/forge/SKILL.md` STEP 4 updated with `run_in_background` + Monitor guidance; `output-styles/forge.md` narration override shipped
+- [ ] **Phase 8: Slash Commands + Plugin Manifest** - `/forge:replay` and `/forge:history` commands; `plugin.json` bumped to v1.2.0 with all hooks, output style, and commands registered; integrity hashes refreshed
+- [ ] **Phase 9: v1.2 Test Suite** - Unit tests for both hooks, UUID generation, and history pruning; integration test for full v1.2 end-to-end delegation flow
+
+### Phase Details
+
+#### Phase 6: Delegation Enforcement Hook + Audit Index
+**Goal**: When `/forge` mode is active, direct `Write`/`Edit`/`NotebookEdit` calls are deterministically blocked at the harness level, `Bash forge -p` commands are rewritten to inject a valid UUID `--conversation-id` and `--verbose`, read-only Brain-role Bash commands pass through unmodified, and every rewritten Forge invocation is appended to `.forge/conversations.idx`.
+**Depends on**: Phase 5
+**Requirements**: HOOK-01, HOOK-02, HOOK-03, HOOK-04, HOOK-05, HOOK-06, HOOK-07, HOOK-08, HOOK-09, AUDIT-01, AUDIT-02, AUDIT-03, AUDIT-04, ACT-01, ACT-02, ACT-03
+**Success Criteria** (what must be TRUE):
+  1. While `/forge` mode is active, submitting a `Write`, `Edit`, or `NotebookEdit` tool call produces a `permissionDecision: "deny"` response with a user-visible reason directing delegation to `forge -p` — the file is never written
+  2. A `Bash forge -p "…"` command is transparently rewritten so the actual shell command contains `--conversation-id <lowercase-UUID> --verbose`, and the UUID is a valid RFC 4122 UUID (regex `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+  3. A `Bash` command that is already a `forge -p` call containing `--conversation-id` is passed through without a second UUID being injected
+  4. Read-only Brain-role commands (`git status`, `ls`, `grep`, `cat`, `find`, etc.) are allowed unchanged — the hook emits no decision for them
+  5. After a rewritten `forge -p` invocation, `.forge/conversations.idx` gains exactly one new line with format `<ISO8601-UTC> <UUID> <sidekick-tag> <task-hint>`
+  6. When `~/.claude/.forge-delegation-active` does not exist, the hook exits 0 and emits no decision for any tool call (no-op mode)
+**Plans**: TBD
+
+#### Phase 7: Live Visibility + Progress Surface + Output Style
+**Goal**: Forge subprocess output streams into Claude's context in real time via `run_in_background` + Monitor, a PostToolUse hook distills the Forge STATUS block into a formatted `[FORGE-SUMMARY]` with replay hint, and an output-style file shapes Claude's narration tone while `/forge` mode is active — without claiming to style raw tool output.
+**Depends on**: Phase 6
+**Requirements**: VIS-01, VIS-02, VIS-03, VIS-04, SURF-01, SURF-02, SURF-03, SURF-04, SURF-05, STYLE-01, STYLE-02, STYLE-03, STYLE-04, ACT-04
+**Success Criteria** (what must be TRUE):
+  1. `skills/forge/SKILL.md` STEP 4 explicitly instructs Claude to use `Bash({ run_in_background: true })` + `Monitor({ shell_id })` for tasks expected to exceed 10 seconds, and documents the foreground Bash fallback for Bedrock/Vertex/Foundry hosts where Monitor is unavailable
+  2. When a Forge task completes and the output contains a `STATUS:` block, the PostToolUse hook emits a `[FORGE-SUMMARY]` block as `additionalContext` containing STATUS, FILES_CHANGED, ASSUMPTIONS, PATTERNS_DISCOVERED, and a `Replay: /forge:replay <UUID>` line
+  3. The PostToolUse hook is a no-op when `~/.claude/.forge-delegation-active` does not exist or when the originating Bash command did not contain `forge -p`
+  4. ANSI escape codes are stripped from Forge output before the STATUS block is parsed (hook uses `sed 's/\x1b\[[0-9;]*m//g'`)
+  5. `output-styles/forge.md` exists, contains no claim about styling tool output by line prefix, and instructs Claude to echo `[FORGE]` markers verbatim in markdown quote blocks
+  6. Activating `/forge` mode switches the active output style to `forge`; deactivating reverts it to the prior style
+**Plans**: TBD
+
+#### Phase 8: Slash Commands + Plugin Manifest
+**Goal**: Users can replay any Forge conversation as HTML and browse the project's Forge task history from within Claude Code, and `plugin.json` v1.2.0 registers every new v1.2 artifact with correct integrity hashes so the plugin installs cleanly.
+**Depends on**: Phase 7
+**Requirements**: REPLAY-01, REPLAY-02, REPLAY-03, REPLAY-04, MAN-01, MAN-02, MAN-03, MAN-04
+**Success Criteria** (what must be TRUE):
+  1. Running `/forge:replay <UUID>` generates an HTML file at `/tmp/forge-replay-<UUID>.html` via `forge conversation dump <id> --html` and opens it in the default browser; token/cost stats from `forge conversation stats <id> --porcelain` are displayed inline in the Claude turn
+  2. Running `/forge:history` renders a table of the last 20 entries from `.forge/conversations.idx`, with each row showing timestamp, sidekick-tag, UUID, task-hint, status, and token count sourced from `forge conversation info <id>`
+  3. `/forge:history` prunes index entries older than 30 days from `.forge/conversations.idx` on every invocation, keeping the file bounded
+  4. `plugin.json` version field reads `1.2.0`, the hooks array includes both the PreToolUse enforcer (matcher `Write|Edit|NotebookEdit|Bash`) and the PostToolUse progress-surface hook (matcher `Bash`), and the commands and outputStyles arrays list all new v1.2 entries
+  5. The existing CI `_integrity` hash check passes with the refreshed SHA-256 values for every new and modified file
+**Plans**: TBD
+
+#### Phase 9: v1.2 Test Suite
+**Goal**: All v1.2 behavior is covered by automated tests that extend the existing test suite without breaking it, and the full suite remains at PASS.
+**Depends on**: Phase 8
+**Requirements**: TEST-V12-01, TEST-V12-02, TEST-V12-03, TEST-V12-04, TEST-V12-05
+**Success Criteria** (what must be TRUE):
+  1. Unit tests for `forge-delegation-enforcer.sh` cover all four decision branches and pass: deny on `Write`/`Edit`/`NotebookEdit` when active; `allow` + `updatedInput.command` rewrite on `forge -p`; passthrough on read-only Bash; idempotent passthrough on already-rewritten commands (TEST-V12-01)
+  2. UUID generation tests confirm every generated ID matches the RFC 4122 lowercase UUID regex and that two successive invocations produce distinct values (TEST-V12-02)
+  3. Unit tests for `forge-progress-surface.sh` confirm: no-op when inactive; no-op when Bash command lacks `forge -p`; correct STATUS block extraction; ANSI stripping; presence of replay hint in output (TEST-V12-03)
+  4. Unit tests for `/forge:history` confirm correct reading of the last 20 index entries and that entries older than 30 days are removed from the file after invocation (TEST-V12-04)
+  5. The integration test drives the full v1.2 flow end-to-end — `/forge` activation → `Bash forge -p …` → PreToolUse rewrite → Forge runs → PostToolUse summary emitted → index entry written → `/forge:replay <UUID>` produces HTML — and the complete test suite reports PASS (TEST-V12-05)
+**Plans**: TBD
+
+### v1.2 Progress
+
+**Execution Order:**
+Phases execute in numeric order: 6 → 7 → 8 → 9
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 6. Delegation Enforcement Hook + Audit Index | 0/3 | Not started | - |
+| 7. Live Visibility + Progress Surface + Output Style | 0/3 | Not started | - |
+| 8. Slash Commands + Plugin Manifest | 0/2 | Not started | - |
+| 9. v1.2 Test Suite | 0/2 | Not started | - |
+
+### v1.2 Requirement Coverage
+
+| Requirement | Phase |
+|-------------|-------|
+| HOOK-01 | Phase 6 |
+| HOOK-02 | Phase 6 |
+| HOOK-03 | Phase 6 |
+| HOOK-04 | Phase 6 |
+| HOOK-05 | Phase 6 |
+| HOOK-06 | Phase 6 |
+| HOOK-07 | Phase 6 |
+| HOOK-08 | Phase 6 |
+| HOOK-09 | Phase 6 |
+| AUDIT-01 | Phase 6 |
+| AUDIT-02 | Phase 6 |
+| AUDIT-03 | Phase 6 |
+| AUDIT-04 | Phase 6 |
+| ACT-01 | Phase 6 |
+| ACT-02 | Phase 6 |
+| ACT-03 | Phase 6 |
+| VIS-01 | Phase 7 |
+| VIS-02 | Phase 7 |
+| VIS-03 | Phase 7 |
+| VIS-04 | Phase 7 |
+| SURF-01 | Phase 7 |
+| SURF-02 | Phase 7 |
+| SURF-03 | Phase 7 |
+| SURF-04 | Phase 7 |
+| SURF-05 | Phase 7 |
+| STYLE-01 | Phase 7 |
+| STYLE-02 | Phase 7 |
+| STYLE-03 | Phase 7 |
+| STYLE-04 | Phase 7 |
+| ACT-04 | Phase 7 |
+| REPLAY-01 | Phase 8 |
+| REPLAY-02 | Phase 8 |
+| REPLAY-03 | Phase 8 |
+| REPLAY-04 | Phase 8 |
+| MAN-01 | Phase 8 |
+| MAN-02 | Phase 8 |
+| MAN-03 | Phase 8 |
+| MAN-04 | Phase 8 |
+| TEST-V12-01 | Phase 9 |
+| TEST-V12-02 | Phase 9 |
+| TEST-V12-03 | Phase 9 |
+| TEST-V12-04 | Phase 9 |
+| TEST-V12-05 | Phase 9 |
