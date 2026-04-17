@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.1.2
+milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
+status: executing
+stopped_at: "Milestone v1.2 opened; backfill committed ([bf22289](https://github.com/alo-exp/sidekick/commit/bf22289)); PROJECT.md updated with v1.2 milestone section; STATE.md reset."
+last_updated: "2026-04-17T16:09:48.597Z"
+last_activity: 2026-04-17 -- Phase 6 planning complete
+progress:
+  total_phases: 9
+  completed_phases: 5
+  total_plans: 11
+  completed_plans: 11
+  percent: 100
+---
+
 # Project State
 
 ## Project Reference
@@ -12,16 +28,18 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 Milestone: v1.2 — Forge Delegation + Live Visibility (opened 2026-04-18)
 Phase: Not yet planned (next phase number: 6 — continuing from Phase 5 shipped in v1.1.2)
 Plan: —
-Status: Milestone opened; scoped research + requirements + roadmap pending
-Last activity: 2026-04-18 — Backfilled Phases 1-5 shipped state; opened milestone v1.2 with spec locked
+Status: Ready to execute
+Last activity: 2026-04-17 -- Phase 6 planning complete
 
 Progress:
+
 - v1.1: Phases 1-4 shipped as v1.1.0 on 2026-04-13; Phase 5 (bugfix patch) shipped as v1.1.2 on 2026-04-17. All 34 v1 requirements validated.
 - v1.2: Spec is implementation-ready (11 sections: enforcement hook, live visibility, output style, slash commands, plugin.json updates). Requirements and roadmap to be defined.
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: -
 - Total execution time: -
@@ -33,6 +51,7 @@ Progress:
 | - | - | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: -
 - Trend: -
 
@@ -72,6 +91,7 @@ Stopped at: Milestone v1.2 opened; backfill committed ([bf22289](https://github.
 Resume file: None
 
 Next likely actions:
+
 - Run scoped technical research on v1.2 unknowns (Claude Code PreToolUse hook JSON decision API, output style line-prefix rendering, `run_in_background` + Monitor live-streaming)
 - Define v1.2 REQUIREMENTS.md
 - Spawn gsd-roadmapper for v1.2 phases

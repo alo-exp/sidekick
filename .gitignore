@@ -2,3 +2,4 @@
 *.log
 .forge.toml
 docs/sessions/
+.forge/conversations.idx
