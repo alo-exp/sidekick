@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.2 — 2026-04-18
+
+### SENTINEL defense-in-depth hardening
+
+Follow-up patch on v1.2.1. Closes three LOW/INFO SENTINEL findings that were documented as deferred hardening opportunities in the v1.2.1 audit. No user-facing behavior change — plugin API surface is unchanged.
+
+- **`hooks/forge-delegation-enforcer.sh` (L1)**: anchored the `forge -p` rewrite substitution to the command head via `strip_env_prefix`. Previously used `${cmd/forge /…}` which matched the first `forge ` occurrence anywhere in the command; a crafted leading env-var value (e.g. `FOO="forge x" forge -p …`) could host the `--conversation-id` injection inside that value. Now the env-prefix is lifted out, the rewrite is applied to the command head only, and the env-prefix is re-prepended verbatim.
+- **`hooks/forge-delegation-enforcer.sh` (L2)**: added `validate_uuid` helper with strict `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` regex. Both injection sites (`rewrite_forge_p` and `decide_bash`) now validate the UUID before splicing into the rewritten shell command; malformed input (test override or future regression) triggers a hard deny rather than a silent metacharacter splice.
+- **`hooks/forge-progress-surface.sh` (I1)**: added defensive perl redaction pass on the extracted STATUS block before it lands in the `additionalContext` envelope. Scrubs `Authorization:` values (including `Bearer <token>`), `api_key=` / `api-key:` values, and common provider tokens (`sk-…`, `ghp_/ghs_/gho_/ghu_/ghr_…`, `xoxb-/xoxa-…`). Rule ordering uses `${1}[REDACTED]` (not `$1[REDACTED]`, which perl parses as array subscript and silently wipes the line).
+- **`tests/test_v12_coverage.bash`**: 6 new tests covering valid-UUID injection, shell-metacharacter rejection, uppercase-UUID rejection, env-prefix anchoring with `forge`-in-value attack vector, Authorization-header redaction, and multi-provider-token redaction (api_key + ghp + xoxb in one STATUS block).
+- **`.claude-plugin/plugin.json`**: refreshed `forge_delegation_enforcer_sha256` and `forge_progress_surface_sha256` integrity hashes; version bumped to 1.2.2.
+- **`.planning/STATE.md`**: refreshed milestone pointer to reflect v1.2.0 + v1.2.1 shipped, v1.2.2 in flight (STATE.md previously lagged two patch releases).
+
+All 14 test suites green (18/18 in the v1.2 coverage suite including the 6 new tests).
+
 ## 1.2.1 — 2026-04-18
 
 ### Pre-release quality gate

@@ -118,6 +118,23 @@ main() {
   status_block="$(printf '%s' "$output" | strip_ansi | extract_status_block || true)"
   [[ -n "$status_block" ]] || exit 0
 
+  # SENTINEL v2.3 FINDING-R16-I1: defensive secret redaction. Forge's STATUS
+  # block should never contain credentials, but a misbehaving task could echo
+  # an auth header, API key, or bearer token into stdout that we're about to
+  # splice into the transcript via additionalContext. Scrub obvious patterns
+  # before the surface so a leaked secret never survives to the user-visible
+  # envelope.
+  # NOTE: perl interpolates `$1[...]` as array subscript (@1 with literal
+  # subscript), producing an empty expansion and wiping the line. Use
+  # `${1}[...]` to force capture-group interpolation.
+  status_block="$(printf '%s' "$status_block" | perl -pe '
+    s/(?i)(authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
+    s/(?i)(api[_-]?key\s*[:=]\s*)\S+/${1}[REDACTED]/g;
+    s/\bsk-[A-Za-z0-9_-]{16,}\b/[REDACTED-SK-TOKEN]/g;
+    s/\bgh[pousr]_[A-Za-z0-9]{20,}\b/[REDACTED-GH-TOKEN]/g;
+    s/\bxox[abprs]-[A-Za-z0-9-]{10,}\b/[REDACTED-SLACK-TOKEN]/g;
+  ')"
+
   # Build additionalContext payload.
   local header body footer payload
   header="[FORGE-SUMMARY] === Forge task complete ==="

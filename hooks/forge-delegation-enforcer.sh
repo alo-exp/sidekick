@@ -44,6 +44,17 @@ gen_uuid() {
 }
 
 # -----------------------------------------------------------------------------
+# validate_uuid — strict RFC-4122-shape check before splicing into a rewritten
+# shell command. SENTINEL v2.3 FINDING-R16-L2: production `uuidgen` yields only
+# hex-and-dashes, but SIDEKICK_TEST_UUID_OVERRIDE is arbitrary. Reject anything
+# that isn't 8-4-4-4-12 lowercase hex so an attacker-controlled test override
+# cannot inject shell metacharacters into the rewritten command.
+# -----------------------------------------------------------------------------
+validate_uuid() {
+  [[ "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+}
+
+# -----------------------------------------------------------------------------
 # emit_decision — print a canonical hookSpecificOutput JSON envelope on stdout.
 #   $1 = "allow" | "deny"
 #   $2 = human-readable reason
@@ -313,16 +324,28 @@ is_mutating() {
 
 # Rewrite a `forge … -p …` command with UUID + --verbose and output pipes.
 # Single call to gen_uuid per invocation.
+#
+# SENTINEL v2.3 FINDING-R16-L1: anchor the substitution to the *command head*,
+# not the first occurrence of "forge " anywhere in $cmd. `${cmd/forge /...}`
+# would land inside a preceding env-var value (e.g. `FOO="forge x" forge -p …`).
+# Approach: strip the leading `FOO=bar ` env-prefix, confirm the remainder
+# starts with `forge ` (already guaranteed by is_forge_p), rebuild by
+# concatenating env-prefix + rewritten head.
 rewrite_forge_p() {
-  local cmd uuid injected
+  local cmd uuid stripped env_prefix rewritten_body
   cmd="$1"
   uuid="$(gen_uuid)"
-  # Inject `--conversation-id <uuid> --verbose ` after the first `forge ` token.
-  injected="${cmd/forge /forge --conversation-id $uuid --verbose }"
-  # Append output prefix pipes. Single quotes inside the command must be
-  # preserved verbatim; jq --arg handles the final string escape for JSON.
+  if ! validate_uuid "$uuid"; then
+    # Hard-fail rather than splice an unvalidated value into the shell command.
+    echo "forge-delegation-enforcer: refusing to inject malformed UUID" >&2
+    return 1
+  fi
+  stripped="$(strip_env_prefix "$cmd")"
+  env_prefix="${cmd%"$stripped"}"
+  # stripped is guaranteed by is_forge_p to match `^forge([[:space:]]|$)`.
+  rewritten_body="forge --conversation-id ${uuid} --verbose ${stripped#forge }"
   local pipes=" 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
-  printf '%s%s' "$injected" "$pipes"
+  printf '%s%s%s' "$env_prefix" "$rewritten_body" "$pipes"
 }
 
 decide_bash() {
@@ -349,9 +372,18 @@ decide_bash() {
       return 0
     fi
     ensure_forge_dir_and_idx || true
-    local uuid rewritten pipes hint
+    local uuid rewritten pipes hint stripped env_prefix
     uuid="$(gen_uuid)"
-    rewritten="${cmd/forge /forge --conversation-id $uuid --verbose }"
+    # SENTINEL FINDING-R16-L2: validate UUID before splicing.
+    if ! validate_uuid "$uuid"; then
+      emit_decision "deny" "Sidekick: refusing to inject malformed UUID (check SIDEKICK_TEST_UUID_OVERRIDE)." ""
+      return 0
+    fi
+    # SENTINEL FINDING-R16-L1: anchor substitution to the command head via
+    # strip_env_prefix, not `${cmd/forge /...}` which matches anywhere.
+    stripped="$(strip_env_prefix "$cmd")"
+    env_prefix="${cmd%"$stripped"}"
+    rewritten="${env_prefix}forge --conversation-id ${uuid} --verbose ${stripped#forge }"
     pipes=" 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
     rewritten="${rewritten}${pipes}"
     emit_decision "allow" "Sidekick: injected --conversation-id + --verbose + output prefixing." "$rewritten"

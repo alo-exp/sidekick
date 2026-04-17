@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2.0
+milestone: v1.2 (patch train)
 milestone_name: "Forge Delegation + Live Visibility"
-status: shipped
-stopped_at: "v1.2.0 published — tag pushed, GitHub Release live, 3-tier pre-release gate + sed-i classifier fix landed post-initial-tag."
+status: shipped (v1.2.0, v1.2.1 live; v1.2.2 defense-in-depth patch in flight)
+stopped_at: "v1.2.1 published 2026-04-17 22:49Z — 4-stage pre-release quality gate (review triad, consistency audits, content refresh, SENTINEL) clean. v1.2.2 follow-up: SENTINEL L1/L2/I1 hardening + 6 new unit tests."
 last_updated: "2026-04-18T12:00:00.000Z"
-last_activity: 2026-04-18 -- v1.2.0 published to GitHub (tag + release + CHANGELOG post-tag additions)
+last_activity: 2026-04-18 -- v1.2.2 SENTINEL hardening patch in release flow (/silver:release)
 progress:
   total_phases: 9
   completed_phases: 9
@@ -21,20 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Forge is the execution engine; Claude is the process orchestrator. When `/forge` is active, delegation is harness-enforced (PreToolUse hook), Forge work is live-visible in the transcript, and every task is durably recorded for replay.
-**Current focus:** v1.2.0 shipped; no milestone currently open.
+**Current focus:** v1.2 patch train — v1.2.2 defense-in-depth security hardening in release flow.
 
 ## Current Position
 
-Milestone: v1.2.0 — Forge Delegation + Live Visibility — SHIPPED 2026-04-18
-Phase: All v1.2 phases complete (6, 7, 8, 9)
+Milestone: v1.2 — Forge Delegation + Live Visibility — patch train (v1.2.0, v1.2.1 shipped; v1.2.2 in flight)
+Phase: All v1.2 phases complete (6, 7, 8, 9). Patch releases on top.
 Plan: —
-Status: Released
-Last activity: 2026-04-18 -- Cut v1.2.0 release
+Status: Released (1.2.0, 1.2.1); cutting 1.2.2
+Last activity: 2026-04-18 -- v1.2.2 SENTINEL L1/L2/I1 hardening + 6 new tests, /silver:release in progress
 
 Progress:
 
 - v1.1: Phases 1-4 shipped as v1.1.0 on 2026-04-13; Phase 5 (bugfix patch) shipped as v1.1.2 on 2026-04-17. All 34 v1 requirements validated.
 - v1.2: Phases 6-9 shipped as v1.2.0 on 2026-04-18. PreToolUse enforcement + PostToolUse progress surface + /forge:replay + /forge:history + plugin manifest v1.2.0 + full v1.2 test suite (47 new tests, all green).
+- v1.2.1 (2026-04-17T22:49Z): Quality Gate Hardening + Consistency Sweep — 4-stage pre-release gate (code review triad, consistency audits, content refresh, SENTINEL security) applied; 1 HIGH + 5 MEDIUM SENTINEL findings resolved.
+- v1.2.2 (in flight): SENTINEL L1/L2/I1 defense-in-depth hardening — anchored env-prefix pattern substitution, strict UUID validation before shell splice, defensive secret redaction (Authorization/api_key/sk-/ghp_/xoxb-) in transcript surface. 6 new unit tests in test_v12_coverage.bash. No user-facing change.
 
 ## Performance Metrics
 

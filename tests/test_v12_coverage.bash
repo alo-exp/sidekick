@@ -243,6 +243,98 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# v1.2.2 hardening coverage — SENTINEL L1/L2/I1 fixes.
+# -----------------------------------------------------------------------------
+
+# test_validate_uuid_accepts_valid
+# gen_uuid override with canonical 8-4-4-4-12 lowercase hex must survive
+# validate_uuid and reach the rewritten command.
+echo "=== test_validate_uuid_accepts_valid ==="
+_valid_uuid="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+_j="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"forge -p \\\"hello\\\"\"}}"
+_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_valid_uuid" run_enf "$_j")"
+if echo "$_out" | jq -er '.hookSpecificOutput.permissionDecision == "allow"' >/dev/null 2>&1 \
+   && echo "$_out" | grep -qF -- "--conversation-id $_valid_uuid"; then
+  pass "test_validate_uuid_accepts_valid"
+else
+  fail "test_validate_uuid_accepts_valid" "out='$_out'"
+fi
+
+# test_validate_uuid_rejects_shell_metacharacters
+# A malformed override containing shell metacharacters must be rejected by
+# validate_uuid → decision becomes deny, not an allow with spliced injection.
+echo "=== test_validate_uuid_rejects_shell_metacharacters ==="
+_bad_uuid="; rm -rf / #"
+_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_bad_uuid" run_enf "$_j")"
+if echo "$_out" | jq -er '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1 \
+   && ! echo "$_out" | grep -qF 'rm -rf'; then
+  pass "test_validate_uuid_rejects_shell_metacharacters"
+else
+  fail "test_validate_uuid_rejects_shell_metacharacters" "out='$_out'"
+fi
+
+# test_validate_uuid_rejects_uppercase
+# RFC 4122 canonical form is lowercase; uppercase input must be rejected so the
+# regex surface stays narrow.
+echo "=== test_validate_uuid_rejects_uppercase ==="
+_upper_uuid="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
+_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_upper_uuid" run_enf "$_j")"
+if echo "$_out" | jq -er '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
+  pass "test_validate_uuid_rejects_uppercase"
+else
+  fail "test_validate_uuid_rejects_uppercase" "out='$_out'"
+fi
+
+# test_env_prefix_with_forge_inside_value
+# FINDING-R16-L1: a command with an env-var whose VALUE contains the literal
+# "forge " must NOT land the --conversation-id injection inside that value.
+# The rewritten command's env-prefix must be preserved verbatim and the
+# injection must appear immediately after the real forge token.
+echo "=== test_env_prefix_with_forge_inside_value ==="
+_valid_uuid="11111111-2222-3333-4444-555555555555"
+_j='{"tool_name":"Bash","tool_input":{"command":"FOO=forge_trap forge -p \"task\""}}'
+_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_valid_uuid" run_enf "$_j")"
+_cmd="$(echo "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+# Expect: "FOO=forge_trap forge --conversation-id 1111… --verbose -p "task" …pipes"
+if [[ "$_cmd" == "FOO=forge_trap forge --conversation-id $_valid_uuid --verbose -p \"task\""* ]]; then
+  pass "test_env_prefix_with_forge_inside_value"
+else
+  fail "test_env_prefix_with_forge_inside_value" "cmd='$_cmd'"
+fi
+
+# test_surface_redacts_authorization_header
+# FINDING-R16-I1: Authorization: Bearer <token> must be redacted before the
+# STATUS block is spliced into additionalContext.
+echo "=== test_surface_redacts_authorization_header ==="
+_payload='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\nAuthorization: Bearer sk-abc123456789012345678\nPATTERNS_DISCOVERED: none"}}'
+_out="$(run_surf "$_payload")"
+_ctx="$(echo "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+if echo "$_ctx" | grep -q "Authorization: \[REDACTED\]" \
+   && ! echo "$_ctx" | grep -q 'sk-abc123456789012345678'; then
+  pass "test_surface_redacts_authorization_header"
+else
+  fail "test_surface_redacts_authorization_header" "ctx='$_ctx'"
+fi
+
+# test_surface_redacts_api_key_and_provider_tokens
+# Redaction must also catch api_key=<val>, ghp_… GitHub tokens, and xoxb-…
+# Slack tokens in a single pass.
+echo "=== test_surface_redacts_api_key_and_provider_tokens ==="
+_payload='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\napi_key=supersecret123\nghp_AAAAAAAAAAAAAAAAAAAA12345\nslack: xoxb-12345678901234567890\nPATTERNS_DISCOVERED: none"}}'
+_out="$(run_surf "$_payload")"
+_ctx="$(echo "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+if echo "$_ctx" | grep -q 'api_key=\[REDACTED\]' \
+   && echo "$_ctx" | grep -q '\[REDACTED-GH-TOKEN\]' \
+   && echo "$_ctx" | grep -q '\[REDACTED-SLACK-TOKEN\]' \
+   && ! echo "$_ctx" | grep -q 'supersecret123' \
+   && ! echo "$_ctx" | grep -q 'ghp_AAAAAAAAAAAAAAAAAAAA12345' \
+   && ! echo "$_ctx" | grep -q 'xoxb-12345678901234567890'; then
+  pass "test_surface_redacts_api_key_and_provider_tokens"
+else
+  fail "test_surface_redacts_api_key_and_provider_tokens" "ctx='$_ctx'"
+fi
+
+# -----------------------------------------------------------------------------
 echo ""
 echo "======================================="
 echo "Results: $PASS passed, $FAIL failed"
