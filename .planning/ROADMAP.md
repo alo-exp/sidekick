@@ -12,10 +12,10 @@ This roadmap delivers the `/forge` skill and its full supporting infrastructure 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Spec, Core Skill, and Forge Config** - Spec document + `/forge` SKILL.md + `.forge/` configuration files
-- [ ] **Phase 2: Fallback Ladder and Skill Injection** - Guide → Handhold → Take over + selective SKILL.md injection
-- [ ] **Phase 3: AGENTS.md Mentoring and Token Optimization** - Three-tier instruction accumulation + deduplication
-- [ ] **Phase 4: Test Suite** - Full coverage for activation, fallback, injection, and mentoring loop
+- [x] **Phase 1: Spec, Core Skill, and Forge Config** - Spec document + `/forge` SKILL.md + `.forge/` configuration files  _(shipped in v1.1.0, 2026-04-13)_
+- [x] **Phase 2: Fallback Ladder and Skill Injection** - Guide → Handhold → Take over + selective SKILL.md injection  _(shipped in v1.1.0, 2026-04-13)_
+- [x] **Phase 3: AGENTS.md Mentoring and Token Optimization** - Three-tier instruction accumulation + deduplication  _(shipped in v1.1.0, 2026-04-13)_
+- [x] **Phase 4: Test Suite** - Full coverage for activation, fallback, injection, and mentoring loop  _(shipped in v1.1.0, 2026-04-13)_
 
 ## Phase Details
 
@@ -32,9 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Write forge-delegation-spec.md (interaction contracts, prompt format, fallback triggers, injection protocol, AGENTS.md write rules, token budget rules)
-- [ ] 01-02: Implement `skills/forge/SKILL.md` — activation, health check, session state, deactivation, and task delegation loop (SKIL-01–04, DLGT-01–05)
-- [ ] 01-03: Implement Forge configuration files — `.forge/agents/forge.md` override, `.forge.toml` template, `.forge/skills/` bootstrap (FCFG-01–04)
+- [x] 01-01: Write forge-delegation-spec.md (interaction contracts, prompt format, fallback triggers, injection protocol, AGENTS.md write rules, token budget rules)  _(shipped in v1.1.0)_
+- [x] 01-02: Implement `skills/forge/SKILL.md` — activation, health check, session state, deactivation, and task delegation loop (SKIL-01–04, DLGT-01–05)  _(shipped in v1.1.0)_
+- [x] 01-03: Implement Forge configuration files — `.forge/agents/forge.md` override, `.forge.toml` template, `.forge/skills/` bootstrap (FCFG-01–04)  _(shipped in v1.1.0)_
 
 ### Phase 2: Fallback Ladder and Skill Injection
 **Goal**: When Forge fails, Claude escalates through a defined three-level ladder without user prompting, and before every delegation Claude injects only the skills relevant to the current task.
@@ -49,8 +49,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Implement fallback ladder logic in `skills/forge/SKILL.md` — failure detection, Level 1 Guide, Level 2 Handhold, Level 3 Take over + debrief (FALL-01–05)
-- [ ] 02-02: Build skill injection layer — Claude-to-Forge skill mapping, selective injection, Forge-compatible SKILL.md adapter (SINJ-01–05)
+- [x] 02-01: Implement fallback ladder logic in `skills/forge/SKILL.md` — failure detection, Level 1 Guide, Level 2 Handhold, Level 3 Take over + debrief (FALL-01–05)  _(shipped in v1.1.0)_
+- [x] 02-02: Build skill injection layer — Claude-to-Forge skill mapping, selective injection, Forge-compatible SKILL.md adapter (SINJ-01–05)  _(shipped in v1.1.0)_
 
 ### Phase 3: AGENTS.md Mentoring and Token Optimization
 **Goal**: After every task, standing instructions flow into the right tier (global, project, session log) without duplication, and task prompts to Forge stay minimal.
@@ -65,8 +65,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Implement AGENTS.md mentoring loop — extraction protocol, deduplication logic, three-tier write (global, project, session log), bootstrap from forge.md (AGNT-01–08, TOKN-01)
-- [ ] 03-02: Implement token optimization — minimal task prompt construction, selective injection enforcement, validated `.forge.toml` compaction defaults (TOKN-02–04)
+- [x] 03-01: Implement AGENTS.md mentoring loop — extraction protocol, deduplication logic, three-tier write (global, project, session log), bootstrap from forge.md (AGNT-01–08, TOKN-01)  _(shipped in v1.1.0)_
+- [x] 03-02: Implement token optimization — minimal task prompt construction, selective injection enforcement, validated `.forge.toml` compaction defaults (TOKN-02–04)  _(shipped in v1.1.0)_
 
 ### Phase 4: Test Suite
 **Goal**: All new behavior is covered by automated tests that run alongside the existing 43-test suite without breaking it.
@@ -81,8 +81,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Unit tests for skill activation/deactivation, AGENTS.md deduplication, and skill injection (TEST-01–03)
-- [ ] 04-02: Unit tests for fallback ladder trigger logic + integration test for full delegation loop against live Forge (TEST-04–05)
+- [x] 04-01: Unit tests for skill activation/deactivation, AGENTS.md deduplication, and skill injection (TEST-01–03)  _(shipped in v1.1.0)_
+- [x] 04-02: Unit tests for fallback ladder trigger logic + integration test for full delegation loop against live Forge (TEST-04–05)  _(shipped in v1.1.0)_
 
 ## Progress
 
@@ -91,10 +91,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spec, Core Skill, and Forge Config | 0/3 | Not started | - |
-| 2. Fallback Ladder and Skill Injection | 0/2 | Not started | - |
-| 3. AGENTS.md Mentoring and Token Optimization | 0/2 | Not started | - |
-| 4. Test Suite | 0/2 | Not started | - |
+| 1. Spec, Core Skill, and Forge Config | 3/3 | Shipped | 2026-04-13 |
+| 2. Fallback Ladder and Skill Injection | 2/2 | Shipped | 2026-04-13 |
+| 3. AGENTS.md Mentoring and Token Optimization | 2/2 | Shipped | 2026-04-13 |
+| 4. Test Suite | 2/2 | Shipped | 2026-04-13 |
 
 ### Phase 5: Fix Forge delegation-blocking bugs (v1.1.2 patch): missing tools frontmatter, invalid model IDs in README and vision agent
 

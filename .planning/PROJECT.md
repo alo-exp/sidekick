@@ -56,23 +56,24 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 - ✓ ForgeCode 2.9.9 installable and operational — existing `install.sh`
 - ✓ Claude can invoke `forge` binary — existing `skills/forge.md`
 - ✓ Plugin hooks (SessionStart) working — existing `hooks/hooks.json`
+- ✓ `/forge` skill that activates Forge-first delegation mode for the session — Phase 1 (v1.1.0)
+- ✓ Claude composes structured task prompts and submits to Forge — Phase 1 (v1.1.0)
+- ✓ Claude monitors Forge output and detects success/failure signals — Phase 1 (v1.1.0)
+- ✓ Fallback ladder: Guide → Handhold → Take over — Phase 2 (v1.1.0)
+- ✓ Skill injection: adapt Claude skills to SKILL.md format in `.forge/skills/` — Phase 2 (v1.1.0)
+- ✓ AGENTS.md mentoring loop: extract and append standing instructions after each task — Phase 3 (v1.1.0)
+- ✓ Global AGENTS.md (`~/forge/AGENTS.md`) — cross-project/session instructions — Phase 3 (v1.1.0)
+- ✓ Project AGENTS.md (`./AGENTS.md`) — project-specific instructions — Phase 3 (v1.1.0)
+- ✓ Session log entries in `docs/sessions/` — per-session evolution record — Phase 3 (v1.1.0)
+- ✓ Deduplication before every AGENTS.md write (token minimization) — Phase 3 (v1.1.0)
+- ✓ Selective skill injection — only skills relevant to current task — Phase 2 (v1.1.0)
+- ✓ Forge agent override files (`.forge/agents/forge.md`) with project-specific system prompts — Phase 1 (v1.1.0); corrected in Phase 5 (v1.1.2) to include `tools: ["*"]`
+- ✓ Context compaction guidance in `.forge.toml` configuration template — Phase 3 (v1.1.0)
+- ✓ Test coverage for new skill and AGENTS.md evolution logic — Phase 4 (v1.1.0)
 
 ### Active
 
-- [ ] `/forge` skill that activates Forge-first delegation mode for the session
-- [ ] Claude composes structured task prompts and submits to Forge
-- [ ] Claude monitors Forge output and detects success/failure signals
-- [ ] Fallback ladder: Guide → Handhold → Take over
-- [ ] Skill injection: adapt Claude skills to SKILL.md format in `.forge/skills/`
-- [ ] AGENTS.md mentoring loop: extract and append standing instructions after each task
-- [ ] Global AGENTS.md (`~/forge/AGENTS.md`) — cross-project/session instructions
-- [ ] Project AGENTS.md (`./AGENTS.md`) — project-specific instructions
-- [ ] Session log entries in `docs/sessions/` — per-session evolution record
-- [ ] Deduplication before every AGENTS.md write (token minimization)
-- [ ] Selective skill injection — only skills relevant to current task
-- [ ] Forge agent override files (`.forge/agents/forge.md`) with project-specific system prompts
-- [ ] Context compaction guidance in `.forge.toml` configuration template
-- [ ] Test coverage for new skill and AGENTS.md evolution logic
+_(none — awaiting v1.2 milestone requirements definition)_
 
 ### Out of Scope
 
@@ -99,4 +100,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 after initialization*
+*Last updated: 2026-04-18 — Phases 1-4 shipped (v1.1.0, 2026-04-13), Phase 5 shipped (v1.1.2, 2026-04-17); all v1 requirements validated*
