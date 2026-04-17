@@ -32,6 +32,7 @@ run_suite "Forge delegation enforcer hook tests" "test_forge_enforcer_hook.bash"
 run_suite "Forge progress surface hook tests"    "test_forge_progress_surface.bash"
 run_suite "Forge v1.2 slash commands tests"      "test_forge_commands.bash"
 run_suite "Forge v1.2 E2E integration tests"     "test_forge_v12_integration.bash"
+run_suite "Forge v1.2 coverage gap tests"        "test_v12_coverage.bash"
 
 echo ""
 echo -e "${bold}══════════════════════════════════════════${reset}"

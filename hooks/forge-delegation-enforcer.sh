@@ -245,6 +245,12 @@ is_read_only() {
   if has_write_redirect "$cmd"; then
     return 1
   fi
+  # `sed -i` and `awk -i inplace` mutate files even though sed/awk are in
+  # the single-word read-only list below. Reject them here so decide_bash's
+  # ordered dispatch (read-only check before mutating check) still denies.
+  if [[ "$cmd" =~ (^|[[:space:]])sed[[:space:]]+-i ]] || [[ "$cmd" =~ (^|[[:space:]])awk[[:space:]]+-i[[:space:]]+inplace ]]; then
+    return 1
+  fi
   first="$(first_token "$cmd")"
   case "$first" in
     "git status"|"git log"|"git diff"|"git show"|"git branch"|"git remote"|"git rev-parse"|"git ls-files"|"git stash list") return 0 ;;
