@@ -82,6 +82,119 @@ else
   assert_fail "test_gen_uuid_honors_test_override" "expected '${_fixed}' got '${_uuid}'"
 fi
 
+# Activate marker for decision-logic tests.
+touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+
+# Helper: pipe stdin JSON to the hook with sandboxed HOME, capture stdout + rc.
+run_hook() {
+  local json="$1"
+  local extra_env="${2:-}"
+  if [ -n "${extra_env}" ]; then
+    HOME="${HOME_SANDBOX}" env "${extra_env}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+  else
+    HOME="${HOME_SANDBOX}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+  fi
+}
+
+# -----------------------------------------------------------------------------
+_assert_deny_with_forge_reason() {
+  local name="$1" tool_name="$2"
+  local _out _dec _rsn
+  _out="$(run_hook "{\"tool_name\":\"${tool_name}\",\"tool_input\":{\"file_path\":\"/tmp/x\",\"content\":\"y\"}}")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  _rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
+  if [ "${_dec}" = "deny" ] && echo "${_rsn}" | grep -q 'forge -p'; then
+    assert_pass "${name}"
+  else
+    assert_fail "${name}" "dec='${_dec}' reason='${_rsn}'"
+  fi
+}
+
+echo "=== test_deny_write_when_active ==="
+_assert_deny_with_forge_reason "test_deny_write_when_active" "Write"
+
+echo "=== test_deny_edit_when_active ==="
+_assert_deny_with_forge_reason "test_deny_edit_when_active" "Edit"
+
+echo "=== test_deny_notebook_edit_when_active ==="
+_assert_deny_with_forge_reason "test_deny_notebook_edit_when_active" "NotebookEdit"
+
+# -----------------------------------------------------------------------------
+echo "=== test_rewrite_forge_p_injects_uuid_and_pipes ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py\""}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+    && echo "${_cmd}" | grep -q -- '--verbose' \
+    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE\] /'" \
+    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE-LOG\] /'"; then
+  assert_pass "test_rewrite_forge_p_injects_uuid_and_pipes"
+else
+  assert_fail "test_rewrite_forge_p_injects_uuid_and_pipes" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_rewrite_is_idempotent ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge --conversation-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee --verbose -p \"x\""}}')"
+if [ -z "${_out}" ]; then
+  assert_pass "test_rewrite_is_idempotent"
+else
+  assert_fail "test_rewrite_is_idempotent" "expected empty, got: '${_out}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_readonly_bash_passthrough ==="
+_all_passed=1
+for _c in 'git status' 'ls -la' 'grep foo bar.txt' 'cat README.md' 'find . -type f' 'forge conversation list'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_hook "$_j")"
+  if [ -n "${_out}" ]; then
+    assert_fail "test_readonly_bash_passthrough[${_c}]" "expected empty, got: '${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_readonly_bash_passthrough"
+
+# -----------------------------------------------------------------------------
+echo "=== test_mutating_bash_denied ==="
+_all_passed=1
+for _c in 'rm foo' 'git commit -m "x"' 'echo hi > /tmp/out'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_hook "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "${_dec}" != "deny" ]; then
+    assert_fail "test_mutating_bash_denied[${_c}]" "dec='${_dec}' out='${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_denied"
+
+# -----------------------------------------------------------------------------
+echo "=== test_mutating_bash_level3_passthrough ==="
+_all_passed=1
+for _c in 'rm foo' 'git commit -m "x"' 'echo hi > /tmp/out'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(FORGE_LEVEL_3=1 HOME="${HOME_SANDBOX}" bash "${HOOK_FILE}" <<< "${_j}" 2>/dev/null)"
+  if [ -n "${_out}" ]; then
+    assert_fail "test_mutating_bash_level3_passthrough[${_c}]" "expected empty, got: '${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_level3_passthrough"
+
+# -----------------------------------------------------------------------------
+# NOTE: Classifier matches first-token-prefix only; chained mutating tails pass
+# through. This is a known, intentional Phase 6 classifier gap documented in
+# 06-02-SUMMARY.md. A proper shell-parser fix is out of Phase 6 scope.
+echo "=== test_chained_command_with_mutating_tail ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"git status && rm foo"}}')"
+if [ -z "${_out}" ]; then
+  assert_pass "test_chained_command_with_mutating_tail"
+else
+  assert_fail "test_chained_command_with_mutating_tail" "expected empty passthrough, got: '${_out}'"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped"

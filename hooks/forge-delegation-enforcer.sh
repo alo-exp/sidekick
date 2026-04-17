@@ -72,11 +72,189 @@ emit_decision() {
 }
 
 # -----------------------------------------------------------------------------
-# Decision stubs — pass-through in this plan. Real logic lands in 06-02/06-03.
+# Canonical deny reason for direct file edits (shared by Write/Edit/Notebook).
 # -----------------------------------------------------------------------------
-decide_write_edit() { return 0; }     # 06-02 Task 1: deny branch
-decide_notebook_edit() { return 0; }  # 06-02 Task 1: deny branch
-decide_bash() { return 0; }           # 06-02 Task 2 + 06-03: classifier + rewrite
+DENY_EDIT_REASON='Sidekick /forge mode is active: direct file edits are delegated to Forge. Use: Bash { command: "forge -p \"<your task description>\"" }. To temporarily bypass for Level 3 takeover, set FORGE_LEVEL_3=1 in the Bash environment.'
+
+deny_direct_edit() {
+  emit_decision "deny" "$DENY_EDIT_REASON" ""
+}
+
+decide_write_edit()    { deny_direct_edit; }
+decide_notebook_edit() { deny_direct_edit; }
+
+# -----------------------------------------------------------------------------
+# Bash classifier + forge -p rewrite (Plan 06-02).
+#
+# Returns one of five classifications by dispatching to emit_decision or
+# exiting silently for pass-through:
+#   FORGE_P_REWRITE            - inject UUID + --verbose + output pipes
+#   FORGE_P_IDEMPOTENT         - already has --conversation-id → pass-through
+#   READ_ONLY                  - Brain-role inspection → pass-through
+#   MUTATING (deny)            - deny unless FORGE_LEVEL_3=1
+#   MUTATING_LEVEL3 (bypass)   - pass-through
+# -----------------------------------------------------------------------------
+
+# Strip leading `FOO=bar BAZ=qux ` env-var assignments; echo the remainder.
+strip_env_prefix() {
+  local cmd="$1"
+  # Loop removing leading `WORD=VALUE ` tokens. Values may be unquoted single
+  # words; complex quoted values aren't common in Bash tool_input.command.
+  while [[ "$cmd" =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+ ]]; do
+    cmd="${cmd#"${BASH_REMATCH[0]}"}"
+  done
+  printf '%s' "$cmd"
+}
+
+# Extract first "word" — the command token after env-var prefix. Supports
+# two-token prefixes (e.g. `git status`, `forge conversation`).
+first_token() {
+  local cmd stripped
+  cmd="$1"
+  stripped="$(strip_env_prefix "$cmd")"
+  # Print up to 2 tokens joined by a single space for two-word prefix matching.
+  printf '%s' "$stripped" | awk '{ if (NF>=2) { print $1" "$2 } else { print $1 } }'
+}
+
+has_conversation_id() {
+  [[ "$1" =~ (^|[[:space:]])--conversation-id([[:space:]]|=) ]]
+}
+
+is_forge_p() {
+  # Matches `forge … -p …` where `forge` is the command (possibly preceded by
+  # env-var assignments, possibly followed by `-C <dir>`/`--cwd <dir>`).
+  local cmd stripped
+  cmd="$1"
+  stripped="$(strip_env_prefix "$cmd")"
+  [[ "$stripped" =~ ^forge([[:space:]]|$) ]] || return 1
+  [[ "$stripped" =~ (^|[[:space:]])-p([[:space:]]|$) ]] || return 1
+  return 0
+}
+
+is_read_only() {
+  local cmd first
+  cmd="$1"
+  # A command with a write redirect is never read-only, regardless of its
+  # first token (e.g. `echo hi > /tmp/out` is mutating).
+  if has_write_redirect "$cmd"; then
+    return 1
+  fi
+  first="$(first_token "$cmd")"
+  case "$first" in
+    "git status"|"git log"|"git diff"|"git show"|"git branch"|"git remote"|"git rev-parse"|"git ls-files"|"git stash list") return 0 ;;
+    "forge conversation"|"forge --version"|"forge --help"|"forge info") return 0 ;;
+  esac
+  case "${first%% *}" in
+    ls|la|ll|pwd|cd|echo|printf|cat|head|tail|wc|file|stat|tree|diff|cmp) return 0 ;;
+    grep|egrep|fgrep|rg|ag|ack|find|fd|locate|which|whereis|type|command) return 0 ;;
+    test|'[') return 0 ;;
+    env|printenv|whoami|id|hostname|date|uname) return 0 ;;
+    jq|awk|sort|uniq|column|tr|cut|sed|xargs) return 0 ;;
+  esac
+  return 1
+}
+
+# Unquoted `>` or `>>` redirect to a path other than /dev/null → mutating.
+has_write_redirect() {
+  local cmd="$1"
+  # Quick reject if no redirect chars at all.
+  [[ "$cmd" == *">"* ]] || return 1
+  # Accept redirects to /dev/null as non-mutating.
+  # Remove all occurrences of `> /dev/null` / `>> /dev/null` / `2>/dev/null` / `2>&1`
+  local pruned="$cmd"
+  pruned="${pruned//>\/dev\/null/}"
+  pruned="${pruned//> \/dev\/null/}"
+  pruned="${pruned//>> \/dev\/null/}"
+  pruned="${pruned//>>\/dev\/null/}"
+  pruned="${pruned//2>&1/}"
+  pruned="${pruned//2>\/dev\/null/}"
+  pruned="${pruned//2> \/dev\/null/}"
+  # Any remaining > or >> means a write redirect to something else.
+  [[ "$pruned" == *">"* ]]
+}
+
+is_mutating() {
+  local cmd first
+  cmd="$1"
+  first="$(first_token "$cmd")"
+  # Two-word git mutators.
+  case "$first" in
+    "git add"|"git commit"|"git push"|"git pull"|"git fetch"|"git checkout"|"git reset"|"git rebase"|"git merge"|"git cherry-pick"|"git restore"|"git rm"|"git mv"|"git tag"|"git clean"|"git stash") return 0 ;;
+  esac
+  case "${first%% *}" in
+    rm|rmdir|mv|cp|ln|chmod|chown|chgrp|touch|mkdir) return 0 ;;
+    npm|pnpm|yarn|bundle|pip|gem|cargo|go) return 0 ;;
+    tar|zip|unzip|gunzip|gzip) return 0 ;;
+    systemctl|service|launchctl|brew|apt|apt-get|yum|dnf) return 0 ;;
+    curl|wget) return 0 ;;
+  esac
+  # Write-redirect anywhere in the command.
+  if has_write_redirect "$cmd"; then
+    return 0
+  fi
+  # `sed -i` and `awk -i inplace` are mutating.
+  if [[ "$cmd" =~ (^|[[:space:]])sed[[:space:]]+-i ]] || [[ "$cmd" =~ (^|[[:space:]])awk[[:space:]]+-i[[:space:]]+inplace ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# Rewrite a `forge … -p …` command with UUID + --verbose and output pipes.
+# Single call to gen_uuid per invocation.
+rewrite_forge_p() {
+  local cmd uuid injected
+  cmd="$1"
+  uuid="$(gen_uuid)"
+  # Inject `--conversation-id <uuid> --verbose ` after the first `forge ` token.
+  injected="${cmd/forge /forge --conversation-id $uuid --verbose }"
+  # Append output prefix pipes. Single quotes inside the command must be
+  # preserved verbatim; jq --arg handles the final string escape for JSON.
+  local pipes=" 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
+  printf '%s%s' "$injected" "$pipes"
+}
+
+decide_bash() {
+  local tool_input_json cmd
+  tool_input_json="$1"
+  cmd="$(printf '%s' "$tool_input_json" | jq -r '.command // empty')"
+  [[ -z "$cmd" ]] && return 0
+
+  # 1. forge -p rewrite / idempotent passthrough.
+  if is_forge_p "$cmd"; then
+    if has_conversation_id "$cmd"; then
+      return 0  # idempotent passthrough
+    fi
+    local rewritten
+    rewritten="$(rewrite_forge_p "$cmd")"
+    emit_decision "allow" "Sidekick: injected --conversation-id + --verbose + output prefixing." "$rewritten"
+    # Hook into audit-index append (Plan 06-03).
+    if declare -f append_idx_row >/dev/null 2>&1; then
+      # Extract UUID from the rewritten command for indexing.
+      local rewritten_uuid hint
+      rewritten_uuid="$(printf '%s' "$rewritten" | grep -oE -- '--conversation-id [0-9a-f-]{36}' | awk '{print $2}')"
+      hint="$(extract_task_hint "$cmd" 2>/dev/null || echo '(task hint unavailable)')"
+      append_idx_row "$rewritten_uuid" "$hint" >/dev/null 2>&1 || true
+    fi
+    return 0
+  fi
+
+  # 2. read-only passthrough.
+  if is_read_only "$cmd"; then
+    return 0
+  fi
+
+  # 3. mutating command handling.
+  if is_mutating "$cmd"; then
+    if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then
+      return 0  # Level-3 passthrough
+    fi
+    emit_decision "deny" "Sidekick /forge mode: mutating command denied. Delegate via forge -p, or set FORGE_LEVEL_3=1 to bypass for a Level 3 takeover." ""
+    return 0
+  fi
+
+  # 4. Unclassified → conservative deny.
+  emit_decision "deny" "Sidekick /forge mode: command could not be classified. Delegate via forge -p or set FORGE_LEVEL_3=1." ""
+}
 
 # -----------------------------------------------------------------------------
 # main — entry point. Gated so tests can `source` the file without triggering
