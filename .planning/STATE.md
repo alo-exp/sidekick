@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: "Forge Delegation + Live Visibility"
 status: shipped
-stopped_at: "v1.2.0 released — CHANGELOG + README + tag + integrity hashes updated, all test suites pass."
-last_updated: "2026-04-18T04:00:00.000Z"
-last_activity: 2026-04-18 -- v1.2.0 shipped (Phases 6-9)
+stopped_at: "v1.2.0 published — tag pushed, GitHub Release live, 3-tier pre-release gate + sed-i classifier fix landed post-initial-tag."
+last_updated: "2026-04-18T12:00:00.000Z"
+last_activity: 2026-04-18 -- v1.2.0 published to GitHub (tag + release + CHANGELOG post-tag additions)
 progress:
   total_phases: 9
   completed_phases: 9
