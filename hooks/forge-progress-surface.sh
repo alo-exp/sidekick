@@ -50,7 +50,7 @@ strip_ansi() {
   #   OSC   \x1b] ... terminated by BEL or ESC-\
   #   7-bit C1 single-char escapes (\x1b[@-Z\\-_])
   #   C0 controls except TAB(09) and LF(0a)
-  perl -pe '
+  perl -0777 -pe '
     s/\x1b\[[0-9;?]*[ -\/]*[@-~]//g;
     s/\x1b\][^\x07\x1b]*(\x07|\x1b\\)//g;
     s/\x1b[@-Z\\-_]//g;
@@ -130,7 +130,7 @@ main() {
   status_block="$(printf '%s' "$status_block" | perl -pe '
     s/(?i)(authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
     s/(?i)(api[_-]?key\s*[:=]\s*)\S+/${1}[REDACTED]/g;
-    s/\bsk-[A-Za-z0-9_-]{16,}\b/[REDACTED-SK-TOKEN]/g;
+    s/sk-[A-Za-z0-9_\-\.\/+]{10,}(?=\s|['"'"'">},]|$)/[REDACTED-SK-TOKEN]/g;
     s/\bgh[pousra]_[A-Za-z0-9]{20,}\b/[REDACTED-GH-TOKEN]/g;
     s/\bgithub_pat_[A-Za-z0-9_]{20,}\b/[REDACTED-GH-TOKEN]/g;
     s/\bxox[abprse]-[A-Za-z0-9-]{10,}\b/[REDACTED-SLACK-TOKEN]/g;
