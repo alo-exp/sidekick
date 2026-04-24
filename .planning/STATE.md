@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1.2
 milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: Phase 10 Plan 03 complete — 24-test v1.3 coverage suite green, chain test inverted, run_all.bash updated.
-last_updated: "2026-04-24T13:25:26Z"
-last_activity: 2026-04-24 — Phase 10 Plan 03 complete (test suite expansion: test_v13_coverage.bash, ENF-06 chain test inverted)
+stopped_at: Phase 10 Plan 04 complete — plugin.json v1.3.0 shipped, MCP matcher + integrity hashes refreshed, test_plugin_integrity.bash green (14/14), ALL SUITES PASSED.
+last_updated: "2026-04-24T13:30:00Z"
+last_activity: 2026-04-24 — Phase 10 Plan 04 complete (manifest v1.3.0: MCP matcher, enforcer+utils hashes, integrity test extended)
 progress:
   total_phases: 5
   completed_phases: 5
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 Phase: 10 — Enforcer Hardening + Helper Extraction (in progress)
-Plan: 10-03 complete; 10-04 next
+Plan: 10-04 complete; Phase 10 fully shipped
 Status: Executing
-Last activity: 2026-04-24 — Phase 10 Plan 03 complete (test suite expansion: test_v13_coverage.bash, ENF-06 chain test inverted)
+Last activity: 2026-04-24 — Phase 10 Plan 04 complete (manifest v1.3.0: MCP matcher, enforcer+utils hashes, integrity test extended)
 
 Progress:
 
@@ -109,9 +109,10 @@ Key v1.3 context:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Phase 10 Plan 03 complete — 24-test v1.3 coverage suite green, chain test inverted, run_all.bash updated.
+Stopped at: Phase 10 Plan 04 complete — plugin.json v1.3.0 shipped, MCP matcher + integrity hashes refreshed, test_plugin_integrity.bash green (14/14), ALL SUITES PASSED.
 Resume file: None
 
 Next likely actions:
 
-- Execute Phase 10 Plan 04: manifest update — bump plugin.json to v1.3.0, extend PreToolUse matcher with MCP filesystem tools, refresh _integrity hashes, fix test_plugin_integrity.bash version check
+- Execute Phase 11: Housekeeping, Hardening & forge-sb (STRIP-01, RDRCT-01, SRI-01, SKILL-01/02, TEST-RDRCT-01, DOCS-01, INST-01, HOUSE-01, FGSB-01)
+- Release v1.3.0 after Phase 11 ships
