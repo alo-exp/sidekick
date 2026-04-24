@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.3 — 2026-04-24
+
+### SENTINEL hardening ship + v1.3 milestone planning
+
+Catches up the release tag to include the v1.2.2 SENTINEL defense-in-depth changes (which were committed after the v1.2.2 tag was cut) and adds the v1.3 milestone planning artifacts. No user-facing behavior change.
+
+- **`hooks/forge-delegation-enforcer.sh`**: SENTINEL L1/L2 — anchored env-prefix substitution and UUID validation (previously missed the v1.2.2 tag)
+- **`hooks/forge-progress-surface.sh`**: SENTINEL I1 — secret redaction for sk-, gha_, github_pat_, xoxe- tokens and Authorization headers
+- **`tests/test_v12_coverage.bash`**: 6 new/fixed unit tests covering UUID validation, env-prefix anchoring, and extended token redaction
+- **`.planning/REQUIREMENTS.md`**: 22 v1.3 requirements defined (ENF-01–08, PATH-01–03, REFACT-01–04, TEST-V13-01–04, MAN-V13-01–03)
+- **`.planning/ROADMAP.md`**: Phase 10 added with 10 success criteria for Enforcer Hardening + Helper Extraction
+- **`.claude-plugin/plugin.json`**: version bumped to 1.2.3; integrity hashes refreshed
+
 ## 1.2.2 — 2026-04-18
 
 ### SENTINEL defense-in-depth hardening
