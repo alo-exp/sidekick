@@ -15,6 +15,6 @@ Stop Forge-first mode and restore normal Claude behavior.
 
 ## Notes
 
-- `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is accessible via `/forge:history`.
+- `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is accessible via `/forge-history`.
 - After deactivation, the PreToolUse enforcer hook and PostToolUse progress-surface hook both become no-ops (they are gated on the same marker file).
 - Deactivation does not delete any project files, AGENTS.md content, or Forge database state. It only removes the session marker.

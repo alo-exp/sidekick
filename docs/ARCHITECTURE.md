@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived).
 
-**Plugin version:** v1.2.0 • **Target:** Claude Code harness + Forge CLI (`~/.local/bin/forge` ≥ 2.11.3)
+**Plugin version:** v1.4.0 • **Target:** Claude Code harness + Forge CLI (`~/.local/bin/forge` ≥ 2.11.3)
 
 ---
 
@@ -19,7 +19,7 @@ Enforcement is three-layered so that neither the LLM nor an untrusted prompt can
 
 1. **Skill prompting** (`skills/forge/SKILL.md`) — tells Claude *what* to delegate and *how* to compose the 5-field task prompt.
 2. **Harness enforcement** (`hooks/forge-delegation-enforcer.sh`, PreToolUse) — while the marker file exists, `Write`/`Edit`/`NotebookEdit` are denied by the harness and `Bash forge -p …` is rewritten to inject a valid UUID `--conversation-id`, `--verbose`, and `[FORGE]`/`[FORGE-LOG]` line-prefix pipes.
-3. **Progress surface** (`hooks/forge-progress-surface.sh`, PostToolUse) — parses Forge's `STATUS:` block, strips ANSI, emits a bounded `[FORGE-SUMMARY]` additionalContext, and surfaces the `/forge:replay <uuid>` hint.
+3. **Progress surface** (`hooks/forge-progress-surface.sh`, PostToolUse) — parses Forge's `STATUS:` block, strips ANSI, emits a bounded `[FORGE-SUMMARY]` additionalContext, and surfaces the `/forge-history` hint.
 
 Result: when `/forge` is active, every mutating operation is either a Forge subprocess call (rewritten + indexed + surfaced) or a hard-deny from the harness.
 
@@ -35,9 +35,9 @@ Result: when `/forge` is active, every mutating operation is either a Forge subp
 | Enforcer hook | `hooks/forge-delegation-enforcer.sh` (~426 lines) | PreToolUse on `Write\|Edit\|NotebookEdit\|Bash`. Read-only bash allowlist, mutating-flag rejector (`sed -i`, `awk -i inplace`), idempotent `forge -p` rewriter, UUID injector, audit-index appender. |
 | Progress hook | `hooks/forge-progress-surface.sh` (~118 lines) | PostToolUse on `Bash`. No-op unless active + `forge -p` ran. Extracts first 20 lines of `STATUS:` block, emits styled summary + replay hint. |
 | Audit index | `.forge/conversations.idx` (project-local, created on activation) | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in Forge's native `~/forge/.forge.db`. |
-| Commands | `commands/forge-replay.md`, `commands/forge-history.md` | `/forge:replay <uuid>` wraps `forge conversation dump --html` + `stats --porcelain`. `/forge:history` renders last 20 idx rows joined with `forge conversation info`, prunes >30-day entries. |
+| Commands | `commands/forge-stop.md`, `commands/forge-history.md` | `/forge-stop` deactivates delegation mode and restores normal Claude behavior. `/forge-history` renders last 20 idx rows joined with `forge conversation info`, prunes >30-day entries. |
 | Output style | `output-styles/forge.md` | Narration contract while `/forge` is active. Documents `[FORGE]` / `[FORGE-LOG]` / `[FORGE-SUMMARY]` markers — *not* a tool-output colorizer (Claude Code output styles shape assistant prose, not raw tool output). |
-| Plugin manifest | `.claude-plugin/plugin.json` | v1.2.0. Registers hooks, directory-style `commands/`, `outputStyles/`, `skills/`. `_integrity` field carries SHA-256 of all executable artifacts. |
+| Plugin manifest | `.claude-plugin/plugin.json` | v1.4.0. Registers hooks, directory-style `commands/`, `outputStyles/`, `skills/`. `_integrity` field carries SHA-256 of all executable artifacts. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
 
@@ -74,14 +74,13 @@ Claude Code (Brain)                         harness boundary
   │  │  strip ANSI, parse STATUS (20-line cap)  │
   │  │  emit additionalContext:                 │
   │  │   [FORGE-SUMMARY] STATUS / FILES / …     │
-  │  │   Replay: /forge:replay <uuid>           │
+  │  │   History: /forge-history                │
   │  └──────────────────────────────────────────┤
   │                                             │
   ▼                                             │
 User receives styled narration           ◄──────┘
   │
-  │  (later) /forge:history  → table from .forge/conversations.idx
-  │          /forge:replay   → HTML dump + token/cost stats
+  │  (later) /forge-history  → table from .forge/conversations.idx
 ```
 
 ---
@@ -93,7 +92,7 @@ User receives styled narration           ◄──────┘
 3. **Zero Claude-to-Forge roundtrip per rewrite.** The enforcer is shell, not an LLM wrapper — deterministic, millisecond latency, no token cost.
 4. **Non-destructive on install.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the health check but never overwrites user edits.
 5. **Graceful degradation off the happy path.** No marker file → both hooks are no-ops. Output style missing → line prefixes degrade to plain text, no break. Monitor unavailable (Bedrock/Vertex/Foundry) → skill documents foreground-Bash fallback.
-6. **Every Forge task is replayable.** Stable UUID from the hook + durable `~/forge/.forge.db` + `/forge:replay` = any task can be reopened as an HTML transcript with token/cost stats, weeks later.
+6. **Every Forge task is traceable.** Stable UUID from the hook + durable `~/forge/.forge.db` + `/forge-history` = any past task can be found and reviewed by tag, timestamp, and status.
 
 ---
 
@@ -105,7 +104,7 @@ User receives styled narration           ◄──────┘
 | PreToolUse + PostToolUse hooks | The only Claude Code mechanism that runs *before* a tool call with veto power (`permissionDecision`) and *after* it with `additionalContext` injection. |
 | Valid RFC 4122 UUID for `--conversation-id` | Forge 2.11.3 rejects the earlier `sidekick-<ts>-<hash>` format. The human-readable tag is preserved as a separate column in the idx for display only. |
 | `set -euo pipefail` in hooks | Fails loud on classifier bugs during development. Every classifier branch returns explicit `{ "continue": true }` JSON to avoid accidental deny from an empty exit. |
-| ISO 8601 UTC lexical date pruning in `/forge:history` | Portable across BSD `date -v` and GNU `date -d` without parsing. |
+| ISO 8601 UTC lexical date pruning in `/forge-history` | Portable across BSD `date -v` and GNU `date -d` without parsing. |
 | Seeded-buggy Python testapp for live E2E | A baseline-must-fail assertion proves the E2E actually exercises the fix path, not happy-case parsing. |
 
 ---

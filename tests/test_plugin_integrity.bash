@@ -112,8 +112,8 @@ check_v12_hash "enforcer_utils_sha256"          "hooks/lib/enforcer-utils.sh"
 # Verify plugin version was bumped alongside v1.2 artifacts.
 PLUGIN_VERSION=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d.get('version',''))")
 case "${PLUGIN_VERSION}" in
-  1.3.*) assert_pass "plugin.json version is 1.3.x (${PLUGIN_VERSION})" ;;
-  *)     assert_fail "plugin.json version" "expected 1.3.x, got ${PLUGIN_VERSION}" ;;
+  1.4.*) assert_pass "plugin.json version is 1.4.x (${PLUGIN_VERSION})" ;;
+  *)     assert_fail "plugin.json version" "expected 1.4.x, got ${PLUGIN_VERSION}" ;;
 esac
 
 echo ""

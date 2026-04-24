@@ -67,13 +67,8 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 ### Review Guidance — `hooks/forge-progress-surface.sh`
 - Verify it parses the `STATUS:` block from Forge output (ANSI-stripped)
 - Confirm it emits `[FORGE-SUMMARY]` as `additionalContext` to the transcript
-- Verify the `/forge:replay <UUID>` hint is surfaced after each task
+- Verify the `/forge-history` hint is surfaced after each task
 - Confirm the 20-line STATUS cap is enforced
-
-### Review Guidance — `commands/forge-replay.md`
-- Verify it validates the UUID before calling `forge conversation dump`
-- Confirm output path is `/tmp` (not a project directory)
-- Verify `forge conversation stats <uuid> --porcelain` is rendered inline
 
 ### Review Guidance — `commands/forge-history.md`
 - Verify it reads `.forge/conversations.idx` for the last 20 rows
@@ -99,7 +94,7 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
    shasum -a 256 hooks/forge-delegation-enforcer.sh
    shasum -a 256 hooks/forge-progress-surface.sh
    shasum -a 256 output-styles/forge.md
-   shasum -a 256 commands/forge-replay.md
+   shasum -a 256 commands/forge-stop.md
    shasum -a 256 commands/forge-history.md
    shasum -a 256 install.sh
    shasum -a 256 hooks/hooks.json
@@ -115,7 +110,7 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 5. **Test file coverage**: Verify every hook and command has a corresponding test file in `tests/`:
    - `hooks/forge-delegation-enforcer.sh` → `tests/test_forge_enforcer_hook.bash`
    - `hooks/forge-progress-surface.sh` → `tests/test_forge_progress_surface.bash`
-   - `commands/forge-replay.md` + `commands/forge-history.md` → `tests/test_forge_commands.bash`
+   - `commands/forge-stop.md` + `commands/forge-history.md` → `tests/test_forge_commands.bash`
 
 6. **No orphaned files**: Check for files with no inbound references and no clear documented purpose.
 
@@ -167,7 +162,7 @@ Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-
 - **UUID injection**: `SKILL.md` says not to add `--conversation-id` manually; `forge-delegation-enforcer.sh` injects it automatically. These two instructions are consistent and not contradictory.
 - **Fallback ladder**: The L1/L2/L3 escalation triggers in `SKILL.md` match the ladder structure; no step references a command or file that doesn't exist
 - **Completion markers**: `[FORGE]`, `[FORGE-LOG]`, `[FORGE-SUMMARY]` markers are used consistently across `SKILL.md`, both hooks, and `output-styles/forge.md`
-- **Slash commands**: `/forge:replay` and `/forge:history` are referenced in `SKILL.md` and defined in `commands/`. No stale command references.
+- **Slash commands**: `/forge-stop` and `/forge-history` are referenced in `SKILL.md` and defined in `commands/`. No stale command references.
 - **No obsolete references**: Search all files for removed commands, deprecated paths, old model IDs (`qwen3.6-plus`, `gemma-4-31b-it` without context), or old API key schemas
 
 ### Dimension B — Test Suite Coverage
@@ -210,7 +205,7 @@ Audit `.claude-plugin/plugin.json` and `install.sh`:
 Audit compatibility with the current Forge CLI version:
 
 - **`--conversation-id` format**: UUID injection in the enforcer hook produces lowercase RFC 4122 format — validated by `tests/smoke/run_smoke.bash`
-- **`forge conversation dump <uuid> --html`**: Command syntax in `commands/forge-replay.md` matches current Forge CLI (`forge --version` output should be checked)
+- **`forge conversation dump <uuid> --html`**: Note — `/forge-replay` was removed in v1.4.0; this syntax is no longer exposed as a user command. `/forge-history` is the current browsing command.
 - **`forge conversation stats <uuid> --porcelain`**: Syntax is current
 - **`.forge.toml` defaults**: Values documented in `SKILL.md` (`token_threshold=80000`, `eviction_window=0.20`, `retention_window=6`, `max_tokens=16384`) still match Forge's current defaults or are intentionally overridden
 - **Agent template**: `.forge/agents/forge.md` has `tools: ["*"]` in frontmatter — the missing-tools bug must not regress
@@ -261,7 +256,7 @@ Read the help site pages and verify/update:
 - **Getting Started**: Install steps, activation sequence, and health check output match current behaviour
 - **Core Concepts**: 5-field prompt format, fallback ladder, AGENTS.md loop are accurately described
 - **Delegation Workflow**: UUID auto-injection noted; no instruction to add `--conversation-id` manually
-- **Command Reference**: `/forge:replay` and `/forge:history` syntax matches `commands/*.md`
+- **Command Reference**: `/forge-stop` and `/forge-history` syntax matches `commands/*.md`
 - **Troubleshooting**: Known errors (402 insufficient credits, 429 rate limit, PATH not found, missing `tools: ["*"]`) are present and current
 
 ### Step 4 — CHANGELOG.md *(parallel)*

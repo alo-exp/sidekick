@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.4.0 — 2026-04-25
+
+### Forge delegation commands housekeeping
+
+Renames, replacements, and removals to align the command surface with the current feature set.
+
+**Changed:**
+
+- **`skills/forge/SKILL.md`**: Skill renamed from `forge-delegation` to `forge-delegate`; deactivation instruction now references `/forge-stop` instead of an inline procedure.
+- **`hooks/forge-progress-surface.sh`**: Footer in `[FORGE-SUMMARY]` block now shows `/forge-history` instead of `/forge:replay <uuid>`. The replay command was removed; history is the durable way to browse past Forge tasks.
+- **`hooks/forge-delegation-enforcer.sh`**: Error message updated from `/forge:deactivate` to `/forge-stop` to match the renamed deactivation command.
+- **`output-styles/forge.md`**: Replay section updated to History; deactivation reference updated to `/forge-stop`.
+- **`docs/help/*.html`** + **`docs/help/search.js`**: All `/forge:deactivate` references updated to `/forge-stop`.
+
+**Added:**
+
+- **`commands/forge-stop.md`**: New slash command `/forge-stop` — explicit deactivation of Forge delegation mode. Removes `~/.claude/.forge-delegation-active`, reverts output style, and confirms restoration of normal Claude behavior. Preserves `.forge/conversations.idx` as a durable audit trail.
+
+**Removed:**
+
+- **`commands/forge-replay.md`**: Deleted. The `/forge:replay <uuid>` command relied on `forge conversation dump --html`, which is no longer available in current Forge builds. Use `/forge-history` to browse past tasks.
+
+**Tests:**
+
+- Multiple test files updated to match the new command names and error messages. All 15 suites pass (157 tests, 0 failures).
+
+**Manifest:**
+
+- **`.claude-plugin/plugin.json`**: `command_forge_replay_sha256` replaced with `command_forge_stop_sha256`; version bumped to 1.4.0; 5 integrity hashes refreshed.
+
+---
+
 ## 1.2.4 — 2026-04-24
 
 ### Pre-release quality gate hardening

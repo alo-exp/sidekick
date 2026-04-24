@@ -30,7 +30,7 @@ Stages 2 and 3 are gated behind `SIDEKICK_LIVE_FORGE=1` so they never run in CI.
 | `test_agents_md_dedup.bash` | 3-tier AGENTS.md write, exact-match + semantic dedup |
 | `test_forge_enforcer_hook.bash` | PreToolUse behavior: deny Write/Edit/NotebookEdit, rewrite `forge -p`, read-only allowlist passthrough, idempotent rewrites, UUID format |
 | `test_forge_progress_surface.bash` | PostToolUse behavior: no-op inactive, STATUS parsing, ANSI strip, 20-line cap, replay hint emission |
-| `test_forge_commands.bash` | `/forge:replay` + `/forge:history` structure, 30-day pruning via ISO 8601 lexical compare |
+| `test_forge_commands.bash` | `/forge-stop` + `/forge-history` structure, 30-day pruning via ISO 8601 lexical compare |
 | `test_forge_v12_integration.bash` | End-to-end Pre → Post hook flow: marker on → Bash → rewrite → STATUS → summary → idx row |
 | `test_forge_e2e.bash` | Static E2E of prompt composition + skill injection without live Forge |
 | `test_v12_coverage.bash` | Coverage-gap suite: `sed -i` / `awk -i inplace` denial, `>>` append, `> /dev/null` passthroughs, env-var prefix, 80-char task-hint truncation, unknown tool_name passthrough, stdout-only summary fallback |

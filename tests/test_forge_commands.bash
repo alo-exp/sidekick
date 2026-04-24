@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — /forge-stop + /forge:history command doc tests
+# Sidekick Plugin — /forge-stop + /forge-history command doc tests
 # =============================================================================
 # Structural tests on the command markdown files (no live Forge invocation).
 # Asserts that both commands have the expected frontmatter, procedure

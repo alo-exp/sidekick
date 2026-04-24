@@ -80,7 +80,7 @@ Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-activ
 
 Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.claude/.forge-delegation-active` marker and restores normal Claude behavior.
 
-Note: `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is readable via `/forge:history`.
+Note: `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is readable via `/forge-history`.
 
 ---
 

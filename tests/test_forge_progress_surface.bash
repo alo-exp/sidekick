@@ -75,7 +75,7 @@ _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge --conversat
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
     && echo "${_ctx}" | grep -q 'FILES_CHANGED: \[utils.py\]' \
-    && echo "${_ctx}" | grep -q '/forge:history' \
+    && echo "${_ctx}" | grep -q '/forge-history' \
     && echo "${_ctx}" | grep -q '\[FORGE-SUMMARY\]'; then
   assert_pass "test_emits_summary_when_status_block_present"
 else

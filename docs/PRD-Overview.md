@@ -14,7 +14,7 @@ Sidekick is a Claude Code plugin that turns Claude into a **planner and communic
 
 ## Core Value
 
-**When `/forge` is active, Claude does not write code.** Delegation is harness-enforced (PreToolUse hook returns `permissionDecision: "deny"` on direct `Write`/`Edit`/`NotebookEdit`), Forge subprocess output is live-visible in the transcript with stable `[FORGE]` markers, and every task is durably indexed by UUID for replay via `/forge:replay`. The ONE thing that must work above all else: **delegation cannot be bypassed, and every task is replayable.**
+**When `/forge` is active, Claude does not write code.** Delegation is harness-enforced (PreToolUse hook returns `permissionDecision: "deny"` on direct `Write`/`Edit`/`NotebookEdit`), Forge subprocess output is live-visible in the transcript with stable `[FORGE]` markers, and every task is durably indexed by UUID, browsable via `/forge-history`. The ONE thing that must work above all else: **delegation cannot be bypassed, and every task is traceable.**
 
 ---
 
@@ -44,7 +44,7 @@ Mapped to phases in `.planning/REQUIREMENTS.md`. All validated as of 2026-04-18.
 | Live visibility | `VIS-01..04` | `run_in_background: true` + Monitor for >10s tasks, foreground fallback for Bedrock/Vertex/Foundry |
 | Progress surface | `SURF-01..05` | PostToolUse STATUS-block parsing, ANSI strip, replay hint emission, 20-line cap |
 | Visual distinction | `STYLE-01..04` | Output-style narration contract — `[FORGE]` / `[FORGE-LOG]` / `[FORGE-SUMMARY]` markers |
-| Slash commands | `REPLAY-01..04` | `/forge:replay <uuid>` → HTML + stats; `/forge:history` → joined table + 30-day prune |
+| Slash commands | `REPLAY-01..04` | `/forge-history` → joined table + 30-day prune (v1.4.0: `/forge-replay` removed; `forge conversation dump --html` no longer available) |
 | Activation lifecycle | `ACT-01..04` | DB-writability check, idx init, output style switch/revert, SKILL.md STEP 4/5/6 documentation |
 | Plugin manifest | `MAN-01..04` | Version bumped to 1.2.0, hooks registered, commands + output styles registered, `_integrity` refreshed |
 | v1.2 test coverage | `TEST-V12-01..05` | 47 new assertions across enforcer hook, progress surface, UUID format, history pruning, full v1.2 flow |
