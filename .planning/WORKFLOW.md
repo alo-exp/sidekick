@@ -7,10 +7,10 @@
 > **GSD isolation:** GSD workflows never read this file. SB orchestration never writes STATE.md directly.
 
 ## Composition
-Intent: "Release v1.2.2 — SENTINEL L1/L2/I1 defense-in-depth hardening patch"
-Composed: 2026-04-18T00:00:00Z
+Intent: "Release v1.4.0 — forge-delegate rename, forge-stop command, forge-replay removal, install.sh security hardening"
+Composed: 2026-04-25T00:00:00Z
 Composer: /silver:release
-Mode: interactive
+Mode: autonomous (yolo)
 
 Confirmed path chain: PATH 12 (QUALITY GATE) → PATH 16 (DOCUMENT) → PATH 17 (RELEASE)
 Skipped: PATH 15 (DESIGN HANDOFF) — no UI phases detected
@@ -18,6 +18,13 @@ Skipped: PATH 15 (DESIGN HANDOFF) — no UI phases detected
 ## Flow Log
 | # | Flow | Status | Artifacts Produced | Exit Condition Met |
 |---|------|--------|-------------------|--------------------|
+| 0 | Project 4-stage quality gate (2 clean rounds) | complete | Round 1 fixes committed (23b7d7a), D9 fix (f697658) | ✓ |
+| 0b | SB quality-gates (9 dimensions, design-time) | complete | All 9 dimensions PASS; no failures | ✓ |
+| 1 | Cross-Phase UAT (manual) | complete | All 8 scope items verified | ✓ |
+| 2 | Milestone completion audit (manual) | complete | All 7 CHANGELOG items covered, no gaps | ✓ |
+| 2a | Security hard gate | complete | Stage 4 SENTINEL (2 rounds) + security dimension PASS | ✓ |
+| 3a | Docs accuracy verification | complete | ALL DOCS ACCURATE | ✓ |
+| 4 | Milestone summary | complete | .planning/reports/MILESTONE_SUMMARY-v1.4.0.md | ✓ |
 
 ## Phase Iterations
 | Phase | Flows 5-13 Status |
@@ -30,14 +37,16 @@ Skipped: PATH 15 (DESIGN HANDOFF) — no UI phases detected
 ## Autonomous Decisions
 | Timestamp | Decision | Rationale |
 |-----------|----------|-----------|
+| 2026-04-25 | Auto-confirm composition | Yolo mode per CLAUDE.md |
 
 ## Deferred Improvements
 | Source Flow | Finding | Classification |
 |-------------|---------|----------------|
+| Modularity | forge/SKILL.md 342 lines, enforcer.sh 289 lines — approaching limits | Technical debt |
 
 ## Heartbeat
-Last-flow: 0
-Last-beat: 2026-04-18T00:00:00Z
+Last-flow: 4
+Last-beat: 2026-04-25T00:00:00Z
 
 ## Next Flow
-Step 0 — Pre-Release Quality Gates (silver:quality-gates)
+Step 5 — Create Release (silver:create-release v1.4.0)
