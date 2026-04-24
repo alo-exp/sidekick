@@ -220,7 +220,7 @@ _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // em
 # Count lines that start with [FORGE-SUMMARY] and carry a status-block payload.
 _body_lines="$(printf '%s\n' "$_ctx" | grep -c '^\[FORGE-SUMMARY\] \[FORGE\]' || true)"
 # awk's "count >= 20 { exit }" fires AFTER printing the 20th line.
-if [ "$_body_lines" -le 20 ] && [ "$_body_lines" -ge 1 ]; then
+if [ "$_body_lines" -eq 20 ]; then
   pass "test_surface_caps_status_block_at_20_lines (body_lines=$_body_lines)"
 else
   fail "test_surface_caps_status_block_at_20_lines" "body_lines=$_body_lines ctx='$_ctx'"
@@ -265,7 +265,9 @@ fi
 # validate_uuid → decision becomes deny, not an allow with spliced injection.
 echo "=== test_validate_uuid_rejects_shell_metacharacters ==="
 _bad_uuid="; rm -rf / #"
-_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_bad_uuid" run_enf "$_j")"
+# Use a locally defined input rather than relying on $_j from the previous block.
+_j_meta="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"forge -p \\\"hello\\\"\"}}"
+_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_bad_uuid" run_enf "$_j_meta")"
 if echo "$_out" | jq -er '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1 \
    && ! echo "$_out" | grep -qF 'rm -rf'; then
   pass "test_validate_uuid_rejects_shell_metacharacters"
@@ -316,11 +318,25 @@ else
   fail "test_surface_redacts_authorization_header" "ctx='$_ctx'"
 fi
 
+# test_surface_redacts_standalone_sk_token
+# The sk- rule must fire independently for tokens that appear OUTSIDE an
+# Authorization header (exercises the sk- regex path, not the Authorization rule).
+echo "=== test_surface_redacts_standalone_sk_token ==="
+_payload_sk='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\nFound token: sk-or-v1-reallylong1234567890\nPATTERNS_DISCOVERED: none"}}'
+_out_sk="$(run_surf "$_payload_sk")"
+_ctx_sk="$(echo "$_out_sk" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+if ! echo "$_ctx_sk" | grep -q 'sk-or-v1-reallylong1234567890' \
+   && echo "$_ctx_sk" | grep -q '\[REDACTED-SK-TOKEN\]'; then
+  pass "test_surface_redacts_standalone_sk_token"
+else
+  fail "test_surface_redacts_standalone_sk_token" "ctx='$_ctx_sk'"
+fi
+
 # test_surface_redacts_api_key_and_provider_tokens
-# Redaction must also catch api_key=<val>, ghp_… GitHub tokens, and xoxb-…
-# Slack tokens in a single pass.
+# Redaction must catch api_key=<val>, ghp_/gha_/github_pat_ GitHub tokens,
+# and xoxb-/xoxe- Slack tokens in a single pass.
 echo "=== test_surface_redacts_api_key_and_provider_tokens ==="
-_payload='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\napi_key=supersecret123\nghp_AAAAAAAAAAAAAAAAAAAA12345\nslack: xoxb-12345678901234567890\nPATTERNS_DISCOVERED: none"}}'
+_payload='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\napi_key=supersecret123\nghp_AAAAAAAAAAAAAAAAAAAA12345\ngha_BBBBBBBBBBBBBBBBBBBB12345\ngithub_pat_CCCCCCCCCCCCCCCCCCCC12345\nslack: xoxb-12345678901234567890\nxoxe-12345678901234567890\nPATTERNS_DISCOVERED: none"}}'
 _out="$(run_surf "$_payload")"
 _ctx="$(echo "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty')"
 if echo "$_ctx" | grep -q 'api_key=\[REDACTED\]' \
@@ -328,7 +344,10 @@ if echo "$_ctx" | grep -q 'api_key=\[REDACTED\]' \
    && echo "$_ctx" | grep -q '\[REDACTED-SLACK-TOKEN\]' \
    && ! echo "$_ctx" | grep -q 'supersecret123' \
    && ! echo "$_ctx" | grep -q 'ghp_AAAAAAAAAAAAAAAAAAAA12345' \
-   && ! echo "$_ctx" | grep -q 'xoxb-12345678901234567890'; then
+   && ! echo "$_ctx" | grep -q 'gha_BBBBBBBBBBBBBBBBBBBB12345' \
+   && ! echo "$_ctx" | grep -q 'github_pat_CCCCCCCCCCCCCCCCCCCC12345' \
+   && ! echo "$_ctx" | grep -q 'xoxb-12345678901234567890' \
+   && ! echo "$_ctx" | grep -q 'xoxe-12345678901234567890'; then
   pass "test_surface_redacts_api_key_and_provider_tokens"
 else
   fail "test_surface_redacts_api_key_and_provider_tokens" "ctx='$_ctx'"
