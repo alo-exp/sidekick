@@ -147,6 +147,53 @@ Research on 2026-04-18 verified three corrections to the v1.2 spec against curre
 - [x] **TEST-V12-04**: Unit tests for `/forge:history` index read + 30-day pruning
 - [x] **TEST-V12-05**: Integration test for full v1.2 flow: `/forge` activation → Bash `forge -p …` invocation → PreToolUse rewrite → Forge runs → PostToolUse summary → index entry written → `/forge:replay <UUID>` produces HTML
 
+## v1.3 Requirements — Enforcer Hardening + Forge Bridge
+
+**Defined:** 2026-04-24
+**Spec source:** GitHub Issue #3 (5 enforcer bugs), Issue #2 (doc-edit carve-out), v1.2.2 code-review triage (Bug #6 pipe-chain bypass), v1.3 tech debt catalogue (helper extraction)
+**Plugin version target:** `sidekick` v1.3.0
+
+**Decision — Issue #2 Option B selected:** Extend `decide_write_edit()` with a path-based allow branch (`.planning/**`, `docs/**`). The carve-out is codified in the hook, not in prompts or memory. The global-memory carve-out entry (`forge_delegation_philosophy.md`) will be updated to reference the hook as authoritative.
+
+### Enforcer Bug Fixes
+
+- [ ] **ENF-01**: `has_write_redirect` correctly flags process substitution `>(...)` as a write redirect — it is not missed as a non-file redirect (Bug #1 / Issue #3)
+- [ ] **ENF-02**: `has_write_redirect` does NOT false-positive on fd-redirects `>&1`, `>&2`, `>&-`, `2>&1` — these are output-routing redirects, not file-write redirects (Bug #1 / Issue #3)
+- [ ] **ENF-03**: `has_write_redirect` does NOT false-positive on `>` inside quoted strings or heredoc bodies (e.g. Rust/TypeScript generics inside a heredoc, `echo "Result<T, E>"`) (Bug #1 / Issue #3)
+- [ ] **ENF-04**: `FORGE_LEVEL_3=1` bypass is functional end-to-end — when a command is prefixed with `FORGE_LEVEL_3=1`, the hook recognises the Level-3 signal and allows the command through; the root cause (env var not exported to hook subprocess) is resolved by the chosen fix approach (Bug #2 / Issue #3)
+- [ ] **ENF-05**: `gh` (GitHub CLI) is explicitly classified so that mutating sub-commands (`gh issue create`, `gh pr create`, `gh project item-add`, `gh release create`) are treated as mutating and read-only sub-commands (`gh issue list`, `gh pr view`, `gh label list`) are treated as read-only — `gh` is never routed to the unclassified-deny fallback (Bug #3 / Issue #3)
+- [ ] **ENF-06**: `&&`-chained and `;`-separated commands are classified as mutating if **any** segment in the chain is mutating — `cd /path && mutating_cmd` is denied; the chain bypass security hole is closed (Bug #4 / Issue #3)
+- [ ] **ENF-07**: MCP filesystem write tools are covered by the PreToolUse hook dispatch — `mcp__filesystem__write_file`, `mcp__filesystem__edit_file`, `mcp__filesystem__move_file`, `mcp__filesystem__create_directory` are denied with the same policy as `Write`/`Edit` when `/forge` mode is active (Bug #5 / Issue #3)
+- [ ] **ENF-08**: Pipeline (`|`) commands are classified by their **most-mutating** token — `read_only_cmd | mutating_cmd` is denied, not passed as read-only because the first token is non-mutating (Bug #6 / v1.2.2 code-review triage)
+
+### Doc-Edit Path Allowlist
+
+- [ ] **PATH-01**: `decide_write_edit()` has a path-based allow branch: files whose `file_path` matches `.planning/**` or `docs/**` are permitted through without Forge delegation when `/forge` is active (Issue #2, Option B)
+- [ ] **PATH-02**: Files outside the path allowlist (e.g. `src/**`, `hooks/**`, `skills/**`) continue to be denied as before — the allowlist does not weaken enforcement for implementation files (Issue #2)
+- [ ] **PATH-03**: The path allowlist check applies to `Write`, `Edit`, and `NotebookEdit` tool calls using the `file_path` (Write/NotebookEdit) or `file_path`/`path` (Edit) field from `tool_input` (Issue #2)
+
+### Helper Extraction (Refactoring)
+
+- [ ] **REFACT-01**: Helper functions are extracted from `forge-delegation-enforcer.sh` into a new sourced library `hooks/lib/enforcer-utils.sh`; at minimum: `strip_ansi`, `strip_env_prefix`, `has_write_redirect`, `first_token`, and the read-only / mutating word-lists
+- [ ] **REFACT-02**: `forge-delegation-enforcer.sh` sources `hooks/lib/enforcer-utils.sh` at startup and does not duplicate any logic already in the library
+- [ ] **REFACT-03**: `forge-delegation-enforcer.sh` line count is ≤ 300 lines after extraction
+- [ ] **REFACT-04**: Dead function `rewrite_forge_p` (defined but never called) is removed during the extraction refactoring
+
+### Test Coverage
+
+- [ ] **TEST-V13-01**: Unit tests for each enforcer bug fix (ENF-01–ENF-08): at minimum one allowed-control case and one denied-control case per fix, added to `tests/test_forge_enforcer_hook.bash` and/or `tests/test_v12_coverage.bash`
+- [ ] **TEST-V13-02**: Unit tests for the doc-edit path allowlist (PATH-01–PATH-03): allowed path patterns pass through; a denied path outside the allowlist is still denied; at minimum three path variants tested per allowed pattern
+- [ ] **TEST-V13-03**: All existing v1/v1.2 tests continue to pass after helper extraction refactoring (REFACT-01–REFACT-04) — no regressions
+- [ ] **TEST-V13-04**: `hooks/lib/enforcer-utils.sh` can be sourced independently in the test suite without running main hook logic — helper functions are testable in isolation
+
+### Plugin Manifest
+
+- [ ] **MAN-V13-01**: `plugin.json` version field is `1.3.0`
+- [ ] **MAN-V13-02**: `plugin.json` `hooks.PreToolUse` matcher is extended to include MCP filesystem write tools alongside `Write|Edit|NotebookEdit|Bash` so ENF-07 is enforced at the harness layer
+- [ ] **MAN-V13-03**: `plugin.json` `_integrity` SHA-256 hashes are updated for all files modified in v1.3 (enforcer, enforcer-utils lib, plugin.json itself)
+
+---
+
 ## v2 Requirements
 
 ### Advanced Mentoring
@@ -198,12 +245,19 @@ Research on 2026-04-18 verified three corrections to the v1.2 spec against curre
 | MAN-01 – MAN-04 | Phase 8 | Validated (v1.2.0) |
 | TEST-V12-01 – TEST-V12-05 | Phase 9 | Validated (v1.2.0) |
 
+| ENF-01 – ENF-08 | Phase 10 | Active |
+| PATH-01 – PATH-03 | Phase 10 | Active |
+| REFACT-01 – REFACT-04 | Phase 10 | Active |
+| TEST-V13-01 – TEST-V13-04 | Phase 10 | Active |
+| MAN-V13-01 – MAN-V13-03 | Phase 10 | Active |
+
 **Coverage:**
 - v1 requirements: 34 total, all Validated
 - v1.2 requirements: 43 total (9 HOOK + 4 AUDIT + 4 VIS + 5 SURF + 4 STYLE + 4 REPLAY + 4 ACT + 4 MAN + 5 TEST-V12), all Validated
-- Mapped to phases: 34 (v1) + 43 (v1.2) = 77 total
+- v1.3 requirements: 22 total (8 ENF + 3 PATH + 4 REFACT + 4 TEST-V13 + 3 MAN-V13), all Active
+- Mapped to phases: 34 (v1) + 43 (v1.2) + 22 (v1.3) = 99 total
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-13 (v1)*
-*Last updated: 2026-04-18 — all 77 requirements validated (v1.1.0 + v1.1.2 + v1.2.0); v1.2 shipped 2026-04-18.*
+*Last updated: 2026-04-24 — 22 v1.3 requirements defined (v1.3 milestone initialized); v1/v1.2 (77 req) all Validated.*
