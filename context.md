@@ -43,7 +43,7 @@ sidekick-repo/
 ├── context.md               # This file
 ├── CHANGELOG.md
 ├── README.md
-└── SENTINEL-audit-forge-r*.md  # 14 rounds of security audit reports
+└── docs/internal/sentinel/SENTINEL-audit-forge-r*.md  # 14 rounds of security audit reports
 ```
 
 ---
