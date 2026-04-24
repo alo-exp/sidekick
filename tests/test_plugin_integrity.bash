@@ -107,12 +107,13 @@ check_v12_hash "output_style_forge_sha256"      "output-styles/forge.md"
 check_v12_hash "command_forge_replay_sha256"    "commands/forge-replay.md"
 check_v12_hash "command_forge_history_sha256"   "commands/forge-history.md"
 check_v12_hash "validate_release_gate_sha256"   "hooks/validate-release-gate.sh"
+check_v12_hash "enforcer_utils_sha256"          "hooks/lib/enforcer-utils.sh"
 
 # Verify plugin version was bumped alongside v1.2 artifacts.
 PLUGIN_VERSION=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d.get('version',''))")
 case "${PLUGIN_VERSION}" in
-  1.2.*) assert_pass "plugin.json version is 1.2.x (${PLUGIN_VERSION})" ;;
-  *)     assert_fail "plugin.json version" "expected 1.2.x, got ${PLUGIN_VERSION}" ;;
+  1.3.*) assert_pass "plugin.json version is 1.3.x (${PLUGIN_VERSION})" ;;
+  *)     assert_fail "plugin.json version" "expected 1.3.x, got ${PLUGIN_VERSION}" ;;
 esac
 
 echo ""
