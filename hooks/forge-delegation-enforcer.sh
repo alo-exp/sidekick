@@ -192,7 +192,7 @@ decide_bash() {
       return 0
     fi
     if ! db_precheck; then
-      emit_decision "deny" "Sidekick: Forge DB not writable ('forge conversation list' failed). Deactivate via /forge:deactivate, resolve the Forge state, and re-activate." ""
+      emit_decision "deny" "Sidekick: Forge DB not writable ('forge conversation list' failed). Deactivate via /forge-stop, resolve the Forge state, and re-activate." ""
       return 0
     fi
     ensure_forge_dir_and_idx || true

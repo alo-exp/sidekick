@@ -1,9 +1,9 @@
 ---
-name: forge-delegation
+name: forge-delegate
 description: >
-  Activate or deactivate Forge-first delegation mode. When active, Claude delegates
+  Activate Forge-first delegation mode. When active, Claude delegates
   all implementation tasks to Forge and acts as planner/communicator only.
-  Trigger: user invokes /forge or /forge:deactivate.
+  Trigger: user invokes /forge-delegate. To stop delegation, invoke /forge-stop.
 ---
 
 # /forge -- Forge Delegation Mode
@@ -43,7 +43,7 @@ Per the non-destructive rule, create only if absent -- never overwrite existing 
 ### 4. Confirm
 
 > "Forge-first delegation mode activated. All implementation tasks will be routed to Forge."
-> "To deactivate: `/forge:deactivate`"
+> "To stop: `/forge-stop`"
 
 ### 5. Output style + audit index (v1.2)
 
@@ -76,13 +76,11 @@ Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-activ
 
 ---
 
-## Deactivation (`/forge:deactivate`)
+## Deactivation (`/forge-stop`)
 
-1. Check if `~/.claude/.forge-delegation-active` exists.
-   - **If yes:** delete it, then attempt to revert the active output style to `default` (or the prior style if tracked). Confirm: **"Forge-first mode deactivated. Claude-direct mode restored."**
-   - **If no:** acknowledge: **"Forge-first mode is not currently active."**
+Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.claude/.forge-delegation-active` marker and restores normal Claude behavior.
 
-Note (v1.2): `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is read by `/forge:history` and `/forge:replay`.
+Note: `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is readable via `/forge:history`.
 
 ---
 

@@ -165,7 +165,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">4</div></div>
           <div class="flow-body">
             <h4>Confirm activation</h4>
-            <p>Claude writes a zero-byte marker to <code>~/.claude/.forge-delegation-active</code> and confirms: "Forge delegation mode active." All subsequent coding tasks in this session will be delegated to Forge until you run <code>/forge:deactivate</code>.</p>
+            <p>Claude writes a zero-byte marker to <code>~/.claude/.forge-delegation-active</code> and confirms: "Forge delegation mode active." All subsequent coding tasks in this session will be delegated to Forge until you run <code>/forge-stop</code>.</p>
           </div>
         </div>
       </div>
@@ -264,7 +264,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="deactivation">Step 7 — Deactivate (optional)</h2>
       <p>Forge delegation mode persists for the entire session. You can delegate as many tasks as needed without re-running <code>/forge</code>. To return to direct Claude implementation:</p>
-      <div class="code-block"><span class="key">/forge:deactivate</span></div>
+      <div class="code-block"><span class="key">/forge-stop</span></div>
       <p>This removes the <code>~/.claude/.forge-delegation-active</code> marker and restores normal Claude behavior. All AGENTS.md updates from the session are preserved and will be loaded on the next <code>/forge</code> invocation.</p>
 
       <div class="callout callout-info">

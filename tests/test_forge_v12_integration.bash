@@ -128,14 +128,12 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== E2E step 4: UUID round-trip from Pre -> Post replay hint ==="
-# Hook extracts the UUID from the (rewritten) command to build the replay
-# hint. This is the load-bearing assertion: the UUID written to the idx by
-# Pre is the same one surfaced to the user via Post.
-if echo "${POST_CTX}" | grep -q "/forge:replay ${EXPECTED_UUID}"; then
-  assert_pass "e2e_step4_uuid_roundtrip_pre_to_post"
+echo "=== E2E step 4: Post-hook surfaces history hint ==="
+# Hook emits a /forge:history footer after each task (forge:replay removed in v1.4).
+if echo "${POST_CTX}" | grep -q '/forge:history'; then
+  assert_pass "e2e_step4_history_hint_in_summary"
 else
-  assert_fail "e2e_step4_uuid_roundtrip_pre_to_post" "replay hint missing expected UUID: ${POST_CTX}"
+  assert_fail "e2e_step4_history_hint_in_summary" "history hint missing: ${POST_CTX}"
 fi
 
 # -----------------------------------------------------------------------------
