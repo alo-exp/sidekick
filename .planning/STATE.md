@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1.2
 milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: Phase 11 Plan 03 complete — SRI-01, DOCS-01(a+b+c), SKILL-01, SKILL-02, INST-01 shipped; integrity suite 3 failures expected (hash refresh deferred to Plan 04).
-last_updated: "2026-04-24T13:55:20Z"
-last_activity: "2026-04-24 — Phase 11 Plan 03 complete (SRI hash + favicon + null guard + concepts table + SKILL.md scope/security/governance + install.sh TMPDIR)"
+stopped_at: Phase 11 Plan 04 complete — HOUSE-01 + FGSB-01 shipped; all integrity hashes refreshed; full test suite green. Phase 11 complete. Ready for v1.3.0 release.
+last_updated: "2026-04-25T00:15:00Z"
+last_activity: "2026-04-25 — Phase 11 Plan 04 complete (14 SENTINEL files moved to docs/internal/sentinel/, forge-sb install step, plugin.json hash refresh)"
 progress:
   total_phases: 5
   completed_phases: 5
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 Phase: 11 — Housekeeping, Hardening & forge-sb (in progress)
-Plan: 11-03 complete; Phase 11 Wave 3 shipped
+Plan: 11-04 complete; Phase 11 fully shipped
 Status: Executing
-Last activity: 2026-04-24 — Phase 11 Plan 03 complete (SRI hash + favicon + null guard + concepts table + SKILL.md scope/security/governance + install.sh TMPDIR)
+Last activity: 2026-04-25 — Phase 11 Plan 04 complete (14 SENTINEL files moved to docs/internal/sentinel/, forge-sb install step, plugin.json hash refresh)
 
 Progress:
 
@@ -85,6 +85,12 @@ Key v1.3 Plan 03 decisions:
 - Replaced 'ls; grep foo bar.txt' with 'ls && grep foo bar.txt' in ENF-06 passthrough test: semicolons attach to first token ('ls;') making it unrecognized; && keeps tokens space-delimited so first_token returns 'ls'
 - These are test correctness fixes, not enforcer bugs — semicolon-attachment behavior is consistent with enforcer design
 
+Key v1.3 Phase 11 Plan 04 decisions:
+
+- SENTINEL files relocated with git mv (not cp+rm) to preserve rename history traceable via git log --follow
+- forge-sb install placed inside if-not-installed block so it only runs on first ForgeCode install, not every session
+- forge_skill_md_sha256 also refreshed (stale from Plan 03): caught by integrity test run; fixed inline as Rule 1
+
 Key v1.3 Phase 11 Plan 03 decisions:
 
 - SRI hash sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM computed live from lucide@0.469.0 CDN via curl+openssl
@@ -113,7 +119,7 @@ Key v1.3 Phase 11 Plan 01 decisions:
 
 - [x] Execute Phase 11 Plan 02: sk- unit tests + SRI integrity scaffold (COMPLETE)
 - [x] Execute Phase 11 Plan 03: skill/docs/install housekeeping (COMPLETE)
-- Execute Phase 11 Plan 04: plugin.json hash refresh (install.sh, SKILL.md, forge-progress-surface.sh hashes stale after Plans 01+03)
+- [x] Execute Phase 11 Plan 04: plugin.json hash refresh + HOUSE-01 + FGSB-01 (COMPLETE)
 - Release v1.3.0
 
 ### Blockers/Concerns
@@ -122,11 +128,10 @@ Key v1.3 Phase 11 Plan 01 decisions:
 
 ## Session Continuity
 
-Last session: 2026-04-24
-Stopped at: Phase 11 Plan 03 complete — SRI-01 + DOCS-01(a+b+c) + SKILL-01 + SKILL-02 + INST-01 shipped; 9 files modified.
+Last session: 2026-04-25
+Stopped at: Phase 11 Plan 04 complete — HOUSE-01 + FGSB-01 shipped; 14 SENTINEL files relocated, forge-sb install added, all integrity hashes refreshed; ALL SUITES PASSED.
 Resume file: None
 
 Next likely actions:
 
-- Execute Phase 11 Plan 04: plugin.json hash refresh (install.sh, SKILL.md, forge-progress-surface.sh hashes stale)
-- Release v1.3.0 after Phase 11 fully ships
+- Release v1.3.0 (Phase 11 fully shipped)
