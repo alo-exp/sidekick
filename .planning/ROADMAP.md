@@ -302,7 +302,7 @@ Phase 10 → Phase 11
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 10. Enforcer Hardening + Helper Extraction | 4/4 | Shipped | 2026-04-24 |
-| 11. Housekeeping, Hardening & forge-sb | 2/4 | In progress | — |
+| 11. Housekeeping, Hardening & forge-sb | 4/4 | Shipped | 2026-04-24 |
 
 ### v1.3 Requirement Coverage
 
