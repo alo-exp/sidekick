@@ -381,6 +381,33 @@ else
   fail "test_surface_redacts_api_key_and_provider_tokens" "ctx='$_ctx'"
 fi
 
+# test_surface_redacts_ghs_token
+# ghs_ is the GitHub fine-grained PAT prefix; must be caught by the gh[pousra]_ rule.
+echo "=== test_surface_redacts_ghs_token ==="
+_payload_ghs='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\nghs_AAAAAAAAAAAAAAAAAAAA12345\nPATTERNS_DISCOVERED: none"}}'
+_out_ghs="$(run_surf "$_payload_ghs")"
+_ctx_ghs="$(echo "$_out_ghs" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+if echo "$_ctx_ghs" | grep -q '\[REDACTED-GH-TOKEN\]' \
+   && ! echo "$_ctx_ghs" | grep -q 'ghs_AAAAAAAAAAAAAAAAAAAA12345'; then
+  pass "test_surface_redacts_ghs_token"
+else
+  fail "test_surface_redacts_ghs_token" "ctx='$_ctx_ghs'"
+fi
+
+# test_surface_redacts_api_key_colon_form
+# "api-key: supersecret" uses a hyphen separator and colon+space assignment;
+# must match the (?i)(api[_-]?key\s*[:=]\s*)\S+ rule.
+echo "=== test_surface_redacts_api_key_colon_form ==="
+_payload_ak='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\napi-key: supersecret\nPATTERNS_DISCOVERED: none"}}'
+_out_ak="$(run_surf "$_payload_ak")"
+_ctx_ak="$(echo "$_out_ak" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+if echo "$_ctx_ak" | grep -q 'api-key: \[REDACTED\]' \
+   && ! echo "$_ctx_ak" | grep -q 'supersecret'; then
+  pass "test_surface_redacts_api_key_colon_form"
+else
+  fail "test_surface_redacts_api_key_colon_form" "ctx='$_ctx_ak'"
+fi
+
 # -----------------------------------------------------------------------------
 echo ""
 echo "======================================="
