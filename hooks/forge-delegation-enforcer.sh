@@ -335,7 +335,18 @@ decide_bash() {
   # 1. forge -p rewrite / idempotent passthrough.
   if is_forge_p "$cmd"; then
     if has_conversation_id "$cmd"; then
-      return 0  # idempotent passthrough
+      # SENTINEL L2 extension: validate the pre-existing --conversation-id value
+      # before passing through. A crafted value containing shell metacharacters
+      # (e.g. "; rm -rf /", "$(evil)", backtick injection) would otherwise reach
+      # the shell unvalidated. Extract the value and apply the same UUID regex
+      # used for generated UUIDs.
+      local existing_uuid
+      existing_uuid="$(printf '%s' "$cmd" | sed -n 's/.*--conversation-id[[:space:]=]\([^[:space:]]*\).*/\1/p')"
+      if [[ -z "$existing_uuid" ]] || ! validate_uuid "$existing_uuid"; then
+        emit_decision "deny" "Sidekick: --conversation-id value is not a valid lowercase RFC 4122 UUID. Supply a valid UUID or omit --conversation-id to let the hook auto-generate one." ""
+        return 0
+      fi
+      return 0  # idempotent passthrough — UUID validated
     fi
     # Strict execution order (see <activation_lifecycle_design> in
     # 06-03-audit-index-and-activation.md):

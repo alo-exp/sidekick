@@ -160,11 +160,11 @@ Research on 2026-04-18 verified three corrections to the v1.2 spec against curre
 - [ ] **ENF-01**: `has_write_redirect` correctly flags process substitution `>(...)` as a write redirect — it is not missed as a non-file redirect (Bug #1 / Issue #3)
 - [ ] **ENF-02**: `has_write_redirect` does NOT false-positive on fd-redirects `>&1`, `>&2`, `>&-`, `2>&1` — these are output-routing redirects, not file-write redirects (Bug #1 / Issue #3)
 - [ ] **ENF-03**: `has_write_redirect` does NOT false-positive on `>` inside quoted strings or heredoc bodies (e.g. Rust/TypeScript generics inside a heredoc, `echo "Result<T, E>"`) (Bug #1 / Issue #3)
-- [ ] **ENF-04**: `FORGE_LEVEL_3=1` bypass is functional end-to-end — when a command is prefixed with `FORGE_LEVEL_3=1`, the hook recognises the Level-3 signal and allows the command through; the root cause (env var not exported to hook subprocess) is resolved by the chosen fix approach (Bug #2 / Issue #3)
+- [ ] **ENF-04**: `FORGE_LEVEL_3=1` bypass is functional end-to-end — when a command is prefixed with `FORGE_LEVEL_3=1`, the hook recognises the Level-3 signal and allows the command through; the root cause (env var not exported to hook subprocess) is resolved using **Option A** from Issue #3: `strip_env_prefix` (or `decide_bash`) exports the stripped env-var prefixes into the current shell before the bypass check runs, so `FORGE_LEVEL_3` is visible to `[[ "${FORGE_LEVEL_3:-}" == "1" ]]` (Bug #2 / Issue #3)
 - [ ] **ENF-05**: `gh` (GitHub CLI) is explicitly classified so that mutating sub-commands (`gh issue create`, `gh pr create`, `gh project item-add`, `gh release create`) are treated as mutating and read-only sub-commands (`gh issue list`, `gh pr view`, `gh label list`) are treated as read-only — `gh` is never routed to the unclassified-deny fallback (Bug #3 / Issue #3)
 - [ ] **ENF-06**: `&&`-chained and `;`-separated commands are classified as mutating if **any** segment in the chain is mutating — `cd /path && mutating_cmd` is denied; the chain bypass security hole is closed (Bug #4 / Issue #3)
 - [ ] **ENF-07**: MCP filesystem write tools are covered by the PreToolUse hook dispatch — `mcp__filesystem__write_file`, `mcp__filesystem__edit_file`, `mcp__filesystem__move_file`, `mcp__filesystem__create_directory` are denied with the same policy as `Write`/`Edit` when `/forge` mode is active (Bug #5 / Issue #3)
-- [ ] **ENF-08**: Pipeline (`|`) commands are classified by their **most-mutating** token — `read_only_cmd | mutating_cmd` is denied, not passed as read-only because the first token is non-mutating (Bug #6 / v1.2.2 code-review triage)
+- [ ] **ENF-08**: Pipeline (`|`) commands are classified by their **most-mutating** token — `read_only_cmd | mutating_cmd` is denied, not passed as read-only because the first token is non-mutating (Bug #6 / v1.2.2 code-review triage). **Edge case:** `forge -p "task" | tee /tmp/log` must still be permitted — the `is_forge_p` check in `decide_bash` runs before the pipe-chain classification and takes precedence; pipe-chain logic must not deny an already-approved forge invocation
 
 ### Doc-Edit Path Allowlist
 
@@ -174,7 +174,7 @@ Research on 2026-04-18 verified three corrections to the v1.2 spec against curre
 
 ### Helper Extraction (Refactoring)
 
-- [ ] **REFACT-01**: Helper functions are extracted from `forge-delegation-enforcer.sh` into a new sourced library `hooks/lib/enforcer-utils.sh`; at minimum: `strip_ansi`, `strip_env_prefix`, `has_write_redirect`, `first_token`, and the read-only / mutating word-lists
+- [ ] **REFACT-01**: Helper functions are extracted from `forge-delegation-enforcer.sh` into a new sourced library `hooks/lib/enforcer-utils.sh`; at minimum: `strip_env_prefix`, `has_write_redirect`, `first_token`, and the read-only / mutating word-lists. Note: `strip_ansi` lives in `forge-progress-surface.sh` (not the enforcer) — if it is to be shared, the library should be named `hooks/lib/hook-utils.sh` and sourced by both hooks; otherwise `strip_ansi` stays in the progress-surface and is excluded from this extraction
 - [ ] **REFACT-02**: `forge-delegation-enforcer.sh` sources `hooks/lib/enforcer-utils.sh` at startup and does not duplicate any logic already in the library
 - [ ] **REFACT-03**: `forge-delegation-enforcer.sh` line count is ≤ 300 lines after extraction
 - [ ] **REFACT-04**: Dead function `rewrite_forge_p` (defined but never called) is removed during the extraction refactoring

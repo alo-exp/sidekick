@@ -280,7 +280,8 @@ fi
 # regex surface stays narrow.
 echo "=== test_validate_uuid_rejects_uppercase ==="
 _upper_uuid="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
-_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_upper_uuid" run_enf "$_j")"
+_j_upper="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"forge -p \\\"hello\\\"\"}}"
+_out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_upper_uuid" run_enf "$_j_upper")"
 if echo "$_out" | jq -er '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
   pass "test_validate_uuid_rejects_uppercase"
 else
@@ -302,6 +303,33 @@ if [[ "$_cmd" == "FOO=forge_trap forge --conversation-id $_valid_uuid --verbose 
   pass "test_env_prefix_with_forge_inside_value"
 else
   fail "test_env_prefix_with_forge_inside_value" "cmd='$_cmd'"
+fi
+
+# test_idempotent_passthrough_rejects_invalid_uuid
+# SENTINEL L2 extension: when a pre-existing --conversation-id value fails
+# UUID validation (contains metacharacters or is malformed), the hook must
+# deny rather than pass through unvalidated to the shell.
+echo "=== test_idempotent_passthrough_rejects_invalid_uuid ==="
+_j_bad_conv='{"tool_name":"Bash","tool_input":{"command":"forge -p \"task\" --conversation-id bad-id-with;metachar"}}'
+_out="$(run_enf "$_j_bad_conv")"
+if echo "$_out" | jq -er '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1 \
+   && ! echo "$_out" | grep -qF 'metachar'; then
+  pass "test_idempotent_passthrough_rejects_invalid_uuid"
+else
+  fail "test_idempotent_passthrough_rejects_invalid_uuid" "out='$_out'"
+fi
+
+# test_idempotent_passthrough_accepts_valid_uuid
+# A pre-existing --conversation-id with a valid lowercase RFC 4122 UUID must
+# pass through unchanged (no deny output — hook exits 0 silently).
+echo "=== test_idempotent_passthrough_accepts_valid_uuid ==="
+_valid_conv_uuid="12345678-1234-1234-1234-123456789abc"
+_j_valid_conv="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"forge -p \\\"task\\\" --conversation-id $_valid_conv_uuid\"}}"
+_out="$(run_enf "$_j_valid_conv")"
+if [[ -z "$_out" ]]; then
+  pass "test_idempotent_passthrough_accepts_valid_uuid"
+else
+  fail "test_idempotent_passthrough_accepts_valid_uuid" "expected empty output, got='$_out'"
 fi
 
 # test_surface_redacts_authorization_header

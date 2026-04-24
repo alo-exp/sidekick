@@ -1,17 +1,49 @@
 # Changelog
 
+## 1.2.4 — 2026-04-24
+
+### Pre-release quality gate hardening
+
+Full 4-stage pre-release quality gate run before this release, surfacing and fixing issues across two Stage 2 audit passes.
+
+**Security (behavior change):**
+
+- **`hooks/forge-delegation-enforcer.sh`** (SENTINEL L2 extension): The idempotent passthrough path for pre-existing `--conversation-id` values now validates the UUID against the strict `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` regex before passing through. Previously, a crafted value containing shell metacharacters (e.g. `; rm -rf /`) passed unvalidated to the shell. Now such values are rejected with a `permissionDecision: deny`. This closes GitHub Issue #5.
+
+**Documentation fixes:**
+
+- **`skills/forge/SKILL.md`**: Resolved self-contradictory UUID injection instruction — "Do NOT manually add `--conversation-id`" was immediately followed by an instruction to add it for resume. Rewritten to clearly frame the resume case as an explicit exception.
+- **`skills/forge.md`**: Added deprecation notice pointing to the canonical `skills/forge/SKILL.md`. The legacy flat skill file was previously indistinguishable from the active version.
+- **`AGENTS.md`**: Added `google/gemma-4-31b-it` to the verified model IDs list. The model was referenced as the budget/fallback alternative throughout docs but was absent from the verification record.
+
+**Tests:**
+
+- **`tests/test_v12_coverage.bash`**: 2 new tests — `test_idempotent_passthrough_rejects_invalid_uuid` (metachar in pre-existing `--conversation-id` → deny) and `test_idempotent_passthrough_accepts_valid_uuid` (valid UUID → silent passthrough). Coverage suite now 21 assertions.
+
+**Manifest:**
+
+- **`.claude-plugin/plugin.json`**: SHA-256 hashes refreshed for `forge_md_sha256`, `forge_skill_md_sha256`, `forge_delegation_enforcer_sha256`; version bumped to 1.2.4.
+
+All 14 test suites green (21/21 in the v1.2 coverage suite, 0 failures).
+
 ## 1.2.3 — 2026-04-24
 
 ### SENTINEL hardening ship + v1.3 milestone planning
 
-Catches up the release tag to include the v1.2.2 SENTINEL defense-in-depth changes (which were committed after the v1.2.2 tag was cut) and adds the v1.3 milestone planning artifacts. No user-facing behavior change.
+Catches up the release tag to include changes committed after the v1.2.2 tag was cut, and adds the v1.3 milestone planning artifacts.
 
-- **`hooks/forge-delegation-enforcer.sh`**: SENTINEL L1/L2 — anchored env-prefix substitution and UUID validation (previously missed the v1.2.2 tag)
-- **`hooks/forge-progress-surface.sh`**: SENTINEL I1 — secret redaction for sk-, gha_, github_pat_, xoxe- tokens and Authorization headers
-- **`tests/test_v12_coverage.bash`**: 6 new/fixed unit tests covering UUID validation, env-prefix anchoring, and extended token redaction
-- **`.planning/REQUIREMENTS.md`**: 22 v1.3 requirements defined (ENF-01–08, PATH-01–03, REFACT-01–04, TEST-V13-01–04, MAN-V13-01–03)
-- **`.planning/ROADMAP.md`**: Phase 10 added with 10 success criteria for Enforcer Hardening + Helper Extraction
-- **`.claude-plugin/plugin.json`**: version bumped to 1.2.3; integrity hashes refreshed
+**v1.2.3-specific changes** (not present under the v1.2.2 tag):
+
+- **`hooks/forge-progress-surface.sh`**: Extended secret redaction — added `gha_` (GitHub Actions), `github_pat_` (fine-grained PATs), and `xoxe-` (Slack Enterprise Grid) token patterns. This is a **behavior change**: those token types were previously passed through to `additionalContext` unredacted.
+- **`tests/test_v12_coverage.bash`**: 1 new test (`test_surface_redacts_standalone_sk_token`) + 2 fixed tests (cap assertion tightened from `-le 20` to `-eq 20`; UUID metachar test stale-variable fix).
+- **`.planning/REQUIREMENTS.md`**: 22 v1.3 requirements defined (ENF-01–08, PATH-01–03, REFACT-01–04, TEST-V13-01–04, MAN-V13-01–03).
+- **`.planning/ROADMAP.md`**: Phase 10 added with 10 success criteria for Enforcer Hardening + Helper Extraction.
+- **`.claude-plugin/plugin.json`**: version bumped to 1.2.3.
+
+**Also included** (SENTINEL L1/L2 hardening from `e23baed`, committed after the v1.2.2 tag):
+
+- **`hooks/forge-delegation-enforcer.sh`**: Anchored env-prefix substitution (SENTINEL L1); UUID validation via `validate_uuid` (SENTINEL L2). These changes were part of the v1.2.2 intent but landed in a commit after the v1.2.2 tag was created.
+- **`hooks/forge-progress-surface.sh`**: `sk-` token and Authorization header redaction (SENTINEL I1 baseline, also from the post-tag commit).
 
 ## 1.2.2 — 2026-04-18
 

@@ -39,7 +39,7 @@ Source: Phase 5 / Bug 1 (commit 354d001). See `.planning/phases/05-.../05-CONTEX
 Any model ID written to README, skill docs, `.forge.toml`, or agent files MUST be verified against the live OpenRouter catalog via `forge list model --porcelain | grep <candidate-id>`. Do NOT accept a model name from LLM output or memory without verification — hallucinated IDs (e.g., `qwen/qwen3.6-plus`) are silently accepted by Forge's config command but cause the OpenRouter API to omit tool schemas from the request, producing text-only responses that compound the "tools missing" failure mode (see prior entry).
 
 
-Verified IDs as of v1.1.2: `qwen/qwen3-coder-plus` (1M ctx, tools), `qwen/qwen3-vl-235b-a22b-instruct` (262k ctx, tools + vision), `minimax/minimax-m2.7` (196k ctx, tools).
+Verified IDs as of v1.1.2: `qwen/qwen3-coder-plus` (1M ctx, tools), `qwen/qwen3-vl-235b-a22b-instruct` (262k ctx, tools + vision), `minimax/minimax-m2.7` (196k ctx, tools). Also verified: `google/gemma-4-31b-it` (128k ctx, free-tier, tools) — recommended budget/high-volume alternative in `skills/forge.md` and `README.md`.
 
 
 Source: Phase 5 / Bug 2 (commit 354d001).
