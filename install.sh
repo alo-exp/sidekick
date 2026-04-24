@@ -31,7 +31,7 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
   # Downloading to a file avoids stream-injection attacks and prints the SHA-256
   # so the user can verify the download matches a known-good release.
   # (SENTINEL FINDING-7.1: supply chain hardening)
-  FORGE_INSTALL_TMP=$(mktemp /tmp/forge-install.XXXXXX.sh)
+  FORGE_INSTALL_TMP=$(mktemp "${TMPDIR:-/tmp}/forge-install.XXXXXX")
   trap 'rm -f "${FORGE_INSTALL_TMP}"' EXIT
   # R8-6: Add download timeouts to prevent indefinite hang on slow/stalled connections.
   if command -v curl &>/dev/null; then
