@@ -203,16 +203,24 @@ for _c in 'rm foo' 'git commit -m "x"' 'echo hi > /tmp/out'; do
 done
 [ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_level3_passthrough"
 
-# -----------------------------------------------------------------------------
-# NOTE: Classifier matches first-token-prefix only; chained mutating tails pass
-# through. This is a known, intentional Phase 6 classifier gap documented in
-# 06-02-SUMMARY.md. A proper shell-parser fix is out of Phase 6 scope.
+# ENF-06 (v1.3): &&-chained command with a mutating tail is now DENIED.
+# The Phase 6 "known gap" has been closed — all chain segments are scanned.
 echo "=== test_chained_command_with_mutating_tail ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"git status && rm foo"}}')"
-if [ -z "${_out}" ]; then
-  assert_pass "test_chained_command_with_mutating_tail"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "${_dec}" = "deny" ]; then
+  assert_pass "test_chained_command_with_mutating_tail (ENF-06: chain with mutating segment denied)"
 else
-  assert_fail "test_chained_command_with_mutating_tail" "expected empty passthrough, got: '${_out}'"
+  assert_fail "test_chained_command_with_mutating_tail" "expected deny for chain with mutating tail, got: '${_out}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_readonly_chain_passes ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"cd /tmp && ls"}}')"
+if [ -z "${_out}" ]; then
+  assert_pass "test_readonly_chain_passes (ENF-06: read-only chain passes through)"
+else
+  assert_fail "test_readonly_chain_passes" "expected empty passthrough for read-only chain, got: '${_out}'"
 fi
 
 # -----------------------------------------------------------------------------
