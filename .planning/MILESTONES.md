@@ -40,18 +40,18 @@
 
 ## v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 
-**Status:** IN PROGRESS (started 2026-04-24)
+**Status:** SHIPPED 2026-04-24 (v1.3.0)
 **Phases:** 10–11
-**Target release:** v1.3.0
+**GitHub Release:** https://github.com/alo-exp/sidekick/releases/tag/v1.3.0
 
-**Phase 10 — Enforcer Hardening + Helper Extraction:**
+**Phase 10 — Enforcer Hardening + Helper Extraction:** SHIPPED
 - Fix 6 enforcer bugs (Issues #3, #8): false-positive denials, Level-3 bypass, gh unclassified, chain bypass, MCP bypass, pipe-chain classification
 - Codify doc-edit carve-out as path allowlist `.planning/**` + `docs/**` (Issue #2)
 - Extract helpers to `hooks/lib/enforcer-utils.sh` (Issue #9)
 - Expanded test suite + manifest bump to v1.3.0
 - 22 requirements: ENF-01–08, PATH-01–03, REFACT-01–04, TEST-V13-01–04, MAN-V13-01–03
 
-**Phase 11 — Housekeeping, Hardening & forge-sb:**
+**Phase 11 — Housekeeping, Hardening & forge-sb:** SHIPPED
 - `strip_ansi` slurp-mode fix (Issue #6)
 - `sk-` token redaction regex improvement (Issue #7)
 - SRI integrity for Lucide CDN (Issue #10)
@@ -64,4 +64,4 @@
 - 10 requirements: STRIP-01, RDRCT-01, SRI-01, SKILL-01–02, TEST-RDRCT-01, DOCS-01, INST-01, HOUSE-01, FGSB-01
 
 ---
-*Last updated: 2026-04-24 — v1.3 milestone initialized with 2 phases (32 requirements)*
+*Last updated: 2026-04-24 — v1.3.0 shipped; Phases 10 and 11 complete*

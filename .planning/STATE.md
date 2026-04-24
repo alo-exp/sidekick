@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1.2
-milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
-status: executing
-stopped_at: Phase 11 Plan 04 complete — HOUSE-01 + FGSB-01 shipped; all integrity hashes refreshed; full test suite green. Phase 11 complete. Ready for v1.3.0 release.
-last_updated: "2026-04-25T00:15:00Z"
-last_activity: "2026-04-25 — Phase 11 Plan 04 complete (14 SENTINEL files moved to docs/internal/sentinel/, forge-sb install step, plugin.json hash refresh)"
+milestone: v1.3.0
+milestone_name: "Enforcer Hardening + Housekeeping + forge-sb"
+status: complete
+stopped_at: v1.3.0 released — Phases 10 and 11 complete; GitHub Release https://github.com/alo-exp/sidekick/releases/tag/v1.3.0
+last_updated: "2026-04-24T00:00:00Z"
+last_activity: "2026-04-24 — v1.3.0 GitHub release created; all Phase 10 + Phase 11 work shipped"
 progress:
   total_phases: 5
   completed_phases: 5
