@@ -244,7 +244,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 ### Phase Summary
 
 - [x] **Phase 10: Enforcer Hardening + Helper Extraction** — Fix 6 enforcer bugs + codify doc-edit path allowlist + extract helpers to `hooks/lib/enforcer-utils.sh` + expanded test suite + manifest bump to v1.3.0  _(shipped 2026-04-24)_
-- [ ] **Phase 11: Housekeeping, Hardening & forge-sb** — Credential redaction hardening + SRI integrity + SKILL.md fixes + help site bugs + install.sh fix + SENTINEL file relocation + forge-sb auto-install
+- [x] **Phase 11: Housekeeping, Hardening & forge-sb** — Credential redaction hardening + SRI integrity + SKILL.md fixes + help site bugs + install.sh fix + SENTINEL file relocation + forge-sb auto-install  _(shipped 2026-04-25)_
 
 ### Phase Details
 
