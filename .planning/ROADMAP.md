@@ -263,7 +263,13 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
   8. `forge-delegation-enforcer.sh` is ≤ 300 lines; `hooks/lib/enforcer-utils.sh` exists and contains the extracted helpers; no logic is duplicated between the two files
   9. Full test suite (all v1 / v1.2 / v1.3 tests) reports PASS with zero regressions
   10. `plugin.json` version field is `1.3.0`; hook matcher includes MCP filesystem tools; all `_integrity` SHA-256 hashes are correct
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Create hooks/lib/enforcer-utils.sh: source-guarded helper library with ENF-01/02/03 bug-fixed has_write_redirect, export_env_prefix (ENF-04), is_allowed_doc_path (PATH), has_mutating_chain_segment (ENF-06), has_mutating_pipe_segment (ENF-08), plus is_read_only/is_mutating with gh entries (ENF-05)
+- [ ] 10-02-PLAN.md — Rewrite enforcer to source lib, apply all 8 bug fixes in-enforcer (export_env_prefix call, chain/pipe scanners, MCP dispatch, path allowlist in decide_write_edit), remove dead rewrite_forge_p, achieve ≤300 lines
+- [ ] 10-03-PLAN.md — Expand test suite: invert test_chained_command_with_mutating_tail, create tests/test_v13_coverage.bash covering ENF-01–08 + PATH-01–03 + lib isolation, add to run_all.bash
+- [ ] 10-04-PLAN.md — Plugin manifest: bump to v1.3.0, extend PreToolUse matcher with MCP filesystem tools, refresh _integrity hashes for enforcer and lib; update test_plugin_integrity.bash
 
 #### Phase 11: Housekeeping, Hardening & forge-sb
 **Goal**: All 9 remaining GitHub housekeeping/hardening items are resolved, the forge-sb skill is auto-installed on plugin install, and the full test suite still passes green.
@@ -289,7 +295,7 @@ Phase 10 → Phase 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 10. Enforcer Hardening + Helper Extraction | 0/TBD | Not started | — |
+| 10. Enforcer Hardening + Helper Extraction | 0/4 | Not started | — |
 | 11. Housekeeping, Hardening & forge-sb | 0/TBD | Not started | — |
 
 ### v1.3 Requirement Coverage
