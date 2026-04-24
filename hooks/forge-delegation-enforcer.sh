@@ -1,23 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Forge Delegation Enforcer (PreToolUse hook)
+# Sidekick Plugin — Forge Delegation Enforcer (PreToolUse hook)  v1.3
 # =============================================================================
-# Phase 6 (v1.2) foundation: parses PreToolUse JSON from stdin, checks the
-# ~/.claude/.forge-delegation-active marker, and dispatches to per-tool
-# decision logic. Decision branches are filled in by plans 06-02 and 06-03.
+# Sources hooks/lib/enforcer-utils.sh. Adds path allowlist (PATH-01/02/03),
+# MCP filesystem dispatch (ENF-07), chain/pipe denial (ENF-06/08), and
+# export_env_prefix for FORGE_LEVEL_3 prefix bypass (ENF-04).
 #
-# Exit-code contract (canonical Claude Code PreToolUse hook):
-#   0 + empty stdout  → pass-through (no decision)
-#   0 + JSON stdout   → decision applied (hookSpecificOutput envelope)
-#   2 + stderr        → hard precondition failure (malformed input, jq missing)
-#
-# Canonical decision JSON shape (spec correction from 06-RESEARCH.md §1):
-#   { "hookSpecificOutput": {
-#       "hookEventName": "PreToolUse",
-#       "permissionDecision": "allow"|"deny",
-#       "permissionDecisionReason": "<reason>",
-#       "updatedInput": { "command": "<rewritten>" }  # optional
-#   } }
+# Exit-code contract: 0+empty=pass-through; 0+JSON=decision; 2+stderr=fatal.
 # =============================================================================
 
 set -euo pipefail
@@ -25,16 +14,11 @@ IFS=$'\n\t'
 
 MARKER_FILE="${HOME}/.claude/.forge-delegation-active"
 
-# -----------------------------------------------------------------------------
-# gen_uuid — produce a lowercase RFC 4122 UUID.
-#
-# Honors the SIDEKICK_TEST_UUID_OVERRIDE env var as a TEST-ONLY injection
-# contract (see .planning/phases/06-.../06-01-hook-foundation.md
-# <test_injection_contract>). When set and non-empty, the helper echoes that
-# value verbatim and skips uuidgen. Consumed by 06-03's
-# test_idx_append_idempotent_by_uuid to exercise the idx-dedup branch.
-# Production callers never set this variable.
-# -----------------------------------------------------------------------------
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=hooks/lib/enforcer-utils.sh
+source "${HOOK_DIR}/lib/enforcer-utils.sh"
+
+# gen_uuid — lowercase RFC 4122 UUID. Honors SIDEKICK_TEST_UUID_OVERRIDE (tests only).
 gen_uuid() {
   if [[ -n "${SIDEKICK_TEST_UUID_OVERRIDE:-}" ]]; then
     echo "$SIDEKICK_TEST_UUID_OVERRIDE"
@@ -43,30 +27,12 @@ gen_uuid() {
   uuidgen | tr 'A-Z' 'a-z'
 }
 
-# -----------------------------------------------------------------------------
-# validate_uuid — structural 8-4-4-4-12 lowercase-hex-and-dashes check before
-# splicing into a rewritten shell command. SENTINEL v2.3 FINDING-R16-L2:
-# production `uuidgen` yields only hex-and-dashes, but SIDEKICK_TEST_UUID_OVERRIDE
-# is arbitrary. Reject anything that isn't 8-4-4-4-12 lowercase hex so an
-# attacker-controlled test override cannot inject shell metacharacters into the
-# rewritten command.
-# NOTE: This regex enforces shape only — it does NOT check RFC 4122 version/variant
-# nibbles. That is intentional: the goal is metacharacter exclusion, not strict
-# RFC conformance. In bash `=~`, `^...$` anchors to the full string (not lines).
-# -----------------------------------------------------------------------------
+# validate_uuid — 8-4-4-4-12 lowercase hex check; prevents metacharacter injection.
 validate_uuid() {
   [[ "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
 }
 
-# -----------------------------------------------------------------------------
-# emit_decision — print a canonical hookSpecificOutput JSON envelope on stdout.
-#   $1 = "allow" | "deny"
-#   $2 = human-readable reason
-#   $3 = (optional) rewritten Bash command; when non-empty, wrapped into
-#        updatedInput.command.
-# Always uses jq to build JSON (never string-concat, to survive arbitrary
-# user input in commands).
-# -----------------------------------------------------------------------------
+# emit_decision — print hookSpecificOutput JSON. $1=allow|deny $2=reason $3=rewritten-cmd(opt).
 emit_decision() {
   local decision="$1"
   local reason="$2"
@@ -86,30 +52,42 @@ emit_decision() {
   fi
 }
 
-# -----------------------------------------------------------------------------
-# Canonical deny reason for direct file edits (shared by Write/Edit/Notebook).
-# -----------------------------------------------------------------------------
+# Canonical deny reason for direct file edits.
 DENY_EDIT_REASON='Sidekick /forge mode is active: direct file edits are delegated to Forge. Use: Bash { command: "forge -p \"<your task description>\"" }. To temporarily bypass for Level 3 takeover, set FORGE_LEVEL_3=1 in the Bash environment.'
 
 deny_direct_edit() {
   emit_decision "deny" "$DENY_EDIT_REASON" ""
 }
 
-decide_write_edit()    { deny_direct_edit; }
+# PATH-01/02/03: .planning/** and docs/** edits pass through when /forge is active.
+decide_write_edit() {
+  local tool_input_json="$1"
+  local file_path
+  file_path="$(printf '%s' "$tool_input_json" | jq -r '.file_path // .path // empty')"
+  if is_allowed_doc_path "$file_path"; then
+    return 0
+  fi
+  deny_direct_edit
+}
+
 decide_notebook_edit() { deny_direct_edit; }
 
-# -----------------------------------------------------------------------------
-# Audit index + activation-lifecycle helpers (Plan 06-03).
-# -----------------------------------------------------------------------------
+# ENF-07: deny mcp__filesystem__* write tools (with path allowlist).
+decide_mcp_write() {
+  local tool_input_json="$1"
+  local file_path
+  file_path="$(printf '%s' "$tool_input_json" | jq -r '.path // .file_path // empty')"
+  if is_allowed_doc_path "$file_path"; then
+    return 0
+  fi
+  deny_direct_edit
+}
 
-# resolve_forge_dir — prints the `.forge/` directory path, preferring
-# CLAUDE_PROJECT_DIR when set (Claude Code populates this to the project root).
+# Audit index + activation-lifecycle helpers.
 resolve_forge_dir() {
   printf '%s/.forge' "${CLAUDE_PROJECT_DIR:-$PWD}"
 }
 
-# ensure_forge_dir_and_idx — idempotent lazy init of .forge/ and
-# .forge/conversations.idx. Called only after a successful db_precheck.
 ensure_forge_dir_and_idx() {
   local dir
   dir="$(resolve_forge_dir)"
@@ -118,23 +96,14 @@ ensure_forge_dir_and_idx() {
   return 0
 }
 
-# db_precheck — one-shot `forge conversation list` health check gated by a
-# sentinel file. Sentinel mtime is compared against the marker file via the
-# portable bash built-in `-nt` operator (works on bash 3.2+ across macOS/Linux
-# — avoids the GNU `stat -c %Y` vs BSD `stat -f %m` divergence).
-# Returns 0 if DB writable (or sentinel still fresh), 1 if forge invocation
-# failed.
+# db_precheck — sentinel-gated health check. Returns 0 if DB writable.
 db_precheck() {
   local dir sentinel
   dir="$(resolve_forge_dir)"
   sentinel="$dir/.db_check_ok"
-  # If sentinel exists AND marker is NOT newer than sentinel → short-circuit.
-  # The -nt test returns false when sentinel is missing (arg2 missing), which
-  # is why we check existence first.
   if [[ -f "$sentinel" ]] && ! [[ "$MARKER_FILE" -nt "$sentinel" ]]; then
     return 0
   fi
-  # Either sentinel missing or marker newer → run the health check.
   if forge conversation list >/dev/null 2>&1; then
     mkdir -p "$dir" 2>/dev/null || true
     touch "$sentinel" 2>/dev/null || true
@@ -143,12 +112,7 @@ db_precheck() {
   return 1
 }
 
-# extract_task_hint — derive the `-p` argument from a Bash command, using
-# python3 shlex (non-eval, injection-safe). Falls back to the literal string
-# `(task hint unavailable)` if python3 is missing. The eval-based bash parser
-# from the research draft was REJECTED on security grounds — $cmd is
-# untrusted input from Claude Code.
-# See <task_hint_extraction_design> in 06-03-audit-index-and-activation.md.
+# extract_task_hint — derive -p argument from command via python3 shlex.
 extract_task_hint() {
   local cmd="$1"
   local hint=""
@@ -165,85 +129,38 @@ except Exception:
     pass
 ' "$cmd" 2>/dev/null || true)"
   fi
-  if [[ -z "$hint" ]]; then
-    hint="(task hint unavailable)"
-  fi
-  # Replace tabs/newlines with spaces; truncate to 80 chars.
+  [[ -z "$hint" ]] && hint="(task hint unavailable)"
   hint="${hint//$'\t'/ }"
   hint="${hint//$'\n'/ }"
   printf '%s' "${hint:0:80}"
 }
 
 # append_idx_row — write one tab-separated line to .forge/conversations.idx.
-# Dedupes on UUID (grep -qF matches the exact UUID anywhere in the file).
-# All file I/O is wrapped in `|| true` so a filesystem hiccup never causes
-# the hook to exit non-zero AFTER emit_decision has already printed.
 append_idx_row() {
   local uuid hint dir idx
   uuid="$1"
   hint="$2"
   dir="$(resolve_forge_dir)"
   idx="$dir/conversations.idx"
-
-  # Dedup: if this UUID is already in the idx, skip.
   if [[ -f "$idx" ]] && grep -qF "$uuid" "$idx" 2>/dev/null; then
     return 0
   fi
-
-  # Portable sidekick-tag (bash 3.2+): take the UUID's last dash-delimited
-  # segment, then the first 8 chars. DO NOT use `${uuid: -8}` — negative-offset
-  # substring requires bash 4+ and fails on macOS stock /bin/bash (3.2).
   local tag_suffix sidekick_tag
   tag_suffix="${uuid##*-}"
   tag_suffix="${tag_suffix:0:8}"
   sidekick_tag="sidekick-$(date +%s)-$tag_suffix"
-
   {
     printf '%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$uuid" "$sidekick_tag" "$hint" >> "$idx"
   } 2>/dev/null || true
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# Bash classifier + forge -p rewrite (Plan 06-02).
-#
-# Returns one of five classifications by dispatching to emit_decision or
-# exiting silently for pass-through:
-#   FORGE_P_REWRITE            - inject UUID + --verbose + output pipes
-#   FORGE_P_IDEMPOTENT         - already has --conversation-id → pass-through
-#   READ_ONLY                  - Brain-role inspection → pass-through
-#   MUTATING (deny)            - deny unless FORGE_LEVEL_3=1
-#   MUTATING_LEVEL3 (bypass)   - pass-through
-# -----------------------------------------------------------------------------
-
-# Strip leading `FOO=bar BAZ=qux ` env-var assignments; echo the remainder.
-strip_env_prefix() {
-  local cmd="$1"
-  # Loop removing leading `WORD=VALUE ` tokens. Values may be unquoted single
-  # words; complex quoted values aren't common in Bash tool_input.command.
-  while [[ "$cmd" =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+ ]]; do
-    cmd="${cmd#"${BASH_REMATCH[0]}"}"
-  done
-  printf '%s' "$cmd"
-}
-
-# Extract first "word" — the command token after env-var prefix. Supports
-# two-token prefixes (e.g. `git status`, `forge conversation`).
-first_token() {
-  local cmd stripped
-  cmd="$1"
-  stripped="$(strip_env_prefix "$cmd")"
-  # Print up to 2 tokens joined by a single space for two-word prefix matching.
-  printf '%s' "$stripped" | awk '{ if (NF>=2) { print $1" "$2 } else { print $1 } }'
-}
-
+# Enforcer-specific helpers (not in lib).
 has_conversation_id() {
   [[ "$1" =~ (^|[[:space:]])--conversation-id([[:space:]]|=) ]]
 }
 
 is_forge_p() {
-  # Matches `forge … -p …` where `forge` is the command (possibly preceded by
-  # env-var assignments, possibly followed by `-C <dir>`/`--cwd <dir>`).
   local cmd stripped
   cmd="$1"
   stripped="$(strip_env_prefix "$cmd")"
@@ -252,110 +169,28 @@ is_forge_p() {
   return 0
 }
 
-is_read_only() {
-  local cmd first
-  cmd="$1"
-  # A command with a write redirect is never read-only, regardless of its
-  # first token (e.g. `echo hi > /tmp/out` is mutating).
-  if has_write_redirect "$cmd"; then
-    return 1
-  fi
-  # `sed -i` and `awk -i inplace` mutate files even though sed/awk are in
-  # the single-word read-only list below. Reject them here so decide_bash's
-  # ordered dispatch (read-only check before mutating check) still denies.
-  if [[ "$cmd" =~ (^|[[:space:]])sed[[:space:]]+-i ]] || [[ "$cmd" =~ (^|[[:space:]])awk[[:space:]]+-i[[:space:]]+inplace ]]; then
-    return 1
-  fi
-  first="$(first_token "$cmd")"
-  case "$first" in
-    "git status"|"git log"|"git diff"|"git show"|"git branch"|"git remote"|"git rev-parse"|"git ls-files"|"git stash list") return 0 ;;
-    "forge conversation"|"forge --version"|"forge --help"|"forge info") return 0 ;;
-  esac
-  case "${first%% *}" in
-    ls|la|ll|pwd|cd|echo|printf|cat|head|tail|wc|file|stat|tree|diff|cmp) return 0 ;;
-    grep|egrep|fgrep|rg|ag|ack|find|fd|locate|which|whereis|type|command) return 0 ;;
-    test|'[') return 0 ;;
-    env|printenv|whoami|id|hostname|date|uname) return 0 ;;
-    jq|awk|sort|uniq|column|tr|cut|sed|xargs) return 0 ;;
-  esac
-  return 1
-}
-
-# Unquoted `>` or `>>` redirect to a path other than /dev/null → mutating.
-has_write_redirect() {
-  local cmd="$1"
-  # Quick reject if no redirect chars at all.
-  [[ "$cmd" == *">"* ]] || return 1
-  # Accept redirects to /dev/null as non-mutating.
-  # Remove all occurrences of `> /dev/null` / `>> /dev/null` / `2>/dev/null` / `2>&1`
-  local pruned="$cmd"
-  pruned="${pruned//>\/dev\/null/}"
-  pruned="${pruned//> \/dev\/null/}"
-  pruned="${pruned//>> \/dev\/null/}"
-  pruned="${pruned//>>\/dev\/null/}"
-  pruned="${pruned//2>&1/}"
-  pruned="${pruned//2>\/dev\/null/}"
-  pruned="${pruned//2> \/dev\/null/}"
-  # Any remaining > or >> means a write redirect to something else.
-  [[ "$pruned" == *">"* ]]
-}
-
-is_mutating() {
-  local cmd first
-  cmd="$1"
-  first="$(first_token "$cmd")"
-  # Two-word git mutators.
-  case "$first" in
-    "git add"|"git commit"|"git push"|"git pull"|"git fetch"|"git checkout"|"git reset"|"git rebase"|"git merge"|"git cherry-pick"|"git restore"|"git rm"|"git mv"|"git tag"|"git clean"|"git stash") return 0 ;;
-  esac
-  case "${first%% *}" in
-    rm|rmdir|mv|cp|ln|chmod|chown|chgrp|touch|mkdir) return 0 ;;
-    npm|pnpm|yarn|bundle|pip|gem|cargo|go) return 0 ;;
-    tar|zip|unzip|gunzip|gzip) return 0 ;;
-    systemctl|service|launchctl|brew|apt|apt-get|yum|dnf) return 0 ;;
-    curl|wget) return 0 ;;
-  esac
-  # Write-redirect anywhere in the command.
-  if has_write_redirect "$cmd"; then
-    return 0
-  fi
-  # `sed -i` and `awk -i inplace` are mutating.
-  if [[ "$cmd" =~ (^|[[:space:]])sed[[:space:]]+-i ]] || [[ "$cmd" =~ (^|[[:space:]])awk[[:space:]]+-i[[:space:]]+inplace ]]; then
-    return 0
-  fi
-  return 1
-}
-
+# decide_bash — Bash tool classifier + forge -p rewrite.
 decide_bash() {
   local tool_input_json cmd
   tool_input_json="$1"
   cmd="$(printf '%s' "$tool_input_json" | jq -r '.command // empty')"
   [[ -z "$cmd" ]] && return 0
 
+  # ENF-04: export any leading env-var prefix assignments (e.g. FORGE_LEVEL_3=1)
+  # into this hook's environment so the bypass check at step 3 can see them.
+  export_env_prefix "$cmd"
+
   # 1. forge -p rewrite / idempotent passthrough.
   if is_forge_p "$cmd"; then
     if has_conversation_id "$cmd"; then
-      # SENTINEL L2 extension: validate the pre-existing --conversation-id value
-      # before passing through. A crafted value containing shell metacharacters
-      # (e.g. "; rm -rf /", "$(evil)", backtick injection) would otherwise reach
-      # the shell unvalidated. Extract the value and apply the same UUID regex
-      # used for generated UUIDs.
       local existing_uuid
       existing_uuid="$(printf '%s' "$cmd" | sed -n 's/.*--conversation-id[[:space:]=]\([^[:space:]]*\).*/\1/p')"
       if [[ -z "$existing_uuid" ]] || ! validate_uuid "$existing_uuid"; then
         emit_decision "deny" "Sidekick: --conversation-id value is not a valid lowercase RFC 4122 UUID. Supply a valid UUID or omit --conversation-id to let the hook auto-generate one." ""
         return 0
       fi
-      return 0  # idempotent passthrough — UUID validated
+      return 0
     fi
-    # Strict execution order (see <activation_lifecycle_design> in
-    # 06-03-audit-index-and-activation.md):
-    #   (a) db_precheck — if fails, deny and RETURN. Nothing under .forge/
-    #       is created on this code path.
-    #   (b) ensure_forge_dir_and_idx — lazy init of .forge/ and idx.
-    #   (c) generate UUID + build rewritten command.
-    #   (d) emit_decision.
-    #   (e) append_idx_row.
     if ! db_precheck; then
       emit_decision "deny" "Sidekick: Forge DB not writable ('forge conversation list' failed). Deactivate via /forge:deactivate, resolve the Forge state, and re-activate." ""
       return 0
@@ -363,13 +198,10 @@ decide_bash() {
     ensure_forge_dir_and_idx || true
     local uuid rewritten pipes hint stripped env_prefix
     uuid="$(gen_uuid)"
-    # SENTINEL FINDING-R16-L2: validate UUID before splicing.
     if ! validate_uuid "$uuid"; then
       emit_decision "deny" "Sidekick: refusing to inject malformed UUID (check SIDEKICK_TEST_UUID_OVERRIDE)." ""
       return 0
     fi
-    # SENTINEL FINDING-R16-L1: anchor substitution to the command head via
-    # strip_env_prefix, not `${cmd/forge /...}` which matches anywhere.
     stripped="$(strip_env_prefix "$cmd")"
     env_prefix="${cmd%"$stripped"}"
     rewritten="${env_prefix}forge --conversation-id ${uuid} --verbose ${stripped#forge }"
@@ -381,6 +213,22 @@ decide_bash() {
     return 0
   fi
 
+  # 1b. ENF-06: Chain bypass — deny if any &&/; segment is mutating.
+  if has_mutating_chain_segment "$cmd"; then
+    if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then return 0; fi
+    emit_decision "deny" "Sidekick /forge mode: command chain contains a mutating segment. Use forge -p or set FORGE_LEVEL_3=1 for Level 3 takeover." ""
+    return 0
+  fi
+
+  # 1c. ENF-08: Pipe bypass — deny if any | segment is mutating.
+  # is_forge_p check above already returned early for forge -p pipes;
+  # this scanner only runs for non-forge commands.
+  if has_mutating_pipe_segment "$cmd"; then
+    if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then return 0; fi
+    emit_decision "deny" "Sidekick /forge mode: pipe chain contains a mutating segment. Use forge -p or set FORGE_LEVEL_3=1 for Level 3 takeover." ""
+    return 0
+  fi
+
   # 2. read-only passthrough.
   if is_read_only "$cmd"; then
     return 0
@@ -389,7 +237,7 @@ decide_bash() {
   # 3. mutating command handling.
   if is_mutating "$cmd"; then
     if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then
-      return 0  # Level-3 passthrough
+      return 0
     fi
     emit_decision "deny" "Sidekick /forge mode: mutating command denied. Delegate via forge -p, or set FORGE_LEVEL_3=1 to bypass for a Level 3 takeover." ""
     return 0
@@ -399,22 +247,16 @@ decide_bash() {
   emit_decision "deny" "Sidekick /forge mode: command could not be classified. Delegate via forge -p or set FORGE_LEVEL_3=1." ""
 }
 
-# -----------------------------------------------------------------------------
-# main — entry point. Gated so tests can `source` the file without triggering
-# stdin read.
-# -----------------------------------------------------------------------------
+# main — entry point.
 main() {
-  # Hard precondition: jq must be available.
   if ! command -v jq >/dev/null 2>&1; then
     echo "forge-delegation-enforcer: jq not found on PATH" >&2
     exit 2
   fi
 
-  # Read all of stdin.
   local input
   input="$(cat)"
 
-  # Parse tool_name; empty/null/parse-fail → exit 2.
   local tool_name tool_input
   if ! tool_name="$(printf '%s' "$input" | jq -er '.tool_name // empty' 2>/dev/null)"; then
     echo "forge-delegation-enforcer: malformed PreToolUse JSON on stdin" >&2
@@ -426,22 +268,22 @@ main() {
   fi
   tool_input="$(printf '%s' "$input" | jq -c '.tool_input // {}')"
 
-  # Marker-file check: inactive → silent no-op.
   if [[ ! -f "$MARKER_FILE" ]]; then
     exit 0
   fi
 
-  # Dispatch. Stubs pass-through; real logic added in 06-02 and 06-03.
   case "$tool_name" in
     Write|Edit)     decide_write_edit "$tool_input" ;;
     NotebookEdit)   decide_notebook_edit "$tool_input" ;;
     Bash)           decide_bash "$tool_input" ;;
+    mcp__filesystem__write_file|mcp__filesystem__edit_file|\
+    mcp__filesystem__move_file|mcp__filesystem__create_directory)
+                    decide_mcp_write "$tool_input" ;;
     *)              exit 0 ;;
   esac
 }
 
-# Source-guard: run main() only when executed directly, not when sourced by
-# tests. Uses ${0:-} defensively in case the file is piped via `bash <(...)`.
+# Source-guard: run main() only when executed directly, not when sourced.
 if [[ "${BASH_SOURCE[0]}" == "${0:-}" ]]; then
   main "$@"
 fi
