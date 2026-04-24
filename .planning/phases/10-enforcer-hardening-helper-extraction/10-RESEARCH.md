@@ -784,21 +784,16 @@ handled in code (explicit fallbacks exist or the impact is minimal).
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Bash glob class in parameter expansion on macOS bash 3.2 (A1)**
-   - What we know: `${var//>&[0-9]/}` is a common pattern; works on bash 4+
-   - What's unclear: Whether `[0-9]` character class in `${var//pattern/}` is fully supported on macOS stock bash (3.2.57)
-   - Recommendation: Add a quick bash 3.2 test case in Wave 0. If it fails, switch to explicit literals `>&0`, `>&1`, `>&2`, etc.
+1. **Bash glob class in parameter expansion on macOS bash 3.2 (A1)** — RESOLVED
+   - Decision: Use explicit literal forms (`>&0`, `>&1`, `>&2`, `>&3`, `>&-`, `0>&1`, `1>&2`, `2>&0`) instead of `[0-9]` glob class in `${var//pattern/}`. Avoids any bash 3.2 compatibility risk at negligible cost. Plans reflect this decision.
 
-2. **MCP matcher format in plugin.json (A2)**
-   - What we know: Current matcher is pipe-separated, e.g. `"Write|Edit|NotebookEdit|Bash"`
-   - What's unclear: Whether Claude Code plugin loader supports MCP-style tool names (`mcp__filesystem__*`) in the same matcher field
-   - Recommendation: Keep the two-layer enforcement (manifest + case dispatch). If MCP names in the matcher are unsupported, the case dispatch in the enforcer still blocks them for any tool invocation where the hook runs (the hook currently fires for all 4 registered tool types). ENF-07 security is not solely dependent on the matcher working.
+2. **MCP matcher format in plugin.json (A2)** — RESOLVED
+   - Decision: Use two-layer enforcement (manifest matcher + case dispatch in main()). Even if Claude Code plugin loader does not support MCP-style names in the matcher field, the case dispatch in the enforcer blocks them at hook execution time. ENF-07 security is not solely dependent on the matcher. Both layers are implemented.
 
-3. **Test file choice: extend `test_forge_enforcer_hook.bash` vs. new `test_v13_coverage.bash`**
-   - What we know: `test_forge_enforcer_hook.bash` has 370 lines, already dense; `test_v12_coverage.bash` pattern is 389 lines for gap tests
-   - Recommendation: Create `tests/test_v13_coverage.bash` as a separate file. Add it to `run_all.bash`. This keeps phase-scoped tests isolated and makes regressions easier to bisect. TEST-V13-04 (lib isolation) naturally belongs in a file that sources only the lib.
+3. **Test file choice: extend `test_forge_enforcer_hook.bash` vs. new `test_v13_coverage.bash`** — RESOLVED
+   - Decision: Create `tests/test_v13_coverage.bash` as a new file added to `run_all.bash`. Phase-scoped tests stay isolated; TEST-V13-04 lib isolation tests source only the lib (not the enforcer). Plans reflect this decision.
 
 ---
 
