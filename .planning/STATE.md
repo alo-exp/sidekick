@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1.2
 milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: Phase 10 Plan 04 complete — plugin.json v1.3.0 shipped, MCP matcher + integrity hashes refreshed, test_plugin_integrity.bash green (14/14), ALL SUITES PASSED.
-last_updated: "2026-04-24T13:30:00Z"
-last_activity: 2026-04-24 — Phase 10 Plan 04 complete (manifest v1.3.0: MCP matcher, enforcer+utils hashes, integrity test extended)
+stopped_at: Phase 11 Plan 01 complete — STRIP-01 (slurp mode) + RDRCT-01 (broadened sk- regex) shipped, 9/9 tests green.
+last_updated: "2026-04-24T13:46:00Z"
+last_activity: "2026-04-24 — Phase 11 Plan 01 complete (STRIP-01: perl -0777 slurp mode; RDRCT-01: broadened sk- redaction regex)"
 progress:
   total_phases: 5
   completed_phases: 5
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
-Phase: 10 — Enforcer Hardening + Helper Extraction (in progress)
-Plan: 10-04 complete; Phase 10 fully shipped
+Phase: 11 — Housekeeping, Hardening & forge-sb (in progress)
+Plan: 11-01 complete; Phase 11 Wave 1 shipped
 Status: Executing
-Last activity: 2026-04-24 — Phase 10 Plan 04 complete (manifest v1.3.0: MCP matcher, enforcer+utils hashes, integrity test extended)
+Last activity: 2026-04-24 — Phase 11 Plan 01 complete (STRIP-01: perl -0777 slurp mode; RDRCT-01: broadened sk- redaction regex)
 
 Progress:
 
@@ -96,10 +96,18 @@ Key v1.3 context:
 - v1.2 milestone closed 2026-04-24 (patch train complete — v1.2.0, v1.2.1, v1.2.2 all shipped)
 - v1.3 milestone opened 2026-04-24: Enforcer Hardening + Forge Bridge
 
+Key v1.3 Phase 11 Plan 01 decisions:
+
+- STRIP-01: -0777 slurp flag inserted before -pe in strip_ansi(); all four OSC/CSI/C1/C0 substitutions now operate on the full input buffer
+- RDRCT-01: both leading and trailing \b removed from sk- regex; broadened char class [A-Za-z0-9_\-\.\/+] includes non-\w chars so \b produces false-negatives; lookahead (?=\s|['">},]|$) provides correct end-of-token boundary
+- TDD test for STRIP-01 sources strip_ansi() directly (source-guard in hook file prevents main() from running); tests function contract independently of extract_status_block filtering
+- plugin.json SHA-256 for forge-progress-surface.sh intentionally stale after this plan; refresh deferred to plan 04
+
 ### Pending Todos
 
-- Execute Phase 10: Enforcer Hardening + Helper Extraction (22 reqs)
-- Execute Phase 11: Housekeeping, Hardening & forge-sb (10 reqs)
+- Execute Phase 11 Plan 02: sk- unit tests + SRI integrity scaffold
+- Execute Phase 11 Plan 03: skill/docs/install housekeeping
+- Execute Phase 11 Plan 04: plugin.json hash refresh (forge-progress-surface.sh hash stale after Plan 01)
 - Release v1.3.0
 
 ### Blockers/Concerns
@@ -109,10 +117,12 @@ Key v1.3 context:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Phase 10 Plan 04 complete — plugin.json v1.3.0 shipped, MCP matcher + integrity hashes refreshed, test_plugin_integrity.bash green (14/14), ALL SUITES PASSED.
+Stopped at: Phase 11 Plan 01 complete — STRIP-01 (slurp mode) + RDRCT-01 (broadened sk- regex) shipped, 9/9 tests green.
 Resume file: None
 
 Next likely actions:
 
-- Execute Phase 11: Housekeeping, Hardening & forge-sb (STRIP-01, RDRCT-01, SRI-01, SKILL-01/02, TEST-RDRCT-01, DOCS-01, INST-01, HOUSE-01, FGSB-01)
-- Release v1.3.0 after Phase 11 ships
+- Execute Phase 11 Plan 02: sk- extended unit tests + SRI integrity scaffold
+- Execute Phase 11 Plan 03: skill/docs/install housekeeping
+- Execute Phase 11 Plan 04: plugin.json hash refresh (forge-progress-surface.sh hash stale)
+- Release v1.3.0 after Phase 11 fully ships
