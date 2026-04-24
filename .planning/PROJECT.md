@@ -38,48 +38,27 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 5. **Token optimization**: Keep global/project AGENTS.md compact and deduplicated. Claude deduplicates before every write. Selective skill injection — only inject skills relevant to the current task.
 
-## Previous Milestone: v1.2 — Forge Delegation + Live Visibility
+## Current State: v1.4.0 SHIPPED 2026-04-25
 
-**Status:** SHIPPED 2026-04-18 (v1.2.0), patched to v1.2.1 and v1.2.2 on 2026-04-18/24. GitHub Release: https://github.com/alo-exp/sidekick/releases/tag/v1.2.0
-**Plugin version:** `sidekick` v1.2.2
+**Plugin version:** `sidekick` v1.4.0
+**GitHub Release:** https://github.com/alo-exp/sidekick/releases/tag/v1.4.0
 
-**Goals shipped:**
+v1.4.0 was a housekeeping release — command-surface cleanup and two security fixes in `install.sh`. No new delegation behavior introduced.
 
-1. Harness-enforced delegation via PreToolUse hook; `Write`/`Edit`/`NotebookEdit` hard-denied; `forge -p` commands rewritten to inject `--conversation-id` + `--verbose`.
-2. Live Forge output streaming via `run_in_background: true` + Monitor, visually distinct.
-3. Durable audit trail per task in `.forge/conversations.idx` + `~/forge/.forge.db`, replayable as HTML.
-4. Output style `output-styles/forge.md` for `[FORGE]` / `[FORGE-LOG]` / `[FORGE-SUMMARY]` lines.
-5. `/forge:replay` and `/forge:history` slash commands.
-6. v1.2.2 defense-in-depth: anchored env-prefix substitution, UUID validation, secret redaction in transcript surface.
+**What shipped in v1.4.0:**
+- Renamed skill `forge-delegation` → `forge-delegate` (dash naming convention for Claude Code skills)
+- Created `/forge-stop` dedicated command for delegation deactivation (replaces inline procedure)
+- Removed `/forge-replay` (underlying `forge conversation dump --html` API removed from Forge)
+- Normalized `/forge-history` (dash) across 9 files (was colon form `/forge:history`)
+- Removed `curl | bash` from secondary domain in `install.sh` (SENTINEL blocking)
+- Added `chmod 600` on `~/forge/.credentials.json` (SENTINEL blocking)
+- Added Plugin Hooks section to reference page sidebar navigation
+- All 15 test suites: 157 assertions, 0 failures
 
-## Current Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
-
-**Goal:** Fix all 6 enforcer security bugs, codify the doc-edit path allowlist, extract helpers, address 9 remaining GitHub housekeeping/hardening items (credential redaction, SRI integrity, SKILL.md improvements, help site bugs, install.sh fix, SENTINEL relocation), add forge-sb auto-install, and release v1.3.0.
-
-**Target features:**
-
-**Phase 10 — Enforcer Hardening:**
-- Fix `has_write_redirect` false-positives on `>` inside generics, quoted strings, fd-redirects — Bug #1 (Issue #3)
-- Fix `FORGE_LEVEL_3=1` command-prefix bypass silently failing — Bug #2 (Issue #3)
-- Add `gh` (GitHub CLI) to allowlist — Bug #3 (Issue #3)
-- Fix `cd /path && mutating_cmd` chain bypass security hole — Bug #4 (Issue #3)
-- Fix MCP filesystem tools bypassing enforcer — Bug #5 (Issue #3)
-- Fix pipe-chain first-token-only classification — Bug #6 (Issue #8)
-- Codify doc-edit carve-out as path-based allowlist for `.planning/**` and `docs/**` — Issue #2
-- Extract helpers to `hooks/lib/enforcer-utils.sh` — Issue #9
-- Full test suite + manifest bump to v1.3.0
-
-**Phase 11 — Housekeeping, Hardening & forge-sb:**
-- Fix `strip_ansi` multi-line OSC sequences (slurp mode) — Issue #6
-- Improve `sk-` token redaction regex (dots/plus/slash, min-length 10) — Issue #7
-- Add SRI integrity attributes to Lucide CDN script tags in all 6 help pages — Issue #10
-- Clarify SKILL.md L3 scope constraint to reference `$CLAUDE_PROJECT_DIR` — Issue #12
-- Fix SKILL.md security boundary ordering + add bootstrap skill governance — Issue #13
-- Add missing token redaction tests (`ghs_`, `api-key:`) — Issue #14
-- Fix help site: favicon, `search.js` null guard, concepts injection table — Issue #15
-- Fix `install.sh` hardcoded `/tmp` to use `${TMPDIR:-/tmp}` — Issue #16
-- Move 14 SENTINEL audit files from repo root to `docs/internal/sentinel/` — Issue #17
-- Auto-install `forge-sb` skill from Silver Bullet on plugin install
+**Previous milestones (archived):**
+- v1.3.0 (2026-04-24): Enforcer hardening, housekeeping, forge-sb — see `.planning/milestones/`
+- v1.2.0 (2026-04-18): Harness enforcement + live visibility — see `.planning/milestones/`
+- v1.1.0 (2026-04-13): Core Forge delegation skill — see `.planning/milestones/`
 
 ## Key Decisions
 
@@ -97,6 +76,11 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 | v1.2: Live-stream via `run_in_background` + Monitor | Users need to see Forge work in real time, not a post-hoc summary | Output style with `[FORGE]` line prefixes, rendered distinctly |
 | v1.2: Leverage `forge conversation` natively | Don't rebuild storage, snapshots, stats — Forge already has them | Sidekick injects UUIDs and maintains `.forge/conversations.idx` only |
 | v1.2: Conversation-id must be UUID | Forge 2.11.3 rejects non-UUID custom formats | Hook generates UUID; human-readable tag stored separately in idx |
+| v1.4: forge-delegation → forge-delegate | Dash naming is Claude Code skill convention; old name caused user confusion | SKILL.md frontmatter updated; colon form normalized across 9 files |
+| v1.4: /forge-stop as dedicated command | Discoverable, testable, consistent with Claude Code slash-command convention | `commands/forge-stop.md` created; replaces inline SKILL.md procedure |
+| v1.4: Remove /forge-replay | `forge conversation dump --html` API removed from current Forge builds | Deleted `commands/forge-replay.md`; `/forge-history` is the durable replacement |
+| v1.4: Remove curl\|bash from install.sh | Unsigned remote execution from secondary domain is SENTINEL blocking | Removed entirely — no replacement needed |
+| v1.4: chmod 600 on credentials | World-readable API keys are a security violation | Idempotent chmod block added after credential file creation |
 
 ## Requirements
 
@@ -119,25 +103,22 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 - ✓ Forge agent override files (`.forge/agents/forge.md`) with project-specific system prompts — Phase 1 (v1.1.0); corrected in Phase 5 (v1.1.2) to include `tools: ["*"]`
 - ✓ Context compaction guidance in `.forge.toml` configuration template — Phase 3 (v1.1.0)
 - ✓ Test coverage for new skill and AGENTS.md evolution logic — Phase 4 (v1.1.0)
+- ✓ Enforcer bug fixes (6 bugs: has_write_redirect, FORGE_LEVEL_3, gh, chain bypass, MCP bypass, pipe-chain) — Phase 10 (v1.3.0)
+- ✓ Doc-edit carve-out path allowlist (`.planning/**`, `docs/**`) — Phase 10 (v1.3.0)
+- ✓ Helper extraction to `hooks/lib/enforcer-utils.sh` — Phase 10 (v1.3.0)
+- ✓ `strip_ansi` slurp-mode fix; `sk-` redaction regex improvement — Phase 11 (v1.3.0)
+- ✓ SRI integrity for Lucide CDN; help site favicon + null guard + injection table — Phase 11 (v1.3.0)
+- ✓ SKILL.md L3 scope + security boundary fixes; install.sh $TMPDIR fix — Phase 11 (v1.3.0)
+- ✓ 14 SENTINEL files relocated to `docs/internal/sentinel/`; forge-sb auto-install — Phase 11 (v1.3.0)
+- ✓ `forge-delegate` skill rename (dash naming convention) — Direct (v1.4.0)
+- ✓ `/forge-stop` dedicated deactivation command — Direct (v1.4.0)
+- ✓ `/forge-replay` removed (underlying API gone from Forge) — Direct (v1.4.0)
+- ✓ `/forge-history` normalized across 9 files (colon → dash) — Direct (v1.4.0)
+- ✓ `install.sh` security hardening: curl|bash removed, chmod 600 on credentials — Direct (v1.4.0)
 
 ### Active
 
-**Phase 10 — Enforcer Hardening:**
-- Enforcer bug fixes (6 bugs: Issues #3 + #8) — ENF-01–08
-- Doc-edit carve-out path allowlist (`.planning/**`, `docs/**`) — PATH-01–03
-- Helper extraction to `hooks/lib/enforcer-utils.sh` — REFACT-01–04
-- Test suite + manifest bump to v1.3.0 — TEST-V13-01–04, MAN-V13-01–03
-
-**Phase 11 — Housekeeping, Hardening & forge-sb:**
-- `strip_ansi` slurp-mode fix (Issue #6) — STRIP-01
-- `sk-` token redaction regex improvement (Issue #7) — RDRCT-01
-- SRI integrity for Lucide CDN in all 6 help pages (Issue #10) — SRI-01
-- SKILL.md L3 scope constraint + security boundary fixes (Issues #12, #13) — SKILL-01, SKILL-02
-- Token redaction test gaps `ghs_` and `api-key:` (Issue #14) — TEST-RDRCT-01
-- Help site: favicon, null guard, injection table (Issue #15) — DOCS-01
-- `install.sh` `$TMPDIR` fix (Issue #16) — INST-01
-- Move 14 SENTINEL files to `docs/internal/sentinel/` (Issue #17) — HOUSE-01
-- `forge-sb` auto-install on plugin install — FGSB-01
+No active requirements — next milestone not yet scoped. See v2 requirements below for deferred items.
 
 ### Out of Scope
 
@@ -164,4 +145,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-24 — Milestone v1.3 started; Phases 1-9 shipped (v1.1.0 → v1.2.2); all 77 v1/v1.2 requirements validated*
+*Last updated: 2026-04-25 — Milestone v1.4.0 shipped; all v1/v1.2/v1.3 requirements validated (109 total); v1.4.0 decisions recorded*

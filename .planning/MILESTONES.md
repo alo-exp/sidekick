@@ -64,4 +64,25 @@
 - 10 requirements: STRIP-01, RDRCT-01, SRI-01, SKILL-01–02, TEST-RDRCT-01, DOCS-01, INST-01, HOUSE-01, FGSB-01
 
 ---
-*Last updated: 2026-04-24 — v1.3.0 shipped; Phases 10 and 11 complete*
+
+## v1.4 — Command-Surface Cleanup & Security Hardening
+
+**Status:** SHIPPED 2026-04-25 (v1.4.0)
+**Phases:** None (direct release — no formal GSD phases)
+**GitHub Release:** https://github.com/alo-exp/sidekick/releases/tag/v1.4.0
+
+**Shipped:**
+- Renamed skill `forge-delegation` → `forge-delegate` (dash naming convention)
+- Created `/forge-stop` dedicated command for delegation deactivation
+- Removed `/forge-replay` (underlying `forge conversation dump --html` API removed from Forge)
+- Normalized `/forge-history` (dash form) across 9 files — was `/forge:history` (colon)
+- Removed `curl | bash` from secondary domain in `install.sh` (SENTINEL blocking issue)
+- Added `chmod 600` on `~/forge/.credentials.json` (SENTINEL blocking issue)
+- Updated all help-site docs (5 pages + search.js + docs/index.html)
+- Added Plugin Hooks to reference page sidebar navigation
+- Bumped `plugin.json` to v1.4.0 with refreshed SHA-256 integrity hashes
+- All 15 test suites: 157 assertions, 0 failures
+- Archive: `.planning/milestones/v1.4.0-ROADMAP.md`
+
+---
+*Last updated: 2026-04-25 — v1.4.0 shipped; housekeeping release (command-surface cleanup + security hardening)*
