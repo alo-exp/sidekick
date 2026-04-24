@@ -44,11 +44,15 @@ gen_uuid() {
 }
 
 # -----------------------------------------------------------------------------
-# validate_uuid — strict RFC-4122-shape check before splicing into a rewritten
-# shell command. SENTINEL v2.3 FINDING-R16-L2: production `uuidgen` yields only
-# hex-and-dashes, but SIDEKICK_TEST_UUID_OVERRIDE is arbitrary. Reject anything
-# that isn't 8-4-4-4-12 lowercase hex so an attacker-controlled test override
-# cannot inject shell metacharacters into the rewritten command.
+# validate_uuid — structural 8-4-4-4-12 lowercase-hex-and-dashes check before
+# splicing into a rewritten shell command. SENTINEL v2.3 FINDING-R16-L2:
+# production `uuidgen` yields only hex-and-dashes, but SIDEKICK_TEST_UUID_OVERRIDE
+# is arbitrary. Reject anything that isn't 8-4-4-4-12 lowercase hex so an
+# attacker-controlled test override cannot inject shell metacharacters into the
+# rewritten command.
+# NOTE: This regex enforces shape only — it does NOT check RFC 4122 version/variant
+# nibbles. That is intentional: the goal is metacharacter exclusion, not strict
+# RFC conformance. In bash `=~`, `^...$` anchors to the full string (not lines).
 # -----------------------------------------------------------------------------
 validate_uuid() {
   [[ "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
@@ -320,32 +324,6 @@ is_mutating() {
     return 0
   fi
   return 1
-}
-
-# Rewrite a `forge … -p …` command with UUID + --verbose and output pipes.
-# Single call to gen_uuid per invocation.
-#
-# SENTINEL v2.3 FINDING-R16-L1: anchor the substitution to the *command head*,
-# not the first occurrence of "forge " anywhere in $cmd. `${cmd/forge /...}`
-# would land inside a preceding env-var value (e.g. `FOO="forge x" forge -p …`).
-# Approach: strip the leading `FOO=bar ` env-prefix, confirm the remainder
-# starts with `forge ` (already guaranteed by is_forge_p), rebuild by
-# concatenating env-prefix + rewritten head.
-rewrite_forge_p() {
-  local cmd uuid stripped env_prefix rewritten_body
-  cmd="$1"
-  uuid="$(gen_uuid)"
-  if ! validate_uuid "$uuid"; then
-    # Hard-fail rather than splice an unvalidated value into the shell command.
-    echo "forge-delegation-enforcer: refusing to inject malformed UUID" >&2
-    return 1
-  fi
-  stripped="$(strip_env_prefix "$cmd")"
-  env_prefix="${cmd%"$stripped"}"
-  # stripped is guaranteed by is_forge_p to match `^forge([[:space:]]|$)`.
-  rewritten_body="forge --conversation-id ${uuid} --verbose ${stripped#forge }"
-  local pipes=" 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
-  printf '%s%s%s' "$env_prefix" "$rewritten_body" "$pipes"
 }
 
 decide_bash() {

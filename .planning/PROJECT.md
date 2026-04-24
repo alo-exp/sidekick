@@ -38,33 +38,34 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 5. **Token optimization**: Keep global/project AGENTS.md compact and deduplicated. Claude deduplicates before every write. Selective skill injection — only inject skills relevant to the current task.
 
-## Current Milestone: v1.2 — Forge Delegation + Live Visibility
+## Previous Milestone: v1.2 — Forge Delegation + Live Visibility
 
-**Status:** SHIPPED on 2026-04-18 as v1.2.0. GitHub Release: https://github.com/alo-exp/sidekick/releases/tag/v1.2.0
-**Plugin version:** `sidekick` v1.2.0
+**Status:** SHIPPED 2026-04-18 (v1.2.0), patched to v1.2.1 and v1.2.2 on 2026-04-18/24. GitHub Release: https://github.com/alo-exp/sidekick/releases/tag/v1.2.0
+**Plugin version:** `sidekick` v1.2.2
 
-**Goals:**
+**Goals shipped:**
 
-1. **Enforce delegation** — when `/forge` mode is active, all implementation work routes to Forge via a PreToolUse hook; direct `Write`/`Edit`/`NotebookEdit` are blocked, and `Bash forge -p …` commands are rewritten to inject `--conversation-id` + `--verbose` and prefix output with `[FORGE]`/`[FORGE-LOG]` markers.
-2. **Live visibility** — Forge progress streams into the Claude Code transcript in real time via `run_in_background: true` + Monitor, rendered distinctly from Claude narration.
-3. **Audit trail** — every Forge task has a stable conversation ID indexed to `.forge/conversations.idx`, durably stored in `~/forge/.forge.db`, replayable as HTML.
-4. **Visual distinction** — a new output style (`output-styles/forge.md`) renders `[FORGE]` lines in cyan with left border, `[FORGE-LOG]` dim gray, `[FORGE-SUMMARY]` boxed green.
-5. **No duplication of Forge natives** — leverage `forge conversation dump/stats/info` and `~/forge/.forge.db`; Sidekick injects IDs and indexes them, nothing more.
+1. Harness-enforced delegation via PreToolUse hook; `Write`/`Edit`/`NotebookEdit` hard-denied; `forge -p` commands rewritten to inject `--conversation-id` + `--verbose`.
+2. Live Forge output streaming via `run_in_background: true` + Monitor, visually distinct.
+3. Durable audit trail per task in `.forge/conversations.idx` + `~/forge/.forge.db`, replayable as HTML.
+4. Output style `output-styles/forge.md` for `[FORGE]` / `[FORGE-LOG]` / `[FORGE-SUMMARY]` lines.
+5. `/forge:replay` and `/forge:history` slash commands.
+6. v1.2.2 defense-in-depth: anchored env-prefix substitution, UUID validation, secret redaction in transcript surface.
 
-**Target artifacts added:**
+## Current Milestone: v1.3 — Enforcer Hardening + Forge Bridge
 
-- `hooks/forge-delegation-enforcer.sh` (PreToolUse — block bypass + rewrite `forge -p`)
-- `hooks/forge-progress-surface.sh` (PostToolUse — parse STATUS block, emit `[FORGE-SUMMARY]`)
-- `output-styles/forge.md`
-- `commands/forge-replay.md`, `commands/forge-history.md`
-- Updated `skills/forge/SKILL.md` (STEP 4 — `run_in_background` + conversation-id auto-injection note)
-- `.claude-plugin/plugin.json` — register hooks, outputStyles, new commands; bump to v1.2.0
+**Goal:** Harden the forge-delegation enforcer hook by fixing 5 known bugs (including 2 security holes, 1 false-positive classifier, 1 broken escape hatch, and 1 missing allowlist entry), and codify the doc-edit carve-out as a hook-level path allowlist so `.planning/**` and `docs/**` edits are correctly allowed through when `/forge` is active.
 
-**Known spec corrections (pre-execution):**
+**Target features:**
 
-- The spec's `--conversation-id sidekick-<ts>-<hash>` format is rejected by Forge CLI 2.11.3 (requires UUID). Hook must generate a valid UUID via `uuidgen | tr 'A-Z' 'a-z'` and pass as `--conversation-id`; the sidekick-style tag is kept as a separate human-readable label alongside the UUID in `.forge/conversations.idx` for `/forge:history` display.
-
-**Out of scope for v1.2:** multi-Forge parallelism, cross-machine conversation sync, custom output style for non-/forge mode, Forge runtime patching, web UI replay viewer.
+- Fix `has_write_redirect` false-positives on `>` inside generics, quoted strings, and fd-redirects (`>&1`, `>&2`) — Bug #1 (Issue #3)
+- Fix `FORGE_LEVEL_3=1` command-prefix bypass that silently fails (env var never exported to hook subprocess) — Bug #2 (Issue #3)
+- Add `gh` (GitHub CLI) to allowlist so Brain-role GitHub operations are not denied — Bug #3 (Issue #3)
+- Fix `cd /path && mutating_cmd` chain bypass security hole (enforcer only checks first token, allowing any command to bypass via `cd` prefix) — Bug #4 (Issue #3)
+- Fix MCP filesystem tools (`mcp__filesystem__write_file`, `edit_file`, `move_file`, `create_directory`) bypassing enforcer entirely — Bug #5 (Issue #3)
+- Codify doc-edit carve-out: extend `decide_write_edit()` with a path-based allow branch for `.planning/**` and `docs/**` so GSD/SB workflow artifacts can be edited directly without routing through Forge — Issue #2
+- Extend test suites (`test_forge_enforcer_hook.bash`, `test_v12_coverage.bash`) with assertions covering each fix and at least one denied control case per new allowed path pattern
+- Bump plugin manifest to v1.3.0
 
 ## Key Decisions
 
@@ -107,7 +108,10 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 ### Active
 
-_(none — v1.2 milestone shipped 2026-04-18; no v1.3 scope defined yet)_
+- Enforcer bug fixes (5 bugs in `hooks/forge-delegation-enforcer.sh`) — Issue #3
+- Doc-edit carve-out path allowlist (`.planning/**`, `docs/**`) in enforcer hook — Issue #2
+- Test suite coverage for all v1.3 changes
+- Plugin manifest bump to v1.3.0
 
 ### Out of Scope
 
@@ -134,4 +138,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 — Phases 1-4 shipped (v1.1.0, 2026-04-13), Phase 5 shipped (v1.1.2, 2026-04-17), Phases 6-9 shipped (v1.2.0, 2026-04-18); all 77 requirements validated*
+*Last updated: 2026-04-24 — Milestone v1.3 started; Phases 1-9 shipped (v1.1.0 → v1.2.2); all 77 v1/v1.2 requirements validated*
