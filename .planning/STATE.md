@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1.2
 milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: Phase 11 Plan 02 complete — TEST-RDRCT-01(a+b) satisfied; ghs_ and api-key colon-form redaction tests added; 23/23 tests green.
-last_updated: "2026-04-24T13:49:35Z"
-last_activity: "2026-04-24 — Phase 11 Plan 02 complete (TEST-RDRCT-01: ghs_ token + api-key colon-form regression tests in test_v12_coverage.bash)"
+stopped_at: Phase 11 Plan 03 complete — SRI-01, DOCS-01(a+b+c), SKILL-01, SKILL-02, INST-01 shipped; integrity suite 3 failures expected (hash refresh deferred to Plan 04).
+last_updated: "2026-04-24T13:55:20Z"
+last_activity: "2026-04-24 — Phase 11 Plan 03 complete (SRI hash + favicon + null guard + concepts table + SKILL.md scope/security/governance + install.sh TMPDIR)"
 progress:
   total_phases: 5
   completed_phases: 5
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 Phase: 11 — Housekeeping, Hardening & forge-sb (in progress)
-Plan: 11-02 complete; Phase 11 Wave 2 shipped
+Plan: 11-03 complete; Phase 11 Wave 3 shipped
 Status: Executing
-Last activity: 2026-04-24 — Phase 11 Plan 02 complete (TEST-RDRCT-01: ghs_ token + api-key colon-form regression tests in test_v12_coverage.bash)
+Last activity: 2026-04-24 — Phase 11 Plan 03 complete (SRI hash + favicon + null guard + concepts table + SKILL.md scope/security/governance + install.sh TMPDIR)
 
 Progress:
 
@@ -85,6 +85,12 @@ Key v1.3 Plan 03 decisions:
 - Replaced 'ls; grep foo bar.txt' with 'ls && grep foo bar.txt' in ENF-06 passthrough test: semicolons attach to first token ('ls;') making it unrecognized; && keeps tokens space-delimited so first_token returns 'ls'
 - These are test correctness fixes, not enforcer bugs — semicolon-attachment behavior is consistent with enforcer design
 
+Key v1.3 Phase 11 Plan 03 decisions:
+
+- SRI hash sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM computed live from lucide@0.469.0 CDN via curl+openssl
+- SKILL.md security boundary paragraph moved BEFORE extraction category bullets in Mentoring Loop (not after)
+- install.sh mktemp uses ${TMPDIR:-/tmp}/forge-install.XXXXXX — drops .sh suffix entirely to avoid spurious type associations
+
 Key v1.3 context:
 
 - 5 bugs discovered in forge-delegation-enforcer.sh in live session (Issue #3): `has_write_redirect` false-positives, broken FORGE_LEVEL_3 bypass, `gh` unclassified, `cd &&` chain security hole, MCP filesystem bypass
@@ -106,8 +112,8 @@ Key v1.3 Phase 11 Plan 01 decisions:
 ### Pending Todos
 
 - [x] Execute Phase 11 Plan 02: sk- unit tests + SRI integrity scaffold (COMPLETE)
-- Execute Phase 11 Plan 03: skill/docs/install housekeeping
-- Execute Phase 11 Plan 04: plugin.json hash refresh (forge-progress-surface.sh hash stale after Plan 01)
+- [x] Execute Phase 11 Plan 03: skill/docs/install housekeeping (COMPLETE)
+- Execute Phase 11 Plan 04: plugin.json hash refresh (install.sh, SKILL.md, forge-progress-surface.sh hashes stale after Plans 01+03)
 - Release v1.3.0
 
 ### Blockers/Concerns
@@ -117,12 +123,10 @@ Key v1.3 Phase 11 Plan 01 decisions:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Phase 11 Plan 01 complete — STRIP-01 (slurp mode) + RDRCT-01 (broadened sk- regex) shipped, 9/9 tests green.
+Stopped at: Phase 11 Plan 03 complete — SRI-01 + DOCS-01(a+b+c) + SKILL-01 + SKILL-02 + INST-01 shipped; 9 files modified.
 Resume file: None
 
 Next likely actions:
 
-- Execute Phase 11 Plan 02: sk- extended unit tests + SRI integrity scaffold
-- Execute Phase 11 Plan 03: skill/docs/install housekeeping
-- Execute Phase 11 Plan 04: plugin.json hash refresh (forge-progress-surface.sh hash stale)
+- Execute Phase 11 Plan 04: plugin.json hash refresh (install.sh, SKILL.md, forge-progress-surface.sh hashes stale)
 - Release v1.3.0 after Phase 11 fully ships
