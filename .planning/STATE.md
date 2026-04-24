@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Enforcer Hardening + Housekeeping + forge-sb"
-status: ready to execute
-stopped_at: "v1.2.2 shipped 2026-04-24. Milestone v1.3 expanded to 2 phases (32 reqs)."
-last_updated: "2026-04-24T00:00:00.000Z"
-last_activity: 2026-04-24 -- milestone v1.3 scope expanded; Phase 11 added (/gsd-new-milestone)
+status: executing
+stopped_at: "Phase 10 Plan 01 complete — hooks/lib/enforcer-utils.sh created with 9 helpers."
+last_updated: "2026-04-24T07:35:00Z"
+last_activity: 2026-04-24 -- Phase 10 Plan 01 executed; enforcer-utils.sh created
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 1
+  completed_plans: 1
+  percent: 5
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
-Phase: Not started (ready to execute Phase 10)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-04-24 — Milestone v1.3 scope expanded; Phase 11 (10 reqs) added
+Phase: 10 — Enforcer Hardening + Helper Extraction (in progress)
+Plan: 10-01 complete; 10-02 next
+Status: Executing
+Last activity: 2026-04-24 — Phase 10 Plan 01 complete (hooks/lib/enforcer-utils.sh created)
 
 Progress:
 
@@ -67,6 +67,11 @@ Key v1.2 decisions carried forward:
 - `--conversation-id` must be a real UUID (Forge 2.11.3 requirement)
 - Claude Code output styles shape assistant prose, not raw tool output
 
+Key v1.3 Plan 01 decisions:
+- ENF-01 regex stored in variable: `local _proc_sub_re='>[(][^)]*[)]'` then `[[ $cmd =~ $_proc_sub_re ]]` — bash [[ parser treats literal ) as end of compound command
+- ENF-02 explicit fd forms: bash 3.2 incompatible with character-class substitution; used 8 explicit ${pruned//>&N/} substitutions
+- gh sub-commands added in lib directly (not deferred to Plan 02) since is_read_only/is_mutating now live in the lib
+
 Key v1.3 context:
 - 5 bugs discovered in forge-delegation-enforcer.sh in live session (Issue #3): `has_write_redirect` false-positives, broken FORGE_LEVEL_3 bypass, `gh` unclassified, `cd &&` chain security hole, MCP filesystem bypass
 - Doc-edit carve-out (Issue #2) currently works by accident (sessions start with pre-v1.2.0 manifest); needs to be codified as hook path-allowlist before v1.2.2 manifest is loaded at session start
@@ -90,9 +95,9 @@ Key v1.3 context:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Milestone v1.3 initialized; defining requirements.
+Stopped at: Phase 10 Plan 01 complete — hooks/lib/enforcer-utils.sh created with 9 helpers.
 Resume file: None
 
 Next likely actions:
 
-- `/gsd-discuss-phase 10` or `/gsd-plan-phase 10` to start execution
+- Execute Phase 10 Plan 02: rewrite forge-delegation-enforcer.sh to source the lib
