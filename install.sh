@@ -98,6 +98,8 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
   sleep 5
   bash "${FORGE_INSTALL_TMP}"
   echo "[forge-plugin] ForgeCode installed."
+  echo "[forge-plugin] Installing forge-sb skill from Silver Bullet..."
+  curl -sL https://raw.githubusercontent.com/alo-exp/silver-bullet/main/forge-sb-install.sh | bash
 else
   echo "[forge-plugin] ForgeCode already installed."
 fi
