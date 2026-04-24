@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: "Enforcer Hardening + Forge Bridge"
-status: defining requirements
-stopped_at: "v1.2.2 shipped 2026-04-24. Milestone v1.3 started."
+milestone_name: "Enforcer Hardening + Housekeeping + forge-sb"
+status: ready to execute
+stopped_at: "v1.2.2 shipped 2026-04-24. Milestone v1.3 expanded to 2 phases (32 reqs)."
 last_updated: "2026-04-24T00:00:00.000Z"
-last_activity: 2026-04-24 -- milestone v1.3 started (/gsd-new-milestone)
+last_activity: 2026-04-24 -- milestone v1.3 scope expanded; Phase 11 added (/gsd-new-milestone)
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Forge is the execution engine; Claude is the process orchestrator. When `/forge` is active, delegation is harness-enforced (PreToolUse hook), Forge work is live-visible in the transcript, and every task is durably recorded for replay.
-**Current focus:** v1.3 — harden forge-delegation-enforcer.sh (5 bugs, 2 security holes) + codify doc-edit carve-out as hook path allowlist.
+**Current focus:** v1.3 — Phase 10 (6 enforcer bugs + path allowlist + helper extraction) → Phase 11 (housekeeping, hardening, forge-sb install).
 
 ## Current Position
 
-Milestone: v1.3 — Enforcer Hardening + Forge Bridge
-Phase: Not started (defining requirements)
+Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
+Phase: Not started (ready to execute Phase 10)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-24 — Milestone v1.3 started
+Status: Ready to execute
+Last activity: 2026-04-24 — Milestone v1.3 scope expanded; Phase 11 (10 reqs) added
 
 Progress:
 
@@ -79,8 +79,9 @@ Key v1.3 context:
 
 ### Pending Todos
 
-- Requirements definition for v1.3 (in progress)
-- Roadmap creation for v1.3
+- Execute Phase 10: Enforcer Hardening + Helper Extraction (22 reqs)
+- Execute Phase 11: Housekeeping, Hardening & forge-sb (10 reqs)
+- Release v1.3.0
 
 ### Blockers/Concerns
 

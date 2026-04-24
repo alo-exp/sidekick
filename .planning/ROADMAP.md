@@ -239,11 +239,12 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 
 ---
 
-## v1.3 — Enforcer Hardening + Forge Bridge
+## v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 
 ### Phase Summary
 
 - [ ] **Phase 10: Enforcer Hardening + Helper Extraction** — Fix 6 enforcer bugs + codify doc-edit path allowlist + extract helpers to `hooks/lib/enforcer-utils.sh` + expanded test suite + manifest bump to v1.3.0
+- [ ] **Phase 11: Housekeeping, Hardening & forge-sb** — Credential redaction hardening + SRI integrity + SKILL.md fixes + help site bugs + install.sh fix + SENTINEL file relocation + forge-sb auto-install
 
 ### Phase Details
 
@@ -264,14 +265,32 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
   10. `plugin.json` version field is `1.3.0`; hook matcher includes MCP filesystem tools; all `_integrity` SHA-256 hashes are correct
 **Plans**: TBD
 
+#### Phase 11: Housekeeping, Hardening & forge-sb
+**Goal**: All 9 remaining GitHub housekeeping/hardening items are resolved, the forge-sb skill is auto-installed on plugin install, and the full test suite still passes green.
+**Depends on**: Phase 10
+**Requirements**: STRIP-01, RDRCT-01, SRI-01, SKILL-01, SKILL-02, TEST-RDRCT-01, DOCS-01, INST-01, HOUSE-01, FGSB-01
+**Success Criteria** (what must be TRUE):
+  1. `strip_ansi` uses `-0777 -pe` (slurp mode) — a STATUS block whose OSC sequence spans two lines is fully stripped and no secret text leaks into `additionalContext`
+  2. A `sk-test.with.dots.longer` (14 chars after prefix) is redacted to `[REDACTED-SK-TOKEN]`; a 9-char suffix is NOT redacted (boundary check)
+  3. All 6 `docs/help/**/*.html` files have `integrity="sha384-..."` and `crossorigin="anonymous"` on the Lucide `<script>` tag; the hash matches the actual CDN content
+  4. SKILL.md Level 3 scope constraint references `$CLAUDE_PROJECT_DIR` explicitly; the governance instruction appears in the Skill Injection section
+  5. `tests/test_v12_coverage.bash` has passing tests for `ghs_AAAAAAAAAAAAAAAAAAAA12345` → `[REDACTED-GH-TOKEN]` and `api-key: supersecret` → `api-key: [REDACTED]`
+  6. All 6 help pages have `<link rel="icon" href="/favicon.ico">`; `search.js` returns early when `list` or `section` is null; concepts injection table shows `quality-gates + code-review` for "Code change"
+  7. `install.sh` temp file line uses `"${TMPDIR:-/tmp}/forge-install.XXXXXX"` (no `.sh` suffix)
+  8. All 14 `SENTINEL-audit-forge*.md` files exist under `docs/internal/sentinel/` and are absent from the repo root; `git mv` history preserved
+  9. Running `install.sh` executes the forge-sb install script; the curl command uses the exact Silver Bullet URL provided
+  10. Full test suite passes with zero regressions after all Phase 11 changes
+**Plans**: TBD
+
 ### v1.3 Progress
 
 **Execution Order:**
-Single phase: 10
+Phase 10 → Phase 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 10. Enforcer Hardening + Helper Extraction | 0/TBD | Not started | — |
+| 11. Housekeeping, Hardening & forge-sb | 0/TBD | Not started | — |
 
 ### v1.3 Requirement Coverage
 
@@ -282,3 +301,12 @@ Single phase: 10
 | REFACT-01 – REFACT-04 | Phase 10 |
 | TEST-V13-01 – TEST-V13-04 | Phase 10 |
 | MAN-V13-01 – MAN-V13-03 | Phase 10 |
+| STRIP-01 | Phase 11 |
+| RDRCT-01 | Phase 11 |
+| SRI-01 | Phase 11 |
+| SKILL-01, SKILL-02 | Phase 11 |
+| TEST-RDRCT-01 | Phase 11 |
+| DOCS-01 | Phase 11 |
+| INST-01 | Phase 11 |
+| HOUSE-01 | Phase 11 |
+| FGSB-01 | Phase 11 |
