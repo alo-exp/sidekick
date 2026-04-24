@@ -60,7 +60,7 @@
     "forge_md_sha256": "08de0437c61e395dc88672f1ccc0d2c302e23a6ff051ca74c8b36d50996c6caa",
     "forge_skill_md_sha256": "968e95a5f156ffdb2a3d61bc92aaf34dd579ec6e4a29e2edda212514f00bcf26",
     "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
-    "forge_delegation_enforcer_sha256": "68a4ea6f670994ed18e6e7331dfe324ee76e2795a6c1c5e247b34512ec5ac385",
+    "forge_delegation_enforcer_sha256": "b7a9463ba50f631a240d9c71a6d58981786164ccb8809d3b5a4d31fa4b94122c",
     "forge_progress_surface_sha256": "d5b060c0776a84a3cf75b7b9d7a9ffffeb15412a1a792aa4391969902190cf1c",
     "validate_release_gate_sha256": "cce77224d7ff340f296f78e35efd3f073cea4e61f0065c97f1d7d53cb660faa9",
     "output_style_forge_sha256": "5740c9e2918b65225f5dda31c587aeb0fd4f3d93a61b653d491f8f4a4e87fc77",
