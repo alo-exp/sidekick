@@ -219,7 +219,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </ul>
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>L2 subtask decomposition can spike request counts.</strong> When the fallback ladder reaches L2, Claude submits multiple atomic subtasks sequentially. If you're near your rate limit, L2 escalation may trigger a 429. Deactivate with <code>/forge:deactivate</code>, wait a minute, then reactivate and retry.</div>
+        <div class="callout-body"><strong>L2 subtask decomposition can spike request counts.</strong> When the fallback ladder reaches L2, Claude submits multiple atomic subtasks sequentially. If you're near your rate limit, L2 escalation may trigger a 429. Deactivate with <code>/forge-stop</code>, wait a minute, then reactivate and retry.</div>
       </div>
 
       <h2 id="payment-required"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 402 Payment Required</h2>
@@ -288,7 +288,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h3>Forge session appears stuck / Claude is confused about state</h3>
       <p><strong>Fix:</strong> Deactivate and reactivate Forge:</p>
-      <div class="code-block"><span class="cmd">/forge:deactivate</span>
+      <div class="code-block"><span class="cmd">/forge-stop</span>
 <span class="cmd">/forge</span>   <span class="comment"># re-activate with fresh state</span></div>
 
       <h3>After an L3 takeover, delegation isn't resuming</h3>

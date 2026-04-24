@@ -20,8 +20,8 @@ if [ ! -f "${SKILL_FILE}" ]; then
   exit 1
 fi
 
-echo "=== T1: YAML frontmatter contains name: forge-delegation ==="
-grep -q 'name: forge-delegation' "${SKILL_FILE}" && assert_pass "name: forge-delegation present" || assert_fail "YAML frontmatter" "name: forge-delegation not found"
+echo "=== T1: YAML frontmatter contains name: forge-delegate ==="
+grep -q 'name: forge-delegate' "${SKILL_FILE}" && assert_pass "name: forge-delegate present" || assert_fail "YAML frontmatter" "name: forge-delegate not found"
 
 echo "=== T2: Activation section present ==="
 grep -q '## Activation' "${SKILL_FILE}" && assert_pass "Activation section present" || assert_fail "Activation section" "not found"

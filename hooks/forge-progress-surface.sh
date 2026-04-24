@@ -143,9 +143,9 @@ main() {
   # alongside the output style's [FORGE] markers in the transcript.
   body="$(printf '%s' "$status_block" | sed 's/^/[FORGE-SUMMARY] /')"
   if [[ -n "$uuid" ]]; then
-    footer="[FORGE-SUMMARY] Replay: /forge:replay $uuid"
+    footer="[FORGE-SUMMARY] History: /forge:history"
   else
-    footer="[FORGE-SUMMARY] (no conversation-id captured; replay unavailable for this call)"
+    footer="[FORGE-SUMMARY] (no conversation-id captured)"
   fi
 
   payload="$(printf '%s\n%s\n%s' "$header" "$body" "$footer")"

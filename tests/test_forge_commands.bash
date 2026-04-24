@@ -1,63 +1,61 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — /forge:replay + /forge:history command doc tests (Phase 8)
+# Sidekick Plugin — /forge-stop + /forge:history command doc tests
 # =============================================================================
-# These are structural tests on the command markdown files (no live Forge
-# invocation). They assert that both commands have the expected frontmatter,
-# argument-hint / procedure contracts, and key behavioral guarantees
-# documented so that Claude Code can render and Claude can follow them.
-# Plus one test exercises the pruning logic inline.
+# Structural tests on the command markdown files (no live Forge invocation).
+# Asserts that both commands have the expected frontmatter, procedure
+# contracts, and key behavioral guarantees so Claude Code can render them
+# and Claude can follow them.  Plus one test exercises the history pruning
+# logic inline.
 
 set -euo pipefail
 
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
-REPLAY="${PLUGIN_DIR}/commands/forge-replay.md"
+STOP="${PLUGIN_DIR}/commands/forge-stop.md"
 HISTORY="${PLUGIN_DIR}/commands/forge-history.md"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
-[ -f "${REPLAY}" ]  || { echo "ERROR: ${REPLAY} missing";  exit 1; }
+[ -f "${STOP}" ]    || { echo "ERROR: ${STOP} missing";    exit 1; }
 [ -f "${HISTORY}" ] || { echo "ERROR: ${HISTORY} missing"; exit 1; }
 
 # -----------------------------------------------------------------------------
-echo "=== test_replay_frontmatter_complete ==="
-if grep -q '^name: forge-replay'        "${REPLAY}" \
-  && grep -q '^description:'            "${REPLAY}" \
-  && grep -q '^argument-hint:'          "${REPLAY}"; then
-  assert_pass "test_replay_frontmatter_complete"
+echo "=== test_stop_frontmatter_complete ==="
+if grep -q '^name: forge-stop' "${STOP}" \
+  && grep -q '^description:'   "${STOP}"; then
+  assert_pass "test_stop_frontmatter_complete"
 else
-  assert_fail "test_replay_frontmatter_complete" "missing name/description/argument-hint"
+  assert_fail "test_stop_frontmatter_complete" "missing name/description"
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_replay_documents_uuid_validation ==="
-# The command must tell Claude to validate the UUID before calling forge.
-if grep -q 'RFC 4122' "${REPLAY}" && grep -qE '\[0-9a-f\]\{8\}' "${REPLAY}"; then
-  assert_pass "test_replay_documents_uuid_validation"
+echo "=== test_stop_checks_marker_file ==="
+if grep -q '\.forge-delegation-active' "${STOP}"; then
+  assert_pass "test_stop_checks_marker_file"
 else
-  assert_fail "test_replay_documents_uuid_validation" "no UUID regex documented"
+  assert_fail "test_stop_checks_marker_file" "no marker file reference"
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_replay_uses_forge_conversation_dump ==="
-if grep -q 'forge conversation dump' "${REPLAY}" \
-  && grep -q -- '--html' "${REPLAY}"; then
-  assert_pass "test_replay_uses_forge_conversation_dump"
+echo "=== test_stop_confirms_deactivation ==="
+if grep -qiE 'deactivat|restored|direct mode' "${STOP}"; then
+  assert_pass "test_stop_confirms_deactivation"
 else
-  assert_fail "test_replay_uses_forge_conversation_dump" "missing dump --html"
+  assert_fail "test_stop_confirms_deactivation" "no deactivation confirmation message"
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_replay_uses_forge_conversation_stats ==="
-if grep -q 'forge conversation stats' "${REPLAY}" \
-  && grep -q -- '--porcelain' "${REPLAY}"; then
-  assert_pass "test_replay_uses_forge_conversation_stats"
+echo "=== test_stop_preserves_idx ==="
+# The command must note that conversations.idx is preserved (not deleted).
+if grep -q 'conversations.idx' "${STOP}" \
+  && grep -qiE 'preserv|retain|not delet' "${STOP}"; then
+  assert_pass "test_stop_preserves_idx"
 else
-  assert_fail "test_replay_uses_forge_conversation_stats" "missing stats --porcelain"
+  assert_fail "test_stop_preserves_idx" "no idx preservation note"
 fi
 
 # -----------------------------------------------------------------------------

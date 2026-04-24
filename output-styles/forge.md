@@ -29,10 +29,10 @@ What this style DOES do:
 
 You do not style these — they are already in the transcript. You *do* reference them ("STATUS: SUCCESS in the summary above", "the [FORGE-LOG] trace shows…").
 
-## Replay and history
+## History
 
-When a `/forge:replay <UUID>` hint appears in a `[FORGE-SUMMARY]` block, surface it to the user in plain language ("You can replay this session with /forge:replay …") rather than silently leaving the hint inline.
+When a `/forge:history` hint appears in a `[FORGE-SUMMARY]` block, surface it to the user in plain language ("Run /forge:history to browse past Forge sessions from this project.") rather than silently leaving the hint inline.
 
 ## Deactivation
 
-When the user runs `/forge:deactivate`, this output style is no longer loaded. Your next response reverts to the prior narration style and mentions that direct-mode tools are available again.
+When the user runs `/forge-stop`, this output style is no longer loaded. Your next response reverts to the prior narration style and mentions that direct-mode tools are available again.

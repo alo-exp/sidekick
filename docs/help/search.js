@@ -26,7 +26,7 @@ var IDX = [
   // ── CORE CONCEPTS ─────────────────────────────────────────────
   { page:'Core Concepts', url:'/help/concepts/', anchor:'delegation',
     title:'Forge delegation mode — Claude as task orchestrator',
-    text:'When you invoke /forge Claude activates Forge delegation mode. Claude does not write code directly. Acts as task orchestrator composing structured prompts submitting to Forge monitoring output and handling failures. Persists until /forge:deactivate.' },
+    text:'When you invoke /forge Claude activates Forge delegation mode. Claude does not write code directly. Acts as task orchestrator composing structured prompts submitting to Forge monitoring output and handling failures. Persists until /forge-stop.' },
   { page:'Core Concepts', url:'/help/concepts/', anchor:'skill-md',
     title:'SKILL.md — the Forge delegation instruction set',
     text:'All Forge delegation behavior defined in skills/forge/SKILL.md. Loaded on /forge invocation. Contains activation health check delegation protocol deactivation failure detection fallback ladder skill injection AGENTS.md mentoring token optimization. 321 lines 8 sections.' },
@@ -63,7 +63,7 @@ var IDX = [
   // ── COMMAND REFERENCE ─────────────────────────────────────────
   { page:'Reference', url:'/help/reference/', anchor:'forge-commands',
     title:'/forge commands — activate deactivate status',
-    text:'/forge activate Forge delegation mode runs health check. /forge:deactivate return to direct Claude implementation. /forge status show current activation state model and config summary.' },
+    text:'/forge activate Forge delegation mode runs health check. /forge-stop return to direct Claude implementation. /forge status show current activation state model and config summary.' },
   { page:'Reference', url:'/help/reference/', anchor:'forge-toml',
     title:'.forge.toml config — model API key compaction providers',
     text:'.forge.toml created on first /forge in project root. Contains compaction settings only: token_threshold 80000, eviction_window 0.20, retention_window 6, max_tokens 16384. API credentials stored globally in ~/forge/.credentials.json and ~/forge/.forge.toml. Two providers supported: open_router with qwen/qwen3-coder-plus and minimax with MiniMax-M2.7.' },
@@ -92,7 +92,7 @@ var IDX = [
     text:'Instructions not added: dedup found semantically similar entry correct behavior. Wrong bootstrap content: edit AGENTS.md directly plain markdown Claude uses edits on next /forge. Global ~/forge/AGENTS.md not found: optional created automatically on first cross-session write.' },
   { page:'Troubleshooting', url:'/help/troubleshooting/', anchor:'recovery',
     title:'Session recovery — stuck session, L3 delegation not resuming',
-    text:'Stuck session deactivate and reactivate: /forge:deactivate then /forge. After L3 takeover delegation resumes automatically for next task. If Claude implementing directly instead of delegating say re-enter Forge delegation mode.' },
+    text:'Stuck session deactivate and reactivate: /forge-stop then /forge. After L3 takeover delegation resumes automatically for next task. If Claude implementing directly instead of delegating say re-enter Forge delegation mode.' },
   { page:'Troubleshooting', url:'/help/troubleshooting/', anchor:'reinstall',
     title:'Reinstall and full reset — clean install, credentials reset',
     text:'Clean reinstall: /plugin install alo-exp/sidekick preserves AGENTS.md and docs/sessions/. Reset credentials: delete ~/forge/.credentials.json then /forge to guide through setup again. AGENTS.md and session logs always preserved.' },
