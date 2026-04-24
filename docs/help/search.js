@@ -124,6 +124,7 @@ function renderResults(results, query) {
   var list = document.getElementById('search-results-list');
   var section = document.getElementById('search-results-section');
   var main = document.getElementById('main-help-content');
+  if (!list || !section) return;
   if (!results.length) {
     if (!section) return;
     section.style.display = 'block';
