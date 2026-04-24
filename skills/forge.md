@@ -13,6 +13,10 @@ description: >
   or any task where forge is explicitly unwanted.
 ---
 
+> **Deprecated (v1.2.0)**: This is the legacy flat skill file, retained for backward compatibility.
+> The canonical version with v1.2 delegation enforcement and hook protocols is at
+> [`skills/forge/SKILL.md`](./forge/SKILL.md). New installs load from the directory structure.
+
 # Forge — Claude Orchestration Protocol
 
 ForgeCode (`forge`) is a Rust-powered terminal AI coding agent that runs independently
