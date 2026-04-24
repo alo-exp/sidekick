@@ -33,6 +33,7 @@ run_suite "Forge progress surface hook tests"    "test_forge_progress_surface.ba
 run_suite "Forge v1.2 slash commands tests"      "test_forge_commands.bash"
 run_suite "Forge v1.2 E2E integration tests"     "test_forge_v12_integration.bash"
 run_suite "Forge v1.2 coverage gap tests"        "test_v12_coverage.bash"
+run_suite "Forge v1.3 coverage gap tests"        "test_v13_coverage.bash"
 run_suite "Release gate hook tests"              "test_validate_release_gate_hook.bash"
 
 echo ""
