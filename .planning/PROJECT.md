@@ -52,20 +52,34 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 5. `/forge:replay` and `/forge:history` slash commands.
 6. v1.2.2 defense-in-depth: anchored env-prefix substitution, UUID validation, secret redaction in transcript surface.
 
-## Current Milestone: v1.3 — Enforcer Hardening + Forge Bridge
+## Current Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 
-**Goal:** Harden the forge-delegation enforcer hook by fixing 5 known bugs (including 2 security holes, 1 false-positive classifier, 1 broken escape hatch, and 1 missing allowlist entry), and codify the doc-edit carve-out as a hook-level path allowlist so `.planning/**` and `docs/**` edits are correctly allowed through when `/forge` is active.
+**Goal:** Fix all 6 enforcer security bugs, codify the doc-edit path allowlist, extract helpers, address 9 remaining GitHub housekeeping/hardening items (credential redaction, SRI integrity, SKILL.md improvements, help site bugs, install.sh fix, SENTINEL relocation), add forge-sb auto-install, and release v1.3.0.
 
 **Target features:**
 
-- Fix `has_write_redirect` false-positives on `>` inside generics, quoted strings, and fd-redirects (`>&1`, `>&2`) — Bug #1 (Issue #3)
-- Fix `FORGE_LEVEL_3=1` command-prefix bypass that silently fails (env var never exported to hook subprocess) — Bug #2 (Issue #3)
-- Add `gh` (GitHub CLI) to allowlist so Brain-role GitHub operations are not denied — Bug #3 (Issue #3)
-- Fix `cd /path && mutating_cmd` chain bypass security hole (enforcer only checks first token, allowing any command to bypass via `cd` prefix) — Bug #4 (Issue #3)
-- Fix MCP filesystem tools (`mcp__filesystem__write_file`, `edit_file`, `move_file`, `create_directory`) bypassing enforcer entirely — Bug #5 (Issue #3)
-- Codify doc-edit carve-out: extend `decide_write_edit()` with a path-based allow branch for `.planning/**` and `docs/**` so GSD/SB workflow artifacts can be edited directly without routing through Forge — Issue #2
-- Extend test suites (`test_forge_enforcer_hook.bash`, `test_v12_coverage.bash`) with assertions covering each fix and at least one denied control case per new allowed path pattern
-- Bump plugin manifest to v1.3.0
+**Phase 10 — Enforcer Hardening:**
+- Fix `has_write_redirect` false-positives on `>` inside generics, quoted strings, fd-redirects — Bug #1 (Issue #3)
+- Fix `FORGE_LEVEL_3=1` command-prefix bypass silently failing — Bug #2 (Issue #3)
+- Add `gh` (GitHub CLI) to allowlist — Bug #3 (Issue #3)
+- Fix `cd /path && mutating_cmd` chain bypass security hole — Bug #4 (Issue #3)
+- Fix MCP filesystem tools bypassing enforcer — Bug #5 (Issue #3)
+- Fix pipe-chain first-token-only classification — Bug #6 (Issue #8)
+- Codify doc-edit carve-out as path-based allowlist for `.planning/**` and `docs/**` — Issue #2
+- Extract helpers to `hooks/lib/enforcer-utils.sh` — Issue #9
+- Full test suite + manifest bump to v1.3.0
+
+**Phase 11 — Housekeeping, Hardening & forge-sb:**
+- Fix `strip_ansi` multi-line OSC sequences (slurp mode) — Issue #6
+- Improve `sk-` token redaction regex (dots/plus/slash, min-length 10) — Issue #7
+- Add SRI integrity attributes to Lucide CDN script tags in all 6 help pages — Issue #10
+- Clarify SKILL.md L3 scope constraint to reference `$CLAUDE_PROJECT_DIR` — Issue #12
+- Fix SKILL.md security boundary ordering + add bootstrap skill governance — Issue #13
+- Add missing token redaction tests (`ghs_`, `api-key:`) — Issue #14
+- Fix help site: favicon, `search.js` null guard, concepts injection table — Issue #15
+- Fix `install.sh` hardcoded `/tmp` to use `${TMPDIR:-/tmp}` — Issue #16
+- Move 14 SENTINEL audit files from repo root to `docs/internal/sentinel/` — Issue #17
+- Auto-install `forge-sb` skill from Silver Bullet on plugin install
 
 ## Key Decisions
 
@@ -108,10 +122,22 @@ A new **`/forge` skill** (`skills/forge/SKILL.md`) and supporting infrastructure
 
 ### Active
 
-- Enforcer bug fixes (5 bugs in `hooks/forge-delegation-enforcer.sh`) — Issue #3
-- Doc-edit carve-out path allowlist (`.planning/**`, `docs/**`) in enforcer hook — Issue #2
-- Test suite coverage for all v1.3 changes
-- Plugin manifest bump to v1.3.0
+**Phase 10 — Enforcer Hardening:**
+- Enforcer bug fixes (6 bugs: Issues #3 + #8) — ENF-01–08
+- Doc-edit carve-out path allowlist (`.planning/**`, `docs/**`) — PATH-01–03
+- Helper extraction to `hooks/lib/enforcer-utils.sh` — REFACT-01–04
+- Test suite + manifest bump to v1.3.0 — TEST-V13-01–04, MAN-V13-01–03
+
+**Phase 11 — Housekeeping, Hardening & forge-sb:**
+- `strip_ansi` slurp-mode fix (Issue #6) — STRIP-01
+- `sk-` token redaction regex improvement (Issue #7) — RDRCT-01
+- SRI integrity for Lucide CDN in all 6 help pages (Issue #10) — SRI-01
+- SKILL.md L3 scope constraint + security boundary fixes (Issues #12, #13) — SKILL-01, SKILL-02
+- Token redaction test gaps `ghs_` and `api-key:` (Issue #14) — TEST-RDRCT-01
+- Help site: favicon, null guard, injection table (Issue #15) — DOCS-01
+- `install.sh` `$TMPDIR` fix (Issue #16) — INST-01
+- Move 14 SENTINEL files to `docs/internal/sentinel/` (Issue #17) — HOUSE-01
+- `forge-sb` auto-install on plugin install — FGSB-01
 
 ### Out of Scope
 
