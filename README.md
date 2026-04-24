@@ -6,7 +6,7 @@
 
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
-| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.2.4 |
+| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.4.0 |
 
 More sidekicks planned.
 
@@ -81,7 +81,7 @@ Three-tier pyramid. All three stages are chained by `tests/run_release.bash`, wh
 
 | Tier | Script | Runs without Forge | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 13 suites, ~80+ assertions — hook classifiers, idx audit, plugin integrity, slash commands, v1.2 coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 15 suites, 157+ assertions — hook classifiers, idx audit, plugin integrity, slash commands, v1.2/v1.3 coverage gaps. |
 | **Smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
 

@@ -3,7 +3,7 @@ name: forge-history
 description: List recent Forge tasks delegated from this project (reads .forge/conversations.idx). Prunes entries older than 30 days on each call.
 ---
 
-# /forge:history
+# /forge-history
 
 Show the 20 most recent Forge conversations initiated from this project, joined with live status/token data from `forge conversation info`. Also prune idx rows older than 30 days.
 
@@ -43,7 +43,7 @@ Show the 20 most recent Forge conversations initiated from this project, joined 
    | 2026-04-18T01:02:13Z | sidekick-1729195333-d81a4c6e | Add tests for snapshot diff        | SUCCESS  | 12 987 |
    | …                    | …                          | …                                  | …        | …      |
 
-   Truncate task hints to 48 characters with `…` if longer. Do not include the raw UUID in the table — the Sidekick tag is the human-readable handle. The UUID is still the key used by `/forge:replay`, so print a one-line footer: `Use /forge:replay <UUID> to open a transcript — see the first column of .forge/conversations.idx for the UUID to each tag.`
+   Truncate task hints to 48 characters with `…` if longer. Do not include the raw UUID in the table — the Sidekick tag is the human-readable handle. The UUID is available in the first column of `.forge/conversations.idx` if needed for `forge conversation info` lookups.
 
 6. If fewer than 20 rows exist after pruning, show however many remain. Do not pad.
 
@@ -56,4 +56,4 @@ Show the 20 most recent Forge conversations initiated from this project, joined 
 ## Notes
 
 - Pruning is non-destructive aside from age-based row removal. The UUIDs remain valid in `~/forge/.forge.db` until Forge's own retention expires them.
-- `/forge:history` is read-only with respect to Forge state; it only mutates the Sidekick-owned `.forge/conversations.idx` file.
+- `/forge-history` is read-only with respect to Forge state; it only mutates the Sidekick-owned `.forge/conversations.idx` file.

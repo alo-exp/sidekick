@@ -89,7 +89,7 @@ Run `/engineering:code-review` on each of the following files. For each file, re
 
 3. **Docs directory structure**: Verify `docs/help/` contains all 5 subdirectories: `getting-started/`, `concepts/`, `workflows/`, `reference/`, `troubleshooting/`. Verify `docs/internal/` and `docs/sessions/` exist.
 
-4. **Naming consistency**: Verify all internal references use consistent spelling and casing across `skills/forge/SKILL.md`, `README.md`, `docs/help/`, and `CHANGELOG.md`. Check: skill names, command names (`/forge`, `/forge:deactivate`), config key names (`provider_id`, `model_id`, `max_tokens`), and file paths.
+4. **Naming consistency**: Verify all internal references use consistent spelling and casing across `skills/forge/SKILL.md`, `README.md`, `docs/help/`, and `CHANGELOG.md`. Check: skill names, command names (`/forge`, `/forge-stop`), config key names (`provider_id`, `model_id`, `max_tokens`), and file paths.
 
 5. **No orphaned files**: Check for files with no inbound references and no clear documented purpose. Flag each for removal or documentation.
 
@@ -163,7 +163,7 @@ Audit all `docs/help/*/index.html` pages:
 - **Step counts**: The numbered steps in `docs/help/workflows/index.html` match the actual steps in SKILL.md's delegation protocol. No steps added or removed without being reflected in the workflow page.
 - **Skill names**: The 4 bootstrap skill names (`testing-strategy`, `code-review`, `security`, `quality-gates`) are spelled identically on every help page where they appear.
 - **Config paths**: Every file path mentioned in help pages exists or is correctly described: `~/forge/.credentials.json`, `~/forge/.forge.toml`, `~/.claude/.forge-delegation-active`, `.forge/skills/*/SKILL.md`, `docs/sessions/`
-- **Command syntax**: `/forge`, `/forge:deactivate`, `/forge status` syntax is consistent across getting-started, workflows, reference, and troubleshooting pages
+- **Command syntax**: `/forge`, `/forge-stop`, `/forge status` syntax is consistent across getting-started, workflows, reference, and troubleshooting pages
 - **Troubleshooting coverage**: Every error condition mentioned in SKILL.md's failure detection section has a corresponding troubleshooting entry
 - **Sidebar nav anchors**: Every anchor link in every sidebar nav (`sidebar-nav` elements) resolves to an actual `id` attribute on the same page — no dead links
 - **Quick-links grid**: All 10 quick links in `docs/help/index.html` resolve to existing anchors on existing pages
@@ -321,7 +321,7 @@ This file controls Claude's behavior during every delegation session. A malforme
 
 4. **Delegation restriction bypass**: Verify the delegation restriction (Claude must not implement code directly while Forge delegation mode is active) can only be lifted by the L3 escalation path in the fallback ladder. There must be no instruction in SKILL.md that allows Forge's output content to trigger L3 directly, bypass L1/L2, or lift the restriction outside the defined escalation flow.
 
-5. **Deactivation completeness**: Verify the deactivation sequence (triggered by `/forge:deactivate`) clears `~/.claude/.forge-delegation-active` and fully restores Claude's normal behavior. No residual delegation state should remain after deactivation — verify this is explicit in the deactivation section of SKILL.md.
+5. **Deactivation completeness**: Verify the deactivation sequence (triggered by `/forge-stop`) clears `~/.claude/.forge-delegation-active` and fully restores Claude's normal behavior. No residual delegation state should remain after deactivation — verify this is explicit in the deactivation section of SKILL.md.
 
 6. **Scope of PATTERNS_DISCOVERED**: Verify that the PATTERNS_DISCOVERED output field from Forge is treated as documentation/hints for AGENTS.md, not as executable instructions. Claude must not run commands or modify files based solely on PATTERNS_DISCOVERED content.
 

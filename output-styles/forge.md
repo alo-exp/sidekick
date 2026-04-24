@@ -31,7 +31,7 @@ You do not style these — they are already in the transcript. You *do* referenc
 
 ## History
 
-When a `/forge:history` hint appears in a `[FORGE-SUMMARY]` block, surface it to the user in plain language ("Run /forge:history to browse past Forge sessions from this project.") rather than silently leaving the hint inline.
+When a `/forge-history` hint appears in a `[FORGE-SUMMARY]` block, surface it to the user in plain language ("Run /forge-history to browse past Forge sessions from this project.") rather than silently leaving the hint inline.
 
 ## Deactivation
 

@@ -98,8 +98,10 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
   sleep 5
   bash "${FORGE_INSTALL_TMP}"
   echo "[forge-plugin] ForgeCode installed."
-  echo "[forge-plugin] Installing forge-sb skill from Silver Bullet..."
-  curl -sL https://raw.githubusercontent.com/alo-exp/silver-bullet/main/forge-sb-install.sh | bash
+  # NOTE (SENTINEL-S4): The forge-sb skill is bundled with the Sidekick plugin via
+  # .forge/skills/ and does not require a secondary network fetch.  The previous
+  # `curl | bash` from raw.githubusercontent.com was removed because it executed
+  # unsigned remote code without checksum verification (arbitrary code execution risk).
 else
   echo "[forge-plugin] ForgeCode already installed."
 fi
@@ -174,6 +176,17 @@ if command -v forge &>/dev/null || [ -f "${FORGE_BIN}" ]; then
   fi
 else
   echo "[forge-plugin] WARNING: forge binary not found after install. Check PATH." >&2
+fi
+
+# --- Credential file permissions hardening ---
+# S4-FIX: Ensure ~/forge/.credentials.json is never world-readable.
+# If the file already exists (written by STEP 0A setup or a prior install),
+# enforce 600 permissions so only the owning user can read it.
+# This is also called after every install/re-install for idempotent safety.
+CREDS_FILE="${HOME}/forge/.credentials.json"
+if [ -f "${CREDS_FILE}" ]; then
+  chmod 600 "${CREDS_FILE}"
+  echo "[forge-plugin] Credential file permissions set to 600 (user-only read/write)."
 fi
 
 echo "[forge-plugin] Setup complete. Ask Claude to configure your OpenRouter API key."

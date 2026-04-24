@@ -5,8 +5,7 @@
 # Phase 7 (v1.2): runs after Bash tool calls. If the command contained a
 # `forge -p …` invocation and the output contains a STATUS: block, emit a
 # compact [FORGE-SUMMARY] additionalContext so the user (and Claude) see
-# the result distilled in the transcript, including a /forge:replay hint
-# keyed on the conversation-id UUID.
+# the result distilled in the transcript, including a /forge-history hint.
 #
 # Behavior contract:
 #   * No-op when ~/.claude/.forge-delegation-active is absent.
@@ -143,7 +142,7 @@ main() {
   # alongside the output style's [FORGE] markers in the transcript.
   body="$(printf '%s' "$status_block" | sed 's/^/[FORGE-SUMMARY] /')"
   if [[ -n "$uuid" ]]; then
-    footer="[FORGE-SUMMARY] History: /forge:history"
+    footer="[FORGE-SUMMARY] History: /forge-history"
   else
     footer="[FORGE-SUMMARY] (no conversation-id captured)"
   fi
