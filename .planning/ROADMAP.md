@@ -322,3 +322,11 @@ Phase 10 → Phase 11
 | INST-01 | Phase 11 |
 | HOUSE-01 | Phase 11 |
 | FGSB-01 | Phase 11 |
+
+---
+
+## v1.4 — Command-Surface Cleanup & Security Hardening
+
+✅ **SHIPPED 2026-04-25** — Direct release (no formal GSD phases). See archive: `.planning/milestones/v1.4.0-ROADMAP.md`
+
+**Delivered:** Renamed `forge-delegate` skill, added `/forge-stop` command, removed `/forge-replay`, fixed 2 SENTINEL security issues in `install.sh`, normalized `/forge-history` across 9 files, added Plugin Hooks to reference sidebar.

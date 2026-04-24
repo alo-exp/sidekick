@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3.0
-milestone_name: "Enforcer Hardening + Housekeeping + forge-sb"
+milestone: v1.4.0
+milestone_name: "Command-Surface Cleanup & Security Hardening"
 status: complete
-stopped_at: v1.3.0 released — Phases 10 and 11 complete; GitHub Release https://github.com/alo-exp/sidekick/releases/tag/v1.3.0
-last_updated: "2026-04-24T00:00:00Z"
-last_activity: "2026-04-24 — v1.3.0 GitHub release created; all Phase 10 + Phase 11 work shipped"
+stopped_at: v1.4.0 released — housekeeping release; GitHub Release https://github.com/alo-exp/sidekick/releases/tag/v1.4.0
+last_updated: "2026-04-25T00:00:00Z"
+last_activity: "2026-04-25 — v1.4.0 GitHub release created; milestone archived"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 100
 ---
 
@@ -25,11 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 ## Current Position
 
-Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
-Phase: 11 — Housekeeping, Hardening & forge-sb (in progress)
-Plan: 11-04 complete; Phase 11 fully shipped
-Status: Executing
-Last activity: 2026-04-25 — Phase 11 Plan 04 complete (14 SENTINEL files moved to docs/internal/sentinel/, forge-sb install step, plugin.json hash refresh)
+Milestone: v1.4.0 — Command-Surface Cleanup & Security Hardening (COMPLETE)
+Phase: N/A — direct release (no formal GSD phases)
+Status: Milestone archived
+Last activity: 2026-04-25 — v1.4.0 shipped; forge-delegate rename, forge-stop, install.sh security hardening; GitHub release created; milestone archived to .planning/milestones/v1.4.0-ROADMAP.md
 
 Progress:
 
@@ -134,4 +133,4 @@ Resume file: None
 
 Next likely actions:
 
-- Release v1.3.0 (Phase 11 fully shipped)
+- Start next milestone with `/gsd-new-milestone`
