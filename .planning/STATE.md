@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: "Enforcer Hardening + Housekeeping + forge-sb"
+milestone: v1.1.2
+milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: "Phase 10 Plan 01 complete — hooks/lib/enforcer-utils.sh created with 9 helpers."
-last_updated: "2026-04-24T07:35:00Z"
-last_activity: 2026-04-24 -- Phase 10 Plan 01 executed; enforcer-utils.sh created
+stopped_at: Phase 10 Plan 02 complete — enforcer rewritten, sources lib, 289 lines, all 8 bug fixes active.
+last_updated: "2026-04-24T13:14:20Z"
+last_activity: 2026-04-24 — Phase 10 Plan 02 complete (enforcer rewrite, path allowlist, MCP dispatch, chain/pipe guards)
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 1
-  percent: 5
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 11
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 Phase: 10 — Enforcer Hardening + Helper Extraction (in progress)
-Plan: 10-01 complete; 10-02 next
+Plan: 10-02 complete; 10-03 next
 Status: Executing
-Last activity: 2026-04-24 — Phase 10 Plan 01 complete (hooks/lib/enforcer-utils.sh created)
+Last activity: 2026-04-24 — Phase 10 Plan 02 complete (enforcer rewrite, path allowlist, MCP dispatch, chain/pipe guards)
 
 Progress:
 
@@ -68,11 +68,19 @@ Key v1.2 decisions carried forward:
 - Claude Code output styles shape assistant prose, not raw tool output
 
 Key v1.3 Plan 01 decisions:
+
 - ENF-01 regex stored in variable: `local _proc_sub_re='>[(][^)]*[)]'` then `[[ $cmd =~ $_proc_sub_re ]]` — bash [[ parser treats literal ) as end of compound command
 - ENF-02 explicit fd forms: bash 3.2 incompatible with character-class substitution; used 8 explicit ${pruned//>&N/} substitutions
 - gh sub-commands added in lib directly (not deferred to Plan 02) since is_read_only/is_mutating now live in the lib
 
+Key v1.3 Plan 02 decisions:
+
+- first_three_tokens separate from first_token: changing first_token to 3 tokens broke 2-token forge/git entries; added dedicated helper for gh 3-token case patterns
+- ENF-06/08 checks placed after is_forge_p so forge -p | tee passes before pipe scanner runs
+- export_env_prefix placed before all checks so FORGE_LEVEL_3=1 command-text prefix is exported before bypass check
+
 Key v1.3 context:
+
 - 5 bugs discovered in forge-delegation-enforcer.sh in live session (Issue #3): `has_write_redirect` false-positives, broken FORGE_LEVEL_3 bypass, `gh` unclassified, `cd &&` chain security hole, MCP filesystem bypass
 - Doc-edit carve-out (Issue #2) currently works by accident (sessions start with pre-v1.2.0 manifest); needs to be codified as hook path-allowlist before v1.2.2 manifest is loaded at session start
 
@@ -95,9 +103,9 @@ Key v1.3 context:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Phase 10 Plan 01 complete — hooks/lib/enforcer-utils.sh created with 9 helpers.
+Stopped at: Phase 10 Plan 02 complete — enforcer rewritten, sources lib, 289 lines, all 8 bug fixes active.
 Resume file: None
 
 Next likely actions:
 
-- Execute Phase 10 Plan 02: rewrite forge-delegation-enforcer.sh to source the lib
+- Execute Phase 10 Plan 03: test suite expansion (invert test_chained_command_with_mutating_tail, add new ENF-05/06/07/08/PATH tests)
