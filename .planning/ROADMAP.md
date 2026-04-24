@@ -290,7 +290,7 @@ Plans:
 
 Plans:
 - [ ] 11-01-PLAN.md — Hook hardening: strip_ansi slurp mode (STRIP-01) + sk- regex broadening (RDRCT-01)
-- [ ] 11-02-PLAN.md — Test coverage: two new redaction tests in test_v12_coverage.bash (TEST-RDRCT-01)
+- [x] 11-02-PLAN.md — Test coverage: two new redaction tests in test_v12_coverage.bash (TEST-RDRCT-01)  _(shipped 3279c92, 2026-04-24)_
 - [ ] 11-03-PLAN.md — Help site SRI + favicon + search.js fix + concepts table + SKILL.md + install.sh mktemp (SRI-01, SKILL-01, SKILL-02, DOCS-01, INST-01)
 - [ ] 11-04-PLAN.md — SENTINEL relocation (git mv 14 files) + forge-sb auto-install + plugin.json integrity refresh (HOUSE-01, FGSB-01)
 
@@ -302,7 +302,7 @@ Phase 10 → Phase 11
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 10. Enforcer Hardening + Helper Extraction | 4/4 | Shipped | 2026-04-24 |
-| 11. Housekeeping, Hardening & forge-sb | 0/4 | Not started | — |
+| 11. Housekeeping, Hardening & forge-sb | 2/4 | In progress | — |
 
 ### v1.3 Requirement Coverage
 

@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1.2
 milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: Phase 11 Plan 01 complete — STRIP-01 (slurp mode) + RDRCT-01 (broadened sk- regex) shipped, 9/9 tests green.
-last_updated: "2026-04-24T13:46:00Z"
-last_activity: "2026-04-24 — Phase 11 Plan 01 complete (STRIP-01: perl -0777 slurp mode; RDRCT-01: broadened sk- redaction regex)"
+stopped_at: Phase 11 Plan 02 complete — TEST-RDRCT-01(a+b) satisfied; ghs_ and api-key colon-form redaction tests added; 23/23 tests green.
+last_updated: "2026-04-24T13:49:35Z"
+last_activity: "2026-04-24 — Phase 11 Plan 02 complete (TEST-RDRCT-01: ghs_ token + api-key colon-form regression tests in test_v12_coverage.bash)"
 progress:
   total_phases: 5
   completed_phases: 5
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 Phase: 11 — Housekeeping, Hardening & forge-sb (in progress)
-Plan: 11-01 complete; Phase 11 Wave 1 shipped
+Plan: 11-02 complete; Phase 11 Wave 2 shipped
 Status: Executing
-Last activity: 2026-04-24 — Phase 11 Plan 01 complete (STRIP-01: perl -0777 slurp mode; RDRCT-01: broadened sk- redaction regex)
+Last activity: 2026-04-24 — Phase 11 Plan 02 complete (TEST-RDRCT-01: ghs_ token + api-key colon-form regression tests in test_v12_coverage.bash)
 
 Progress:
 
@@ -105,7 +105,7 @@ Key v1.3 Phase 11 Plan 01 decisions:
 
 ### Pending Todos
 
-- Execute Phase 11 Plan 02: sk- unit tests + SRI integrity scaffold
+- [x] Execute Phase 11 Plan 02: sk- unit tests + SRI integrity scaffold (COMPLETE)
 - Execute Phase 11 Plan 03: skill/docs/install housekeeping
 - Execute Phase 11 Plan 04: plugin.json hash refresh (forge-progress-surface.sh hash stale after Plan 01)
 - Release v1.3.0
