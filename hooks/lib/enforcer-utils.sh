@@ -127,6 +127,18 @@ first_token() {
   printf '%s' "$stripped" | awk '{ if (NF>=2) { print $1" "$2 } else { print $1 } }'
 }
 
+# first_three_tokens
+# Like first_token but returns up to 3 tokens for three-word prefix matching
+# (e.g. "gh issue list", "gh pr view"). Used by is_read_only/is_mutating for
+# gh sub-commands where the meaningful verb is the third token.
+# -----------------------------------------------------------------------------
+first_three_tokens() {
+  local cmd stripped
+  cmd="$1"
+  stripped="$(strip_env_prefix "$cmd")"
+  printf '%s' "$stripped" | awk '{ if (NF>=3) { print $1" "$2" "$3 } else if (NF==2) { print $1" "$2 } else { print $1 } }'
+}
+
 # -----------------------------------------------------------------------------
 # is_allowed_doc_path  (PATH-01)
 # Return 0 (allow) if the given path is under .planning/ or docs/.
@@ -156,7 +168,7 @@ is_allowed_doc_path() {
 # Includes gh read-only sub-commands (ENF-05).
 # -----------------------------------------------------------------------------
 is_read_only() {
-  local cmd first
+  local cmd first first3
   cmd="$1"
   # A command with a write redirect is never read-only, regardless of its
   # first token (e.g. `echo hi > /tmp/out` is mutating).
@@ -173,7 +185,10 @@ is_read_only() {
   case "$first" in
     "git status"|"git log"|"git diff"|"git show"|"git branch"|"git remote"|"git rev-parse"|"git ls-files"|"git stash list") return 0 ;;
     "forge conversation"|"forge --version"|"forge --help"|"forge info") return 0 ;;
-    # ENF-05: gh read-only sub-commands.
+  esac
+  # ENF-05: gh read-only sub-commands require 3-token matching (gh <noun> <verb>).
+  first3="$(first_three_tokens "$cmd")"
+  case "$first3" in
     "gh issue list"|"gh issue view"|"gh pr list"|"gh pr view"|"gh pr status"|"gh pr checks"\
     |"gh label list"|"gh release list"|"gh repo view"|"gh project list"\
     |"gh run list"|"gh run view"|"gh workflow list") return 0 ;;
@@ -195,13 +210,16 @@ is_read_only() {
 # Includes gh mutating sub-commands (ENF-05).
 # -----------------------------------------------------------------------------
 is_mutating() {
-  local cmd first
+  local cmd first first3
   cmd="$1"
   first="$(first_token "$cmd")"
   # Two-word git mutators.
   case "$first" in
     "git add"|"git commit"|"git push"|"git pull"|"git fetch"|"git checkout"|"git reset"|"git rebase"|"git merge"|"git cherry-pick"|"git restore"|"git rm"|"git mv"|"git tag"|"git clean"|"git stash") return 0 ;;
-    # ENF-05: gh mutating sub-commands.
+  esac
+  # ENF-05: gh mutating sub-commands require 3-token matching (gh <noun> <verb>).
+  first3="$(first_three_tokens "$cmd")"
+  case "$first3" in
     "gh issue create"|"gh issue edit"|"gh issue close"|"gh issue delete"\
     |"gh pr create"|"gh pr merge"|"gh pr close"|"gh pr edit"\
     |"gh release create"|"gh release delete"|"gh release upload"\
