@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1.2
 milestone_name: "patch): missing tools frontmatter, invalid model IDs in README and vision agent"
 status: executing
-stopped_at: Phase 10 Plan 02 complete — enforcer rewritten, sources lib, 289 lines, all 8 bug fixes active.
-last_updated: "2026-04-24T13:14:20Z"
-last_activity: 2026-04-24 — Phase 10 Plan 02 complete (enforcer rewrite, path allowlist, MCP dispatch, chain/pipe guards)
+stopped_at: Phase 10 Plan 03 complete — 24-test v1.3 coverage suite green, chain test inverted, run_all.bash updated.
+last_updated: "2026-04-24T13:25:26Z"
+last_activity: 2026-04-24 — Phase 10 Plan 03 complete (test suite expansion: test_v13_coverage.bash, ENF-06 chain test inverted)
 progress:
   total_phases: 5
   completed_phases: 5
@@ -27,9 +27,9 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 Milestone: v1.3 — Enforcer Hardening + Housekeeping + forge-sb
 Phase: 10 — Enforcer Hardening + Helper Extraction (in progress)
-Plan: 10-02 complete; 10-03 next
+Plan: 10-03 complete; 10-04 next
 Status: Executing
-Last activity: 2026-04-24 — Phase 10 Plan 02 complete (enforcer rewrite, path allowlist, MCP dispatch, chain/pipe guards)
+Last activity: 2026-04-24 — Phase 10 Plan 03 complete (test suite expansion: test_v13_coverage.bash, ENF-06 chain test inverted)
 
 Progress:
 
@@ -79,6 +79,12 @@ Key v1.3 Plan 02 decisions:
 - ENF-06/08 checks placed after is_forge_p so forge -p | tee passes before pipe scanner runs
 - export_env_prefix placed before all checks so FORGE_LEVEL_3=1 command-text prefix is exported before bypass check
 
+Key v1.3 Plan 03 decisions:
+
+- Replaced 'cmd >&2' with 'ls >&2' in ENF-02 test: 'cmd' is not a recognized read-only token; enforcer correctly denies unclassified commands
+- Replaced 'ls; grep foo bar.txt' with 'ls && grep foo bar.txt' in ENF-06 passthrough test: semicolons attach to first token ('ls;') making it unrecognized; && keeps tokens space-delimited so first_token returns 'ls'
+- These are test correctness fixes, not enforcer bugs — semicolon-attachment behavior is consistent with enforcer design
+
 Key v1.3 context:
 
 - 5 bugs discovered in forge-delegation-enforcer.sh in live session (Issue #3): `has_write_redirect` false-positives, broken FORGE_LEVEL_3 bypass, `gh` unclassified, `cd &&` chain security hole, MCP filesystem bypass
@@ -103,9 +109,9 @@ Key v1.3 context:
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Phase 10 Plan 02 complete — enforcer rewritten, sources lib, 289 lines, all 8 bug fixes active.
+Stopped at: Phase 10 Plan 03 complete — 24-test v1.3 coverage suite green, chain test inverted, run_all.bash updated.
 Resume file: None
 
 Next likely actions:
 
-- Execute Phase 10 Plan 03: test suite expansion (invert test_chained_command_with_mutating_tail, add new ENF-05/06/07/08/PATH tests)
+- Execute Phase 10 Plan 04: manifest update — bump plugin.json to v1.3.0, extend PreToolUse matcher with MCP filesystem tools, refresh _integrity hashes, fix test_plugin_integrity.bash version check

@@ -267,8 +267,8 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 
 Plans:
 - [x] 10-01-PLAN.md — Create hooks/lib/enforcer-utils.sh: source-guarded helper library with ENF-01/02/03 bug-fixed has_write_redirect, export_env_prefix (ENF-04), is_allowed_doc_path (PATH), has_mutating_chain_segment (ENF-06), has_mutating_pipe_segment (ENF-08), plus is_read_only/is_mutating with gh entries (ENF-05)  _(shipped 3bc1414, 2026-04-24)_
-- [ ] 10-02-PLAN.md — Rewrite enforcer to source lib, apply all 8 bug fixes in-enforcer (export_env_prefix call, chain/pipe scanners, MCP dispatch, path allowlist in decide_write_edit), remove dead rewrite_forge_p, achieve ≤300 lines
-- [ ] 10-03-PLAN.md — Expand test suite: invert test_chained_command_with_mutating_tail, create tests/test_v13_coverage.bash covering ENF-01–08 + PATH-01–03 + lib isolation, add to run_all.bash
+- [x] 10-02-PLAN.md — Rewrite enforcer to source lib, apply all 8 bug fixes in-enforcer (export_env_prefix call, chain/pipe scanners, MCP dispatch, path allowlist in decide_write_edit), remove dead rewrite_forge_p, achieve ≤300 lines  _(shipped 2026-04-24)_
+- [x] 10-03-PLAN.md — Expand test suite: invert test_chained_command_with_mutating_tail, create tests/test_v13_coverage.bash covering ENF-01–08 + PATH-01–03 + lib isolation (24 tests), add to run_all.bash  _(shipped fc919ef+0ac28af, 2026-04-24)_
 - [ ] 10-04-PLAN.md — Plugin manifest: bump to v1.3.0, extend PreToolUse matcher with MCP filesystem tools, refresh _integrity hashes for enforcer and lib; update test_plugin_integrity.bash
 
 #### Phase 11: Housekeeping, Hardening & forge-sb
@@ -295,7 +295,7 @@ Phase 10 → Phase 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 10. Enforcer Hardening + Helper Extraction | 1/4 | In progress | — |
+| 10. Enforcer Hardening + Helper Extraction | 3/4 | In progress | — |
 | 11. Housekeeping, Hardening & forge-sb | 0/TBD | Not started | — |
 
 ### v1.3 Requirement Coverage
