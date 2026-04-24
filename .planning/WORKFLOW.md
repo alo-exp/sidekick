@@ -18,13 +18,13 @@ Skipped: PATH 15 (DESIGN HANDOFF) — no UI phases detected
 ## Flow Log
 | # | Flow | Status | Artifacts Produced | Exit Condition Met |
 |---|------|--------|-------------------|--------------------|
-| 0 | Project 4-stage quality gate (2 clean rounds) | complete | Round 1 fixes committed (23b7d7a), D9 fix (f697658) | ✓ |
-| 0b | SB quality-gates (9 dimensions, design-time) | complete | All 9 dimensions PASS; no failures | ✓ |
-| 1 | Cross-Phase UAT (manual) | complete | All 8 scope items verified | ✓ |
-| 2 | Milestone completion audit (manual) | complete | All 7 CHANGELOG items covered, no gaps | ✓ |
-| 2a | Security hard gate | complete | Stage 4 SENTINEL (2 rounds) + security dimension PASS | ✓ |
-| 3a | Docs accuracy verification | complete | ALL DOCS ACCURATE | ✓ |
-| 4 | Milestone summary | complete | .planning/reports/MILESTONE_SUMMARY-v1.4.0.md | ✓ |
+| 1 | Project 4-stage quality gate (2 clean rounds) | complete | Round 1 fixes committed (23b7d7a), D9 fix (f697658) | ✓ |
+| 2 | SB quality-gates (9 dimensions, design-time) | complete | All 9 dimensions PASS; no failures | ✓ |
+| 3 | Cross-Phase UAT + Milestone completion audit | complete | All 8 scope items + 7 CHANGELOG items verified | ✓ |
+| 4 | Security hard gate | complete | Stage 4 SENTINEL (2 rounds) + security dimension PASS | ✓ |
+| 5 | Docs accuracy verification | complete | ALL DOCS ACCURATE | ✓ |
+| 6 | Milestone summary | complete | .planning/reports/MILESTONE_SUMMARY-v1.4.0.md | ✓ |
+| 7 | Create release (tag + GitHub release) | complete | git tag v1.4.0 pushed; gh release create v1.4.0 | ✓ |
 
 ## Phase Iterations
 | Phase | Flows 5-13 Status |
