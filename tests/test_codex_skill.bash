@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 SKILL_FILE="${PLUGIN_DIR}/skills/codex/SKILL.md"
 LEGACY_FILE="${PLUGIN_DIR}/skills/codex.md"
+DELEGATE_FILE="${PLUGIN_DIR}/skills/codex-delegate.md"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -17,6 +18,7 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 [ -f "${SKILL_FILE}" ] || { echo "ERROR: ${SKILL_FILE} missing"; exit 1; }
 [ -f "${LEGACY_FILE}" ] || { echo "ERROR: ${LEGACY_FILE} missing"; exit 1; }
+[ -f "${DELEGATE_FILE}" ] || { echo "ERROR: ${DELEGATE_FILE} missing"; exit 1; }
 
 echo "=== T1: YAML frontmatter contains name: codex ==="
 grep -q '^name: codex' "${SKILL_FILE}" && assert_pass "name: codex present" || assert_fail "YAML frontmatter" "name: codex not found"
@@ -69,6 +71,13 @@ if grep -q 'skills/codex/SKILL.md' "${LEGACY_FILE}" && grep -qi 'deprecated' "${
   assert_pass "legacy wrapper points to canonical skill"
 else
   assert_fail "legacy wrapper" "missing canonical skill reference or deprecation note"
+fi
+
+echo "=== T10: codex-delegate alias points to canonical skill ==="
+if grep -q 'skills/codex/SKILL.md' "${DELEGATE_FILE}" && grep -qi 'deprecated' "${DELEGATE_FILE}" && grep -q '^name: codex-delegate' "${DELEGATE_FILE}"; then
+  assert_pass "codex-delegate alias points to canonical skill"
+else
+  assert_fail "codex-delegate alias" "missing canonical skill reference, deprecation note, or alias name"
 fi
 
 echo ""

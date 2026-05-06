@@ -16,7 +16,7 @@ Code   = Hands
 
 - When the active host is Claude Code, follow STEP 0 through STEP 2 as written.
 - When the active host is Code, keep this skill to packaging and runtime configuration guidance only. Do not attempt to delegate work to the same runtime or treat the Claude = Brain framing as a self-reference.
-- Codex compatibility stays available through the `codex` alias and legacy config path; Code remains the canonical runtime.
+- Codex compatibility stays available through the `codex` and `codex-delegate` aliases plus the legacy config path; Code remains the canonical runtime.
 
 ## STEP 0 — Health Check
 

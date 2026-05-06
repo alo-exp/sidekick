@@ -1,6 +1,6 @@
 ---
-name: codex
-description: Legacy flat entrypoint for the Code sidekick orchestration skill. Prefer codex-delegate or skills/codex/SKILL.md.
+name: codex-delegate
+description: Legacy alias for the Code sidekick orchestration skill. Prefer skills/codex/SKILL.md.
 ---
 
 > Deprecated in favor of [`skills/codex/SKILL.md`](./codex/SKILL.md).
