@@ -1,0 +1,38 @@
+{
+  "forge": {
+    "display_name": "Forge",
+    "marker_file": ".claude/.forge-delegation-active",
+    "idx_dir": ".forge",
+    "delegate_command": "forge -p",
+    "history_command": "/forge-history",
+    "stop_command": "/forge-stop",
+    "skill": "skills/forge/SKILL.md",
+    "skill_legacy": "skills/forge.md",
+    "output_style": "output-styles/forge.md",
+    "install": {
+      "kind": "forgecode-cli",
+      "url": "https://forgecode.dev/cli",
+      "sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+    }
+  },
+  "codex": {
+    "display_name": "Codex",
+    "marker_file": ".claude/.codex-delegation-active",
+    "idx_dir": ".codex",
+    "delegate_command": "codex exec",
+    "history_command": "/codex-history",
+    "stop_command": "/codex-stop",
+    "skill": "skills/codex/SKILL.md",
+    "skill_legacy": "skills/codex.md",
+    "output_style": "output-styles/codex.md",
+    "install": {
+      "kind": "codex-install-script",
+      "version": "0.6.97",
+      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.6.97/scripts/install/install.sh",
+      "sha256": "e66a8a3f208c217619b05c2bf9f074498aa1c4446291c45dbb6c05c1a109576a",
+      "binary": "codex",
+      "alias": "code",
+      "fallback_alias": "coder"
+    }
+  }
+}

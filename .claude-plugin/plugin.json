@@ -1,7 +1,7 @@
 {
   "name": "sidekick",
-  "version": "1.4.0",
-  "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Starting with Forge (ForgeCode), each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
+  "version": "1.5.0",
+  "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Codex are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
   "author": {
     "name": "Ālo Labs",
     "url": "https://alolabs.dev"
@@ -12,7 +12,9 @@
   "keywords": [
     "sidekick",
     "forge",
+    "codex",
     "forgecode",
+    "code-exec",
     "terminal-agent",
     "coding-agent",
     "openrouter",
@@ -29,6 +31,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-delegation-enforcer.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-delegation-enforcer.sh\""
           }
         ]
       },
@@ -49,6 +55,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-progress-surface.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-progress-surface.sh\""
           }
         ]
       }
@@ -56,18 +66,27 @@
   },
   "_integrity": {
     "_note": "SHA-256 hashes of plugin files — update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
-    "install_sh_sha256": "df603a33fd52b63d53f020295145125a795ed296ae7ac1c6f0e0e98e45d66c10",
+    "install_sh_sha256": "beaae4572cfeba62b3ef3538b266f197994738955cfb7255d2e73fa8a1e79fc0",
     "forge_md_sha256": "d8cddf8f4eff8e47e09ebbde2a2bc949feb85c402cec42985de21ae33bb35d3e",
     "forge_skill_md_sha256": "a50a848d72a92ad233433cca9db2c24d653bf1f4d220f26eaa2f8a69a1db49dd",
+    "codex_md_sha256": "9acad8f898116e4d7c05449b6e12fb9cb31bb25d22a644be9c96bab6cb534764",
+    "codex_skill_md_sha256": "96076df81b266aa1447590db5e1ba3400dcf5a1cd54d67de29ab2b57d5ffa562",
     "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
     "forge_delegation_enforcer_sha256": "d7992eb85540607c5654c7a16d7e0486d3de64c6756a43d6b852d5d27201bb64",
+    "codex_delegation_enforcer_sha256": "dd3b391c41958e3d297ea04fd29890feb60a3e85e9683fb1b51e959140520538",
     "enforcer_utils_sha256": "2bcae48efa084e6c6396fe3b7aa2ba772a8653215589248befc1752140db55ae",
+    "sidekick_registry_sha256": "91401006c57f72e650402444e0beae6d1cc30296a405249c5e0843d94d8a8bd3",
     "forge_progress_surface_sha256": "94aeace51d786ce1512fcf65d02059088635759337e128c021a04cad2d558a8e",
+    "codex_progress_surface_sha256": "0eb6518d9528e8d31f930c754185252a226d7d2298a74d1ca14dfc2bddaced26",
     "validate_release_gate_sha256": "cce77224d7ff340f296f78e35efd3f073cea4e61f0065c97f1d7d53cb660faa9",
     "output_style_forge_sha256": "0c614fae4b9d8d251ff92d040a0252388ec5b61d4677f33272111e96e7692b48",
+    "output_style_codex_sha256": "1b14aa50d6f376944b2597abe7ba0b6f58ba3bec9e2e8d7a0bd85fe5438019d7",
     "command_forge_stop_sha256": "e7332a0185feb22e7fdf8b67884d57e8b696804e3f7a36c114f7eb39345e913c",
     "command_forge_history_sha256": "84b86c550e879475bebf105d1eba8be9c3abc3e7382cd0d208f7cb6d19077aa8",
+    "command_codex_stop_sha256": "02ce63afb14f8f12ed76d8171998d1d423b1b4c905b89aff57bded5219633425",
+    "command_codex_history_sha256": "391a62966a9c6b073fdeb72c3fe2f73b56c43ad78d2367c320034205bdcefe14",
     "forgecode_installer_sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a",
+    "codex_installer_sha256": "e66a8a3f208c217619b05c2bf9f074498aa1c4446291c45dbb6c05c1a109576a",
     "verify_at": "https://forgecode.dev/releases",
     "source": "https://github.com/alo-exp/sidekick"
   }

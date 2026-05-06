@@ -12,6 +12,21 @@
 set -euo pipefail
 
 FORGE_BIN="${HOME}/.local/bin/forge"
+CODEX_BIN="${HOME}/.local/bin/codex"
+CODEX_CODE_ALIAS="${HOME}/.local/bin/code"
+CODEX_CODER_ALIAS="${HOME}/.local/bin/coder"
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FORGE_INSTALL_TMP=""
+CODEX_INSTALL_TMP=""
+
+# shellcheck source=hooks/lib/sidekick-registry.sh
+source "${PLUGIN_ROOT}/hooks/lib/sidekick-registry.sh"
+
+cleanup_install_tmps() {
+  rm -f "${FORGE_INSTALL_TMP:-}" "${CODEX_INSTALL_TMP:-}" 2>/dev/null || true
+}
+
+trap cleanup_install_tmps EXIT
 
 # R8-3/R10-1: Pinned SHA-256 of the ForgeCode install script (https://forgecode.dev/cli).
 # This enables automated mismatch-abort before execution.
@@ -21,6 +36,9 @@ FORGE_BIN="${HOME}/.local/bin/forge"
 # Leave blank ("") only if you intentionally want display-only verification.
 # (SENTINEL FINDING-R7-7/R8-3/R10-1: supply chain hardening)
 EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+CODEX_INSTALL_URL="$(sidekick_registry_get codex '.[$sidekick].install.url')"
+CODEX_INSTALL_SHA="$(sidekick_registry_get codex '.[$sidekick].install.sha256')"
+CODEX_INSTALL_VERSION="$(sidekick_registry_get codex '.[$sidekick].install.version')"
 
 echo "[forge-plugin] Checking ForgeCode installation..."
 
@@ -105,6 +123,87 @@ if [ ! -f "${FORGE_BIN}" ] && ! command -v forge &>/dev/null; then
 else
   echo "[forge-plugin] ForgeCode already installed."
 fi
+
+# --- Ensure Codex runtime is installed and aliased ---
+echo "[forge-plugin] Checking Codex installation..."
+
+ensure_codex_aliases() {
+  local source_bin="$1"
+  mkdir -p "$(dirname "${CODEX_CODE_ALIAS}")"
+  ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
+  ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
+  echo "[forge-plugin] Installed Codex aliases: code, coder -> ${source_bin}"
+}
+
+resolve_codex_binary() {
+  if command -v codex &>/dev/null; then
+    command -v codex
+    return 0
+  fi
+  if [ -x "${CODEX_BIN}" ]; then
+    printf '%s\n' "${CODEX_BIN}"
+    return 0
+  fi
+  return 1
+}
+
+install_codex_runtime() {
+  local codex_sha codex_source
+
+  codex_source="$(resolve_codex_binary || true)"
+  if [ -n "${codex_source}" ]; then
+    ensure_codex_aliases "${codex_source}"
+    return 0
+  fi
+
+  echo "[forge-plugin] Installing Codex ${CODEX_INSTALL_VERSION}..."
+  CODEX_INSTALL_TMP=$(mktemp "${TMPDIR:-/tmp}/codex-install.XXXXXX")
+  if command -v curl &>/dev/null; then
+    curl -fsSL --max-time 60 --connect-timeout 15 "${CODEX_INSTALL_URL}" -o "${CODEX_INSTALL_TMP}"
+  elif command -v wget &>/dev/null; then
+    wget -qO "${CODEX_INSTALL_TMP}" --timeout=60 "${CODEX_INSTALL_URL}"
+  else
+    echo "[forge-plugin] ERROR: Neither curl nor wget found. Install Codex manually from https://github.com/alo-labs/kay/releases" >&2
+    exit 1
+  fi
+
+  if command -v shasum &>/dev/null; then
+    codex_sha=$(shasum -a 256 "${CODEX_INSTALL_TMP}" | awk '{print $1}')
+  elif command -v sha256sum &>/dev/null; then
+    codex_sha=$(sha256sum "${CODEX_INSTALL_TMP}" | awk '{print $1}')
+  else
+    echo "[forge-plugin] WARNING: Neither shasum nor sha256sum found — cannot verify Codex installer integrity." >&2
+    codex_sha="UNAVAILABLE"
+  fi
+
+  echo "[forge-plugin] Codex installer SHA-256: ${codex_sha}"
+  echo "[forge-plugin] IMPORTANT: Compare this hash against the pinned registry entry before proceeding."
+
+  if [ -n "${CODEX_INSTALL_SHA}" ] && [ "${codex_sha}" != "UNAVAILABLE" ]; then
+    if [ "${codex_sha}" != "${CODEX_INSTALL_SHA}" ]; then
+      echo "[forge-plugin] ERROR: Codex SHA-256 MISMATCH — aborting installation." >&2
+      echo "[forge-plugin]   Got:      ${codex_sha}" >&2
+      echo "[forge-plugin]   Expected: ${CODEX_INSTALL_SHA}" >&2
+      exit 1
+    fi
+    echo "[forge-plugin] Codex installer verified against pinned hash — OK."
+  else
+    echo "[forge-plugin] NOTICE: No pinned Codex SHA-256 set — verification is display-only."
+  fi
+
+  bash "${CODEX_INSTALL_TMP}"
+
+  codex_source="$(resolve_codex_binary || true)"
+  if [ -z "${codex_source}" ]; then
+    echo "[forge-plugin] ERROR: Codex install completed but codex binary was not found." >&2
+    exit 1
+  fi
+
+  ensure_codex_aliases "${codex_source}"
+  echo "[forge-plugin] Codex ${CODEX_INSTALL_VERSION} ready."
+}
+
+install_codex_runtime
 
 # --- Ensure PATH includes ~/.local/bin in common shell profiles ---
 # Appends a single idempotent line (only if .local/bin not already present).
