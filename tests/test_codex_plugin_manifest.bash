@@ -35,14 +35,14 @@ import sys
 data = json.load(open(sys.argv[1]))
 assert data["name"] == "sidekick"
 assert data["skills"] == "./skills/"
+assert data["commands"] == "./commands/"
 assert data["hooks"] == "./hooks/hooks.json"
-assert "commands" not in data
 assert "outputStyles" not in data
 assert data["interface"]["displayName"] == "Sidekick"
 assert "Codex" in data["interface"]["shortDescription"]
 PY
 then
-  assert_pass "Codex manifest keeps only Codex-supported packaging fields"
+  assert_pass "Codex manifest keeps the shared command surface registered"
 else
   assert_fail "manifest core fields" "missing expected manifest data or unsupported Claude-only fields present"
 fi
