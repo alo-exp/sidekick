@@ -205,7 +205,7 @@ state — never from the SB state file.
 2. `.planning/ROADMAP.md` — identify current phase name, its goal, and how many plans it contains
 
 **SB state file (`~/.claude/.silver-bullet/state`) is ONLY for:**
-- Quality gate stage markers (`quality-gate-stage-1` through `quality-gate-stage-4`)
+- Quality gate stage markers live in `~/.claude/.sidekick/quality-gate-state` (`quality-gate-stage-1` through `quality-gate-stage-4`)
 - Skill invocation markers (recorded by `record-skill.sh`)
 - Session mode (`~/.claude/.silver-bullet/mode`)
 - Session init sentinel (`~/.claude/.silver-bullet/session-init`)
@@ -731,7 +731,7 @@ Run all three review skills in sequence, then fix all issues. Repeat until clean
    You need BOTH: (a) run the actual verification commands, AND (b) invoke the skill so
    `record-skill.sh` tracks it. If you ran tests/CI/checks but did not invoke the skill,
    you have NOT completed this step. Do NOT record the stage marker until BOTH are done.
-7. Record stage completion: `echo "quality-gate-stage-1" >> ~/.claude/.silver-bullet/state`
+7. Record stage completion: `echo "quality-gate-stage-1" >> ~/.claude/.sidekick/quality-gate-state`
 
 ### Stage 2 — Big-Picture Consistency Audit
 
@@ -747,7 +747,7 @@ Review the entire plugin for cross-file inconsistencies, redundancies, and contr
 3. **Loop**: repeat until two consecutive audit passes find zero issues
 4. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
    Do NOT record the stage marker without invoking this skill first.
-5. Record stage completion: `echo "quality-gate-stage-2" >> ~/.claude/.silver-bullet/state`
+5. Record stage completion: `echo "quality-gate-stage-2" >> ~/.claude/.sidekick/quality-gate-state`
 
 ### Stage 3 — Public-Facing Content Refresh
 
@@ -775,7 +775,7 @@ Verify and update all user-visible surfaces to reflect the current state.
 5. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
    Do NOT record the stage marker without invoking this skill first.
 6. Push and confirm CI green
-7. Record stage completion: `echo "quality-gate-stage-3" >> ~/.claude/.silver-bullet/state`
+7. Record stage completion: `echo "quality-gate-stage-3" >> ~/.claude/.sidekick/quality-gate-state`
 
 ### Stage 4 — Security Audit (SENTINEL)
 
@@ -787,20 +787,21 @@ Run the SENTINEL v2.3 adversarial security audit against the full plugin.
 4. **Loop**: repeat until two consecutive audit passes find zero issues
 5. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
    Do NOT record the stage marker without invoking this skill first.
-6. Record stage completion: `echo "quality-gate-stage-4" >> ~/.claude/.silver-bullet/state`
+6. Record stage completion: `echo "quality-gate-stage-4" >> ~/.claude/.sidekick/quality-gate-state`
 
 ### Pre-Release Gate Enforcement
 
 The completion audit hook (`hooks/completion-audit.sh`) blocks `gh release create`
 until all required workflow skills AND quality gate stage markers are recorded in
-the state file (`~/.claude/.silver-bullet/state`). Required markers:
+the Sidekick state file (`~/.claude/.sidekick/quality-gate-state`). Required markers:
 - Stage 1: `quality-gate-stage-1` (recorded per instructions above)
 - Stage 2: `quality-gate-stage-2` (recorded per instructions above)
 - Stage 3: `quality-gate-stage-3` (recorded per instructions above)
 - Stage 4: `quality-gate-stage-4` (recorded per instructions above)
 
-**Session reset:** The `session-start` hook clears all quality-gate-stage-* and
-gsd-* markers from the state file at the beginning of every session. This ensures
+**Session reset:** The `session-start` hook clears all quality-gate-stage-* markers
+from `~/.claude/.sidekick/quality-gate-state` and gsd-* markers from
+`~/.claude/.silver-bullet/state` at the beginning of every session. This ensures
 each release cycle must earn its own quality gate pass — stale markers from a
 previous release cannot satisfy the gate for a new release.
 
@@ -811,7 +812,7 @@ If any stage surfaces a blocker that cannot be resolved (e.g., upstream dependen
 issue, ambiguous design decision), log it under "Needs human review" and surface
 to the user before proceeding to the next stage.
 
-> **Anti-Skip:** You are violating this rule if you attempt /create-release without all four quality-gate-stage-N markers in the state file. completion-audit.sh will block the release. Each stage requires explicit /superpowers:verification-before-completion invocation — the marker alone is insufficient.
+> **Anti-Skip:** You are violating this rule if you attempt /create-release without all four quality-gate-stage-N markers in `~/.claude/.sidekick/quality-gate-state`. completion-audit.sh will block the release. Each stage requires explicit /superpowers:verification-before-completion invocation — the marker alone is insufficient.
 
 ---
 

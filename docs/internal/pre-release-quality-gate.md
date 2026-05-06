@@ -8,7 +8,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 
 ## Enforcement
 
-**State file**: `~/.claude/.silver-bullet/state`
+**State file**: `~/.claude/.sidekick/quality-gate-state`
 
 **Required markers** (must all be present before release):
 - `quality-gate-stage-1`
@@ -21,7 +21,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 Each stage is complete only when:
 1. The work is done and verified
 2. The `/superpowers:verification-before-completion` skill has been invoked (not just run manually)
-3. The marker is written: `echo "quality-gate-stage-N" >> ~/.claude/.silver-bullet/state`
+3. The marker is written: `echo "quality-gate-stage-N" >> ~/.claude/.sidekick/quality-gate-state`
 
 **Violating the verification rule is equivalent to skipping the stage.**
 
@@ -112,7 +112,7 @@ After all three passes complete with no blocking issues:
 1. Invoke `/superpowers:verification-before-completion` — evidence of a clean pass required before marking complete
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-1" >> ~/.claude/.silver-bullet/state
+   echo "quality-gate-stage-1" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: Zero accepted code review findings across all three passes, fresh verification confirms clean, marker written.
@@ -186,7 +186,7 @@ After two consecutive clean passes across all 5 dimensions:
 1. Invoke `/superpowers:verification-before-completion` — two-pass clean evidence required
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-2" >> ~/.claude/.silver-bullet/state
+   echo "quality-gate-stage-2" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: Two consecutive clean passes from all 5 dimensions, no consistency gaps remain, marker written.
@@ -210,7 +210,7 @@ Read `README.md` in full and verify/update:
 
 - **Version badge**: The version badge at the top matches the release being cut. Update the badge URL and the badge text.
 - **Sidekick description**: The description accurately reflects the current feature set. No features that were removed. No existing features missing from the description.
-- **Provider options**: Both OpenRouter and MiniMax are listed. The model IDs shown (`qwen/qwen3-coder-plus` for OpenRouter, `MiniMax-Text-01` for MiniMax) are current.
+- **Provider options**: Both OpenRouter and MiniMax are listed. The model IDs shown (`qwen/qwen3-coder-plus` for OpenRouter, `MiniMax-M2.7` for MiniMax) are current.
 - **Install command**: The install command is copy-pasteable, tested on a clean machine (or equivalent), and resolves to the correct URL.
 - **Prerequisites**: The Forge binary version requirement and the Claude Code version requirement are current.
 - **Benchmarks or metrics**: If any numbers are cited (task success rate, token savings, model performance, etc.), verify they reflect current observed behavior. Remove or update stale numbers.
@@ -296,7 +296,7 @@ After all five steps are complete and verified:
 2. Invoke `/superpowers:verification-before-completion` — evidence of clean content audit required
 3. Write the marker:
    ```bash
-   echo "quality-gate-stage-3" >> ~/.claude/.silver-bullet/state
+   echo "quality-gate-stage-3" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: All public-facing content is accurate and current, CHANGELOG.md has a finalized release entry, CI passes on main, marker written.
@@ -378,7 +378,7 @@ After all three targets are clean with no blocking issues:
 2. Invoke `/superpowers:verification-before-completion` — clean audit evidence required
 3. Write the marker:
    ```bash
-   echo "quality-gate-stage-4" >> ~/.claude/.silver-bullet/state
+   echo "quality-gate-stage-4" >> ~/.claude/.sidekick/quality-gate-state
    ```
 
 **Exit criteria**: Zero blocking security findings, all three targets pass clean, marker written.
@@ -387,11 +387,11 @@ After all three targets are clean with no blocking issues:
 
 ## Release
 
-After all 4 markers are written to `~/.claude/.silver-bullet/state`, verify and create the release:
+After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`, verify and create the release:
 
 ```bash
 # Verify all 4 markers are present
-grep -c "quality-gate-stage-" ~/.claude/.silver-bullet/state
+grep -c "quality-gate-stage-" ~/.claude/.sidekick/quality-gate-state
 # Must output 4
 
 # Create the GitHub release

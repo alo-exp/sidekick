@@ -10,7 +10,7 @@ Three tiers, fail-fast, each with a distinct purpose. The lower a failure appear
 
 | Tier | Script | Runs in CI | Exercises real Forge | Purpose |
 |------|--------|:---:|:---:|---|
-| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, slash-command structure, v1.2 coverage gaps. |
+| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, slash-command structure, v1.2/v1.3 coverage gaps. |
 | **2. Smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Live E2E** | `tests/run_live_e2e.bash` | skip | ✓ | Full Claude→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 
@@ -20,7 +20,7 @@ Stages 2 and 3 are gated behind `SIDEKICK_LIVE_FORGE=1` so they never run in CI.
 
 ## Unit + integration suites (tier 1)
 
-13 suites in `tests/`, ~156 assertions total. Each suite is an independent Bash script with a pass/fail counter.
+15 suites in `tests/`, ~157 assertions total. Each suite is an independent Bash script with a pass/fail counter.
 
 | Suite | Coverage |
 |---|---|
@@ -38,7 +38,7 @@ Stages 2 and 3 are gated behind `SIDEKICK_LIVE_FORGE=1` so they never run in CI.
 | `test_install_sh.bash` | Installer idempotency, sentinel behavior, credentials schema validation |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
 
-All 13 are invoked by `tests/run_all.bash` with fail-fast reporting.
+All 15 are invoked by `tests/run_all.bash` with fail-fast reporting.
 
 ---
 

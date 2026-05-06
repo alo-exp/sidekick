@@ -3,7 +3,7 @@ name: forge-delegate
 description: >
   Activate Forge-first delegation mode. When active, Claude delegates
   all implementation tasks to Forge and acts as planner/communicator only.
-  Trigger: user invokes /forge-delegate. To stop delegation, invoke /forge-stop.
+  Trigger: user invokes /forge. To stop delegation, invoke /forge-stop.
 ---
 
 # /forge -- Forge Delegation Mode
