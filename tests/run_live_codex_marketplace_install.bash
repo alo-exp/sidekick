@@ -123,12 +123,13 @@ fi
 echo "=== codex_command_surface ==="
 if [ -f "${SIDEKICK_DIR}/commands/codex-stop.md" ] \
   && [ -f "${SIDEKICK_DIR}/commands/codex-history.md" ] \
+  && [ -f "${SIDEKICK_DIR}/skills/codex-delegate.md" ] \
   && [ -L "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" ] \
   && [ -L "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
   && [ "$(readlink "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md")" = "../../commands/codex-stop.md" ] \
   && [ "$(readlink "${SIDEKICK_DIR}/skills/codex-history/SKILL.md")" = "../../commands/codex-history.md" ]
 then
-  pass "Codex marketplace source exposes the stop/history command docs and compatibility bridges"
+  pass "Codex marketplace source exposes the stop/history command docs plus the codex-delegate alias"
 else
   fail "codex_command_surface" "command docs or bridge symlinks missing or mis-targeted"
 fi
