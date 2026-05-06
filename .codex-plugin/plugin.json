@@ -1,0 +1,44 @@
+{
+  "name": "sidekick",
+  "version": "1.5.0",
+  "description": "Sidekick — a collection of AI coding agents as Codex sidekicks. Forge and Codex are the first two: each sidekick auto-installs, configures itself, and lets Codex delegate coding work while Codex stays focused on planning and communication.",
+  "author": {
+    "name": "Ālo Labs",
+    "url": "https://alolabs.dev"
+  },
+  "homepage": "https://github.com/alo-exp/sidekick",
+  "repository": "https://github.com/alo-exp/sidekick",
+  "license": "MIT",
+  "keywords": [
+    "sidekick",
+    "forge",
+    "codex",
+    "forgecode",
+    "code-exec",
+    "terminal-agent",
+    "coding-agent",
+    "openrouter",
+    "orchestration"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Sidekick",
+    "shortDescription": "AI coding-agent sidekick workflows for Codex",
+    "longDescription": "Sidekick packages the shared Sidekick workflows for Codex while keeping the source of truth in the main Sidekick repository. Codex-specific behavior stays in the existing shared files behind host-aware conditionals.",
+    "developerName": "Ālo Labs",
+    "category": "Development",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/alo-exp/sidekick",
+    "defaultPrompt": [
+      "Install Sidekick for Codex.",
+      "Use Sidekick to coordinate implementation work.",
+      "Review this repo with Sidekick."
+    ],
+    "brandColor": "#0F172A"
+  }
+}

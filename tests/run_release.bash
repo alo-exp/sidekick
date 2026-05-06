@@ -10,16 +10,20 @@
 #                              (requires SIDEKICK_LIVE_FORGE=1)
 #   3. run_live_e2e.bash      — full Claude→Forge delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_FORGE=1)
-#   4. smoke/run_codex_smoke.bash
+#   4. run_live_codex_marketplace_install.bash
+#                             — install Sidekick through the Codex marketplace
+#                              and prove it materializes in the Codex cache
+#                              (requires SIDEKICK_LIVE_CODEX=1)
+#   5. smoke/run_codex_smoke.bash
 #                             — live `codex --version` + trivial codex exec
 #                              (requires SIDEKICK_LIVE_CODEX=1)
-#   5. run_live_codex_e2e.bash
+#   6. run_live_codex_e2e.bash
 #                             — full Claude→Codex delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
 # The live stages skip cleanly (exit 0) when the env vars are unset, so this
 # script is still useful in CI — it will run stage 1 and cleanly skip stages
-# 2-5. Before tagging a release, a maintainer should run it locally with
+# 2-6. Before tagging a release, a maintainer should run it locally with
 # SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 to exercise the live path.
 #
 # Usage
@@ -62,6 +66,7 @@ echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━�
 run_stage "Unit + integration suites"  "${SCRIPT_DIR}/run_all.bash"
 run_stage "Live-Forge smoke harness"   "${SCRIPT_DIR}/smoke/run_smoke.bash"
 run_stage "Live-Forge E2E testapp"     "${SCRIPT_DIR}/run_live_e2e.bash"
+run_stage "Live-Codex marketplace install" "${SCRIPT_DIR}/run_live_codex_marketplace_install.bash"
 run_stage "Live-Codex smoke harness"    "${SCRIPT_DIR}/smoke/run_codex_smoke.bash"
 run_stage "Live-Codex E2E testapp"      "${SCRIPT_DIR}/run_live_codex_e2e.bash"
 
