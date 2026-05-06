@@ -217,8 +217,9 @@ _big="$_big"$'\n'"[FORGE] PATTERNS_DISCOVERED: []"
 _j="$(jq -cn --arg o "$_big" '{tool_name:"Bash",tool_input:{command:"forge -p \"x\""},tool_response:{output:$o}}')"
 _out="$(run_surf "$_j")"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
-# Count lines that start with [FORGE-SUMMARY] and carry a status-block payload.
-_body_lines="$(printf '%s\n' "$_ctx" | grep -c '^\[FORGE-SUMMARY\] \[FORGE\]' || true)"
+# Count lines that start with the untrusted summary prefix and carry a
+# status-block payload.
+_body_lines="$(printf '%s\n' "$_ctx" | grep -c '^\[FORGE-SUMMARY\] \[UNTRUSTED\] \[FORGE\]' || true)"
 # awk's "count >= 20 { exit }" fires AFTER printing the 20th line.
 if [ "$_body_lines" -eq 20 ]; then
   pass "test_surface_caps_status_block_at_20_lines (body_lines=$_body_lines)"

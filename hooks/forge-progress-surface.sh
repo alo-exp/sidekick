@@ -137,14 +137,15 @@ main() {
 
   # Build additionalContext payload.
   local header body footer payload
-  header="[FORGE-SUMMARY] === Forge task complete ==="
-  # Prefix each line of the block with [FORGE-SUMMARY] so it renders
-  # alongside the output style's [FORGE] markers in the transcript.
-  body="$(printf '%s' "$status_block" | sed 's/^/[FORGE-SUMMARY] /')"
+  header="[FORGE-SUMMARY] [UNTRUSTED] === Forge task complete ==="
+  # Prefix each line of the block with an explicit untrusted-data marker so
+  # downstream context readers do not mistake Forge output for authoritative
+  # instructions.
+  body="$(printf '%s' "$status_block" | sed 's/^/[FORGE-SUMMARY] [UNTRUSTED] /')"
   if [[ -n "$uuid" ]]; then
-    footer="[FORGE-SUMMARY] History: /forge-history"
+    footer="[FORGE-SUMMARY] [UNTRUSTED] History: /forge-history"
   else
-    footer="[FORGE-SUMMARY] (no conversation-id captured)"
+    footer="[FORGE-SUMMARY] [UNTRUSTED] (no conversation-id captured)"
   fi
 
   payload="$(printf '%s\n%s\n%s' "$header" "$body" "$footer")"
