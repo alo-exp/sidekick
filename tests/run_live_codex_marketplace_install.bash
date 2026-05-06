@@ -123,15 +123,21 @@ fi
 echo "=== codex_command_surface ==="
 if [ -f "${SIDEKICK_DIR}/commands/codex-stop.md" ] \
   && [ -f "${SIDEKICK_DIR}/commands/codex-history.md" ] \
+  && [ -f "${SIDEKICK_DIR}/commands/forge-stop.md" ] \
+  && [ -f "${SIDEKICK_DIR}/commands/forge-history.md" ] \
   && [ -f "${SIDEKICK_DIR}/skills/codex-delegate.md" ] \
-  && [ -L "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" ] \
-  && [ -L "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
-  && [ "$(readlink "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md")" = "../../commands/codex-stop.md" ] \
-  && [ "$(readlink "${SIDEKICK_DIR}/skills/codex-history/SKILL.md")" = "../../commands/codex-history.md" ]
+  && [ -f "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" ] \
+  && [ -f "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
+  && [ -f "${SIDEKICK_DIR}/skills/forge-stop/SKILL.md" ] \
+  && [ -f "${SIDEKICK_DIR}/skills/forge-history/SKILL.md" ] \
+  && grep -q 'commands/codex-stop.md' "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" \
+  && grep -q 'commands/codex-history.md' "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" \
+  && grep -q 'commands/forge-stop.md' "${SIDEKICK_DIR}/skills/forge-stop/SKILL.md" \
+  && grep -q 'commands/forge-history.md' "${SIDEKICK_DIR}/skills/forge-history/SKILL.md"
 then
-  pass "Codex marketplace source exposes the stop/history command docs plus the codex-delegate alias"
+  pass "Codex marketplace source exposes the Forge and Codex stop/history command docs plus the codex-delegate alias"
 else
-  fail "codex_command_surface" "command docs or bridge symlinks missing or mis-targeted"
+  fail "codex_command_surface" "command docs or bridge skills missing or mis-targeted"
 fi
 
 read -r -d '' TASK_PROMPT <<'EOF' || true

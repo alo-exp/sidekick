@@ -19,8 +19,8 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 [ -f "${STOP}" ]    || { echo "ERROR: ${STOP} missing";    exit 1; }
 [ -f "${HISTORY}" ] || { echo "ERROR: ${HISTORY} missing"; exit 1; }
-[ -L "${STOP_SKILL}" ]    || { echo "ERROR: ${STOP_SKILL} missing or not a symlink"; exit 1; }
-[ -L "${HISTORY_SKILL}" ] || { echo "ERROR: ${HISTORY_SKILL} missing or not a symlink"; exit 1; }
+[ -f "${STOP_SKILL}" ]    || { echo "ERROR: ${STOP_SKILL} missing"; exit 1; }
+[ -f "${HISTORY_SKILL}" ] || { echo "ERROR: ${HISTORY_SKILL} missing"; exit 1; }
 
 echo "=== test_stop_frontmatter_complete ==="
 if grep -q '^name: codex-stop' "${STOP}" \
@@ -109,11 +109,13 @@ fi
 rm -rf "${TMP}"
 
 echo "=== test_codex_skill_bridges_point_to_command_docs ==="
-if [ "$(readlink "${STOP_SKILL}")" = "../../commands/codex-stop.md" ] \
-  && [ "$(readlink "${HISTORY_SKILL}")" = "../../commands/codex-history.md" ]; then
+if grep -q 'commands/codex-stop.md' "${STOP_SKILL}" \
+  && grep -qiE 'bridge|source of truth|picker/import path' "${STOP_SKILL}" \
+  && grep -q 'commands/codex-history.md' "${HISTORY_SKILL}" \
+  && grep -qiE 'bridge|source of truth|picker/import path' "${HISTORY_SKILL}"; then
   assert_pass "test_codex_skill_bridges_point_to_command_docs"
 else
-  assert_fail "test_codex_skill_bridges_point_to_command_docs" "skill symlink target mismatch"
+  assert_fail "test_codex_skill_bridges_point_to_command_docs" "bridge text missing"
 fi
 
 echo ""
