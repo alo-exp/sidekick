@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — /codex-stop + /codex-history command doc tests
+# Sidekick Plugin — /codex-stop + /codex-history command doc + skill bridge tests
 # =============================================================================
 
 set -euo pipefail
@@ -10,6 +10,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 STOP="${PLUGIN_DIR}/commands/codex-stop.md"
 HISTORY="${PLUGIN_DIR}/commands/codex-history.md"
+STOP_SKILL="${PLUGIN_DIR}/skills/codex-stop/SKILL.md"
+HISTORY_SKILL="${PLUGIN_DIR}/skills/codex-history/SKILL.md"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -17,6 +19,8 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 [ -f "${STOP}" ]    || { echo "ERROR: ${STOP} missing";    exit 1; }
 [ -f "${HISTORY}" ] || { echo "ERROR: ${HISTORY} missing"; exit 1; }
+[ -L "${STOP_SKILL}" ]    || { echo "ERROR: ${STOP_SKILL} missing or not a symlink"; exit 1; }
+[ -L "${HISTORY_SKILL}" ] || { echo "ERROR: ${HISTORY_SKILL} missing or not a symlink"; exit 1; }
 
 echo "=== test_stop_frontmatter_complete ==="
 if grep -q '^name: codex-stop' "${STOP}" \
@@ -103,6 +107,14 @@ else
   assert_fail "test_history_prune_awk_logic_works" "post_count=${post_count} idx=$(cat "${IDX}")"
 fi
 rm -rf "${TMP}"
+
+echo "=== test_codex_skill_bridges_point_to_command_docs ==="
+if [ "$(readlink "${STOP_SKILL}")" = "../../commands/codex-stop.md" ] \
+  && [ "$(readlink "${HISTORY_SKILL}")" = "../../commands/codex-history.md" ]; then
+  assert_pass "test_codex_skill_bridges_point_to_command_docs"
+else
+  assert_fail "test_codex_skill_bridges_point_to_command_docs" "skill symlink target mismatch"
+fi
 
 echo ""
 echo "======================================="

@@ -120,6 +120,17 @@ else
   fail "marketplace_config_entry" "missing local marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
+echo "=== codex_skill_bridges ==="
+if [ -L "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" ] \
+  && [ -L "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
+  && [ "$(readlink "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md")" = "../../commands/codex-stop.md" ] \
+  && [ "$(readlink "${SIDEKICK_DIR}/skills/codex-history/SKILL.md")" = "../../commands/codex-history.md" ]
+then
+  pass "Codex marketplace source exposes the stop/history skill bridges"
+else
+  fail "codex_skill_bridges" "bridge symlinks missing or mis-targeted"
+fi
+
 read -r -d '' TASK_PROMPT <<'EOF' || true
 Respond with exactly one line:
 STATUS: OK

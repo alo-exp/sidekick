@@ -42,7 +42,7 @@ Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_C
 | `test_codex_skill.bash` | Code skill structure, activation/deactivation markers, and packaging expectations |
 | `test_codex_enforcer_hook.bash` | Code PreToolUse behavior: deny direct mutation, rewrite `code exec` (with compatibility aliases), allow read-only passthrough |
 | `test_codex_progress_surface.bash` | Code PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, history hint |
-| `test_codex_commands.bash` | `/codex-stop` + `/codex-history` structure, pruning, and output shape |
+| `test_codex_commands.bash` | `/codex-stop` + `/codex-history` structure, pruning, output shape, and Codex skill bridge wiring |
 | `test_codex_plugin_manifest.bash` | Code plugin manifest structure, interface metadata, and path wiring |
 | `test_codex_marketplace_manifest.bash` | Sidekick marketplace entry, source pinning, and install-packaging expectations |
 | `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact |
