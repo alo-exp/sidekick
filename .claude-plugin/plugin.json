@@ -66,7 +66,7 @@
   },
   "_integrity": {
     "_note": "SHA-256 hashes of plugin files — update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
-    "install_sh_sha256": "97bdcadca29f43903d8d94ae7e4f8511cc6ed44e471233000e2b17283cd9f4e0",
+    "install_sh_sha256": "d81694cc4dc5ea700e742b51069612060e231058a24670b7942ec30cff0e175e",
     "forge_md_sha256": "d8cddf8f4eff8e47e09ebbde2a2bc949feb85c402cec42985de21ae33bb35d3e",
     "forge_skill_md_sha256": "a50a848d72a92ad233433cca9db2c24d653bf1f4d220f26eaa2f8a69a1db49dd",
     "codex_md_sha256": "d510ab2eb1ed628b60d85cab7c34f70fc3152fe87352fad07da8ece7a3f8a5d5",
@@ -75,7 +75,7 @@
     "forge_delegation_enforcer_sha256": "d7992eb85540607c5654c7a16d7e0486d3de64c6756a43d6b852d5d27201bb64",
     "codex_delegation_enforcer_sha256": "0bc11ea008826fb30d77db337abe027ed59b7c2291fc7f91f6e5af93adc3ee7f",
     "enforcer_utils_sha256": "2bcae48efa084e6c6396fe3b7aa2ba772a8653215589248befc1752140db55ae",
-    "sidekick_registry_sha256": "e25b7bb68b95e0c2b8c958bd8ca5ce5b34bce902f12e29a8a3f687a7fb3b8e85",
+    "sidekick_registry_sha256": "d637559dc4b4f45b8fae4bb67e3abd6ec685832fd82ae64b4ec65459c29638cf",
     "forge_progress_surface_sha256": "94aeace51d786ce1512fcf65d02059088635759337e128c021a04cad2d558a8e",
     "codex_progress_surface_sha256": "0eb6518d9528e8d31f930c754185252a226d7d2298a74d1ca14dfc2bddaced26",
     "validate_release_gate_sha256": "cce77224d7ff340f296f78e35efd3f073cea4e61f0065c97f1d7d53cb660faa9",
@@ -86,7 +86,7 @@
     "command_codex_stop_sha256": "02ce63afb14f8f12ed76d8171998d1d423b1b4c905b89aff57bded5219633425",
     "command_codex_history_sha256": "e4e332bc3d3800f6af6911bdebba9edd4e67ab753915f6e54c097dfec17f8d99",
     "forgecode_installer_sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a",
-    "codex_installer_sha256": "6919d791d9c5922206fbfce50b28850f9974b488618275a2313ce7055ff59c1d",
+    "codex_installer_sha256": "e66a8a3f208c217619b05c2bf9f074498aa1c4446291c45dbb6c05c1a109576a",
     "verify_at": "https://forgecode.dev/releases",
     "source": "https://github.com/alo-exp/sidekick"
   }

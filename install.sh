@@ -151,26 +151,18 @@ ensure_codex_aliases() {
 }
 
 resolve_codex_binary() {
-  local candidate version_output
+  local candidate version_output binary_name
 
-  if [ -x "${CODEX_BIN}" ]; then
-    version_output="$("${CODEX_BIN}" --version 2>/dev/null | head -n1 || true)"
-    if [[ "${version_output}" == *"${CODEX_INSTALL_VERSION}"* ]]; then
-      printf '%s\n' "${CODEX_BIN}"
-      return 0
-    fi
-  fi
-
-  if command -v codex &>/dev/null; then
-    candidate="$(command -v codex)"
-    if [ "${candidate}" = "${CODEX_BIN}" ]; then
+  for binary_name in code codex coder; do
+    if command -v "${binary_name}" &>/dev/null; then
+      candidate="$(command -v "${binary_name}")"
       version_output="$("${candidate}" --version 2>/dev/null | head -n1 || true)"
       if [[ "${version_output}" == *"${CODEX_INSTALL_VERSION}"* ]]; then
         printf '%s\n' "${candidate}"
         return 0
       fi
     fi
-  fi
+  done
 
   return 1
 }
