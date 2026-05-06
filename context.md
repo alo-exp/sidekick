@@ -69,7 +69,7 @@ sidekick-repo/
 
 | File | SHA-256 |
 |---|---|
-| `install.sh` | `beaae4572cfeba62b3ef3538b266f197994738955cfb7255d2e73fa8a1e79fc0` |
+| `install.sh` | `d81694cc4dc5ea700e742b51069612060e231058a24670b7942ec30cff0e175e` |
 | `skills/forge.md` | `631f9d5ca68d441d51b46d98dbf6b3b8f7b7a84bf5a8a80bb1b4ef0ca7ae2b22` |
 | `hooks/hooks.json` | `4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64` |
 | ForgeCode installer (forgecode.dev/cli) | `512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a` |

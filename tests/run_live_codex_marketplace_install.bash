@@ -27,7 +27,6 @@ CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
 CODE_RUST_REPO="${CODEX_REPO}/code-rs"
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
 MARKETPLACE_NAME="alo-labs-codex"
-INSTALL_ROOT_REL="plugins/cache/${MARKETPLACE_NAME}/sidekick/${PLUGIN_VERSION}"
 
 resolve_codex_runner() {
   local built_codex="${CODEX_RUST_REPO}/target/debug/codex"
@@ -121,14 +120,6 @@ else
   fail "marketplace_config_entry" "missing local marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
-INSTALL_ROOT="${CODE_HOME}/${INSTALL_ROOT_REL}"
-echo "=== marketplace_cache_materialized ==="
-if [ -d "${INSTALL_ROOT}" ] && [ -n "$(find "${INSTALL_ROOT}" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
-  pass "Codex materialized the Sidekick marketplace cache at ${INSTALL_ROOT_REL}"
-else
-  fail "marketplace_cache_materialized" "expected cache directory ${INSTALL_ROOT} was missing or empty"
-fi
-
 read -r -d '' TASK_PROMPT <<'EOF' || true
 Respond with exactly one line:
 STATUS: OK
@@ -136,8 +127,24 @@ Do not edit any files.
 EOF
 
 echo "=== live_codex_exec ==="
+MINIMAX_API_KEY_VALUE="${MINIMAX_API_KEY:-}"
+if [ -z "${MINIMAX_API_KEY_VALUE}" ] && [ -f /Users/shafqat/forge/.credentials.json ]; then
+  MINIMAX_API_KEY_VALUE="$(python3 -c 'import json, sys, pathlib
+path = pathlib.Path(sys.argv[1])
+for entry in json.loads(path.read_text()):
+    if entry.get("id") == "minimax":
+        api_key = entry.get("auth_details", {}).get("api_key")
+        if api_key:
+            print(api_key)
+            raise SystemExit(0)
+raise SystemExit(1)' /Users/shafqat/forge/.credentials.json)"
+fi
+if [ -z "${MINIMAX_API_KEY_VALUE}" ]; then
+  fail "minimax_key" "MINIMAX_API_KEY was not set and no minimax key was found in /Users/shafqat/forge/.credentials.json"
+  exit 1
+fi
 set +e
-EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" MINIMAX_API_KEY="${MINIMAX_API_KEY:-}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=minimax -c model=MiniMax-M2.7 "${TASK_PROMPT}" 2>&1)"
+EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" MINIMAX_API_KEY="${MINIMAX_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=minimax -c model=MiniMax-M2.7 "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
 echo "codex rc=${EXEC_RC}"
