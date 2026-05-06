@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.5.0 — 2026-05-07
+
+### Multi-sidekick packaging and Codex release prep
+
+Sidekick now ships as a two-sidekick umbrella plugin: Forge remains intact and Codex is packaged alongside it with its own manifest, hooks, commands, output style, and live test coverage.
+
+**Added:**
+
+- **`.codex-plugin/plugin.json`**: Codex-facing plugin package for the Sidekick marketplace, with Codex-native interface metadata and shared Sidekick content.
+- **`skills/codex/SKILL.md`** + **`skills/codex.md`**: Codex delegation skill and compatibility surface.
+- **`hooks/codex-delegation-enforcer.sh`** + **`hooks/codex-progress-surface.sh`**: Codex enforcement and progress-surface hooks.
+- **`commands/codex-stop.md`** + **`commands/codex-history.md`**: Codex-side lifecycle and history commands.
+- **`sidekicks/registry.json`**: shared sidekick registry for Forge/Codex discovery.
+- **`tests/run_live_codex_e2e.bash`** + **`tests/run_live_codex_marketplace_install.bash`** + **`tests/smoke/run_codex_smoke.bash`**: live Codex install and execution coverage.
+
+**Changed:**
+
+- **`README.md`**: now presents Forge and Codex as first-class sidekicks and documents the 21-suite release pyramid.
+- **`docs/ARCHITECTURE.md`**, **`docs/TESTING.md`**, **`docs/pre-release-quality-gate.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: refreshed for the dual-sidekick release.
+- **`tests/run_release.bash`** and **`tests/run_all.bash`**: updated for the Codex smoke/live stages and the expanded unit-suite set.
+- **`.claude-plugin/plugin.json`**: version bumped to 1.5.0 with integrity hashes refreshed for the new release surface.
+
+**Tests:**
+
+- **`tests/run_all.bash`** now runs 21 suites.
+- **`tests/run_release.bash`** now chains Forge and Codex smoke/live stages behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1`.
+
+**Manifest:**
+
+- **`.claude-plugin/plugin.json`**: version bumped to `1.5.0`, hashes refreshed for the new Codex sidekick surface and the updated installer flow.
+
 ## v1.4.0 — 2026-04-25
 
 ### Forge delegation commands housekeeping

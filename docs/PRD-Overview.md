@@ -1,8 +1,8 @@
 # Product Requirements Overview
 
-> High-level product vision and requirement areas. Synced with `.planning/REQUIREMENTS.md` — the authoritative source managed by GSD. Updated at the finalization step of each phase and at milestone completion.
+> High-level product vision and requirement areas. Synced with `.planning/milestones/v1.4.0-REQUIREMENTS.md` — the authoritative source managed by GSD. Updated at the finalization step of each phase and at milestone completion.
 
-**Current milestone:** v1.4.0 (shipped 2026-04-25). All 77 requirements across v1 + v1.2 remain validated.
+**Current milestone:** v1.5.0 (shipped 2026-05-07). All 77 requirements across v1 + v1.2 remain validated.
 
 ---
 
@@ -20,7 +20,7 @@ Sidekick is a Claude Code plugin that turns Claude into a **planner and communic
 
 ## Requirement Areas
 
-Mapped to phases in `.planning/REQUIREMENTS.md`. All validated as of 2026-04-18.
+Mapped to phases in `.planning/milestones/v1.4.0-REQUIREMENTS.md`. All validated as of 2026-04-18.
 
 ### v1 — Forge Delegation Mode (v1.1.0 + v1.1.2)
 
@@ -53,7 +53,7 @@ Mapped to phases in `.planning/REQUIREMENTS.md`. All validated as of 2026-04-18.
 
 ## Out of Scope
 
-Explicit non-goals. See `.planning/REQUIREMENTS.md` §Out of Scope for the authoritative list.
+Explicit non-goals. See `.planning/milestones/v1.4.0-REQUIREMENTS.md` §Out of Scope for the authoritative list.
 
 | Item | Reason |
 |---|---|
@@ -73,9 +73,9 @@ Explicit non-goals. See `.planning/REQUIREMENTS.md` §Out of Scope for the autho
 
 This doc is a high-level summary — not the source of truth.
 
-- **Source of truth for requirements:** `.planning/REQUIREMENTS.md` (77 requirements, all validated as of v1.4.0).
+- **Source of truth for requirements:** `.planning/milestones/v1.4.0-REQUIREMENTS.md` (77 requirements, all validated as of v1.5.0).
 - **Source of truth for phase structure:** `.planning/ROADMAP.md` (9 phases, all shipped).
-- **Source of truth for project state:** `.planning/STATE.md` (`status: complete`, last_updated 2026-04-25).
+- **Source of truth for project state:** `.planning/STATE.md` (`status: complete`, last_updated 2026-05-07).
 
 Update this overview when:
 - A new milestone opens (add a section for the new requirement area)

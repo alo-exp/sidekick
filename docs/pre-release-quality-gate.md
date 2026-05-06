@@ -277,7 +277,7 @@ Run the full test suite and confirm clean:
 bash tests/run_all.bash
 ```
 
-All 15 suites must pass with 0 failures. Then push to main and wait for CI green before proceeding.
+All 21 suites must pass with 0 failures. Then push to main and wait for CI green before proceeding.
 
 ### Completion
 
