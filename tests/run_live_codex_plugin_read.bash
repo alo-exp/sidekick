@@ -155,6 +155,7 @@ try:
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
     required = {
+        "sidekick:codex-delegate",
         "sidekick:codex-stop",
         "sidekick:codex-history",
         "sidekick:forge-stop",
