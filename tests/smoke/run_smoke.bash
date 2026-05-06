@@ -25,6 +25,8 @@ set -uo pipefail
 
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
 
+export PATH="${HOME}/.local/bin:${PATH}"
+
 if [[ "${SIDEKICK_LIVE_FORGE:-}" != "1" ]]; then
   echo -e "${yellow}Smoke harness skipped${reset} (set SIDEKICK_LIVE_FORGE=1 to run against the real forge binary)."
   exit 0

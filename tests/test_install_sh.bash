@@ -65,7 +65,19 @@ grep -q 'grep -qiE.*forge' "${INSTALL_SH}" && assert_pass "Binary identity check
 echo "=== T11: PATH marker ==="
 grep -q 'Added by sidekick/forge plugin' "${INSTALL_SH}" && assert_pass "PATH marker comment present" || assert_fail "PATH marker" "not found"
 
-echo "=== T12: Idempotency (add_to_path) ==="
+echo "=== T12: Codex bootstrap ==="
+if grep -q 'install_codex_runtime' "${INSTALL_SH}" \
+  && grep -q 'sidekick_registry_get codex' "${INSTALL_SH}" \
+  && grep -q 'CODEX_INSTALL_TMP' "${INSTALL_SH}" \
+  && grep -q 'CODEX_CODE_ALIAS' "${INSTALL_SH}" \
+  && grep -q 'CODEX_CODER_ALIAS' "${INSTALL_SH}" \
+  && grep -q 'cleanup_install_tmps' "${INSTALL_SH}"; then
+  assert_pass "Codex runtime bootstrap logic present"
+else
+  assert_fail "Codex bootstrap" "missing runtime install or cleanup logic"
+fi
+
+echo "=== T13: Idempotency (add_to_path) ==="
 FAKE_PROFILE=$(mktemp)
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "${FAKE_PROFILE}"
 # Write a minimal test script that sources just the add_to_path function
@@ -87,7 +99,7 @@ else
   assert_fail "Idempotency" "unexpected count: ${COUNT}"
 fi
 
-echo "=== T13: Symlink outside HOME rejected ==="
+echo "=== T14: Symlink outside HOME rejected ==="
 REAL_FILE=$(mktemp)
 SYMLINK_PATH=$(mktemp -u /tmp/test_symlink_XXXXXX)
 ln -s "${REAL_FILE}" "${SYMLINK_PATH}"
@@ -112,10 +124,10 @@ else
   fi
 fi
 
-echo "=== T14: Non-interactive gate execution ==="
+echo "=== T15: Non-interactive gate execution ==="
 skip "Non-interactive gate" "forge already installed on this machine — download path not reached in sandbox"
 
-echo "=== T15: hooks.json && sentinel ==="
+echo "=== T16: hooks.json && sentinel ==="
 HOOKS="${PLUGIN_DIR}/hooks/hooks.json"
 CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
 if echo "${CMD}" | grep -q '&&'; then
