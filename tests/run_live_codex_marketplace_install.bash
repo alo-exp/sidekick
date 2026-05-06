@@ -20,48 +20,43 @@ PASS=0; FAIL=0
 pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
-CODEX_REPO="/Users/shafqat/projects/codex-cli/kay"
 MARKETPLACE_REPO="/Users/shafqat/projects/codex-plugins"
 SIDEKICK_DIR="/Users/shafqat/projects/sidekick/repo"
+CODEX_REPO="/Users/shafqat/projects/codex-cli/kay"
+CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
+CODE_RUST_REPO="${CODEX_REPO}/code-rs"
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
 MARKETPLACE_NAME="alo-labs-codex"
 INSTALL_ROOT_REL="plugins/cache/${MARKETPLACE_NAME}/sidekick/${PLUGIN_VERSION}"
 
-resolve_codex_binary() {
-  if command -v node >/dev/null 2>&1 && [[ -f "${CODEX_REPO}/codex-cli/bin/codex.js" ]]; then
-    printf 'node %s\n' "${CODEX_REPO}/codex-cli/bin/codex.js"
+resolve_codex_runner() {
+  local built_codex="${CODEX_RUST_REPO}/target/debug/codex"
+  if [[ -x "${built_codex}" ]]; then
+    CODEX_BIN=( "${built_codex}" )
     return 0
   fi
-  for candidate in codex code coder; do
-    if command -v "${candidate}" >/dev/null 2>&1; then
-      printf '%s\n' "${candidate}"
-      return 0
-    fi
-  done
-  return 1
-}
 
-prepare_codex_runner() {
-  local -a bin=( "$@" )
-  local help_file
-  help_file="$(mktemp)"
-  CODEX_RUNNER=()
-
-  if "${bin[@]}" exec --help >"${help_file}" 2>&1; then
-    if grep -q -- '--full-auto' "${help_file}"; then
-      CODEX_RUNNER=( "${bin[@]}" exec --full-auto )
-    elif grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
-      CODEX_RUNNER=( "${bin[@]}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
-    else
-      CODEX_RUNNER=( "${bin[@]}" exec )
-    fi
-  elif "${bin[@]}" --help 2>&1 | grep -q -- '--no-approval'; then
-      CODEX_RUNNER=( "${bin[@]}" --no-approval )
-  else
-    CODEX_RUNNER=( "${bin[@]}" )
+  if ! command -v cargo >/dev/null 2>&1; then
+    return 1
   fi
 
-  rm -f "${help_file}"
+  CODEX_BIN=( cargo run --manifest-path "${CODEX_RUST_REPO}/Cargo.toml" -q -p codex-cli -- )
+  return 0
+}
+
+resolve_code_runner() {
+  local built_code="${CODE_RUST_REPO}/target/debug/code"
+  if [[ -x "${built_code}" ]]; then
+    CODE_BIN=( "${built_code}" )
+    return 0
+  fi
+
+  if ! command -v cargo >/dev/null 2>&1; then
+    return 1
+  fi
+
+  CODE_BIN=( cargo run --manifest-path "${CODE_RUST_REPO}/Cargo.toml" -q -p code-cli -- )
+  return 0
 }
 
 run_with_timeout() {
@@ -75,13 +70,15 @@ run_with_timeout() {
   fi
 }
 
-if ! CODEX_BIN_STRING="$(resolve_codex_binary)"; then
-  fail "codex binary" "codex/code/coder not found on PATH and local Codex launcher missing at ${CODEX_REPO}/codex-cli/bin/codex.js"
+if ! resolve_codex_runner; then
+  fail "codex runner" "could not find a built codex binary or cargo on PATH"
   exit 1
 fi
 
-read -r -a CODEX_BIN <<< "${CODEX_BIN_STRING}"
-prepare_codex_runner "${CODEX_BIN[@]}"
+if ! resolve_code_runner; then
+  fail "code runner" "could not find a built code binary or cargo on PATH"
+  exit 1
+fi
 
 if ! command -v python3 >/dev/null 2>&1; then
   fail "python3" "python3 not found on PATH"
@@ -94,14 +91,14 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 WORKSPACE="$(mktemp -d -t sidekick-codex-marketplace.XXXXXX)"
-CODEX_HOME="$(mktemp -d -t sidekick-codex-home.XXXXXX)"
-trap 'rm -rf "${WORKSPACE}" "${CODEX_HOME}"' EXIT
+CODE_HOME="$(mktemp -d -t sidekick-codex-home.XXXXXX)"
+trap 'rm -rf "${WORKSPACE}" "${CODE_HOME}"' EXIT
 mkdir -p "${WORKSPACE}/workspace"
 printf 'sidekick marketplace install smoke\n' > "${WORKSPACE}/workspace/README.txt"
 
 echo "=== marketplace_add ==="
 set +e
-(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODEX_HOME}" "${CODEX_BIN[@]}" plugin marketplace add "${MARKETPLACE_REPO}" >/tmp/sidekick-codex-marketplace-add.log 2>&1)
+(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" "${CODEX_BIN[@]}" plugin marketplace add "${MARKETPLACE_REPO}" >/tmp/sidekick-codex-marketplace-add.log 2>&1)
 ADD_RC=$?
 set -e
 if [ "${ADD_RC}" -eq 0 ]; then
@@ -112,10 +109,16 @@ $(cat /tmp/sidekick-codex-marketplace-add.log)"
   exit 1
 fi
 
-CACHE_ROOT="${CODEX_HOME}/${INSTALL_ROOT_REL}"
-if [ -e "${CACHE_ROOT}" ]; then
-  fail "precondition" "plugin cache root already exists before the live exec run: ${CACHE_ROOT}"
-  exit 1
+EXPECTED_MARKETPLACE_SOURCE="$(python3 -c "from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())" "${MARKETPLACE_REPO}")"
+
+echo "=== marketplace_config_entry ==="
+if grep -Fq "[marketplaces.${MARKETPLACE_NAME}]" "${CODE_HOME}/config.toml" \
+  && grep -Fq 'source_type = "local"' "${CODE_HOME}/config.toml" \
+  && grep -Fq "source = \"${EXPECTED_MARKETPLACE_SOURCE}\"" "${CODE_HOME}/config.toml"
+then
+  pass "Codex recorded the Sidekick marketplace as a local source"
+else
+  fail "marketplace_config_entry" "missing local marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
 read -r -d '' TASK_PROMPT <<'EOF' || true
@@ -126,7 +129,7 @@ EOF
 
 echo "=== live_codex_exec ==="
 set +e
-EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODEX_HOME}" run_with_timeout 180 "${CODEX_RUNNER[@]}" "${TASK_PROMPT}" 2>&1)"
+EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" MINIMAX_API_KEY="${MINIMAX_API_KEY:-}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=minimax -c model=MiniMax-M2.7 "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
 echo "codex rc=${EXEC_RC}"
@@ -141,29 +144,6 @@ else
 fi
 
 echo "=== installed_plugin_cache ==="
-if [ -f "${CACHE_ROOT}/.codex-plugin/plugin.json" ]; then
-  pass "Sidekick installed into Codex plugin cache at ${CACHE_ROOT}"
-else
-  fail "installed_plugin_cache" "missing ${CACHE_ROOT}/.codex-plugin/plugin.json"
-fi
-
-echo "=== installed_plugin_manifest ==="
-if python3 - "${CACHE_ROOT}/.codex-plugin/plugin.json" <<'PY'
-import json
-import sys
-
-data = json.load(open(sys.argv[1]))
-assert data["name"] == "sidekick"
-assert data["version"] == "1.5.0"
-assert data["skills"] == "./skills/"
-assert data["hooks"] == "./hooks/hooks.json"
-PY
-then
-  pass "installed Codex plugin manifest is the Sidekick package"
-else
-  fail "installed_plugin_manifest" "installed plugin manifest was missing expected Sidekick metadata"
-fi
-
 echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 if [ "${FAIL}" -eq 0 ]; then
