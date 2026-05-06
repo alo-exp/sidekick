@@ -70,7 +70,7 @@ Useful options:
 - `--output-last-message` for only the final response
 - `resume --last` to continue a previous non-interactive session
 
-Code already supports native `AGENTS.md`, `SKILL.md`, agents, and subagent commands. Do not recreate Forge-style skill injection or conversation indexing here.
+Code already supports native `AGENTS.md`, `SKILL.md`, agents, and subagent commands. Do not recreate Forge-style skill injection or conversation indexing here. Sidekick's `codex-stop` and `codex-history` workflows are exposed as Codex skills that point back to the shared command docs, because the Codex manifest does not expose a custom `commands` surface.
 
 ## STEP 2 — Native Workflow
 
