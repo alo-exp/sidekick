@@ -15,6 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 STOP="${PLUGIN_DIR}/commands/forge-stop.md"
 HISTORY="${PLUGIN_DIR}/commands/forge-history.md"
+STOP_SKILL="${PLUGIN_DIR}/skills/forge-stop/SKILL.md"
+HISTORY_SKILL="${PLUGIN_DIR}/skills/forge-history/SKILL.md"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -22,6 +24,8 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 [ -f "${STOP}" ]    || { echo "ERROR: ${STOP} missing";    exit 1; }
 [ -f "${HISTORY}" ] || { echo "ERROR: ${HISTORY} missing"; exit 1; }
+[ -f "${STOP_SKILL}" ]    || { echo "ERROR: ${STOP_SKILL} missing"; exit 1; }
+[ -f "${HISTORY_SKILL}" ] || { echo "ERROR: ${HISTORY_SKILL} missing"; exit 1; }
 
 # -----------------------------------------------------------------------------
 echo "=== test_stop_frontmatter_complete ==="
@@ -161,6 +165,17 @@ sys.exit(0 if ok else 1)
   assert_pass "test_posttooluse_hook_registered"
 else
   assert_fail "test_posttooluse_hook_registered" "PostToolUse hook missing"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_forge_skill_bridges_point_to_command_docs ==="
+if grep -q 'commands/forge-stop.md' "${STOP_SKILL}" \
+  && grep -qiE 'bridge|source of truth|picker/import path' "${STOP_SKILL}" \
+  && grep -q 'commands/forge-history.md' "${HISTORY_SKILL}" \
+  && grep -qiE 'bridge|source of truth|picker/import path' "${HISTORY_SKILL}"; then
+  assert_pass "test_forge_skill_bridges_point_to_command_docs"
+else
+  assert_fail "test_forge_skill_bridges_point_to_command_docs" "bridge text missing"
 fi
 
 echo ""
