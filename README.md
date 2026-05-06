@@ -55,6 +55,7 @@ On the next Claude session, all sidekicks install automatically.
 - **Auto-installs** the Code runtime into `~/.local/bin/code` on first session start
 - **Provides** `codex` and `coder` aliases for compatibility so Sidekick can route tasks to `code exec --full-auto`, then `codex exec --full-auto`, or fall back to `coder exec --full-auto`
 - **Uses** Every Code's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
+- **Follows** the Codex developer-doc pattern (developer mode, Docs MCP, Codex CLI) of packaging repeatable work as skills and driving implementation through a composable CLI Codex can use
 - **Defaults** to MiniMax `MiniMax-M2.7` through the packaged `~/.code/config.toml` / legacy `~/.codex/config.toml` compatibility path
 - **Keeps** a project-local audit index at `.codex/conversations.idx` plus the `codex-history` and `codex-stop` skill bridges that mirror those workflows in Codex
 

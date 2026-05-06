@@ -72,6 +72,8 @@ Useful options:
 
 Code already supports native `AGENTS.md`, `SKILL.md`, agents, and subagent commands. Do not recreate Forge-style skill injection or conversation indexing here. Sidekick's `codex-stop` and `codex-history` workflows are exposed as Codex skills that point back to the shared command docs, because the Codex manifest does not expose a custom `commands` surface.
 
+This packaging follows the official Codex developer-doc pattern: keep repeatable workflows as skills, and present Codex with a composable CLI surface it can use for actual implementation work. See the developer-mode, Docs MCP, and Codex CLI docs for the source pattern.
+
 ## STEP 2 — Native Workflow
 
 - Use Code’s own `code exec` automation for file changes, tests, and commits.
