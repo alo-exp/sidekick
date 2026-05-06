@@ -1,22 +1,23 @@
 # Testing Strategy
 
-> How the Sidekick plugin is tested. All tiers are chained by `tests/run_release.bash`, which is the gate every release must pass.
+> How the Sidekick plugin is tested. All six tiers are chained by `tests/run_release.bash`, which is the gate every release must pass.
 
 ---
 
 ## Test pyramid
 
-Five tiers, fail-fast, each with a distinct purpose. The lower a failure appears in the pyramid, the cheaper it is to find.
+Six tiers, fail-fast, each with a distinct purpose. The lower a failure appears in the pyramid, the cheaper it is to find.
 
 | Tier | Script | Runs in CI | Exercises real agent | Purpose |
 |------|--------|:---:|:---:|---|
 | **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, slash-command structure, Forge/Code coverage gaps. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full Claude→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
-| **4. Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Code | `code --version` succeeds; trivial `code exec` round-trip completes against the real binary. |
-| **5. Code live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Code | Full Claude→Code delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
+| **4. Code marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Code | Installs Sidekick from the Codex marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
+| **5. Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Code | `code --version` succeeds; trivial `code exec` round-trip completes against the real binary. |
+| **6. Code live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Code | Full Claude→Code delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 
-Stages 2 through 5 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
+Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
 
 ---
 
@@ -85,14 +86,14 @@ Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model cal
 
 ## Release gate
 
-`tests/run_release.bash` chains all three tiers with fail-fast stage aborts:
+`tests/run_release.bash` chains all six tiers with fail-fast stage aborts:
 
 ```bash
-SIDEKICK_LIVE_FORGE=1 bash tests/run_release.bash   # full pyramid — maintainer pre-tag
-bash tests/run_release.bash                          # stage 1 only, stages 2+3 skip cleanly — safe for CI
+SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full pyramid — maintainer pre-tag
+bash tests/run_release.bash                                               # stage 1 only, stages 2-6 skip cleanly — safe for CI
 ```
 
-Every release must pass the full gate locally before the version tag is pushed.
+Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the full live Forge/Codex pyramid twice locally before the version tag is pushed.
 
 ---
 
@@ -117,8 +118,8 @@ Not covered today (accepted gaps, documented in `.planning/`):
 # Tier 1 only (fast, ~5s):
 bash tests/run_all.bash
 
-# Pre-release gate (~2 min when SIDEKICK_LIVE_FORGE is set):
-SIDEKICK_LIVE_FORGE=1 bash tests/run_release.bash
+# Pre-release gate (~2 min when both live env vars are set):
+SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 
 # Single suite:
 bash tests/test_forge_enforcer_hook.bash

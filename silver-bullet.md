@@ -709,13 +709,23 @@ If a third-party skill's behavior needs adjustment, implement the change as:
 
 ## 9. Pre-Release Quality Gate
 
-Before ANY release (`/create-release`), the following four-stage quality gate MUST
-be completed in order. Each stage has its own completion criteria. Skipping a stage
-or declaring it complete without meeting the criteria violates Section 3.
+Before ANY release (`/silver-release` or `/create-release`), the following release
+sequence is mandatory:
 
-**IMPORTANT**: This gate runs AFTER the normal workflow finalization steps (testing,
-documentation, branch cleanup, deploy checklist) and BEFORE `/create-release`.
-The `/create-release` skill will not be invoked until all four stages pass.
+1. Complete the four-stage quality gate in `docs/pre-release-quality-gate.md`
+   until it records two consecutive clean passes.
+2. Run the full Forge/Codex live pyramid twice locally with
+   `SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`.
+3. Only then invoke the release command.
+
+Each stage has its own completion criteria. Skipping a stage or declaring it
+complete without meeting the criteria violates Section 3.
+
+**IMPORTANT**: This gate runs AFTER the normal workflow finalization steps
+(testing, documentation, branch cleanup, deploy checklist) and BEFORE
+`/silver-release` or `/create-release`. The release command will not be invoked
+until all four stages pass, the gate has cleanly repeated twice, and the full
+Forge/Codex live pyramid has been run twice.
 
 ### Stage 1 — Code Review Triad
 
@@ -806,13 +816,14 @@ each release cycle must earn its own quality gate pass — stale markers from a
 previous release cannot satisfy the gate for a new release.
 
 > **Anti-Skip:** You are violating this rule if you release without running all 4 stages
-> in the CURRENT session. Stale markers from a prior session are automatically cleared.
+> in the CURRENT session and then running the full Forge/Codex live pyramid twice.
+> Stale markers from a prior session are automatically cleared.
 
 If any stage surfaces a blocker that cannot be resolved (e.g., upstream dependency
 issue, ambiguous design decision), log it under "Needs human review" and surface
 to the user before proceeding to the next stage.
 
-> **Anti-Skip:** You are violating this rule if you attempt /create-release without all four quality-gate-stage-N markers in `~/.claude/.sidekick/quality-gate-state`. completion-audit.sh will block the release. Each stage requires explicit /superpowers:verification-before-completion invocation — the marker alone is insufficient.
+> **Anti-Skip:** You are violating this rule if you attempt /silver-release or /create-release without all four quality-gate-stage-N markers in `~/.claude/.sidekick/quality-gate-state` and two clean runs of the full Forge/Codex live pyramid. completion-audit.sh will block the release. Each stage requires explicit /superpowers:verification-before-completion invocation — the marker alone is insufficient.
 
 ---
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.5.1 — 2026-05-07
+
+### Release gate hardening
+
+Sidekick now treats the pre-release quality gate and the full live Forge/Codex release pyramid as mandatory release prerequisites, not just recommended steps.
+
+**Changed:**
+
+- **`silver-bullet.md`**, **`docs/CICD.md`**, **`docs/TESTING.md`**, **`docs/pre-release-quality-gate.md`**, **`docs/internal/pre-release-quality-gate.md`**: release order now requires the four-stage quality gate to pass twice cleanly, then the full live Forge/Codex pyramid to pass twice, before the release command is allowed.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: version surfaces bumped to `v1.5.1`.
+- **`.silver-bullet.json`**: added release `verify_commands` so the full live release gate must run twice before a release is published through the standard release flow.
+- **`.claude-plugin/plugin.json`** and **`.codex-plugin/plugin.json`**: version bumped to `1.5.1`.
+
 ## v1.5.0 — 2026-05-07
 
 ### Multi-sidekick packaging and Codex release prep

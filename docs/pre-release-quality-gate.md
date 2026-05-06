@@ -170,7 +170,7 @@ Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-
 Audit test coverage across all test files:
 
 - `tests/run_all.bash` runs all non-live suites and exits non-zero on any failure
-- `tests/run_release.bash` chains all three tiers (unit → smoke → live E2E) with fail-fast stage aborts
+- `tests/run_release.bash` chains all six tiers (unit + integration → Forge smoke → Forge live E2E → Code marketplace install → Code smoke → Code live E2E) with fail-fast stage aborts
 - Every material branch in `forge-delegation-enforcer.sh` is exercised by `test_forge_enforcer_hook.bash` and/or `test_v12_coverage.bash`
   - Verify: `sed -i` / `awk -i inplace` rejection, `>> append` pass/deny, `> /dev/null` passthrough, env-var prefix before `forge -p`, unclassified mutating deny
 - Every `STATUS:` block parsing path in `forge-progress-surface.sh` is exercised by `test_forge_progress_surface.bash`
@@ -354,7 +354,8 @@ After all three targets are clean with no blocking issues:
 
 ## Release
 
-After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`:
+After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`,
+and after the full Forge/Codex live pyramid has been run twice:
 
 ```bash
 # Verify all 4 distinct markers are present (handles duplicated rows)

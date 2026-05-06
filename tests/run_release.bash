@@ -23,8 +23,9 @@
 #
 # The live stages skip cleanly (exit 0) when the env vars are unset, so this
 # script is still useful in CI — it will run stage 1 and cleanly skip stages
-# 2-6. Before tagging a release, a maintainer should run it locally with
-# SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 to exercise the live path.
+# 2-6. Before tagging a release, a maintainer should complete the quality gate
+# first, then run this locally twice with SIDEKICK_LIVE_FORGE=1
+# SIDEKICK_LIVE_CODEX=1 to exercise the live path.
 #
 # Usage
 #   bash tests/run_release.bash
@@ -60,6 +61,12 @@ if [[ "${SIDEKICK_LIVE_FORGE:-}" == "1" ]]; then
 else
   echo -e "  live Forge: ${yellow}disabled${reset} (smoke + e2e will skip)"
   echo -e "  ${yellow}Tip:${reset} set SIDEKICK_LIVE_FORGE=1 before tagging to exercise the live path."
+fi
+if [[ "${SIDEKICK_LIVE_CODEX:-}" == "1" ]]; then
+  echo -e "  live Codex: ${green}enabled${reset} (marketplace + smoke + e2e will run)"
+else
+  echo -e "  live Codex: ${yellow}disabled${reset} (marketplace + smoke + e2e will skip)"
+  echo -e "  ${yellow}Tip:${reset} set SIDEKICK_LIVE_CODEX=1 before tagging to exercise the live path."
 fi
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 

@@ -30,15 +30,16 @@ The deployed site lives at https://sidekick.alolabs.dev (CNAME set in `docs/CNAM
 
 No automated tag-on-push. Releases are cut by the maintainer against a fully-green local gate, then pushed.
 
-1. **Pre-tag gate** — maintainer runs the full pyramid with live Forge:
+1. **Pre-release quality gate** — maintainer completes the 4-stage gate in `docs/pre-release-quality-gate.md` until it passes twice in a row.
+2. **Pre-tag live gate** — maintainer runs the full pyramid with live Forge and Codex twice:
    ```bash
-   SIDEKICK_LIVE_FORGE=1 bash tests/run_release.bash
+   SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    ```
-   This chains tier 1 (`run_all.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) with fail-fast aborts. Must print `RELEASE GATE PASSED` before proceeding.
+   This chains tier 1 (`run_all.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Both runs must print `RELEASE GATE PASSED` before proceeding.
 
-2. **Update artifacts** — `CHANGELOG.md` (root) appended with the version entry, `README.md` version badge bumped, `.planning/STATE.md` flipped to `shipped`, `_integrity` SHA-256 hashes in `plugin.json` refreshed for any changed hook / command / skill / output-style file.
+3. **Update artifacts** — `CHANGELOG.md` (root) appended with the version entry, `README.md` version badge bumped, `.planning/STATE.md` flipped to `shipped`, `_integrity` SHA-256 hashes in `plugin.json` refreshed for any changed hook / command / skill / output-style file.
 
-3. **Commit + tag + push:**
+4. **Commit + tag + push:**
    ```bash
    git commit -m "…"
    git tag vX.Y.Z
@@ -46,9 +47,9 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    git push origin vX.Y.Z
    ```
 
-4. **GitHub Release** — `gh release create vX.Y.Z --notes-file <notes.md>`.
+5. **GitHub Release** — `gh release create vX.Y.Z --notes-file <notes.md>`.
 
-5. **Plugin cache sync** — `autoUpdate: true` in `~/.claude/settings.json` picks up the new tag on next session start. For an immediate local bump, clone the new tag into `~/.claude/plugins/cache/alo-exp/sidekick/<version>/`.
+6. **Plugin cache sync** — `autoUpdate: true` in `~/.claude/settings.json` picks up the new tag on next session start. For an immediate local bump, clone the new tag into `~/.claude/plugins/cache/alo-exp/sidekick/<version>/`.
 
 ---
 

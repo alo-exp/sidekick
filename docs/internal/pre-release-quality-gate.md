@@ -387,7 +387,9 @@ After all three targets are clean with no blocking issues:
 
 ## Release
 
-After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`, verify and create the release:
+After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`,
+and after the full Forge/Codex live pyramid has been run twice, verify and
+create the release:
 
 ```bash
 # Verify all 4 markers are present

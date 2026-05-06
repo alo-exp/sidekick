@@ -6,8 +6,8 @@
 
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
-| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.5.0 |
-| **Code** | `code` | Every Code extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v1.5.0 |
+| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.5.1 |
+| **Code** | `code` | Every Code extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v1.5.1 |
 
 More sidekicks planned.
 
@@ -96,7 +96,7 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 ## Testing
 
-`tests/run_release.bash` chains the unit suites plus the live smoke/E2E pair for Forge and Code.
+`tests/run_release.bash` chains the unit suites plus the live Forge/Codex install, smoke, and E2E gates.
 
 | Tier | Script | Runs without Forge/Code | Purpose |
 |------|--------|:---:|---------|
@@ -111,6 +111,8 @@ The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODE
 ```bash
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
+
+Before any release, complete the 4-stage pre-release quality gate until it passes twice in a row, then run the full live Forge/Codex pyramid twice with both live env vars, then publish through the release flow.
 
 Without those env vars the gate still runs stage 1 and cleanly skips the live stages (exit 0), so it's safe to wire into CI.
 
