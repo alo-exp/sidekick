@@ -35,6 +35,8 @@ run_suite "Forge v1.2 E2E integration tests"     "test_forge_v12_integration.bas
 run_suite "Forge v1.2 coverage gap tests"        "test_v12_coverage.bash"
 run_suite "Forge v1.3 coverage gap tests"        "test_v13_coverage.bash"
 run_suite "Codex skill structure tests"          "test_codex_skill.bash"
+run_suite "Codex packaging manifest tests"       "test_codex_plugin_manifest.bash"
+run_suite "Codex marketplace manifest tests"     "test_codex_marketplace_manifest.bash"
 run_suite "Codex slash commands tests"           "test_codex_commands.bash"
 run_suite "Codex delegation enforcer hook tests" "test_codex_enforcer_hook.bash"
 run_suite "Codex progress surface hook tests"    "test_codex_progress_surface.bash"

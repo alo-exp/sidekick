@@ -30,7 +30,16 @@ grep -q 'Delegation Protocol' "${SKILL_FILE}" && assert_pass "Delegation Protoco
 echo "=== T4: Native Workflow section present ==="
 grep -q 'Native Workflow' "${SKILL_FILE}" && assert_pass "Native Workflow section present" || assert_fail "Native Workflow" "not found"
 
-echo "=== T5: codex exec guidance present ==="
+echo "=== T5: Host Routing section present ==="
+if grep -q 'Host Routing' "${SKILL_FILE}" \
+  && grep -q 'Claude Code' "${SKILL_FILE}" \
+  && grep -q 'Codex' "${SKILL_FILE}"; then
+  assert_pass "Host Routing section present"
+else
+  assert_fail "Host Routing" "not found"
+fi
+
+echo "=== T6: codex exec guidance present ==="
 if grep -q 'codex exec --full-auto' "${SKILL_FILE}" \
   && grep -q 'code exec --full-auto' "${SKILL_FILE}" \
   && grep -q 'coder exec --full-auto' "${SKILL_FILE}"; then
@@ -39,7 +48,7 @@ else
   assert_fail "delegation command guidance" "missing one of codex/code/coder exec references"
 fi
 
-echo "=== T6: MiniMax config guidance present ==="
+echo "=== T7: MiniMax config guidance present ==="
 if grep -q 'MiniMax-M2.7' "${SKILL_FILE}" \
   && grep -q '~/.code/config.toml' "${SKILL_FILE}" \
   && grep -q '~/.codex/config.toml' "${SKILL_FILE}"; then
@@ -48,14 +57,14 @@ else
   assert_fail "MiniMax config" "missing runtime config references"
 fi
 
-echo "=== T7: AGENTS.md and subagent guidance present ==="
+echo "=== T8: AGENTS.md and subagent guidance present ==="
 if grep -q 'AGENTS.md' "${SKILL_FILE}" && grep -q 'subagent' "${SKILL_FILE}"; then
   assert_pass "AGENTS.md and subagent guidance present"
 else
   assert_fail "workflow guidance" "missing AGENTS.md or subagent mention"
 fi
 
-echo "=== T8: Legacy wrapper points to canonical skill ==="
+echo "=== T9: Legacy wrapper points to canonical skill ==="
 if grep -q 'skills/codex/SKILL.md' "${LEGACY_FILE}" && grep -qi 'deprecated' "${LEGACY_FILE}"; then
   assert_pass "legacy wrapper points to canonical skill"
 else
