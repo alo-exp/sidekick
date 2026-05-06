@@ -2,13 +2,13 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived).
 
-**Plugin version:** v1.5.0 • **Target:** Claude Code harness + Forge/Codex sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/codex` ≥ 0.6.97)
+**Plugin version:** v1.5.0 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
 
 ---
 
 ## System Overview
 
-Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Codex (`code` / `coder` / `codex`) are the first supported sidekicks. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
+Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Every Code (`code` / `codex` / `coder`) are the first supported sidekicks. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
 
 Two roles are preserved at every layer:
 
@@ -29,10 +29,10 @@ Result: when `/forge` or `/codex` is active, every mutating operation is either 
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap that installs Forge and Codex runtimes and guards the session with `.installed`. |
+| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap that installs Forge and Code runtimes and guards the session with `.installed`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/history commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
-| Skill — `/codex` | `skills/codex/SKILL.md` | Health check, MiniMax-backed `codex exec` delegation, native agents/subagents, `AGENTS.md` workflow, and `code`/`coder` fallback guidance. |
+| Skill — `/codex` | `skills/codex/SKILL.md` | Health check, MiniMax-backed `code exec` delegation, native agents/subagents, `AGENTS.md` workflow, and `codex`/`coder` fallback guidance. |
 | Skill — legacy orchestration | `skills/forge.md`, `skills/codex.md` | Orchestration references retained for behavior that `/forge` and `/codex` extend. |
 | Enforcer hooks | `hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh` | PreToolUse on `Write\|Edit\|NotebookEdit\|Bash`. Per-sidekick read-only allowlists, mutating-flag rejectors, command rewriters, UUID/audit injectors, and deny paths. |
 | Progress hooks | `hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh` | PostToolUse on `Bash`. No-op unless the matching marker is active. Extracts terminal summary blocks, emits styled sidekick summaries, and links the matching history command. |
@@ -42,7 +42,7 @@ Result: when `/forge` or `/codex` is active, every mutating operation is either 
 | Plugin manifest | `.claude-plugin/plugin.json` | v1.5.0. Registers hooks, directory-style `commands/`, `outputStyles/`, `skills/`. `_integrity` field carries SHA-256 of all executable artifacts. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
-| Codex project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Codex. The Sidekick installer keeps the modern and legacy config paths aligned with MiniMax defaults. |
+| Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. The Sidekick installer keeps the modern and legacy config paths aligned with MiniMax defaults. |
 
 ---
 
@@ -55,16 +55,16 @@ User
 Claude Code (Brain)                         harness boundary
   │                                             │
   │  composes task prompt                        │
-  ├──► Bash("forge -p '…'") or Bash("codex exec --full-auto '…'") │
+  ├──► Bash("forge -p '…'") or Bash("code exec --full-auto '…'") │
   │          │                                  │
   │          │ ┌─ PreToolUse sidekick hooks ─────┤
   │          │ │  if matching marker active:     │
   │          │ │    · deny Write/Edit/NotebookEdit
-  │          │ │    · rewrite Forge or Codex exec
+  │          │ │    · rewrite Forge or Code exec
   │          │ │    · append .forge/.codex idx   │
   │          │ └────────────────────────────────┤
   │          ▼                                  │
-  │     Forge or Codex subprocess (Hands)      │
+  │     Forge or Code subprocess (Hands)      │
   │          │  reads/writes files,             │
   │          │  runs commands, commits          │
   │          │  emits STATUS / task summary     │
@@ -87,8 +87,8 @@ User receives styled narration           ◄──────┘
 ## Design Principles
 
 1. **Delegate at the harness layer, not the prompt layer.** Prompt-only rules can be rationalized around. A PreToolUse hook returning `permissionDecision: "deny"` cannot.
-2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick so Forge and Codex never collide in the same project directory.
-3. **Leverage each runtime's native storage.** Sidekick indexes only carry lookup metadata; Forge and Codex keep their own conversation/history stores.
+2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick so Forge and Code never collide in the same project directory.
+3. **Leverage each runtime's native storage.** Sidekick indexes only carry lookup metadata; Forge and Code keep their own conversation/history stores.
 4. **Zero Claude-to-sidekick roundtrip per rewrite.** The enforcer is shell, not an LLM wrapper — deterministic, millisecond latency, no token cost.
 5. **Non-destructive on install.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the health check but never overwrites user edits.
 6. **Graceful degradation off the happy path.** No marker file → both hooks are no-ops. Output style missing → line prefixes degrade to plain text, no break. Monitor unavailable (Bedrock/Vertex/Foundry) → skill documents foreground-Bash fallback.

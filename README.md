@@ -7,7 +7,7 @@
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
 | **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.5.0 |
-| **Codex** | `codex` | Codex CLI fork — `codex exec` / `code exec` / `coder exec`, MiniMax M2.7 | ✅ v1.5.0 |
+| **Codex** | `codex` | Every Code fork — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v1.5.0 |
 
 More sidekicks planned.
 
@@ -20,7 +20,7 @@ Add to `~/.claude/settings.json`:
 ```json
 {
   "extraKnownMarketplaces": {
-    "alo-exp": {
+    "alo-labs": {
       "source": {
         "source": "github",
         "repo": "alo-exp/sidekick"
@@ -29,7 +29,7 @@ Add to `~/.claude/settings.json`:
     }
   },
   "enabledPlugins": {
-    "sidekick@alo-exp": true
+    "sidekick@alo-labs": true
   }
 }
 ```
@@ -49,23 +49,23 @@ On the next Claude session, all sidekicks install automatically.
 - **Skill injection**: 4 bootstrap skills (testing-strategy, code-review, security, quality-gates) auto-injected into task prompts based on task type
 - **Token optimization**: task prompts capped at 2,000 tokens with validated `.forge.toml` compaction defaults
 
-## Codex — Codex Sidekick
+## Code — Every Code Sidekick
 
 ### What it does
-- **Auto-installs** the Codex runtime into `~/.local/bin/codex` on first session start
-- **Provides** `code` and `coder` aliases so Sidekick can route tasks to `codex exec --full-auto`, `code exec --full-auto`, or fall back to `coder exec --full-auto`
-- **Uses** Codex's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
+- **Auto-installs** the Code runtime into `~/.local/bin/code` on first session start
+- **Provides** `codex` and `coder` aliases for compatibility so Sidekick can route tasks to `code exec --full-auto`, then `codex exec --full-auto`, or fall back to `coder exec --full-auto`
+- **Uses** Every Code's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
 - **Defaults** to MiniMax `MiniMax-M2.7` through the packaged `~/.code/config.toml` / legacy `~/.codex/config.toml` compatibility path
 - **Keeps** a project-local audit index at `.codex/conversations.idx` plus `/codex-history` and `/codex-stop` command surfaces
 
 ### How it works
 
 ```
-You → Claude (plan + communicate) → Codex (implement + commit) → Claude (review + report)
+You → Claude (plan + communicate) → Code (implement + commit) → Claude (review + report)
 ```
 
 Claude handles: architecture, explanations, research, code review
-Codex handles: writing files, features, tests, git commits
+Code handles: writing files, features, tests, git commits
 
 ### How it works
 
@@ -96,15 +96,15 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 ## Testing
 
-`tests/run_release.bash` chains the unit suites plus the live smoke/E2E pair for Forge and Codex.
+`tests/run_release.bash` chains the unit suites plus the live smoke/E2E pair for Forge and Code.
 
 | Tier | Script | Runs without Forge/Codex | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 19 suites — hook classifiers, idx audit, plugin integrity, slash commands, and Forge/Codex coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 21 suites — hook classifiers, idx audit, plugin integrity, slash commands, and Forge/Code coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
-| **Codex smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `codex --version` + trivial `codex exec` round-trip against the real binary. |
-| **Codex live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full Claude→Codex delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
+| **Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `code --version` + trivial `code exec` round-trip against the real binary, with `codex` kept as the compatibility alias. |
+| **Code live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full Claude→Code delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
 
 The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Before tagging a new version:
 

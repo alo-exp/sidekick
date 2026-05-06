@@ -62,7 +62,7 @@ resolve_codex_binary_name() {
 }
 
 deny_reason() {
-  printf 'Sidekick /codex mode is active: direct file edits are delegated to Codex. Use: Bash { command: "%s --full-auto \"<your task description>\"" } or `code exec` / `coder exec` if `codex` is unavailable.' "$(delegate_command | awk '{print $1}')"
+  printf 'Sidekick /codex mode is active: direct file edits are delegated to Codex. Use: Bash { command: "%s --full-auto \"<your task description>\"" } or `code exec` / `coder exec` if `codex` is unavailable.' "$(delegate_command)"
 }
 
 deny_direct_edit() {
@@ -177,6 +177,7 @@ decide_bash() {
 
 main() {
   if ! command -v jq >/dev/null 2>&1; then
+    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Sidekick /codex mode requires jq for hook enforcement. Install jq and re-run /codex."}}'
     exit 0
   fi
 

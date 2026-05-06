@@ -27,7 +27,7 @@ Show the 20 most recent Codex delegation sessions from this project. Also prune 
 3. Read the last 20 rows after pruning:
 
    ```bash
-   tail -n 20 "$IDX"
+   tail -n 20 "$IDX" | awk '1{rows[NR]=$0} END{for (i=NR; i>=1; i--) print rows[i]}'
    ```
 
    Each row is tab-separated:

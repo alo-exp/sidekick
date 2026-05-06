@@ -1,10 +1,10 @@
 ---
 name: codex
-description: Legacy flat entrypoint for the Codex sidekick orchestration skill. Prefer skills/codex/SKILL.md.
+description: Legacy flat entrypoint for the Code sidekick orchestration skill. Prefer skills/codex/SKILL.md.
 ---
 
 > Deprecated in favor of [`skills/codex/SKILL.md`](./codex/SKILL.md).
 
-# Codex
+# Code
 
-Use Codex CLI for implementation work. The canonical activation, login, and delegation flow lives in the directory-style skill file.
+Use Code CLI for implementation work. The canonical activation, login, and delegation flow lives in the directory-style skill file.

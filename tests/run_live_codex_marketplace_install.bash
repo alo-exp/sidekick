@@ -121,6 +121,14 @@ else
   fail "marketplace_config_entry" "missing local marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
+INSTALL_ROOT="${CODE_HOME}/${INSTALL_ROOT_REL}"
+echo "=== marketplace_cache_materialized ==="
+if [ -d "${INSTALL_ROOT}" ] && [ -n "$(find "${INSTALL_ROOT}" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
+  pass "Codex materialized the Sidekick marketplace cache at ${INSTALL_ROOT_REL}"
+else
+  fail "marketplace_cache_materialized" "expected cache directory ${INSTALL_ROOT} was missing or empty"
+fi
+
 read -r -d '' TASK_PROMPT <<'EOF' || true
 Respond with exactly one line:
 STATUS: OK

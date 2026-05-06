@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4.0
-milestone_name: "Command-Surface Cleanup & Security Hardening"
+milestone: v1.5.0
+milestone_name: "Multi-Sidekick Packaging & Codex Release"
 status: complete
-stopped_at: v1.4.0 released — housekeeping release; GitHub Release https://github.com/alo-exp/sidekick/releases/tag/v1.4.0
-last_updated: "2026-04-25T00:00:00Z"
-last_activity: "2026-04-25 — v1.4.0 GitHub release created; milestone archived"
+stopped_at: v1.5.0 release prep complete — Forge/Codex packaging and release gate refresh; GitHub Release pending
+last_updated: "2026-05-07T00:00:00Z"
+last_activity: "2026-05-07 — v1.5.0 release prep completed; Codex marketplace packaging and docs refresh landed"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 
 ## Current Position
 
-Milestone: v1.4.0 — Command-Surface Cleanup & Security Hardening (COMPLETE)
+Milestone: v1.5.0 — Multi-Sidekick Packaging & Codex Release (COMPLETE)
 Phase: N/A — direct release (no formal GSD phases)
 Status: Milestone archived
-Last activity: 2026-04-25 — v1.4.0 shipped; forge-delegate rename, forge-stop, install.sh security hardening; GitHub release created; milestone archived to .planning/milestones/v1.4.0-ROADMAP.md
+Last activity: 2026-05-07 — v1.5.0 release prep completed; Forge/Codex packaging, marketplace metadata, and release docs refreshed
 
 Progress:
 

@@ -27,7 +27,43 @@ sidekick_registry_file() {
 sidekick_registry_get() {
   local sidekick="$1"
   local jq_filter="$2"
-  jq -r --arg sidekick "$sidekick" "${jq_filter}" "$(sidekick_registry_file)"
+  local registry_file
+  registry_file="$(sidekick_registry_file)"
+
+  if command -v jq >/dev/null 2>&1; then
+    jq -r --arg sidekick "$sidekick" "${jq_filter}" "${registry_file}"
+    return 0
+  fi
+
+  python3 - "$sidekick" "$jq_filter" "$registry_file" <<'PY'
+import json
+import re
+import sys
+
+sidekick, jq_filter, registry_file = sys.argv[1:4]
+match = re.fullmatch(r"\.\[\$sidekick\]\.(.+)", jq_filter)
+if not match:
+    raise SystemExit(1)
+
+path = match.group(1).split(".")
+with open(registry_file, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+value = data.get(sidekick, {})
+for key in path:
+    if isinstance(value, dict):
+        value = value.get(key)
+    else:
+        value = None
+        break
+
+if value is None:
+    print("")
+elif isinstance(value, (dict, list)):
+    print(json.dumps(value))
+else:
+    print(value)
+PY
 }
 
 sidekick_project_root() {
