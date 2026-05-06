@@ -57,7 +57,7 @@ On the next Claude session, all sidekicks install automatically.
 - **Uses** Every Code's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
 - **Follows** the Codex developer-doc pattern (developer mode, Docs MCP, Codex CLI) of packaging repeatable work as skills and driving implementation through a composable CLI Codex can use
 - **Defaults** to MiniMax `MiniMax-M2.7` through the packaged `~/.code/config.toml` / legacy `~/.codex/config.toml` compatibility path
-- **Keeps** a project-local audit index at `.codex/conversations.idx` plus the `codex-history` and `codex-stop` skill bridges that mirror those workflows in Codex
+- **Keeps** a project-local audit index at `.codex/conversations.idx` plus the shared `codex-history` and `codex-stop` commands, which are loaded directly in Codex and mirrored as skill bridges for compatibility
 
 ### How it works
 
