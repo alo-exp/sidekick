@@ -19,25 +19,6 @@ SANDBOX=$(mktemp -d /tmp/forge-fresh-XXXXXX)
 trap 'rm -rf "${SANDBOX}" 2>/dev/null || true' EXIT
 echo "Sandbox: ${SANDBOX}"
 
-# Helper: build a patched install.sh with a fake forge binary pre-placed
-# so we always reach the PATH/verify section rather than triggering download.
-make_patched_with_fake_forge() {
-  local dest="$1"
-  local sha="${2:-}"
-  local fake_bin="${SANDBOX}/.local/bin"
-  mkdir -p "${fake_bin}"
-  cat > "${fake_bin}/forge" << 'FF'
-#!/bin/bash
-echo "forge 0.0.0-test"
-FF
-  chmod +x "${fake_bin}/forge"
-  if [ -n "${sha}" ]; then
-    sed "s/EXPECTED_FORGE_SHA=\"[^\"]*\"/EXPECTED_FORGE_SHA=\"${sha}\"/" "${INSTALL_SH}" > "${dest}"
-  else
-    cp "${INSTALL_SH}" "${dest}"
-  fi
-}
-
 # ---------------------------------------------------------------------------
 # F1 — Non-interactive + no pinned SHA: exits 0 (gate only fires when
 #       forge is NOT installed and we try to download)
@@ -80,10 +61,19 @@ fi
 echo "=== F3: PATH idempotency in sandboxed HOME ==="
 FAKE_ZSHRC="${SANDBOX}/.zshrc"
 echo 'export PATH="$HOME/.local/bin:$PATH"' > "${FAKE_ZSHRC}"
-PATCHED=$(mktemp /tmp/install_patched_XXXXXX)
-make_patched_with_fake_forge "${PATCHED}"
-HOME="${SANDBOX}" FORGE_BIN="${SANDBOX}/.local/bin/forge" bash "${PATCHED}" 2>&1 </dev/null || true
-rm -f "${PATCHED}"
+FAKE_BIN="${SANDBOX}/.local/bin"
+mkdir -p "${FAKE_BIN}"
+cat > "${FAKE_BIN}/forge" << 'FF'
+#!/bin/bash
+echo "forge 0.0.0-test"
+FF
+chmod +x "${FAKE_BIN}/forge"
+cat > "${FAKE_BIN}/codex" << 'CF'
+#!/bin/bash
+echo "codex 0.0.0-test"
+CF
+chmod +x "${FAKE_BIN}/codex"
+HOME="${SANDBOX}" bash "${INSTALL_SH}" 2>&1 </dev/null || true
 COUNT=$(grep -c '.local/bin' "${FAKE_ZSHRC}" 2>/dev/null || echo 1)
 if [ "${COUNT}" -le 1 ]; then
   assert_pass "add_to_path is idempotent — no duplicate PATH entry (count=${COUNT})"
@@ -98,7 +88,6 @@ echo "=== F4: PATH marker added to fresh .zshrc ==="
 FRESH="${SANDBOX}/fresh_home"
 mkdir -p "${FRESH}"
 touch "${FRESH}/.zshrc"
-PATCHED=$(mktemp /tmp/install_patched_XXXXXX)
 FAKE_BIN="${FRESH}/.local/bin"
 mkdir -p "${FAKE_BIN}"
 cat > "${FAKE_BIN}/forge" << 'FF'
@@ -106,9 +95,12 @@ cat > "${FAKE_BIN}/forge" << 'FF'
 echo "forge 0.0.0-test"
 FF
 chmod +x "${FAKE_BIN}/forge"
-cp "${INSTALL_SH}" "${PATCHED}"
-HOME="${FRESH}" FORGE_BIN="${FAKE_BIN}/forge" bash "${PATCHED}" 2>&1 </dev/null || true
-rm -f "${PATCHED}"
+cat > "${FAKE_BIN}/codex" << 'CF'
+#!/bin/bash
+echo "codex 0.0.0-test"
+CF
+chmod +x "${FAKE_BIN}/codex"
+HOME="${FRESH}" bash "${INSTALL_SH}" 2>&1 </dev/null || true
 if grep -q 'Added by sidekick/forge plugin' "${FRESH}/.zshrc"; then
   assert_pass "Marker comment added to fresh .zshrc"
 else
@@ -118,6 +110,11 @@ if grep -q '.local/bin' "${FRESH}/.zshrc"; then
   assert_pass "PATH entry added to fresh .zshrc"
 else
   assert_fail "PATH in .zshrc" "not found"
+fi
+if [ -L "${FAKE_BIN}/code" ] && [ -L "${FAKE_BIN}/coder" ]; then
+  assert_pass "Codex aliases created in sandbox bin"
+else
+  assert_fail "Codex aliases" "code/coder symlinks not created"
 fi
 
 # ---------------------------------------------------------------------------
