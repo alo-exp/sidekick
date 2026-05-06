@@ -7,7 +7,7 @@
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
 | **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v1.5.0 |
-| **Codex** | `codex` | Every Code fork — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v1.5.0 |
+| **Code** | `code` | Every Code extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v1.5.0 |
 
 More sidekicks planned.
 
@@ -76,7 +76,7 @@ You → Claude (plan + communicate) → Forge (implement + commit) → Claude (r
 Claude handles: architecture, explanations, research, code review
 Forge handles: writing files, features, tests, git commits
 
-### After installation
+### Forge installation
 
 Claude will guide you to:
 1. Sign up at **openrouter.ai** (Google/GitHub OAuth, ~30 seconds)
@@ -98,7 +98,7 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 `tests/run_release.bash` chains the unit suites plus the live smoke/E2E pair for Forge and Code.
 
-| Tier | Script | Runs without Forge/Codex | Purpose |
+| Tier | Script | Runs without Forge/Code | Purpose |
 |------|--------|:---:|---------|
 | **Unit + integration** | `tests/run_all.bash` | ✅ | 21 suites — hook classifiers, idx audit, plugin integrity, slash commands, and Forge/Code coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |

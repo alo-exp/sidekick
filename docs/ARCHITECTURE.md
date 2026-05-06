@@ -8,7 +8,7 @@
 
 ## System Overview
 
-Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Every Code (`code` / `codex` / `coder`) are the first supported sidekicks. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
+Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Code (`code` / `codex` / `coder`) are the first supported sidekicks. Code is built through the Every Code extension line, not as a direct Codex fork. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
 
 Two roles are preserved at every layer:
 
@@ -32,7 +32,7 @@ Result: when `/forge` or `/codex` is active, every mutating operation is either 
 | Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap that installs Forge and Code runtimes and guards the session with `.installed`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/history commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
-| Skill — `/codex` | `skills/codex/SKILL.md` | Health check, MiniMax-backed `code exec` delegation, native agents/subagents, `AGENTS.md` workflow, and `codex`/`coder` fallback guidance. |
+| Skill — `/codex` | `skills/codex/SKILL.md` | Health check, MiniMax-backed `code exec` delegation, native agents/subagents, `AGENTS.md` workflow, and `codex`/`coder` fallback guidance for the Every Code extension line. |
 | Skill — legacy orchestration | `skills/forge.md`, `skills/codex.md` | Orchestration references retained for behavior that `/forge` and `/codex` extend. |
 | Enforcer hooks | `hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh` | PreToolUse on `Write\|Edit\|NotebookEdit\|Bash`. Per-sidekick read-only allowlists, mutating-flag rejectors, command rewriters, UUID/audit injectors, and deny paths. |
 | Progress hooks | `hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh` | PostToolUse on `Bash`. No-op unless the matching marker is active. Extracts terminal summary blocks, emits styled sidekick summaries, and links the matching history command. |

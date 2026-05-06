@@ -1,7 +1,7 @@
 {
   "name": "sidekick",
   "version": "1.5.0",
-  "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Codex are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
+  "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Code are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
   "author": {
     "name": "Ālo Labs",
     "url": "https://alolabs.dev"
@@ -70,10 +70,10 @@
     "forge_md_sha256": "d8cddf8f4eff8e47e09ebbde2a2bc949feb85c402cec42985de21ae33bb35d3e",
     "forge_skill_md_sha256": "a50a848d72a92ad233433cca9db2c24d653bf1f4d220f26eaa2f8a69a1db49dd",
     "codex_md_sha256": "d510ab2eb1ed628b60d85cab7c34f70fc3152fe87352fad07da8ece7a3f8a5d5",
-    "codex_skill_md_sha256": "9668cc30afceefbb5f502f3a6261c43ec2a8e1ac31551d0219271ca08a7d59fb",
+    "codex_skill_md_sha256": "c576bc1b2c53938d7291961a74cceddad84bc01252ff94516833d9cbfcf437f4",
     "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
     "forge_delegation_enforcer_sha256": "d7992eb85540607c5654c7a16d7e0486d3de64c6756a43d6b852d5d27201bb64",
-    "codex_delegation_enforcer_sha256": "dd3b391c41958e3d297ea04fd29890feb60a3e85e9683fb1b51e959140520538",
+    "codex_delegation_enforcer_sha256": "0bc11ea008826fb30d77db337abe027ed59b7c2291fc7f91f6e5af93adc3ee7f",
     "enforcer_utils_sha256": "2bcae48efa084e6c6396fe3b7aa2ba772a8653215589248befc1752140db55ae",
     "sidekick_registry_sha256": "e25b7bb68b95e0c2b8c958bd8ca5ce5b34bce902f12e29a8a3f687a7fb3b8e85",
     "forge_progress_surface_sha256": "94aeace51d786ce1512fcf65d02059088635759337e128c021a04cad2d558a8e",
@@ -84,7 +84,7 @@
     "command_forge_stop_sha256": "e7332a0185feb22e7fdf8b67884d57e8b696804e3f7a36c114f7eb39345e913c",
     "command_forge_history_sha256": "84b86c550e879475bebf105d1eba8be9c3abc3e7382cd0d208f7cb6d19077aa8",
     "command_codex_stop_sha256": "02ce63afb14f8f12ed76d8171998d1d423b1b4c905b89aff57bded5219633425",
-    "command_codex_history_sha256": "391a62966a9c6b073fdeb72c3fe2f73b56c43ad78d2367c320034205bdcefe14",
+    "command_codex_history_sha256": "e4e332bc3d3800f6af6911bdebba9edd4e67ab753915f6e54c097dfec17f8d99",
     "forgecode_installer_sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a",
     "codex_installer_sha256": "6919d791d9c5922206fbfce50b28850f9974b488618275a2313ce7055ff59c1d",
     "verify_at": "https://forgecode.dev/releases",

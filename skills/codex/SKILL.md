@@ -1,6 +1,6 @@
 ---
 name: codex
-description: Core orchestration skill for the Code sidekick (Every Code / Codex compatibility). Use when delegating implementation work, packaging Sidekick for Code, installing Every Code, or configuring MiniMax-backed code exec sessions.
+description: Core orchestration skill for the Code sidekick (Every Code extension). Use when delegating implementation work, packaging Sidekick for Code, installing Every Code, or configuring MiniMax-backed code exec sessions.
 ---
 
 # Code — Claude Orchestration Protocol
@@ -16,6 +16,7 @@ Code   = Hands
 
 - When the active host is Claude Code, follow STEP 0 through STEP 2 as written.
 - When the active host is Code, keep this skill to packaging and runtime configuration guidance only. Do not attempt to delegate work to the same runtime or treat the Claude = Brain framing as a self-reference.
+- Codex compatibility stays available through the `codex` alias and legacy config path; Code remains the canonical runtime.
 
 ## STEP 0 — Health Check
 
