@@ -155,7 +155,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <tbody>
           <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When delegation mode is active, rewrites <code>forge -p</code> calls to inject a UUID conversation ID and appends an entry to the idx file so each task is durably trackable.</td></tr>
           <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output and surfaces a compact STATUS block into the transcript so long-running delegations stream visible progress.</td></tr>
-          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code>.</td></tr>
+          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code> and the full live Forge/Codex release pyramid has passed twice.</td></tr>
         </tbody>
       </table>
 

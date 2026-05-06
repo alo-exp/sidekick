@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Code are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
   "author": {
     "name": "Ālo Labs",
