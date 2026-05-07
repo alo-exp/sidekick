@@ -15,7 +15,9 @@ green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
-SANDBOX=$(mktemp -d /tmp/forge-fresh-XXXXXX)
+TMP_ROOT="${PLUGIN_DIR}/.tmp"
+mkdir -p "${TMP_ROOT}"
+SANDBOX=$(mktemp -d "${TMP_ROOT}/forge-fresh-XXXXXX")
 trap 'rm -rf "${SANDBOX}" 2>/dev/null || true' EXIT
 echo "Sandbox: ${SANDBOX}"
 
