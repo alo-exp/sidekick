@@ -28,8 +28,8 @@
     "install": {
       "kind": "codex-install-script",
       "version": "0.128.0",
-      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.6.98/scripts/install/install.sh",
-      "sha256": "e66a8a3f208c217619b05c2bf9f074498aa1c4446291c45dbb6c05c1a109576a",
+      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.6.99/scripts/install/install.sh",
+      "sha256": "6919d791d9c5922206fbfce50b28850f9974b488618275a2313ce7055ff59c1d",
       "binary": "code",
       "alias": "codex",
       "fallback_alias": "coder"

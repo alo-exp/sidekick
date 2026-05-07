@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Sidekick — a collection of AI coding agents as Codex sidekicks. Forge and Codex are the first two: each sidekick auto-installs, configures itself, and lets Codex delegate coding work while Codex stays focused on planning and communication. The Codex package now loads the shared command surface directly, alongside the shared skills and hooks.",
   "author": {
     "name": "Ālo Labs",

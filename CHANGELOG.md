@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.5.2 — 2026-05-07
+
+### Kay release pin refresh
+
+Sidekick now points at the freshly released Kay `v0.6.99` installer and carries the release version bump across both plugin manifests and the public docs.
+
+**Changed:**
+
+- **`sidekicks/registry.json`**: Codex installer URL repointed to `alo-labs/kay` `v0.6.99`, with the new install-script digest pinned in the shared registry.
+- **`.claude-plugin/plugin.json`** and **`.codex-plugin/plugin.json`**: version bumped to `1.5.2`.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: version surfaces bumped to `v1.5.2`.
+
 ## v1.5.1 — 2026-05-07
 
 ### Release gate hardening

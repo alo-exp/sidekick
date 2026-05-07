@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Code are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication.",
   "author": {
     "name": "Ālo Labs",
@@ -75,7 +75,7 @@
     "forge_delegation_enforcer_sha256": "d7992eb85540607c5654c7a16d7e0486d3de64c6756a43d6b852d5d27201bb64",
     "codex_delegation_enforcer_sha256": "0bc11ea008826fb30d77db337abe027ed59b7c2291fc7f91f6e5af93adc3ee7f",
     "enforcer_utils_sha256": "2bcae48efa084e6c6396fe3b7aa2ba772a8653215589248befc1752140db55ae",
-    "sidekick_registry_sha256": "d637559dc4b4f45b8fae4bb67e3abd6ec685832fd82ae64b4ec65459c29638cf",
+    "sidekick_registry_sha256": "b7a63b7893bb3d05fa6aa34cda0d66a32af001093b9944309bbe9cecd8e8e7bb",
     "forge_progress_surface_sha256": "94aeace51d786ce1512fcf65d02059088635759337e128c021a04cad2d558a8e",
     "codex_progress_surface_sha256": "0eb6518d9528e8d31f930c754185252a226d7d2298a74d1ca14dfc2bddaced26",
     "validate_release_gate_sha256": "cce77224d7ff340f296f78e35efd3f073cea4e61f0065c97f1d7d53cb660faa9",
@@ -86,7 +86,7 @@
     "command_codex_stop_sha256": "02ce63afb14f8f12ed76d8171998d1d423b1b4c905b89aff57bded5219633425",
     "command_codex_history_sha256": "e4e332bc3d3800f6af6911bdebba9edd4e67ab753915f6e54c097dfec17f8d99",
     "forgecode_installer_sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a",
-    "codex_installer_sha256": "e66a8a3f208c217619b05c2bf9f074498aa1c4446291c45dbb6c05c1a109576a",
+    "codex_installer_sha256": "6919d791d9c5922206fbfce50b28850f9974b488618275a2313ce7055ff59c1d",
     "verify_at": "https://forgecode.dev/releases",
     "source": "https://github.com/alo-exp/sidekick"
   }
