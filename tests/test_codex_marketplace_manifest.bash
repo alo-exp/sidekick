@@ -8,14 +8,17 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(dirname "${SCRIPT_DIR}")"
-MARKETPLACE_FILE="/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json"
+MARKETPLACE_FILE="${CODEX_MARKETPLACE_FILE:-/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json}"
 SIDEKICK_REF="$(git -C "${SIDEKICK_DIR}" rev-parse HEAD)"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
-[ -f "${MARKETPLACE_FILE}" ] || { echo "ERROR: ${MARKETPLACE_FILE} missing"; exit 1; }
+if [ ! -f "${MARKETPLACE_FILE}" ]; then
+  echo -e "${green}SKIP${reset} marketplace manifest test: ${MARKETPLACE_FILE} missing"
+  exit 0
+fi
 
 echo "=== marketplace_name ==="
 MARKETPLACE_NAME="$(python3 - "${MARKETPLACE_FILE}" <<'PY'
