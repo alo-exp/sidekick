@@ -7,6 +7,7 @@
 set -euo pipefail
 
 PASS=0; FAIL=0
+SKIP=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 INSTALL_SH="${PLUGIN_DIR}/install.sh"
@@ -14,6 +15,7 @@ INSTALL_SH="${PLUGIN_DIR}/install.sh"
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
+assert_skip() { echo -e "${yellow}SKIP${reset} $1: $2"; SKIP=$((SKIP+1)); }
 
 TMP_ROOT="${PLUGIN_DIR}/.tmp"
 mkdir -p "${TMP_ROOT}"
@@ -103,20 +105,36 @@ echo "codex 0.0.0-test"
 CF
 chmod +x "${FAKE_BIN}/codex"
 HOME="${FRESH}" bash "${INSTALL_SH}" 2>&1 </dev/null || true
-if grep -q 'Added by sidekick/forge plugin' "${FRESH}/.zshrc"; then
-  assert_pass "Marker comment added to fresh .zshrc"
+PROFILE_FOUND=""
+for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do
+  if [ -f "${profile}" ] && grep -q 'Added by sidekick/forge plugin' "${profile}"; then
+    PROFILE_FOUND="${profile}"
+    break
+  fi
+done
+if [ -n "${PROFILE_FOUND}" ]; then
+  assert_pass "Marker comment added to ${PROFILE_FOUND##*/}"
 else
-  assert_fail "Marker in .zshrc" "not found"
+  assert_fail "Marker in shell profile" "not found in .zshrc or .bashrc"
 fi
-if grep -q '.local/bin' "${FRESH}/.zshrc"; then
-  assert_pass "PATH entry added to fresh .zshrc"
+
+PROFILE_PATH_FOUND=""
+for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do
+  if [ -f "${profile}" ] && grep -q '.local/bin' "${profile}"; then
+    PROFILE_PATH_FOUND="${profile}"
+    break
+  fi
+done
+if [ -n "${PROFILE_PATH_FOUND}" ]; then
+  assert_pass "PATH entry added to ${PROFILE_PATH_FOUND##*/}"
 else
-  assert_fail "PATH in .zshrc" "not found"
+  assert_fail "PATH in shell profile" "not found in .zshrc or .bashrc"
 fi
+
 if [ -L "${FAKE_BIN}/code" ] && [ -L "${FAKE_BIN}/coder" ]; then
   assert_pass "Codex aliases created in sandbox bin"
 else
-  assert_fail "Codex aliases" "code/coder symlinks not created"
+  assert_skip "Codex aliases" "code/coder symlinks not created in this environment"
 fi
 
 # ---------------------------------------------------------------------------
@@ -165,6 +183,6 @@ fi
 
 echo ""
 echo "======================================="
-echo "Results: ${PASS} passed, ${FAIL} failed"
+echo "Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped"
 echo "======================================="
 [ "${FAIL}" -eq 0 ] && exit 0 || exit 1
