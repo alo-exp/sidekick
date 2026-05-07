@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived).
 
-**Plugin version:** v1.5.1 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
+**Plugin version:** v1.5.2 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
 
 ---
 
@@ -39,8 +39,8 @@ Result: when `/forge` or `/codex` is active, every mutating operation is either 
 | Audit indexes | `.forge/conversations.idx`, `.codex/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
 | Commands | `commands/forge-stop.md`, `commands/forge-history.md`, `commands/codex-stop.md`, `commands/codex-history.md` | Canonical activation/deactivation and history workflow docs. Claude and Codex both expose them as commands; Codex materializes them as skills through the importer path, and the `skills/<name>/SKILL.md` bridges keep the source tree and picker surface aligned. The `codex-delegate` alias now has a first-class bridge skill so the picker sees it directly. |
 | Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[CODEX]` prefixes and `[...-SUMMARY]` blocks. |
-| Codex plugin manifest | `.codex-plugin/plugin.json` | v1.5.1. Registers hooks, skills, and the shared source `commands/` surface for Codex's importer path. |
-| Plugin manifest | `.claude-plugin/plugin.json` | v1.5.1. Registers hooks, directory-style `commands/`, `outputStyles/`, `skills/`. `_integrity` field carries SHA-256 of all executable artifacts. |
+| Codex plugin manifest | `.codex-plugin/plugin.json` | v1.5.2. Registers hooks, skills, and the shared source `commands/` surface for Codex's importer path. |
+| Plugin manifest | `.claude-plugin/plugin.json` | v1.5.2. Registers hooks, directory-style `commands/`, `outputStyles/`, `skills/`. `_integrity` field carries SHA-256 of all executable artifacts. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
 | Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. The Sidekick installer keeps the modern and legacy config paths aligned with MiniMax defaults. |
