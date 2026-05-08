@@ -12,13 +12,12 @@
 | **host Codex** | The user-installed Codex environment that Kay consumes by reference for shared tools, skills, hooks, MCPs, and agent assets. |
 | **delegate** | To hand execution of a coding task to a sidekick while Claude stays in the orchestration role. |
 | **skill** | The canonical instruction body for a capability. In Sidekick, skills are the source of truth. |
-| **command** | A runtime-facing wrapper or discoverability surface that points to a canonical skill body. |
-| **bridge** | A thin compatibility layer that makes a skill or command visible in a runtime's native picker or import path. |
-| **wrapper** | A minimal command file that exists for discoverability and routing, not as the source of truth for the workflow body. |
+| **selector** | A host/runtime picker entry (for example `sidekick:forge-stop`) that resolves directly to a canonical skill body. |
+| **bridge** | A thin compatibility layer that makes a skill visible in a runtime's native picker or import path. |
+| **wrapper** | A minimal compatibility skill (or alias file) that points to canonical workflow content without duplicating it. |
 
 ## Canonical Rules
 
-- Skills carry the real instruction text.
-- Commands point to skills when a runtime needs slash-command discoverability.
+- Skills carry the real instruction text and are the runtime contract.
 - Compatibility layers should not duplicate long-form workflow text.
 - Runtime-specific docs should point back to this glossary instead of redefining terms.

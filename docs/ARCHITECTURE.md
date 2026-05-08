@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived). Preserved design notes live in `docs/design/`.
 
-**Plugin version:** v1.5.3 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
+**Plugin version:** v1.5.4 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
 
 ---
 
@@ -17,11 +17,11 @@ Two roles are preserved at every layer:
 
 Enforcement is three-layered so that neither the LLM nor an untrusted prompt can bypass delegation:
 
-1. **Skill prompting** (`skills/forge/SKILL.md`, `skills/codex/SKILL.md`) — tells Claude *what* to delegate and *how* to compose the task prompt for the active sidekick.
+1. **Skill prompting** (`skills/forge/SKILL.md`, `skills/codex-delegate/SKILL.md`) — tells Claude *what* to delegate and *how* to compose the task prompt for the active sidekick.
 2. **Harness enforcement** (`hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh`, PreToolUse) — while a marker file exists, mutating `Write`/`Edit`/`NotebookEdit` tools are denied and the matching sidekick shell commands are rewritten or refused according to the active registry entry.
-3. **Progress surface** (`hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh`, PostToolUse) — parses each sidekick's terminal output, strips ANSI, emits bounded `[FORGE-SUMMARY]` or `[CODEX-SUMMARY]` additionalContext, and surfaces the matching history hint.
+3. **Progress surface** (`hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh`, PostToolUse) — parses each sidekick's terminal output, strips ANSI, emits bounded `[FORGE-SUMMARY]` or `[CODEX-SUMMARY]` additionalContext, and surfaces the matching stop hint.
 
-Result: when `/forge` or `/codex` is active, every mutating operation is either a sidekick subprocess call (rewritten + indexed + surfaced) or a hard-deny from the harness.
+Result: when Forge or Codex delegation mode is active, every mutating operation is either a sidekick subprocess call (rewritten + indexed + surfaced) or a hard-deny from the harness.
 
 ---
 
@@ -30,17 +30,17 @@ Result: when `/forge` or `/codex` is active, every mutating operation is either 
 | Component | Path | Purpose |
 |---|---|---|
 | Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap that installs Forge and Code runtimes and guards the session with `.installed`. |
-| Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/history commands, and installer digests. |
+| Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
-| Skill — `/codex` | `skills/codex/SKILL.md` | Health check, MiniMax-backed `code exec` delegation, native agents/subagents, `AGENTS.md` workflow, and `codex`/`coder` fallback guidance for the Every Code extension line. The packaging follows the Codex developer-doc pattern for "Create a CLI Codex can use" plus "Save workflows as skills" in the official developer-mode / Docs MCP / Codex CLI docs. |
-| Skill — legacy orchestration | `skills/forge.md`, `skills/codex.md` | Orchestration references retained for behavior that `/forge` and `/codex` extend. |
+| Skill — `codex-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Codex delegation workflow: runtime health checks, `code exec --full-auto` primary path, and `codex`/`coder` compatibility fallbacks for the Every Code extension line. |
+| Skill — legacy orchestration | `skills/forge.md`, `skills/codex-delegate.md` | Compatibility aliases retained for legacy entry points; canonical long-form bodies live in `skills/*/SKILL.md`. |
 | Enforcer hooks | `hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh` | PreToolUse on `Write\|Edit\|NotebookEdit\|Bash`. Per-sidekick read-only allowlists, mutating-flag rejectors, command rewriters, UUID/audit injectors, and deny paths. |
-| Progress hooks | `hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh` | PostToolUse on `Bash`. No-op unless the matching marker is active. Extracts terminal summary blocks, emits styled sidekick summaries, and links the matching history command. |
+| Progress hooks | `hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh` | PostToolUse on `Bash`. No-op unless the matching marker is active. Extracts terminal summary blocks, emits styled sidekick summaries, and links the matching stop command. |
 | Audit indexes | `.forge/conversations.idx`, `.codex/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
-| Commands | `commands/forge-stop.md`, `commands/forge-history.md`, `commands/codex-stop.md`, `commands/codex-history.md` | Thin slash-command wrappers for activation/deactivation and history workflows. The canonical instruction bodies live in `skills/forge-stop/SKILL.md`, `skills/forge-history/SKILL.md`, `skills/codex-stop/SKILL.md`, and `skills/codex-history/SKILL.md`. The `codex-delegate` alias still has a first-class bridge skill so the picker sees it directly. |
+| Delegation lifecycle skills | `skills/codex-delegate/SKILL.md`, `skills/codex-stop/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-stop/SKILL.md` | The canonical four-skill Sidekick surface for Codex/Claude pickers. |
 | Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[CODEX]` prefixes and `[...-SUMMARY]` blocks. |
-| Codex plugin manifest | `.codex-plugin/plugin.json` | v1.5.3. Registers hooks, skills, and the thin shared `commands/` wrappers so Codex can discover the skill workflows. |
-| Plugin manifest | `.claude-plugin/plugin.json` | v1.5.3. Registers hooks, directory-style `commands/`, `outputStyles/`, `skills/`. `_integrity` field carries SHA-256 of the canonical skill bodies and wrapper docs. |
+| Codex plugin manifest | `.codex-plugin/plugin.json` | v1.5.4. Skills-only packaging for Codex with shared hook wiring. |
+| Plugin manifest | `.claude-plugin/plugin.json` | v1.5.4. Registers hooks, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
 | Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. The Sidekick installer keeps the modern and legacy config paths aligned with MiniMax defaults. |
@@ -74,13 +74,13 @@ Claude Code (Brain)                         harness boundary
   │  │  strip ANSI, parse sidekick summary      │
   │  │  emit additionalContext:                 │
   │  │   [FORGE-SUMMARY] ... or [CODEX-SUMMARY] │
-  │  │   History: /forge-history or /codex-history
+  │  │   Stop: /forge-stop or /codex-stop
   │  └──────────────────────────────────────────┤
   │                                             │
   ▼                                             │
 User receives styled narration           ◄──────┘
   │
-  │  (later) /forge-history or /codex-history → table from the matching idx
+  │  (later) inspect `.forge/conversations.idx` or `.codex/conversations.idx` for task traceability
 ```
 
 ---
@@ -93,7 +93,7 @@ User receives styled narration           ◄──────┘
 4. **Zero Claude-to-sidekick roundtrip per rewrite.** The enforcer is shell, not an LLM wrapper — deterministic, millisecond latency, no token cost.
 5. **Non-destructive on install.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the health check but never overwrites user edits.
 6. **Graceful degradation off the happy path.** No marker file → both hooks are no-ops. Output style missing → line prefixes degrade to plain text, no break. Monitor unavailable (Bedrock/Vertex/Foundry) → skill documents foreground-Bash fallback.
-7. **Every sidekick task is traceable.** Stable UUID from the hook + durable project-local idx + `/forge-history` or `/codex-history` = any past task can be found and reviewed by tag, timestamp, and status.
+7. **Every sidekick task is traceable.** Stable UUID from the hook + durable project-local idx = any past task can be found and reviewed by tag, timestamp, and status.
 
 ---
 
@@ -106,14 +106,14 @@ User receives styled narration           ◄──────┘
 | PreToolUse + PostToolUse hooks | The only Claude Code mechanism that runs *before* a tool call with veto power (`permissionDecision`) and *after* it with `additionalContext` injection. |
 | Valid RFC 4122 UUID for `--conversation-id` | Forge 2.11.3 rejects the earlier `sidekick-<ts>-<hash>` format. The human-readable tag is preserved as a separate column in the idx for display only. |
 | `set -euo pipefail` in hooks | Fails loud on classifier bugs during development. Every classifier branch returns explicit `{ "continue": true }` JSON to avoid accidental deny from an empty exit. |
-| ISO 8601 UTC lexical date pruning in `/forge-history` | Portable across BSD `date -v` and GNU `date -d` without parsing. |
+| ISO 8601 UTC timestamps in sidekick idx rows | Portable, sortable, and safe for shell-based parsing without locale ambiguity. |
 | Seeded-buggy Python testapp for live E2E | A baseline-must-fail assertion proves the E2E actually exercises the fix path, not happy-case parsing. |
 
 ---
 
 ## Extension Points
 
-- **New sidekick** (additional coding agent): add `skills/<name>/SKILL.md`, `commands/<name>-*.md`, `output-styles/<name>.md`, and a row in `sidekicks/registry.json`. Keep bridge skills only when a runtime needs a compatibility alias; the canonical instruction body lives in the skill file and the command docs stay thin wrappers. The shared hook library and manifest wiring should not need to change.
+- **New sidekick** (additional coding agent): add `skills/<name>/SKILL.md`, `output-styles/<name>.md`, and a row in `sidekicks/registry.json`. Keep bridge skills only when a runtime needs a compatibility alias; the canonical instruction body lives in the skill file. The shared hook library and manifest wiring should not need to change.
 - **Additional bootstrap skills**: extend the injection mapping in `skills/forge/SKILL.md` §Skill Injection. Ship as `.forge/skills/<name>/SKILL.md` with Forge-compatible frontmatter (`id`, `title`, `description`, `trigger`).
 
 ## Documentation Surfaces

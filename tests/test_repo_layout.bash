@@ -31,7 +31,7 @@ expect_file() {
 }
 
 echo "=== T1: Top-level project shape ==="
-for dir in .claude .claude-plugin .codex-plugin .forge .github .planning commands docs hooks output-styles sidekicks skills tests; do
+for dir in .claude .claude-plugin .codex-plugin .forge .github .planning docs hooks output-styles sidekicks skills tests; do
   expect_dir "${dir}"
 done
 

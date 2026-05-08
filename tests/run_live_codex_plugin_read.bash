@@ -154,17 +154,26 @@ try:
     resp = recv_id(2)
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
-    required = {
+    expected_order = [
         "sidekick:codex-delegate",
         "sidekick:codex-stop",
-        "sidekick:codex-history",
+        "sidekick:forge-delegate",
         "sidekick:forge-stop",
-        "sidekick:forge-history",
-    }
-    missing = sorted(required.difference(names))
+    ]
+    missing = sorted(set(expected_order).difference(names))
+    extras = sorted(set(names).difference(expected_order))
     print("skill_names:", ", ".join(names))
     if missing:
         raise SystemExit(f"missing required skills: {', '.join(missing)}")
+    if extras:
+        raise SystemExit(f"unexpected extra skills: {', '.join(extras)}")
+    if names != expected_order:
+        raise SystemExit(
+            "skill order mismatch: expected "
+            + ", ".join(expected_order)
+            + " got "
+            + ", ".join(names)
+        )
 finally:
     proc.terminate()
     try:
@@ -173,9 +182,9 @@ finally:
         proc.kill()
 PY
 then
-  pass "Codex plugin/read surfaces the Forge and Codex command bridges"
+  pass "Codex plugin/read surfaces only the 4 canonical Sidekick skills in the expected order"
 else
-  fail "plugin_read" "Codex plugin/read did not surface the expected skill bridges"
+  fail "plugin_read" "Codex plugin/read did not match the expected 4-skill surface"
 fi
 
 echo ""

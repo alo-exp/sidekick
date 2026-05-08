@@ -19,9 +19,9 @@ What this style DOES do:
 4. Keep prose concise so the transcript stays readable.
 5. When a Codex call is rewritten by the host, acknowledge the rewrite in one sentence instead of re-explaining the mechanism.
 
-## History
+## Delegation Control
 
-When a `/codex-history` hint appears in a `[CODEX-SUMMARY]` block, surface it to the user in plain language: `Run /codex-history to browse past Codex sessions from this project.`
+When a `/codex-stop` hint appears in a `[CODEX-SUMMARY]` block, surface it to the user in plain language: `Run /codex-stop to return to direct Claude mode.`
 
 ## Deactivation
 

@@ -29,9 +29,9 @@ What this style DOES do:
 
 You do not style these — they are already in the transcript. You *do* reference them ("STATUS: SUCCESS in the summary above", "the [FORGE-LOG] trace shows…").
 
-## History
+## Delegation Control
 
-When a `/forge-history` hint appears in a `[FORGE-SUMMARY]` block, surface it to the user in plain language ("Run /forge-history to browse past Forge sessions from this project.") rather than silently leaving the hint inline.
+When a `/forge-stop` hint appears in a `[FORGE-SUMMARY]` block, surface it to the user in plain language ("Run /forge-stop to return to direct Claude mode.") rather than silently leaving the hint inline.
 
 ## Deactivation
 

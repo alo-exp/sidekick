@@ -128,12 +128,12 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== E2E step 4: Post-hook surfaces history hint ==="
-# Hook emits a /forge-history footer after each task (forge:replay removed in v1.4).
-if echo "${POST_CTX}" | grep -q '/forge-history'; then
-  assert_pass "e2e_step4_history_hint_in_summary"
+echo "=== E2E step 4: Post-hook surfaces stop hint ==="
+# Hook emits a /forge-stop footer after each task.
+if echo "${POST_CTX}" | grep -q '/forge-stop'; then
+  assert_pass "e2e_step4_stop_hint_in_summary"
 else
-  assert_fail "e2e_step4_history_hint_in_summary" "history hint missing: ${POST_CTX}"
+  assert_fail "e2e_step4_stop_hint_in_summary" "stop hint missing: ${POST_CTX}"
 fi
 
 # -----------------------------------------------------------------------------

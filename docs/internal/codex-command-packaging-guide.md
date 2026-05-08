@@ -1,160 +1,91 @@
-# Codex Skill-First Packaging Guide
+# Codex Skill Packaging Guide (Current, Correct Method)
 
-> Reusable pattern for making Sidekick workflows canonical in skills and exposing thin command wrappers for slash-command discoverability.
+This replaces the older command-centric guidance.
 
-## Goal
+## What Codex supports today
 
-Put the full instruction body in `skills/<name>/SKILL.md` and keep `commands/<name>.md` as a thin wrapper or pointer for slash-command UX. That keeps one source of truth while still letting Codex and Claude surface the action in the picker/import path.
+For third-party plugins in Codex, **skills are the runtime contract**.
 
-This is the pattern Sidekick uses now, and it is the one other Ālo Labs plugins should copy.
+- Codex discovers plugin skills from `skills/**/SKILL.md`.
+- There is no separate third-party command runtime to maintain.
+- `commands/` wrappers are not required for Codex picker visibility.
 
-## The pattern
+For Sidekick and other plugins, treat `SKILL.md` files as the only canonical instruction bodies.
 
-Use three layers:
-
-1. **Canonical skill** in `skills/<name>/SKILL.md`
-2. **Thin command wrapper** in `commands/<name>.md`
-3. **Codex plugin manifest** in `.codex-plugin/plugin.json`
-
-The skill holds the actual workflow. The command is only a wrapper so the command name is visible in slash-command UX. The manifest ties the bundle together.
-
-### Recommended layout
+## Required plugin shape
 
 ```text
 plugin-root/
 ├── .codex-plugin/
 │   └── plugin.json
-├── commands/
-│   ├── codex-stop.md
-│   └── codex-history.md
 └── skills/
-    ├── codex-stop/
+    ├── <skill-a>/
     │   └── SKILL.md
-    └── codex-history/
-        └── SKILL.md
+    ├── <skill-b>/
+    │   └── SKILL.md
+    └── ...
 ```
 
-If you need aliases, add a second skill bridge for the alias name, but keep it pointed at the same canonical skill.
-
-## What goes where
-
-### `skills/<name>/SKILL.md`
-
-Write the full workflow here. This is the source of truth.
-
-Keep these files focused on the actual action the plugin should perform:
-
-- what the command does
-- what context it needs
-- what output it should produce
-- what files or state it must preserve
-
-Do not split the real instructions across multiple files. The skill should be the only place that contains the substantive workflow.
-
-### `commands/<name>.md`
-
-Write a thin wrapper here. It should:
-
-- point to the canonical skill
-- explain that the skill is the source of truth
-- avoid duplicating the full workflow text
-
-Example wrapper:
-
-```markdown
----
-name: codex-stop
-description: Thin slash-command wrapper for the canonical skills/codex-stop/SKILL.md workflow.
----
-
-# /codex-stop
-
-Use the canonical [`skills/codex-stop/SKILL.md`](../skills/codex-stop/SKILL.md) workflow.
-That skill is the source of truth; this command exists so Codex and Claude can surface the action in slash-command UX.
-```
-
-That wrapper shape makes the command visible without copying the implementation text.
-
-### `.codex-plugin/plugin.json`
-
-Register the shared command surface, shared skills, hooks, and interface metadata in the Codex plugin manifest.
-
-Keep the Codex manifest and the Claude manifest on the same version, and make sure the Codex manifest points at the shared command directory:
+`.codex-plugin/plugin.json` must point at `skills/`:
 
 ```json
 {
-  "name": "sidekick",
-  "version": "1.5.3",
+  "name": "<plugin-name>",
+  "version": "<x.y.z>",
   "skills": "./skills/",
-  "commands": "./commands/",
   "hooks": "./hooks/hooks.json"
 }
 ```
 
-## How Codex discovers the workflows
+Do not add a `commands` contract for Codex packaging.
 
-The important behavior is not just "the files exist." The important behavior is that Codex can read the plugin, see the thin command wrappers, and surface the underlying skill names in `plugin/read` so the picker/import path can show them.
+## Picker behavior mapping
 
-For Sidekick, the live check verifies the skill names appear as:
+Use this to reason about why a skill does or does not appear:
 
-- `sidekick:codex-delegate`
-- `sidekick:codex-history`
-- `sidekick:codex-stop`
-- `sidekick:forge-delegate`
-- `sidekick:forge-history`
-- `sidekick:forge-stop`
+1. `/` picker and `$` skills picker: driven by `skills/list` (enabled skills).
+2. `@` plugin/skills surfaces: driven by plugin skill metadata (`plugin/read`) for installed plugin skills.
+3. If `SKILL.md` exists but the skill is missing, first verify `skills/list` and `plugin/read` outputs.
 
-That is the outcome other plugins should aim for:
+## Naming and ordering rules
 
-- canonical skill exists
-- thin command wrapper exists
-- Codex can see the skill in the live plugin reader
+Codex skill names are namespaced as `<plugin>:<name>` from SKILL frontmatter `name`.
 
-## When to add an alias bridge
+To keep deterministic order across picker surfaces:
 
-Add an alias bridge when you want one of these:
+1. Keep only one canonical skill per workflow.
+2. Use stable, lexicographically ordered names for intended display order.
+3. Avoid duplicate/near-duplicate canonical+bridge skills unless compatibility truly requires it.
+4. Remove obsolete skills instead of leaving stale entries in `skills/`.
 
-- a compatibility name for older users
-- a more discoverable picker name
-- a short alias that mirrors a different runtime's command naming
+For Sidekick, the canonical 4-skill Codex surface is:
 
-Keep the alias bridge thin. Do not create a second copy of the workflow. Point it back to the canonical skill.
+1. `sidekick:codex-delegate`
+2. `sidekick:codex-stop`
+3. `sidekick:forge-delegate`
+4. `sidekick:forge-stop`
 
-## Verification checklist
+## Cross-plugin rollout checklist
 
-When another Ālo Labs plugin copies this pattern, run the same checks:
+Apply this sequence for any plugin that should appear correctly in Codex pickers:
 
-1. **Skill check** - the canonical workflow lives in `skills/<name>/SKILL.md`.
-2. **Wrapper check** - the command doc points to that skill and does not duplicate the workflow body.
-3. **Live discovery check** - Codex `plugin/read` surfaces the expected skill names.
-4. **Live install check** - the plugin installs cleanly from the Codex marketplace.
-5. **Behavior check** - the workflow actually runs the right action when invoked.
+1. Move full workflow bodies into `skills/<name>/SKILL.md`.
+2. Remove stale command wrappers/obsolete SKILL entries.
+3. Ensure `.codex-plugin/plugin.json` uses `"skills": "./skills/"`.
+4. Verify local integrity/tests.
+5. Verify Codex runtime surfaces:
+   - `skills/list` includes expected names.
+   - `plugin/read` includes expected names and order.
+6. Bump patch version and release.
+7. Reinstall plugin cleanly in local Codex env and re-verify picker surfaces.
 
-For Sidekick, the current test set is:
+## Troubleshooting
 
-- `tests/test_codex_commands.bash`
-- `tests/test_codex_plugin_manifest.bash`
-- `tests/run_live_codex_plugin_read.bash`
-- `tests/run_live_codex_marketplace_install.bash`
-- `tests/run_live_codex_e2e.bash`
+If skills appear in `/` or `$` but not as expected in `@`:
 
-## Rules of thumb
+1. Check installed plugin version/cache actually matches the released tree.
+2. Confirm removed skills are truly deleted from `skills/**/SKILL.md` (not just deprecated in prose).
+3. Confirm `plugin/read` returns exactly the expected skill names.
+4. Reinstall plugin cleanly to flush stale cache entries.
 
-- Keep one canonical body for each workflow in a skill.
-- Keep command wrappers short and explicit.
-- Keep command names, skill names, and tests in sync.
-- Prefer relative links from the wrapper back to the skill.
-- Update both the Claude and Codex manifests when the packaging shape changes.
-- If Codex starts loading the skill docs directly in a future runtime, keep the wrappers anyway for compatibility and slash-command discoverability.
-
-## Copy this for another plugin
-
-If another Ālo Labs plugin wants the same behavior, copy the pattern, not the Sidekick text:
-
-1. Put the real workflow in `skills/<name>/SKILL.md`.
-2. Add a thin wrapper at `commands/<name>.md`.
-3. Register the shared command and skill roots in `.codex-plugin/plugin.json`.
-4. Add a live `plugin/read` test that proves the skill names appear.
-5. Keep the wrapper thin and keep the skill canonical.
-
-That gives you the same discoverability result without duplicating the instructions in two places.
+This process is now the source of truth for Sidekick and should be reused for other plugins.

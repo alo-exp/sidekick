@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.5.4 — 2026-05-08
+
+### Skills-only runtime surface and picker alignment
+
+Sidekick now ships a strict four-skill canonical runtime surface for Codex/Claude pickers, with command-era duplicates removed from the active package. This patch also refreshes the Codex packaging guide to document the current skill-first method used across plugins.
+
+**Changed:**
+
+- **`skills/codex-delegate/SKILL.md`**, **`skills/codex-stop/SKILL.md`**, **`skills/forge/SKILL.md`**, **`skills/forge-stop/SKILL.md`**: canonical skill surface aligned to the only supported picker entries: `sidekick:codex-delegate`, `sidekick:codex-stop`, `sidekick:forge-delegate`, `sidekick:forge-stop`.
+- **`hooks/codex-progress-surface.sh`**, **`hooks/forge-progress-surface.sh`**, **`output-styles/codex.md`**, **`output-styles/forge.md`**: delegation footer and narration updated to stop workflows only (`/codex-stop`, `/forge-stop`).
+- **`tests/run_live_codex_plugin_read.bash`** and **`tests/run_live_codex_marketplace_install.bash`**: live Codex surface checks now enforce the exact 4-skill set and deterministic order.
+- **`docs/internal/codex-command-packaging-guide.md`**: rewritten as the current Codex skill-packaging source of truth (skills are runtime contract; no third-party command surface).
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: version surfaces bumped to `v1.5.4` and architecture/docs wording aligned to the current four-skill runtime surface.
+- **`.claude-plugin/plugin.json`** and **`.codex-plugin/plugin.json`**: version bumped to `1.5.4`; integrity map refreshed for changed skill/hook/style/registry assets.
+
+**Removed:**
+
+- **`skills/codex/SKILL.md`**, **`skills/codex.md`**, **`skills/codex-history/SKILL.md`**, **`skills/forge-history/SKILL.md`**: retired redundant/deprecated skill surfaces.
+- **`commands/codex-stop.md`**, **`commands/codex-history.md`**, **`commands/forge-stop.md`**, **`commands/forge-history.md`**: removed command-wrapper layer now that both target runtimes use skills directly.
+- **`tests/test_codex_commands.bash`** and **`tests/test_forge_commands.bash`**: command-wrapper suites removed with the command surface.
+
 ## v1.5.3 — 2026-05-08
 
 ### Skill-first wrappers and live-gate hardening

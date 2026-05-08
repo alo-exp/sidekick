@@ -1,6 +1,6 @@
 ---
 name: forge-stop
-description: Canonical Forge stop workflow. Use /forge-stop or the command wrapper to deactivate delegation and return to direct Claude behavior.
+description: Canonical Forge stop workflow. Use /forge-stop to deactivate delegation and return to direct Claude behavior.
 ---
 
 # Forge Stop Workflow
@@ -15,6 +15,6 @@ Stop Forge-first mode and restore normal Claude behavior.
 
 ## Notes
 
-- `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is accessible via `/forge-history`.
+- `.forge/conversations.idx` is preserved across deactivation as a durable audit trail of Forge tasks issued from this project.
 - After deactivation, the PreToolUse enforcer hook and PostToolUse progress-surface hook both become no-ops (they are gated on the same marker file).
 - Deactivation does not delete any project files, AGENTS.md content, or Forge database state. It only removes the session marker.

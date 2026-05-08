@@ -12,9 +12,7 @@ This skill adds explicit activation/deactivation mode switching on top of the ex
 `skills/forge.md` orchestration protocol. It does NOT replace `skills/forge.md` -- it
 wraps it with a persistent session state mechanism via a marker file.
 
-The stop/history workflows live canonically in `skills/forge-stop/SKILL.md` and
-`skills/forge-history/SKILL.md`; the corresponding `commands/forge-stop.md` and
-`commands/forge-history.md` files are thin wrappers for slash-command discoverability.
+The stop workflow lives canonically in `skills/forge-stop/SKILL.md`.
 
 ---
 
@@ -84,7 +82,7 @@ Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-activ
 
 Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.claude/.forge-delegation-active` marker and restores normal Claude behavior.
 
-Note: `.forge/conversations.idx` is preserved across deactivation — it is a durable audit trail of every Forge task issued from this project and is readable via `/forge-history`.
+Note: `.forge/conversations.idx` is preserved across deactivation as a durable audit trail of every Forge task issued from this project.
 
 ---
 
