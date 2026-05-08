@@ -19,7 +19,7 @@
 
 ## 2026-05-08 — docs-gap-cleanup
 **What**: Aligned the docs scheme, knowledge index, and preserved-doc folders with the real tree so public docs, internal docs, workflows, and archived spec/design material all have explicit homes.
-**Commits**: pending
+**Commits**: 362b189
 **Skills run**: using-superpowers, verification-before-completion
 **Virtual cost**: ~$0.04 (light docs pass)
 **knowledge/YYYY-MM.md**: updated (documentation organization, repo layout) | no changes
