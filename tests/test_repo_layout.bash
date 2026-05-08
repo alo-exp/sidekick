@@ -49,7 +49,7 @@ for dir in .tmp .cache target build dist coverage .pytest_cache node_modules; do
 done
 
 echo "=== T3: Organized docs layout ==="
-for dir in docs/help docs/internal docs/knowledge docs/lessons docs/workflows; do
+for dir in docs/help docs/internal docs/knowledge docs/lessons docs/workflows docs/sessions docs/specs docs/design; do
   expect_dir "${dir}"
 done
 
