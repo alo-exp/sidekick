@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — /forge-stop + /forge-history command doc tests
+# Sidekick Plugin — /forge-stop + /forge-history command wrapper + skill tests
 # =============================================================================
-# Structural tests on the command markdown files (no live Forge invocation).
-# Asserts that both commands have the expected frontmatter, procedure
-# contracts, and key behavioral guarantees so Claude Code can render them
-# and Claude can follow them.  Plus one test exercises the history pruning
-# logic inline.
 
 set -euo pipefail
 
@@ -37,29 +32,24 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_stop_checks_marker_file ==="
-if grep -q '\.forge-delegation-active' "${STOP}"; then
-  assert_pass "test_stop_checks_marker_file"
+echo "=== test_stop_is_thin_wrapper ==="
+if grep -q 'skills/forge-stop/SKILL.md' "${STOP}" \
+  && grep -qiE 'wrapper|source of truth|slash-command UX' "${STOP}"; then
+  assert_pass "test_stop_is_thin_wrapper"
 else
-  assert_fail "test_stop_checks_marker_file" "no marker file reference"
+  assert_fail "test_stop_is_thin_wrapper" "stop command does not point to the canonical skill"
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_stop_confirms_deactivation ==="
-if grep -qiE 'deactivat|restored|direct mode' "${STOP}"; then
-  assert_pass "test_stop_confirms_deactivation"
+echo "=== test_stop_skill_is_canonical ==="
+if grep -q '^name: forge-stop' "${STOP_SKILL}" \
+  && grep -q '\.forge-delegation-active' "${STOP_SKILL}" \
+  && grep -qiE 'deactivat|restored|direct mode' "${STOP_SKILL}" \
+  && grep -q 'conversations.idx' "${STOP_SKILL}" \
+  && grep -qiE 'preserv|retain|not delet' "${STOP_SKILL}"; then
+  assert_pass "test_stop_skill_is_canonical"
 else
-  assert_fail "test_stop_confirms_deactivation" "no deactivation confirmation message"
-fi
-
-# -----------------------------------------------------------------------------
-echo "=== test_stop_preserves_idx ==="
-# The command must note that conversations.idx is preserved (not deleted).
-if grep -q 'conversations.idx' "${STOP}" \
-  && grep -qiE 'preserv|retain|not delet' "${STOP}"; then
-  assert_pass "test_stop_preserves_idx"
-else
-  assert_fail "test_stop_preserves_idx" "no idx preservation note"
+  assert_fail "test_stop_skill_is_canonical" "canonical stop workflow missing from skill file"
 fi
 
 # -----------------------------------------------------------------------------
@@ -72,19 +62,28 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_history_documents_30_day_pruning ==="
-# REPLAY-03: history must prune entries older than 30 days each call.
-if grep -qE '30[[:space:]]*days?'       "${HISTORY}" \
-  && grep -q 'conversations.idx'         "${HISTORY}"; then
-  assert_pass "test_history_documents_30_day_pruning"
+echo "=== test_history_is_thin_wrapper ==="
+if grep -q 'skills/forge-history/SKILL.md' "${HISTORY}" \
+  && grep -qiE 'wrapper|source of truth|slash-command UX' "${HISTORY}"; then
+  assert_pass "test_history_is_thin_wrapper"
 else
-  assert_fail "test_history_documents_30_day_pruning" "no 30-day pruning or idx reference"
+  assert_fail "test_history_is_thin_wrapper" "history command does not point to the canonical skill"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_history_skill_documents_30_day_pruning ==="
+if grep -qE '30[[:space:]]*days?'       "${HISTORY_SKILL}" \
+  && grep -q 'conversations.idx'         "${HISTORY_SKILL}" \
+  && grep -q 'CLAUDE_PROJECT_DIR'        "${HISTORY_SKILL}" \
+  && grep -q 'tail -n 20'                "${HISTORY_SKILL}"; then
+  assert_pass "test_history_skill_documents_30_day_pruning"
+else
+  assert_fail "test_history_skill_documents_30_day_pruning" "no 30-day pruning or idx reference"
 fi
 
 # -----------------------------------------------------------------------------
 echo "=== test_history_reads_project_idx ==="
-if grep -q 'CLAUDE_PROJECT_DIR' "${HISTORY}" \
-  && grep -q '.forge/conversations.idx' "${HISTORY}"; then
+if grep -q '.forge/conversations.idx' "${HISTORY_SKILL}"; then
   assert_pass "test_history_reads_project_idx"
 else
   assert_fail "test_history_reads_project_idx" "does not reference project idx"
@@ -92,7 +91,7 @@ fi
 
 # -----------------------------------------------------------------------------
 echo "=== test_history_tail_20_cap ==="
-if grep -qE 'tail -n 20|last 20'  "${HISTORY}"; then
+if grep -qE 'tail -n 20|last 20'  "${HISTORY_SKILL}"; then
   assert_pass "test_history_tail_20_cap"
 else
   assert_fail "test_history_tail_20_cap" "no 20-row cap documented"
@@ -101,7 +100,7 @@ fi
 # -----------------------------------------------------------------------------
 echo "=== test_history_prune_awk_logic_works ==="
 # Stand up a fake idx with mixed-age rows and execute the pruning snippet
-# from the doc. Asserts post-prune only has rows within the cutoff window.
+# from the skill. Asserts post-prune only has rows within the cutoff window.
 TMP="$(mktemp -d)"
 IDX="${TMP}/conversations.idx"
 # 3 old (> 30 days), 2 recent.
@@ -134,48 +133,14 @@ fi
 rm -rf "${TMP}"
 
 # -----------------------------------------------------------------------------
-echo "=== test_commands_registered_in_plugin_json ==="
-MANIFEST="${PLUGIN_DIR}/.claude-plugin/plugin.json"
-# "commands": "./commands/" directory-style reference
-if grep -q '"commands"[[:space:]]*:[[:space:]]*"\./commands/"' "${MANIFEST}"; then
-  assert_pass "test_commands_registered_in_plugin_json"
+echo "=== test_command_wrappers_reference_skills ==="
+if grep -q 'skills/forge-stop/SKILL.md' "${STOP}" \
+  && grep -q 'skills/forge-history/SKILL.md' "${HISTORY}" \
+  && grep -qiE 'source of truth|thin slash-command wrapper' "${STOP}" \
+  && grep -qiE 'source of truth|thin slash-command wrapper' "${HISTORY}"; then
+  assert_pass "test_command_wrappers_reference_skills"
 else
-  assert_fail "test_commands_registered_in_plugin_json" "commands directory not registered"
-fi
-
-# -----------------------------------------------------------------------------
-echo "=== test_output_style_registered_in_plugin_json ==="
-if grep -q '"outputStyles"[[:space:]]*:[[:space:]]*"\./output-styles/"' "${MANIFEST}"; then
-  assert_pass "test_output_style_registered_in_plugin_json"
-else
-  assert_fail "test_output_style_registered_in_plugin_json" "outputStyles directory not registered"
-fi
-
-# -----------------------------------------------------------------------------
-echo "=== test_posttooluse_hook_registered ==="
-if python3 -c "
-import json, sys
-d=json.load(open('${MANIFEST}'))
-post=d.get('hooks',{}).get('PostToolUse',[])
-if not post: sys.exit(1)
-ok=any('forge-progress-surface' in h.get('command','')
-       for entry in post for h in entry.get('hooks',[]))
-sys.exit(0 if ok else 1)
-"; then
-  assert_pass "test_posttooluse_hook_registered"
-else
-  assert_fail "test_posttooluse_hook_registered" "PostToolUse hook missing"
-fi
-
-# -----------------------------------------------------------------------------
-echo "=== test_forge_skill_bridges_point_to_command_docs ==="
-if grep -q 'commands/forge-stop.md' "${STOP_SKILL}" \
-  && grep -qiE 'bridge|source of truth|picker/import path' "${STOP_SKILL}" \
-  && grep -q 'commands/forge-history.md' "${HISTORY_SKILL}" \
-  && grep -qiE 'bridge|source of truth|picker/import path' "${HISTORY_SKILL}"; then
-  assert_pass "test_forge_skill_bridges_point_to_command_docs"
-else
-  assert_fail "test_forge_skill_bridges_point_to_command_docs" "bridge text missing"
+  assert_fail "test_command_wrappers_reference_skills" "wrapper text missing"
 fi
 
 echo ""

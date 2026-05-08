@@ -26,6 +26,10 @@ CLAIMED_INSTALL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); pri
 CLAIMED_FORGE=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['forge_md_sha256'])")
 CLAIMED_CODEX_MD=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['codex_md_sha256'])")
 CLAIMED_CODEX_SKILL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['codex_skill_md_sha256'])")
+CLAIMED_FORGE_STOP_SKILL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['forge_stop_skill_md_sha256'])")
+CLAIMED_FORGE_HISTORY_SKILL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['forge_history_skill_md_sha256'])")
+CLAIMED_CODEX_STOP_SKILL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['codex_stop_skill_md_sha256'])")
+CLAIMED_CODEX_HISTORY_SKILL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['codex_history_skill_md_sha256'])")
 CLAIMED_CODEX_INSTALL=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['codex_installer_sha256'])")
 CLAIMED_HOOKS=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['hooks_json_sha256'])")
 CLAIMED_FORGECODE=$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d['_integrity']['forgecode_installer_sha256'])")
@@ -35,6 +39,10 @@ echo "Claimed install.sh SHA:  ${CLAIMED_INSTALL}"
 echo "Claimed forge.md SHA:    ${CLAIMED_FORGE}"
 echo "Claimed codex.md SHA:    ${CLAIMED_CODEX_MD}"
 echo "Claimed codex/SKILL SHA: ${CLAIMED_CODEX_SKILL}"
+echo "Claimed forge-stop skill:${CLAIMED_FORGE_STOP_SKILL}"
+echo "Claimed forge-history skill:${CLAIMED_FORGE_HISTORY_SKILL}"
+echo "Claimed codex-stop skill:${CLAIMED_CODEX_STOP_SKILL}"
+echo "Claimed codex-history skill:${CLAIMED_CODEX_HISTORY_SKILL}"
 echo "Claimed codex install:   ${CLAIMED_CODEX_INSTALL}"
 echo "Registry codex install:  ${REGISTRY_CODEX_INSTALL}"
 echo "Claimed hooks.json SHA:  ${CLAIMED_HOOKS}"
@@ -46,12 +54,20 @@ ACTUAL_INSTALL=$(sha256 "${PLUGIN_DIR}/install.sh")
 ACTUAL_FORGE=$(sha256 "${PLUGIN_DIR}/skills/forge.md")
 ACTUAL_CODEX_MD=$(sha256 "${PLUGIN_DIR}/skills/codex.md")
 ACTUAL_CODEX_SKILL=$(sha256 "${PLUGIN_DIR}/skills/codex/SKILL.md")
+ACTUAL_FORGE_STOP_SKILL=$(sha256 "${PLUGIN_DIR}/skills/forge-stop/SKILL.md")
+ACTUAL_FORGE_HISTORY_SKILL=$(sha256 "${PLUGIN_DIR}/skills/forge-history/SKILL.md")
+ACTUAL_CODEX_STOP_SKILL=$(sha256 "${PLUGIN_DIR}/skills/codex-stop/SKILL.md")
+ACTUAL_CODEX_HISTORY_SKILL=$(sha256 "${PLUGIN_DIR}/skills/codex-history/SKILL.md")
 ACTUAL_HOOKS=$(sha256 "${PLUGIN_DIR}/hooks/hooks.json")
 
 echo "Actual install.sh SHA:   ${ACTUAL_INSTALL}"
 echo "Actual forge.md SHA:     ${ACTUAL_FORGE}"
 echo "Actual codex.md SHA:     ${ACTUAL_CODEX_MD}"
 echo "Actual codex/SKILL SHA:  ${ACTUAL_CODEX_SKILL}"
+echo "Actual forge-stop skill: ${ACTUAL_FORGE_STOP_SKILL}"
+echo "Actual forge-history skill: ${ACTUAL_FORGE_HISTORY_SKILL}"
+echo "Actual codex-stop skill: ${ACTUAL_CODEX_STOP_SKILL}"
+echo "Actual codex-history skill: ${ACTUAL_CODEX_HISTORY_SKILL}"
 echo "Actual hooks.json SHA:   ${ACTUAL_HOOKS}"
 echo ""
 
@@ -71,6 +87,22 @@ echo ""
 [ "${CLAIMED_CODEX_SKILL}" = "${ACTUAL_CODEX_SKILL}" ] && \
   assert_pass "codex/SKILL.md hash matches manifest" || \
   assert_fail "codex/SKILL.md hash" "claimed=${CLAIMED_CODEX_SKILL} actual=${ACTUAL_CODEX_SKILL}"
+
+[ "${CLAIMED_FORGE_STOP_SKILL}" = "${ACTUAL_FORGE_STOP_SKILL}" ] && \
+  assert_pass "forge-stop/SKILL.md hash matches manifest" || \
+  assert_fail "forge-stop/SKILL.md hash" "claimed=${CLAIMED_FORGE_STOP_SKILL} actual=${ACTUAL_FORGE_STOP_SKILL}"
+
+[ "${CLAIMED_FORGE_HISTORY_SKILL}" = "${ACTUAL_FORGE_HISTORY_SKILL}" ] && \
+  assert_pass "forge-history/SKILL.md hash matches manifest" || \
+  assert_fail "forge-history/SKILL.md hash" "claimed=${CLAIMED_FORGE_HISTORY_SKILL} actual=${ACTUAL_FORGE_HISTORY_SKILL}"
+
+[ "${CLAIMED_CODEX_STOP_SKILL}" = "${ACTUAL_CODEX_STOP_SKILL}" ] && \
+  assert_pass "codex-stop/SKILL.md hash matches manifest" || \
+  assert_fail "codex-stop/SKILL.md hash" "claimed=${CLAIMED_CODEX_STOP_SKILL} actual=${ACTUAL_CODEX_STOP_SKILL}"
+
+[ "${CLAIMED_CODEX_HISTORY_SKILL}" = "${ACTUAL_CODEX_HISTORY_SKILL}" ] && \
+  assert_pass "codex-history/SKILL.md hash matches manifest" || \
+  assert_fail "codex-history/SKILL.md hash" "claimed=${CLAIMED_CODEX_HISTORY_SKILL} actual=${ACTUAL_CODEX_HISTORY_SKILL}"
 
 [ "${CLAIMED_CODEX_INSTALL}" = "${REGISTRY_CODEX_INSTALL}" ] && \
   assert_pass "codex installer hash matches registry" || \
@@ -137,6 +169,10 @@ check_v12_hash "command_forge_stop_sha256"      "commands/forge-stop.md"
 check_v12_hash "command_forge_history_sha256"   "commands/forge-history.md"
 check_v12_hash "command_codex_stop_sha256"      "commands/codex-stop.md"
 check_v12_hash "command_codex_history_sha256"   "commands/codex-history.md"
+check_v12_hash "forge_stop_skill_md_sha256"     "skills/forge-stop/SKILL.md"
+check_v12_hash "forge_history_skill_md_sha256"  "skills/forge-history/SKILL.md"
+check_v12_hash "codex_stop_skill_md_sha256"     "skills/codex-stop/SKILL.md"
+check_v12_hash "codex_history_skill_md_sha256"  "skills/codex-history/SKILL.md"
 check_v12_hash "validate_release_gate_sha256"   "hooks/validate-release-gate.sh"
 check_v12_hash "enforcer_utils_sha256"          "hooks/lib/enforcer-utils.sh"
 check_v12_hash "sidekick_registry_sha256"       "sidekicks/registry.json"

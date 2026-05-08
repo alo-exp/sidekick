@@ -70,7 +70,7 @@ Useful options:
 - `--output-last-message` for only the final response
 - `resume --last` to continue a previous non-interactive session
 
-Code already supports native `AGENTS.md`, `SKILL.md`, agents, and subagent commands. Do not recreate Forge-style skill injection or conversation indexing here. Sidekick's Forge and Codex stop/history workflows are bundled in `commands/` and bridged into `skills/` so Codex can surface them through its picker/import path, while the shared docs remain the source of truth.
+Code already supports native `AGENTS.md`, `SKILL.md`, agents, and subagent commands. Do not recreate Forge-style skill injection or conversation indexing here. Sidekick's Forge and Codex stop/history workflows live canonically in `skills/forge-stop/SKILL.md`, `skills/forge-history/SKILL.md`, `skills/codex-stop/SKILL.md`, and `skills/codex-history/SKILL.md`; the corresponding `commands/` files are thin wrappers for slash-command discoverability.
 
 This packaging follows the official Codex developer-doc pattern: keep repeatable workflows as skills, and present Codex with a composable CLI surface it can use for actual implementation work. See the developer-mode, Docs MCP, and Codex CLI docs for the source pattern.
 

@@ -14,6 +14,7 @@
 | Testing Strategy | `docs/TESTING.md` | draft |
 | CI/CD | `docs/CICD.md` | draft |
 | Product Overview | `docs/PRD-Overview.md` | draft |
+| Codex Skill-First Packaging Guide | `docs/internal/codex-command-packaging-guide.md` | internal |
 | Active Workflow | `docs/workflows/full-dev-cycle.md` | active |
 | Task Log | `docs/CHANGELOG.md` | rolling |
 | Release Changelog | `CHANGELOG.md` (root) | rolling |
@@ -29,7 +30,8 @@
 
 Project-scoped intelligence — append to the current month's file.
 
-- `2026-04.md` — current
+- `2026-05.md` — current
+- `2026-04.md` — previous
 
 ---
 
@@ -37,4 +39,5 @@ Project-scoped intelligence — append to the current month's file.
 
 Portable lessons learned — append to the current month's file when the lesson is useful beyond this project.
 
-- `2026-04.md` — current
+- `2026-05.md` — current
+- `2026-04.md` — previous
