@@ -87,7 +87,7 @@ Run `/engineering:code-review` on each of the following files. For each file, re
 
 2. **Bootstrap skills**: Confirm all 4 are present at `.forge/skills/`: `testing-strategy/SKILL.md`, `code-review/SKILL.md`, `security/SKILL.md`, `quality-gates/SKILL.md`. Verify each file is non-empty and has correct frontmatter/structure.
 
-3. **Docs directory structure**: Verify `docs/help/` contains all 5 subdirectories: `getting-started/`, `concepts/`, `workflows/`, `reference/`, `troubleshooting/`. Verify `docs/internal/` and `docs/sessions/` exist.
+3. **Docs directory structure**: Verify `docs/help/` contains all 5 subdirectories: `getting-started/`, `concepts/`, `workflows/`, `reference/`, `troubleshooting/`. Verify `docs/internal/`, `docs/sessions/`, `docs/specs/`, and `docs/design/` exist.
 
 4. **Naming consistency**: Verify all internal references use consistent spelling and casing across `skills/forge/SKILL.md`, `README.md`, `docs/help/`, and `CHANGELOG.md`. Check: skill names, command names (`/forge`, `/forge-stop`), config key names (`provider_id`, `model_id`, `max_tokens`), and file paths.
 
