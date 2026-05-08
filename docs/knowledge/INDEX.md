@@ -21,6 +21,7 @@
 | Internal security log | `docs/internal/SECURITY.md` | historical |
 | Pre-release gate | `docs/internal/pre-release-quality-gate.md` | internal |
 | Codex Skill-First Packaging Guide | `docs/internal/codex-command-packaging-guide.md` | internal |
+| Documentation improvement recommendations | `docs/internal/doc-improvement-recommendations.md` | internal |
 | Task Log | `docs/CHANGELOG.md` | rolling |
 | Release Changelog | `CHANGELOG.md` (root) | rolling |
 | Archived specs | `docs/specs/README.md` | archived |
