@@ -101,7 +101,7 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 | Tier | Script | Runs without Forge/Code | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 21 suites — hook classifiers, idx audit, plugin integrity, slash commands, and Forge/Code coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 22 suites — hook classifiers, idx audit, plugin integrity, slash commands, post-release cleanup, and Forge/Code coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
 | **Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `code --version` + trivial `code exec` round-trip against the real binary, with `codex` kept as the compatibility alias. |
@@ -114,6 +114,8 @@ SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
 
 Before any release, complete the 4-stage pre-release quality gate until it passes twice in a row, then run the full live Forge/Codex pyramid twice with both live env vars, then publish through the release flow.
+
+After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 
 Without those env vars the gate still runs stage 1 and cleanly skips the live stages (exit 0), so it's safe to wire into CI.
 
