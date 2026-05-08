@@ -115,4 +115,16 @@ User receives styled narration           ◄──────┘
 
 - **New sidekick** (additional coding agent): add `skills/<name>/SKILL.md`, `commands/<name>-*.md`, `output-styles/<name>.md`, and a row in `sidekicks/registry.json`. Keep bridge skills only when a runtime needs a compatibility alias; the canonical instruction body lives in the skill file and the command docs stay thin wrappers. The shared hook library and manifest wiring should not need to change.
 - **Additional bootstrap skills**: extend the injection mapping in `skills/forge/SKILL.md` §Skill Injection. Ship as `.forge/skills/<name>/SKILL.md` with Forge-compatible frontmatter (`id`, `title`, `description`, `trigger`).
+
+## Documentation Surfaces
+
+The docs layer around this architecture uses a reader-first system:
+
+- `docs/START-HERE.md` routes people to the right task path
+- `docs/AUDIENCE.md` maps docs to readers
+- `docs/GLOSSARY.md` defines canonical terms
+- `docs/COMPATIBILITY.md` captures runtime differences across Claude, Codex, and Kay
+- `docs/ADR/` stores durable docs and architecture decisions
+
+The architecture doc should point readers at those files instead of repeating the same definitions in several places.
 - **Custom progress parsing**: `forge-progress-surface.sh` currently caps at 20 lines of the STATUS block. Extending to other Forge output shapes is a single `awk` stanza.

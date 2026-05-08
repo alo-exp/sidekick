@@ -8,6 +8,8 @@
 
 `docs/doc-scheme.md` is strong on **placement policy**: it tells us where docs live, what is durable, and how to keep planning artifacts separate from published docs. What it still does not fully provide is a complete **documentation system**: who each doc is for, what question it answers, how it is verified, and who owns it over time.
 
+Status note: this pass closes the non-governance items below by adding the reader model, glossary, compatibility matrix, ADR home, navigation layer, and docs verification contract.
+
 The biggest remaining gaps are:
 
 - no explicit audience model

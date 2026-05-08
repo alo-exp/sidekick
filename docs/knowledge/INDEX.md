@@ -10,6 +10,10 @@
 | Doc | Path | Status |
 |-----|------|--------|
 | Documentation scheme | `docs/doc-scheme.md` | authoritative |
+| Start here | `docs/START-HERE.md` | reader router |
+| Audience matrix | `docs/AUDIENCE.md` | reader model |
+| Glossary | `docs/GLOSSARY.md` | canonical terms |
+| Compatibility matrix | `docs/COMPATIBILITY.md` | runtime matrix |
 | Public docs home | `docs/index.html` | public |
 | Help center | `docs/help/` | public |
 | Architecture | `docs/ARCHITECTURE.md` | durable |
@@ -22,6 +26,7 @@
 | Pre-release gate | `docs/internal/pre-release-quality-gate.md` | internal |
 | Codex Skill-First Packaging Guide | `docs/internal/codex-command-packaging-guide.md` | internal |
 | Documentation improvement recommendations | `docs/internal/doc-improvement-recommendations.md` | internal |
+| ADR index | `docs/ADR/README.md` | durable |
 | Task Log | `docs/CHANGELOG.md` | rolling |
 | Release Changelog | `CHANGELOG.md` (root) | rolling |
 | Archived specs | `docs/specs/README.md` | archived |

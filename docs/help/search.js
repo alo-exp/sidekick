@@ -3,10 +3,27 @@
 (function () {
 
 var IDX = [
+  // ── DOCS NAVIGATION ───────────────────────────────────────────
+  { page:'Start Here', url:'../START-HERE.md', anchor:'start-here',
+    title:'Start Here — pick the right doc',
+    text:'Question-first navigation for install, delegate, debug, release, extend, and migrate. Use this page when you do not know where to begin.' },
+  { page:'Audience', url:'../AUDIENCE.md', anchor:'audience',
+    title:'Audience — who each doc is for',
+    text:'Reader matrix for new users, maintainers, release operators, plugin authors, Claude users, Codex users, and Kay operators.' },
+  { page:'Glossary', url:'../GLOSSARY.md', anchor:'glossary',
+    title:'Glossary — canonical terms',
+    text:'Single source of truth for Sidekick, Forge, Code / Kay, host Codex, delegate, skill, command, bridge, and wrapper.' },
+  { page:'Compatibility', url:'../COMPATIBILITY.md', anchor:'compatibility',
+    title:'Compatibility — Claude, Codex, and Kay',
+    text:'Runtime matrix covering shared vs runtime-specific behavior, skill source of truth, command discoverability, and provider / execution identity.' },
+  { page:'ADR', url:'../ADR/README.md', anchor:'adr',
+    title:'ADR index — durable docs decisions',
+    text:'Entry point for durable decision records about the docs system, taxonomy, glossary, compatibility, and verification model.' },
+
   // ── GETTING STARTED ───────────────────────────────────────────
   { page:'Getting Started', url:'getting-started/', anchor:'what-is-sidekick',
     title:'What is Sidekick?',
-    text:'Sidekick is a Claude Code plugin that gives Claude a team of specialized AI coding agents. Forge is the first sidekick — ForgeCode, the #2 ranked model on Terminal-Bench 2.0 with 81.8% score. Claude delegates entire coding tasks to Forge via structured prompts.' },
+    text:'Sidekick is a Claude Code plugin that gives Claude a team of specialized AI coding agents. Forge is the first sidekick, and Code is the MiniMax-backed Every Code sidekick. Claude delegates entire coding tasks to the active sidekick via structured prompts.' },
   { page:'Getting Started', url:'getting-started/', anchor:'prerequisites',
     title:'Prerequisites — Claude Code, OpenRouter API key',
     text:'Required: Claude Code npm install -g anthropic claude-code. OpenRouter API key from openrouter.ai for Forge access. Node.js 18 or later. No separate Forge install needed — Sidekick auto-installs and configures ForgeCode.' },
