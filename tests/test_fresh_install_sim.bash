@@ -17,10 +17,9 @@ assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 assert_skip() { echo -e "${yellow}SKIP${reset} $1: $2"; SKIP=$((SKIP+1)); }
 
-TMP_ROOT="${PLUGIN_DIR}/.tmp"
-mkdir -p "${TMP_ROOT}"
+TMP_ROOT="$(mktemp -d)"
 SANDBOX=$(mktemp -d "${TMP_ROOT}/forge-fresh-XXXXXX")
-trap 'rm -rf "${SANDBOX}" 2>/dev/null || true' EXIT
+trap 'rm -rf "${TMP_ROOT}" 2>/dev/null || true' EXIT
 echo "Sandbox: ${SANDBOX}"
 
 # ---------------------------------------------------------------------------
