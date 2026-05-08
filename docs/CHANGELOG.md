@@ -17,6 +17,14 @@
 
 <!-- ENTRIES BELOW — newest first -->
 
+## 2026-05-08 — docs-help-coverage
+**What**: Brought the help-site and docs metadata into alignment with the docs scheme, including stable local icon assets, relative search URLs, and explicit homes for preserved docs material.
+**Commits**: 2110cfc
+**Skills run**: using-superpowers, verification-before-completion, gsd:docs-update
+**Virtual cost**: ~$0.05 (docs-heavy pass)
+**knowledge/YYYY-MM.md**: updated (documentation organization, local assets) | no changes
+**lessons/YYYY-MM.md**: updated (documentation organization, local assets) | no changes
+
 ## 2026-05-08 — docs-gap-cleanup
 **What**: Aligned the docs scheme, knowledge index, and preserved-doc folders with the real tree so public docs, internal docs, workflows, and archived spec/design material all have explicit homes.
 **Commits**: 362b189
