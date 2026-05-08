@@ -80,5 +80,6 @@ run_stage "Live-Codex E2E testapp"      "${SCRIPT_DIR}/run_live_codex_e2e.bash"
 echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 echo -e "${green}${bold}RELEASE GATE PASSED${reset} — safe to tag."
+echo -e "${yellow}Next:${reset} run ${bold}bash tests/post_release_cleanup.bash${reset} after the release is published."
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 exit 0

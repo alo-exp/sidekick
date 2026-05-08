@@ -49,7 +49,13 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
 
 5. **GitHub Release** — `gh release create vX.Y.Z --notes-file <notes.md>`.
 
-6. **Plugin cache sync** — `autoUpdate: true` in `~/.claude/settings.json` picks up the new tag on next session start. For an immediate local bump, clone the new tag into `~/.claude/plugins/cache/alo-exp/sidekick/<version>/`.
+6. **Post-release cleanup** — remove non-essential repo-local artifacts with:
+   ```bash
+   bash tests/post_release_cleanup.bash
+   ```
+   This clears transient build / cache directories from the local repo so the release session ends cleanly.
+
+7. **Plugin cache sync** — `autoUpdate: true` in `~/.claude/settings.json` picks up the new tag on next session start. For an immediate local bump, clone the new tag into `~/.claude/plugins/cache/alo-exp/sidekick/<version>/`.
 
 ---
 

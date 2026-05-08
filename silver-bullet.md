@@ -825,6 +825,11 @@ to the user before proceeding to the next stage.
 
 > **Anti-Skip:** You are violating this rule if you attempt /silver-release or /create-release without all four quality-gate-stage-N markers in `~/.claude/.sidekick/quality-gate-state` and two clean runs of the full Forge/Codex live pyramid. completion-audit.sh will block the release. Each stage requires explicit /superpowers:verification-before-completion invocation — the marker alone is insufficient.
 
+**Post-release cleanup:** Immediately after `/silver-release` or `/create-release`
+completes, run `bash tests/post_release_cleanup.bash` to remove transient repo-local
+artifacts such as temporary and cache build directories. The release session is
+not considered finished until the working tree is clean again.
+
 ---
 
 ## 10. User Workflow Preferences
