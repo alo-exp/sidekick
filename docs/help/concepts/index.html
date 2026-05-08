@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Core Concepts — Sidekick Help</title>
-<meta name="description" content="Understand Sidekick's core concepts: Forge delegation mode, SKILL.md activation, the fallback ladder, skill injection, AGENTS.md mentoring, and token optimization.">
+<meta name="description" content="Understand Sidekick's core concepts: delegation mode, SKILL.md activation, the fallback ladder, skill injection, AGENTS.md mentoring, token optimization, and runtime compatibility.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -130,7 +130,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Core Concepts</span>
     </div>
     <h1>Core Concepts</h1>
-    <p>The building blocks of Forge delegation — how SKILL.md works, what the fallback ladder does, and how AGENTS.md keeps getting smarter over time.</p>
+    <p>The building blocks of Sidekick delegation — how SKILL.md works, what the fallback ladder does, and how AGENTS.md keeps getting smarter over time. For canonical terms, see <a href="../../GLOSSARY.md">Glossary</a>.</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="callout callout-info">
+    <span class="callout-icon"><i data-lucide="info"></i></span>
+    <div class="callout-body"><strong>Working across runtimes?</strong> Keep <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a> handy while you read the deeper sections.</div>
   </div>
 </div>
 
@@ -159,7 +166,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>The key insight is that Forge (ForgeCode) is a specialized coding agent that operates autonomously. Claude's role is to communicate the task clearly, not to do the implementation itself.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Delegation persists until deactivated.</strong> Once <code>/forge</code> is active, all coding tasks are delegated to Forge. To return to Claude doing implementation directly, deactivate with <code>/forge-stop</code>.</div>
+        <div class="callout-body"><strong>Delegation persists until deactivated.</strong> Once <code>/forge</code> is active, all coding tasks are delegated to Forge. To return to Claude doing implementation directly, deactivate with <code>/forge-stop</code>. If you are orienting yourself first, read <a href="../../START-HERE.md">Start Here</a>.</div>
       </div>
 
       <h2 id="skill-md">SKILL.md — The Instruction Set</h2>

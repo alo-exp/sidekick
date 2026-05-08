@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Command Reference — Sidekick Help</title>
-<meta name="description" content="Complete reference for Sidekick: /forge commands, SKILL.md sections, .forge.toml options, bootstrap skills, and AGENTS.md format.">
+<meta name="description" content="Complete reference for Sidekick: commands, SKILL.md sections, config options, bootstrap skills, glossary terms, and runtime compatibility.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -113,7 +113,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Command Reference</span>
     </div>
     <h1>Command Reference</h1>
-    <p>Every /forge invocation, SKILL.md section, .forge.toml option, bootstrap skill, and AGENTS.md format — all in one place.</p>
+    <p>Every command, SKILL.md section, config option, bootstrap skill, and canonical term — all in one place. If you need the vocabulary first, read <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a>.</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="callout callout-info">
+    <span class="callout-icon"><i data-lucide="info"></i></span>
+    <div class="callout-body"><strong>Reader docs:</strong> <a href="../../START-HERE.md">Start Here</a> for the task map, <a href="../../AUDIENCE.md">Audience</a> for the reader matrix, and <a href="../../COMPATIBILITY.md">Compatibility</a> for runtime differences.</div>
   </div>
 </div>
 
@@ -127,6 +134,9 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <li class="sidebar-section">Configuration</li>
         <li><a href="#forge-toml">.forge.toml Config</a></li>
         <li><a href="#bootstrap-skills">Bootstrap Skills</a></li>
+        <li class="sidebar-section">Terms</li>
+        <li><a href="../../GLOSSARY.md">Glossary Matrix</a></li>
+        <li><a href="../../COMPATIBILITY.md">Compatibility Matrix</a></li>
         <li class="sidebar-section">Output &amp; Files</li>
         <li><a href="#forge-hooks">Plugin Hooks</a></li>
         <li><a href="#output-format">Output Format</a></li>

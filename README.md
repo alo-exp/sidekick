@@ -13,6 +13,18 @@ More sidekicks planned.
 
 ---
 
+## Docs
+
+If you want the docs in the right order, start here:
+
+- [Start Here](docs/START-HERE.md) — task-first navigation
+- [Audience](docs/AUDIENCE.md) — who each doc is for
+- [Glossary](docs/GLOSSARY.md) — canonical terminology
+- [Compatibility](docs/COMPATIBILITY.md) — Claude, Codex, and Kay runtime differences
+- [ADR index](docs/ADR/README.md) — durable docs-system decisions
+
+For help-site workflows, use the [Help Center](docs/help/).
+
 ## Installation
 
 Add to `~/.claude/settings.json`:

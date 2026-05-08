@@ -115,10 +115,10 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="container">
     <div class="badge"><i data-lucide="book-open"></i> Help Center</div>
     <h1>How Can We Help You?</h1>
-    <p>Everything you need to delegate coding work to Forge — from first install to mastering the fallback ladder and AGENTS.md mentoring.</p>
+    <p>Everything you need to find the right Sidekick docs for your task — from first install to delegation, debugging, release prep, and runtime differences.</p>
     <div class="search-wrap">
       <span class="search-icon"><i data-lucide="search"></i></span>
-      <input type="text" placeholder="Search topics, commands, concepts…" id="search-input" autocomplete="off">
+      <input type="text" placeholder="Search tasks, docs, commands, concepts…" id="search-input" autocomplete="off">
     </div>
   </div>
 </section>
@@ -136,16 +136,16 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <section style="padding:40px 0">
   <div class="container">
     <div class="quick-grid">
-      <a href="getting-started/" class="quick-link"><span class="ql-icon"><i data-lucide="rocket"></i></span> Quick Start</a>
-      <a href="getting-started/#install" class="quick-link"><span class="ql-icon"><i data-lucide="package"></i></span> Installation</a>
-      <a href="concepts/#skill-md" class="quick-link"><span class="ql-icon"><i data-lucide="file-code"></i></span> /forge Skill</a>
-      <a href="concepts/#fallback-ladder" class="quick-link"><span class="ql-icon"><i data-lucide="layers"></i></span> Fallback Ladder</a>
-      <a href="workflows/" class="quick-link"><span class="ql-icon"><i data-lucide="git-branch-plus"></i></span> Delegation Workflow</a>
-      <a href="concepts/#agents-md" class="quick-link"><span class="ql-icon"><i data-lucide="brain"></i></span> AGENTS.md</a>
-      <a href="concepts/#skill-injection" class="quick-link"><span class="ql-icon"><i data-lucide="plug"></i></span> Skill Injection</a>
-      <a href="concepts/#token-optimization" class="quick-link"><span class="ql-icon"><i data-lucide="gauge"></i></span> Token Budgets</a>
-      <a href="reference/" class="quick-link"><span class="ql-icon"><i data-lucide="clipboard-list"></i></span> Command Reference</a>
-      <a href="troubleshooting/" class="quick-link"><span class="ql-icon"><i data-lucide="wrench"></i></span> Troubleshooting</a>
+      <a href="../START-HERE.md" class="quick-link"><span class="ql-icon"><i data-lucide="map"></i></span> Start Here</a>
+      <a href="../AUDIENCE.md" class="quick-link"><span class="ql-icon"><i data-lucide="users"></i></span> Audience</a>
+      <a href="../GLOSSARY.md" class="quick-link"><span class="ql-icon"><i data-lucide="book-open"></i></span> Glossary</a>
+      <a href="../COMPATIBILITY.md" class="quick-link"><span class="ql-icon"><i data-lucide="layers"></i></span> Compatibility</a>
+      <a href="getting-started/" class="quick-link"><span class="ql-icon"><i data-lucide="rocket"></i></span> Install</a>
+      <a href="workflows/" class="quick-link"><span class="ql-icon"><i data-lucide="git-branch-plus"></i></span> Delegate</a>
+      <a href="troubleshooting/" class="quick-link"><span class="ql-icon"><i data-lucide="wrench"></i></span> Debug</a>
+      <a href="../ADR/README.md" class="quick-link"><span class="ql-icon"><i data-lucide="notebook-pen"></i></span> Decisions</a>
+      <a href="reference/" class="quick-link"><span class="ql-icon"><i data-lucide="clipboard-list"></i></span> Reference</a>
+      <a href="concepts/" class="quick-link"><span class="ql-icon"><i data-lucide="brain"></i></span> Concepts</a>
     </div>
   </div>
 </section>
@@ -154,20 +154,34 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <section>
   <div class="container">
     <div class="section-label">Documentation</div>
-    <h2 class="section-title">Browse by Topic</h2>
-    <p class="section-desc">Pick where you want to start — or read all sections end-to-end for a complete picture.</p>
+    <h2 class="section-title">Choose a task or topic</h2>
+    <p class="section-desc">Start with the page that matches what you want to do. Pick the page that matches your role or your task, then drill into the detailed topic pages if you need more context.</p>
     <div class="help-grid" id="help-grid">
+
+      <a href="../START-HERE.md" class="help-card" data-keywords="start here audience glossary compatibility install delegate debug release extend migrate reader model task map">
+        <div class="card-icon"><i data-lucide="map"></i></div>
+        <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Task map</span>
+        <h3>Start Here</h3>
+        <p>The question-first entry point. Use this if you do not yet know which Sidekick doc to read first.</p>
+        <ul class="card-topics">
+          <li>Find the right doc by role or task</li>
+          <li>Jump to install, delegate, debug, release, extend, or migrate</li>
+          <li>Use the glossary and compatibility matrix when terms drift</li>
+          <li>Follow the reader model instead of the folder tree</li>
+        </ul>
+        <div class="card-cta">Open start page →</div>
+      </a>
 
       <a href="getting-started/" class="help-card" data-keywords="install setup prerequisites beginner first run forge invocation openrouter health check">
         <div class="card-icon"><i data-lucide="rocket"></i></div>
         <span class="card-badge" style="background:var(--green-subtle);color:var(--green)">Start here</span>
         <h3>Getting Started</h3>
-        <p>New to Sidekick? Install the plugin, configure Forge via OpenRouter, and delegate your first coding task in minutes.</p>
+        <p>New to Sidekick? Install the plugin, configure the active sidekick, and delegate your first coding task in minutes.</p>
         <ul class="card-topics">
           <li>Installing Sidekick via /plugin install</li>
-          <li>Forge prerequisites — OpenRouter API key</li>
-          <li>Running /forge health check</li>
+          <li>Runtime prerequisites and health checks</li>
           <li>Your first delegation task</li>
+          <li>Reading the task-first docs map</li>
           <li>Understanding AGENTS.md bootstrap</li>
         </ul>
         <div class="card-cta">Read guide →</div>
@@ -177,13 +191,13 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="brain"></i></div>
         <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Fundamentals</span>
         <h3>Core Concepts</h3>
-        <p>Understand how Forge delegation works — SKILL.md activation, the fallback ladder, AGENTS.md mentoring, and token budgets.</p>
+        <p>Understand how Sidekick works — SKILL.md activation, the fallback ladder, AGENTS.md mentoring, and the runtime compatibility model.</p>
         <ul class="card-topics">
-          <li>Forge delegation mode and SKILL.md</li>
+          <li>Delegation mode and SKILL.md</li>
           <li>Fallback ladder: L1 Guide → L2 Handhold → L3 Take over</li>
           <li>Skill injection and the mapping table</li>
           <li>AGENTS.md three-tier mentoring loop</li>
-          <li>Token optimization and .forge.toml</li>
+          <li>Token optimization and runtime-specific config</li>
         </ul>
         <div class="card-cta">Read concepts →</div>
       </a>
@@ -192,11 +206,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="git-branch-plus"></i></div>
         <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Workflow</span>
         <h3>Delegation Workflow</h3>
-        <p>The end-to-end flow for delegating a task to Forge — from activating the skill to reviewing output and updating AGENTS.md.</p>
+        <p>The end-to-end flow for delegating a task — from activating the skill to reviewing output and updating AGENTS.md.</p>
         <ul class="card-topics">
-          <li>Activating Forge delegation mode</li>
+          <li>Activating delegation mode</li>
           <li>Crafting the 5-field task prompt</li>
-          <li>Monitoring Forge output and detecting failures</li>
+          <li>Monitoring sidekick output and detecting failures</li>
           <li>DEBRIEF template on L3 takeover</li>
           <li>Post-session AGENTS.md update</li>
         </ul>
@@ -207,11 +221,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="clipboard-list"></i></div>
         <span class="card-badge" style="background:var(--amber-subtle);color:var(--amber)">Reference</span>
         <h3>Command Reference</h3>
-        <p>Every /forge command, SKILL.md section, .forge.toml option, and bootstrap skill — all in one place.</p>
+        <p>Every command, SKILL.md section, config option, bootstrap skill, and canonical term — all in one place.</p>
         <ul class="card-topics">
-          <li>/forge activation and deactivation</li>
+          <li>Activation and deactivation commands</li>
           <li>5-field task prompt structure</li>
-          <li>.forge.toml compaction defaults</li>
+          <li>Runtime config defaults</li>
           <li>Bootstrap skills catalog</li>
           <li>AGENTS.md format and categories</li>
         </ul>
@@ -222,10 +236,10 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="wrench"></i></div>
         <span class="card-badge" style="background:var(--red-subtle);color:var(--red)">Help</span>
         <h3>Troubleshooting</h3>
-        <p>Common issues with Forge health checks, OpenRouter configuration, fallback ladder triggers, and session recovery.</p>
+        <p>Common issues with health checks, runtime configuration, fallback ladder triggers, and session recovery.</p>
         <ul class="card-topics">
           <li>Health check failures and fixes</li>
-          <li>OpenRouter API key and model config</li>
+          <li>Provider and model config</li>
           <li>Fallback ladder not triggering</li>
           <li>AGENTS.md dedup false positives</li>
           <li>Recovery from L3 takeover sessions</li>

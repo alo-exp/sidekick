@@ -29,13 +29,37 @@ The repository root stays intentionally small and role-based. The main groups ar
 
 Transient build/cache output should not accumulate in the repo root. The post-release cleanup step removes only temporary artifacts; planning/spec/design content stays intact.
 
+### Reader-first docs layer
+
+The docs system is easier to use when readers can find the right entry point without already knowing the folder structure. These docs provide the reader model:
+
+| Doc | Purpose |
+|-----|---------|
+| `docs/START-HERE.md` | Question-first navigation for install, delegate, debug, release, extend, and migrate |
+| `docs/AUDIENCE.md` | Reader matrix — who each doc is for and where they should begin |
+| `docs/GLOSSARY.md` | Canonical vocabulary for Sidekick, Forge, Code/Kay, skills, commands, bridges, and wrappers |
+| `docs/COMPATIBILITY.md` | Runtime matrix for Claude, Codex, and Kay |
+| `docs/ADR/README.md` | Entry point for durable decision records |
+
 The docs tree has a few stable subareas:
 
 - `docs/index.html` and `docs/help/` are the public docs surface
 - `docs/internal/` holds reviews, audits, and release-gate references
+- `docs/ADR/` holds durable architecture and documentation decisions
 - `docs/workflows/` holds durable workflow documentation
 - `docs/knowledge/` and `docs/lessons/` hold append-only project memory
 - `docs/specs/` and `docs/design/` preserve archived spec/design material when relevant
+
+### Doc-type taxonomy
+
+The docs tree is also organized by **intent** rather than just by location:
+
+| Doc type | Primary locations | What it answers |
+|----------|-------------------|-----------------|
+| Tutorial | `docs/help/getting-started/`, `docs/START-HERE.md` | How do I begin? |
+| Explanation | `docs/help/concepts/`, `docs/ARCHITECTURE.md` | Why is it built this way? |
+| How-to | `docs/help/workflows/`, `docs/help/troubleshooting/` | How do I do or fix a task? |
+| Reference | `docs/help/reference/`, `docs/GLOSSARY.md`, `docs/COMPATIBILITY.md` | What does each term, command, or runtime difference mean? |
 
 ---
 
