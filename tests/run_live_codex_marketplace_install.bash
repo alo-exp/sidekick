@@ -120,30 +120,24 @@ else
   fail "marketplace_config_entry" "missing local marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
-echo "=== codex_command_surface ==="
-if [ -f "${SIDEKICK_DIR}/commands/codex-stop.md" ] \
-  && [ -f "${SIDEKICK_DIR}/commands/codex-history.md" ] \
-  && [ -f "${SIDEKICK_DIR}/commands/forge-stop.md" ] \
-  && [ -f "${SIDEKICK_DIR}/commands/forge-history.md" ] \
-  && [ -f "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" ] \
+echo "=== codex_skill_surface ==="
+if [ -f "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" ] \
   && [ -f "${SIDEKICK_DIR}/skills/codex-delegate.md" ] \
   && [ -f "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" ] \
-  && [ -f "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
+  && [ -f "${SIDEKICK_DIR}/skills/forge/SKILL.md" ] \
   && [ -f "${SIDEKICK_DIR}/skills/forge-stop/SKILL.md" ] \
-  && [ -f "${SIDEKICK_DIR}/skills/forge-history/SKILL.md" ] \
+  && [ ! -f "${SIDEKICK_DIR}/skills/codex/SKILL.md" ] \
+  && [ ! -f "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
+  && [ ! -f "${SIDEKICK_DIR}/skills/forge-history/SKILL.md" ] \
   && grep -q '^name: codex-delegate' "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" \
-  && grep -q 'skills/codex-stop/SKILL.md' "${SIDEKICK_DIR}/commands/codex-stop.md" \
-  && grep -q 'skills/codex-history/SKILL.md' "${SIDEKICK_DIR}/commands/codex-history.md" \
-  && grep -q 'skills/forge-stop/SKILL.md' "${SIDEKICK_DIR}/commands/forge-stop.md" \
-  && grep -q 'skills/forge-history/SKILL.md' "${SIDEKICK_DIR}/commands/forge-history.md" \
   && grep -q '\.codex-delegation-active' "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" \
-  && grep -q 'tail -n 20' "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" \
+  && grep -q '^name: forge-delegate' "${SIDEKICK_DIR}/skills/forge/SKILL.md" \
   && grep -q '\.forge-delegation-active' "${SIDEKICK_DIR}/skills/forge-stop/SKILL.md" \
-  && grep -q 'forge conversation info' "${SIDEKICK_DIR}/skills/forge-history/SKILL.md"
+  && grep -q '/forge-stop' "${SIDEKICK_DIR}/skills/forge/SKILL.md"
 then
-  pass "Codex marketplace source exposes thin command wrappers plus canonical Forge and Codex skill workflows"
+  pass "Codex marketplace source exposes only the 4 canonical Sidekick skills"
 else
-  fail "codex_command_surface" "command wrappers or canonical skill workflows missing or mis-targeted"
+  fail "codex_skill_surface" "canonical 4-skill surface is missing or mis-targeted"
 fi
 
 read -r -d '' TASK_PROMPT <<'EOF' || true

@@ -1,6 +1,6 @@
 ---
 name: codex-stop
-description: Canonical Codex stop workflow. Use /codex-stop or the command wrapper to deactivate delegation and return to direct Claude behavior.
+description: Canonical Codex stop workflow. Use /codex-stop to deactivate delegation and return to direct Claude behavior.
 ---
 
 # Codex Stop Workflow
@@ -15,5 +15,5 @@ Stop Codex mode and restore normal Claude behavior.
 
 ## Notes
 
-- `.codex/conversations.idx` is preserved across deactivation. It is the Sidekick-owned Codex audit ledger and remains readable via `/codex-history`.
+- `.codex/conversations.idx` is preserved across deactivation as the Sidekick-owned Codex audit ledger.
 - Deactivation does not touch Codex’s native `~/.code/history.jsonl` history file or any project files.

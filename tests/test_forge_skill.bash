@@ -50,14 +50,20 @@ grep -q 'Token' "${SKILL_FILE}" && grep -q 'Optim' "${SKILL_FILE}" && assert_pas
 echo "=== T10: Skill Injection section present ==="
 grep -q 'Skill Injection' "${SKILL_FILE}" && assert_pass "Skill Injection section present" || assert_fail "Skill Injection" "not found"
 
-echo "=== T11: Skill-first wrapper note present ==="
+echo "=== T11: Canonical stop skill note present ==="
 if grep -q 'skills/forge-stop/SKILL.md' "${SKILL_FILE}" \
-  && grep -q 'skills/forge-history/SKILL.md' "${SKILL_FILE}" \
-  && grep -q 'commands/' "${SKILL_FILE}" \
-  && grep -qiE 'thin wrappers|source of truth' "${SKILL_FILE}"; then
-  assert_pass "Skill-first wrapper note present"
+  && grep -qiE 'canonical|source of truth' "${SKILL_FILE}" \
+  && ! grep -q 'skills/forge-history/SKILL.md' "${SKILL_FILE}"; then
+  assert_pass "Canonical stop skill note present"
 else
-  assert_fail "Skill-first wrapper note" "missing skill-first packaging note"
+  assert_fail "Canonical stop note" "missing canonical stop-skill note or stale forge-history reference present"
+fi
+
+echo "=== T12: forge-history skill file removed ==="
+if [ ! -f "${PLUGIN_DIR}/skills/forge-history/SKILL.md" ]; then
+  assert_pass "forge-history skill file removed"
+else
+  assert_fail "forge-history removal" "skills/forge-history/SKILL.md still present"
 fi
 
 echo ""

@@ -21,7 +21,7 @@ The repository root stays intentionally small and role-based. The main groups ar
 | Group | Path | Purpose |
 |------|------|---------|
 | Plugin manifests | `.claude-plugin/`, `.codex-plugin/` | Runtime packaging and install metadata |
-| Orchestration | `.claude/`, `.forge/`, `hooks/`, `skills/`, `commands/`, `output-styles/`, `sidekicks/` | Sidekick behavior, enforcement, and user-facing entrypoints |
+| Orchestration | `.claude/`, `.forge/`, `hooks/`, `skills/`, `output-styles/`, `sidekicks/` | Sidekick behavior, enforcement, and user-facing entrypoints |
 | Documentation | `docs/` | Durable product, test, process, help, and internal audit docs |
 | Planning | `.planning/` | Ephemeral milestone and spec artifacts |
 | Tests | `tests/` | Fast unit/integration and release-gate checks |
@@ -37,7 +37,7 @@ The docs system is easier to use when readers can find the right entry point wit
 |-----|---------|
 | `docs/START-HERE.md` | Question-first navigation for install, delegate, debug, release, extend, and migrate |
 | `docs/AUDIENCE.md` | Reader matrix — who each doc is for and where they should begin |
-| `docs/GLOSSARY.md` | Canonical vocabulary for Sidekick, Forge, Code/Kay, skills, commands, bridges, and wrappers |
+| `docs/GLOSSARY.md` | Canonical vocabulary for Sidekick, Forge, Code/Kay, skills, selectors, bridges, and wrappers |
 | `docs/COMPATIBILITY.md` | Runtime matrix for Claude, Codex, and Kay |
 | `docs/ADR/README.md` | Entry point for durable decision records |
 

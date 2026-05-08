@@ -75,7 +75,7 @@ _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge --conversat
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
     && echo "${_ctx}" | grep -q 'FILES_CHANGED: \[utils.py\]' \
-    && echo "${_ctx}" | grep -q '/forge-history' \
+    && echo "${_ctx}" | grep -q '/forge-stop' \
     && echo "${_ctx}" | grep -q '\[FORGE-SUMMARY\]' \
     && echo "${_ctx}" | grep -q '\[UNTRUSTED\]'; then
   assert_pass "test_emits_summary_when_status_block_present"
@@ -105,6 +105,7 @@ echo "=== test_replay_hint_absent_when_no_conversation_id ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"x\""},"tool_response":{"output":"STATUS: SUCCESS\nFILES_CHANGED: []\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []"}}')"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
+    && echo "${_ctx}" | grep -q '/forge-stop' \
     && echo "${_ctx}" | grep -q 'no conversation-id captured' \
     && echo "${_ctx}" | grep -q '\[UNTRUSTED\]'; then
   assert_pass "test_replay_hint_absent_when_no_conversation_id"

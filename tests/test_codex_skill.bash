@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — skills/codex/SKILL.md Tests
+# Sidekick Plugin — Codex skill surface tests
 # =============================================================================
 
 set -euo pipefail
@@ -8,99 +8,70 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
-SKILL_FILE="${PLUGIN_DIR}/skills/codex/SKILL.md"
-LEGACY_FILE="${PLUGIN_DIR}/skills/codex.md"
 DELEGATE_FILE="${PLUGIN_DIR}/skills/codex-delegate/SKILL.md"
 DELEGATE_LEGACY_FILE="${PLUGIN_DIR}/skills/codex-delegate.md"
+STOP_FILE="${PLUGIN_DIR}/skills/codex-stop/SKILL.md"
+REMOVED_CODEX_FILE="${PLUGIN_DIR}/skills/codex/SKILL.md"
+REMOVED_CODEX_LEGACY="${PLUGIN_DIR}/skills/codex.md"
+REMOVED_HISTORY_FILE="${PLUGIN_DIR}/skills/codex-history/SKILL.md"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
-[ -f "${SKILL_FILE}" ] || { echo "ERROR: ${SKILL_FILE} missing"; exit 1; }
-[ -f "${LEGACY_FILE}" ] || { echo "ERROR: ${LEGACY_FILE} missing"; exit 1; }
 [ -f "${DELEGATE_FILE}" ] || { echo "ERROR: ${DELEGATE_FILE} missing"; exit 1; }
 [ -f "${DELEGATE_LEGACY_FILE}" ] || { echo "ERROR: ${DELEGATE_LEGACY_FILE} missing"; exit 1; }
+[ -f "${STOP_FILE}" ] || { echo "ERROR: ${STOP_FILE} missing"; exit 1; }
 
-echo "=== T1: YAML frontmatter contains name: codex ==="
-grep -q '^name: codex' "${SKILL_FILE}" && assert_pass "name: codex present" || assert_fail "YAML frontmatter" "name: codex not found"
-
-echo "=== T2: Health Check section present ==="
-grep -q 'Health Check' "${SKILL_FILE}" && assert_pass "Health Check section present" || assert_fail "Health Check" "not found"
-
-echo "=== T3: Delegation Protocol section present ==="
-grep -q 'Delegation Protocol' "${SKILL_FILE}" && assert_pass "Delegation Protocol section present" || assert_fail "Delegation Protocol" "not found"
-
-echo "=== T4: Native Workflow section present ==="
-grep -q 'Native Workflow' "${SKILL_FILE}" && assert_pass "Native Workflow section present" || assert_fail "Native Workflow" "not found"
-
-echo "=== T5: Host Routing section present ==="
-if grep -q 'Host Routing' "${SKILL_FILE}" \
-  && grep -q 'Claude Code' "${SKILL_FILE}" \
-  && grep -q 'Codex' "${SKILL_FILE}"; then
-  assert_pass "Host Routing section present"
+echo "=== T1: canonical codex-delegate frontmatter ==="
+if grep -q '^name: codex-delegate' "${DELEGATE_FILE}"; then
+  assert_pass "name: codex-delegate present"
 else
-  assert_fail "Host Routing" "not found"
+  assert_fail "frontmatter" "name: codex-delegate not found"
 fi
 
-echo "=== T6: codex exec guidance present ==="
-if grep -q 'codex exec --full-auto' "${SKILL_FILE}" \
-  && grep -q 'code exec --full-auto' "${SKILL_FILE}" \
-  && grep -q 'coder exec --full-auto' "${SKILL_FILE}"; then
-  assert_pass "codex/code/coder exec guidance present"
+echo "=== T2: codex-delegate contains runtime delegation guidance ==="
+if grep -q 'code exec --full-auto' "${DELEGATE_FILE}" \
+  && grep -q 'codex exec --full-auto' "${DELEGATE_FILE}" \
+  && grep -q 'coder exec --full-auto' "${DELEGATE_FILE}"; then
+  assert_pass "delegate commands for code/codex/coder present"
 else
-  assert_fail "delegation command guidance" "missing one of codex/code/coder exec references"
+  assert_fail "delegation guidance" "missing one or more runtime command variants"
 fi
 
-echo "=== T7: MiniMax config guidance present ==="
-if grep -q 'MiniMax-M2.7' "${SKILL_FILE}" \
-  && grep -q '~/.code/config.toml' "${SKILL_FILE}" \
-  && grep -q '~/.codex/config.toml' "${SKILL_FILE}"; then
-  assert_pass "MiniMax config guidance present"
+echo "=== T3: codex-delegate workflow sections present ==="
+if grep -q 'STEP 0' "${DELEGATE_FILE}" \
+  && grep -q 'Delegation Protocol' "${DELEGATE_FILE}" \
+  && grep -q 'Native Workflow' "${DELEGATE_FILE}"; then
+  assert_pass "step structure present"
 else
-  assert_fail "MiniMax config" "missing runtime config references"
+  assert_fail "workflow structure" "missing expected sections"
 fi
 
-echo "=== T8: AGENTS.md and subagent guidance present ==="
-if grep -q 'AGENTS.md' "${SKILL_FILE}" && grep -q 'subagent' "${SKILL_FILE}"; then
-  assert_pass "AGENTS.md and subagent guidance present"
+echo "=== T4: codex-stop frontmatter and marker handling ==="
+if grep -q '^name: codex-stop' "${STOP_FILE}" \
+  && grep -q '\.codex-delegation-active' "${STOP_FILE}"; then
+  assert_pass "codex-stop marker workflow present"
 else
-  assert_fail "workflow guidance" "missing AGENTS.md or subagent mention"
+  assert_fail "codex-stop" "missing name or marker handling"
 fi
 
-echo "=== T9: Skill-first wrapper note present ==="
-if grep -q 'skills/forge-stop/SKILL.md' "${SKILL_FILE}" \
-  && grep -q 'skills/codex-stop/SKILL.md' "${SKILL_FILE}" \
-  && grep -q 'commands/' "${SKILL_FILE}" \
-  && grep -qiE 'thin wrappers|source of truth' "${SKILL_FILE}"; then
-  assert_pass "skill-first wrapper note present"
-else
-  assert_fail "skill-first wrapper note" "missing skill-first packaging note"
-fi
-
-echo "=== T10: Legacy wrapper points to canonical skill ==="
-if grep -q 'skills/codex/SKILL.md' "${LEGACY_FILE}" && grep -qi 'deprecated' "${LEGACY_FILE}"; then
-  assert_pass "legacy wrapper points to canonical skill"
-else
-  assert_fail "legacy wrapper" "missing canonical skill reference or deprecation note"
-fi
-
-echo "=== T11: codex-delegate bridge points to canonical skill ==="
-if grep -q 'skills/codex/SKILL.md' "${DELEGATE_FILE}" \
-  && grep -qi 'bridge' "${DELEGATE_FILE}" \
-  && grep -q '^name: codex-delegate' "${DELEGATE_FILE}"; then
-  assert_pass "codex-delegate bridge points to canonical skill"
-else
-  assert_fail "codex-delegate bridge" "missing canonical skill reference, bridge note, or alias name"
-fi
-
-echo "=== T12: codex-delegate legacy flat alias remains available ==="
+echo "=== T5: legacy alias points to canonical codex-delegate skill ==="
 if grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
   && grep -qi 'deprecated' "${DELEGATE_LEGACY_FILE}" \
   && grep -q '^name: codex-delegate' "${DELEGATE_LEGACY_FILE}"; then
-  assert_pass "codex-delegate legacy flat alias remains available"
+  assert_pass "legacy alias points to canonical delegate skill"
 else
-  assert_fail "codex-delegate legacy alias" "missing canonical bridge reference, deprecation note, or alias name"
+  assert_fail "legacy alias" "missing canonical reference, deprecation note, or alias name"
+fi
+
+echo "=== T6: removed codex canonical/history skills are absent ==="
+if [ ! -f "${REMOVED_CODEX_FILE}" ] \
+  && [ ! -f "${REMOVED_CODEX_LEGACY}" ] \
+  && [ ! -f "${REMOVED_HISTORY_FILE}" ]; then
+  assert_pass "codex, codex legacy, and codex-history files removed"
+else
+  assert_fail "removed skills" "one or more removed codex skill files still present"
 fi
 
 echo ""

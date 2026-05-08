@@ -61,7 +61,7 @@ main() {
   [[ -n "$summary" ]] || exit 0
 
   header="[CODEX-SUMMARY] [UNTRUSTED] === Codex task complete ==="
-  footer="[CODEX-SUMMARY] [UNTRUSTED] History: $(jq -r --arg sidekick "$SIDEKICK_NAME" '.[$sidekick].history_command' "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../sidekicks/registry.json")"
+  footer="[CODEX-SUMMARY] [UNTRUSTED] Stop delegation: $(jq -r --arg sidekick "$SIDEKICK_NAME" '.[$sidekick].stop_command' "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../sidekicks/registry.json")"
   payload="$(printf '%s\n%s\n%s' "$header" "$(printf '%s' "$summary" | sed 's/^/[CODEX-SUMMARY] [UNTRUSTED] /')" "$footer")"
 
   jq -cn --arg ctx "$payload" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'

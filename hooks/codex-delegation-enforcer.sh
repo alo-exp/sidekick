@@ -46,10 +46,6 @@ delegate_command() {
   sidekick_registry_get "$SIDEKICK_NAME" '.[$sidekick].delegate_command'
 }
 
-history_command() {
-  sidekick_registry_get "$SIDEKICK_NAME" '.[$sidekick].history_command'
-}
-
 resolve_codex_binary_name() {
   local candidate
   for candidate in codex code coder; do

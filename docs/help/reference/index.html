@@ -147,14 +147,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
     <div class="doc-content">
 
-      <h2 id="forge-commands">/forge Commands</h2>
+      <h2 id="forge-commands">Delegation Skills</h2>
       <table class="ref-table">
         <thead><tr><th>Command</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td>/forge</td><td>Activate Forge delegation mode. Runs health check, bootstraps AGENTS.md if absent, loads SKILL.md.</td></tr>
           <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct Claude implementation.</td></tr>
-          <tr><td>/forge status</td><td>Show current activation state, model, and .forge.toml config summary.</td></tr>
-          <tr><td>/forge-history</td><td>List recent Forge conversations indexed by the progress-surface hook. Shows UUID, timestamp, tool counts, and token usage via <code>forge conversation stats &lt;uuid&gt; --porcelain</code>.</td></tr>
+          <tr><td>sidekick:codex-delegate</td><td>Activate Codex delegation mode for `code` / `codex` / `coder` runtime workflows.</td></tr>
+          <tr><td>/codex-stop</td><td>Deactivate Codex delegation mode and return to direct Claude implementation.</td></tr>
         </tbody>
       </table>
 

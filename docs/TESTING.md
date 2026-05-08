@@ -10,7 +10,7 @@ Six tiers, fail-fast, each with a distinct purpose. The lower a failure appears 
 
 | Tier | Script | Runs in CI | Exercises real agent | Purpose |
 |------|--------|:---:|:---:|---|
-| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, slash-command wrapper structure, Forge/Code coverage gaps, post-release cleanup, repository layout. |
+| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Code coverage gaps, post-release cleanup, repository layout. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full Claude→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 | **4. Code marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Code | Installs Sidekick from the Codex marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
@@ -23,7 +23,7 @@ Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_C
 
 ## Unit + integration suites (tier 1)
 
-23 suites in `tests/`. Each suite is an independent Bash script with a pass/fail counter.
+Core suites in `tests/`. Each suite is an independent Bash script with a pass/fail counter.
 
 | Suite | Coverage |
 |---|---|
@@ -32,26 +32,24 @@ Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_C
 | `test_skill_injection.bash` | Task-type → skill mapping, injection budget cap, skill-file existence |
 | `test_agents_md_dedup.bash` | 3-tier AGENTS.md write, exact-match + semantic dedup |
 | `test_forge_enforcer_hook.bash` | PreToolUse behavior: deny Write/Edit/NotebookEdit, rewrite `forge -p`, read-only allowlist passthrough, idempotent rewrites, UUID format |
-| `test_forge_progress_surface.bash` | PostToolUse behavior: no-op inactive, STATUS parsing, ANSI strip, 20-line cap, replay hint emission |
-| `test_forge_commands.bash` | `/forge-stop` + `/forge-history` wrapper structure, canonical skill workflows, 30-day pruning via ISO 8601 lexical compare |
+| `test_forge_progress_surface.bash` | PostToolUse behavior: no-op inactive, STATUS parsing, ANSI strip, 20-line cap, stop-hint emission |
 | `test_forge_v12_integration.bash` | End-to-end Pre → Post hook flow: marker on → Bash → rewrite → STATUS → summary → idx row |
 | `test_forge_e2e.bash` | Static E2E of prompt composition + skill injection without live Forge |
 | `test_v12_coverage.bash` | Coverage-gap suite: `sed -i` / `awk -i inplace` denial, `>>` append, `> /dev/null` passthroughs, env-var prefix, 80-char task-hint truncation, unknown tool_name passthrough, stdout-only summary fallback |
-| `test_forge_v13_coverage.bash` | Forge v1.3 coverage gaps: helper extraction, path allowlist, SRI, and sentinel-related regressions |
+| `test_v13_coverage.bash` | Forge v1.3 coverage gaps: helper extraction, path allowlist, SRI, and sentinel-related regressions |
 | `test_validate_release_gate_hook.bash` | Release-gate hook: blocks `gh release create` until all four quality-gate markers are present |
 | `test_post_release_cleanup.bash` | Post-release cleanup script: removes transient repo-local artifacts and is idempotent |
 | `test_repo_layout.bash` | Repository layout guard: expected top-level files/directories and docs structure stay organized |
 | `test_codex_skill.bash` | Code skill structure, activation/deactivation markers, and packaging expectations |
 | `test_codex_enforcer_hook.bash` | Code PreToolUse behavior: deny direct mutation, rewrite `code exec` (with compatibility aliases), allow read-only passthrough |
-| `test_codex_progress_surface.bash` | Code PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, history hint |
-| `test_codex_commands.bash` | `/codex-stop` + `/codex-history` wrapper structure, canonical skill workflows, pruning, output shape, and Codex bridge wiring |
+| `test_codex_progress_surface.bash` | Code PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, stop hint |
 | `test_codex_plugin_manifest.bash` | Code plugin manifest structure, interface metadata, and path wiring |
 | `test_codex_marketplace_manifest.bash` | Sidekick marketplace entry, source pinning, and install-packaging expectations |
 | `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact |
 | `test_install_sh.bash` | Installer idempotency, sentinel behavior, credentials schema validation |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
 
-All 23 are invoked by `tests/run_all.bash` with fail-fast reporting.
+All listed suites are invoked by `tests/run_all.bash` with fail-fast reporting.
 
 ---
 

@@ -1,9 +1,9 @@
 ---
 name: codex-delegate
-description: Legacy flat alias for the Code sidekick orchestration skill. Prefer skills/codex-delegate/SKILL.md or skills/codex/SKILL.md.
+description: Legacy flat alias for the Code sidekick orchestration skill. Prefer skills/codex-delegate/SKILL.md.
 ---
 
-> Deprecated in favor of [`skills/codex-delegate/SKILL.md`](./codex-delegate/SKILL.md) and [`skills/codex/SKILL.md`](./codex/SKILL.md).
+> Deprecated in favor of [`skills/codex-delegate/SKILL.md`](./codex-delegate/SKILL.md).
 
 # Code
 

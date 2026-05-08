@@ -5,7 +5,7 @@
 # Phase 7 (v1.2): runs after Bash tool calls. If the command contained a
 # `forge -p …` invocation and the output contains a STATUS: block, emit a
 # compact [FORGE-SUMMARY] additionalContext so the user (and Claude) see
-# the result distilled in the transcript, including a /forge-history hint.
+# the result distilled in the transcript with a stop-mode hint.
 #
 # Behavior contract:
 #   * No-op when ~/.claude/.forge-delegation-active is absent.
@@ -102,7 +102,7 @@ main() {
   [[ "$cmd" == *"forge "* ]] || exit 0
   [[ "$cmd" == *" -p"* ]] || exit 0
 
-  # Pull the UUID we injected (if any) from the command for the replay hint.
+  # Pull the UUID we injected (if any) from the command for diagnostics.
   # grep returns 1 when no match — guard with `|| true` so set -e doesn't trip.
   local uuid
   uuid="$(printf '%s' "$cmd" | grep -oE -- '--conversation-id [0-9a-f-]{36}' 2>/dev/null | awk '{print $2}' | head -n 1 || true)"
@@ -143,9 +143,9 @@ main() {
   # instructions.
   body="$(printf '%s' "$status_block" | sed 's/^/[FORGE-SUMMARY] [UNTRUSTED] /')"
   if [[ -n "$uuid" ]]; then
-    footer="[FORGE-SUMMARY] [UNTRUSTED] History: /forge-history"
+    footer="[FORGE-SUMMARY] [UNTRUSTED] Stop delegation: /forge-stop"
   else
-    footer="[FORGE-SUMMARY] [UNTRUSTED] (no conversation-id captured)"
+    footer="[FORGE-SUMMARY] [UNTRUSTED] Stop delegation: /forge-stop (no conversation-id captured)"
   fi
 
   payload="$(printf '%s\n%s\n%s' "$header" "$body" "$footer")"

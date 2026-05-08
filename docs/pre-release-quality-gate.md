@@ -67,13 +67,13 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 ### Review Guidance — `hooks/forge-progress-surface.sh`
 - Verify it parses the `STATUS:` block from Forge output (ANSI-stripped)
 - Confirm it emits `[FORGE-SUMMARY]` as `additionalContext` to the transcript
-- Verify the `/forge-history` hint is surfaced after each task
+- Verify the `/forge-stop` hint is surfaced after each task
 - Confirm the 20-line STATUS cap is enforced
 
-### Review Guidance — `commands/forge-history.md`
-- Verify it reads `.forge/conversations.idx` for the last 20 rows
-- Confirm 30-day pruning uses portable ISO 8601 lexical compare (BSD/macOS + GNU `date` both supported)
-- Verify output is a markdown table with UUID, sidekick-tag, and task hint columns
+### Review Guidance — delegation lifecycle skills
+- Verify only the canonical 4-skill surface remains: `codex-delegate`, `codex-stop`, `forge-delegate`, `forge-stop`
+- Verify removed skill files stay deleted: `skills/codex/SKILL.md`, `skills/codex-history/SKILL.md`, `skills/forge-history/SKILL.md`
+- Verify stop workflows only clear marker state and do not delete conversation indexes
 
 ### Review Guidance — `CHANGELOG.md`
 - Verify the new release entry is present, dated correctly, uses the correct version
@@ -94,8 +94,9 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
    shasum -a 256 hooks/forge-delegation-enforcer.sh
    shasum -a 256 hooks/forge-progress-surface.sh
    shasum -a 256 output-styles/forge.md
-   shasum -a 256 commands/forge-stop.md
-   shasum -a 256 commands/forge-history.md
+   shasum -a 256 skills/forge-stop/SKILL.md
+   shasum -a 256 skills/codex-delegate/SKILL.md
+   shasum -a 256 skills/codex-stop/SKILL.md
    shasum -a 256 install.sh
    shasum -a 256 hooks/hooks.json
    ```
@@ -107,10 +108,11 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 
 4. **Naming consistency**: Verify consistent spelling and casing across `skills/forge/SKILL.md`, `README.md`, `CHANGELOG.md`, and `.claude-plugin/plugin.json`. Check: skill name (`/forge`, `sidekick:forge`), Forge binary name (`forge`), config paths (`.forge/conversations.idx`, `~/.forge/.forge.toml`).
 
-5. **Test file coverage**: Verify every hook and command has a corresponding test file in `tests/`:
+5. **Test file coverage**: Verify every hook and canonical skill has a corresponding test file in `tests/`:
    - `hooks/forge-delegation-enforcer.sh` → `tests/test_forge_enforcer_hook.bash`
    - `hooks/forge-progress-surface.sh` → `tests/test_forge_progress_surface.bash`
-   - `commands/forge-stop.md` + `commands/forge-history.md` → `tests/test_forge_commands.bash`
+   - `skills/forge-stop/SKILL.md` → `tests/test_forge_skill.bash`
+   - `skills/codex-delegate/SKILL.md` + `skills/codex-stop/SKILL.md` → `tests/test_codex_skill.bash`
 
 6. **No orphaned files**: Check for files with no inbound references and no clear documented purpose.
 
@@ -118,7 +120,7 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 
 1. **No hardcoded credentials**: Search all changed files:
    ```bash
-   grep -rn "sk-or-\|Bearer [a-zA-Z0-9]" skills/ hooks/ commands/
+   grep -rn "sk-or-\|Bearer [a-zA-Z0-9]" skills/ hooks/
    grep -rn "api_key\s*=\s*['\"][a-zA-Z0-9]" skills/ hooks/
    ```
 
@@ -156,13 +158,13 @@ Spawn 5 parallel audit agents. Collect all findings. Fix all issues. Re-run unti
 
 ### Dimension A — Skill and Hook Consistency
 
-Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-surface hook → commands`:
+Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-surface hook → stop skill`:
 
 - **Activation flow**: The activation sequence described in `skills/forge/SKILL.md` (health check → `/forge` marker → hook armed) matches what `forge-delegation-enforcer.sh` actually checks for the marker
 - **UUID injection**: `SKILL.md` says not to add `--conversation-id` manually; `forge-delegation-enforcer.sh` injects it automatically. These two instructions are consistent and not contradictory.
 - **Fallback ladder**: The L1/L2/L3 escalation triggers in `SKILL.md` match the ladder structure; no step references a command or file that doesn't exist
 - **Completion markers**: `[FORGE]`, `[FORGE-LOG]`, `[FORGE-SUMMARY]` markers are used consistently across `SKILL.md`, both hooks, and `output-styles/forge.md`
-- **Slash commands**: `/forge-stop` and `/forge-history` are referenced in `SKILL.md` and defined in `commands/`. No stale command references.
+- **Delegation lifecycle skills**: `/forge-stop` and `/codex-stop` are referenced in canonical skill files. No stale references.
 - **No obsolete references**: Search all files for removed commands, deprecated paths, old model IDs (`qwen3.6-plus`, `gemma-4-31b-it` without context), or old API key schemas
 
 ### Dimension B — Test Suite Coverage
@@ -196,7 +198,7 @@ Audit `.claude-plugin/plugin.json` and `install.sh`:
 - **Version field**: Matches the release version being cut
 - **SHA-256 accuracy**: Every hash in `_integrity` matches the live file (`tests/test_plugin_integrity.bash` must pass green)
 - **Skill paths**: `"skills": "./skills/"` resolves correctly; `skills/forge/SKILL.md` exists at that path
-- **Commands and output styles**: `"commands": "./commands/"` and `"outputStyles": "./output-styles/"` resolve correctly; all referenced files exist
+- **Output styles**: `"outputStyles": "./output-styles/"` resolves correctly; all referenced files exist
 - **Hook registration**: Both `PreToolUse` (enforcer) and `PostToolUse` (progress-surface) hooks are registered in `plugin.json` with correct matchers and paths
 - **`install.sh`**: Forge install flow is correct for the current Forge version (binary path, agent config, `.forge.toml` defaults); no references to deprecated install steps
 
@@ -205,7 +207,7 @@ Audit `.claude-plugin/plugin.json` and `install.sh`:
 Audit compatibility with the current Forge CLI version:
 
 - **`--conversation-id` format**: UUID injection in the enforcer hook produces lowercase RFC 4122 format — validated by `tests/smoke/run_smoke.bash`
-- **`forge conversation dump <uuid> --html`**: Note — `/forge-replay` was removed in v1.4.0; this syntax is no longer exposed as a user command. `/forge-history` is the current browsing command.
+- **Removed surfaces**: Verify deleted skill surfaces (`codex`, `codex-history`, `forge-history`) are absent from runtime packaging and tests.
 - **`forge conversation stats <uuid> --porcelain`**: Syntax is current
 - **`.forge.toml` defaults**: Values documented in `SKILL.md` (`token_threshold=80000`, `eviction_window=0.20`, `retention_window=6`, `max_tokens=16384`) still match Forge's current defaults or are intentionally overridden
 - **Agent template**: `.forge/agents/forge.md` has `tools: ["*"]` in frontmatter — the missing-tools bug must not regress
@@ -256,7 +258,7 @@ Read the help site pages and verify/update:
 - **Getting Started**: Install steps, activation sequence, and health check output match current behaviour
 - **Core Concepts**: 5-field prompt format, fallback ladder, AGENTS.md loop are accurately described
 - **Delegation Workflow**: UUID auto-injection noted; no instruction to add `--conversation-id` manually
-- **Command Reference**: `/forge-stop` and `/forge-history` syntax matches `commands/*.md`
+- **Command/skill reference**: `/forge-stop` and `/codex-stop` syntax matches the canonical `skills/*/SKILL.md` files
 - **Troubleshooting**: Known errors (402 insufficient credits, 429 rate limit, PATH not found, missing `tools: ["*"]`) are present and current
 
 ### Step 4 — CHANGELOG.md *(parallel)*
@@ -277,7 +279,7 @@ Run the full test suite and confirm clean:
 bash tests/run_all.bash
 ```
 
-All 21 suites must pass with 0 failures. Then push to main and wait for CI green before proceeding.
+All suites in `tests/run_all.bash` must pass with 0 failures. Then push to main and wait for CI green before proceeding.
 
 ### Completion
 

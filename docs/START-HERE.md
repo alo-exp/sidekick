@@ -20,7 +20,7 @@ Go straight to [help/troubleshooting/](help/troubleshooting/) and [help/referenc
 
 ### Prepare for release
 
-Use [TESTING.md](TESTING.md), [CICD.md](CICD.md), and [internal/pre-release-quality-gate.md](internal/pre-release-quality-gate.md).
+Use [TESTING.md](TESTING.md), [CICD.md](CICD.md), and [pre-release-quality-gate.md](pre-release-quality-gate.md).
 
 ### Extend or package a plugin
 

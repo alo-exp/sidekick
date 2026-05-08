@@ -79,8 +79,8 @@ var IDX = [
 
   // ── COMMAND REFERENCE ─────────────────────────────────────────
   { page:'Reference', url:'reference/', anchor:'forge-commands',
-    title:'/forge commands — activate deactivate status',
-    text:'/forge activate Forge delegation mode runs health check. /forge-stop return to direct Claude implementation. /forge status show current activation state model and config summary.' },
+    title:'Delegation skills — forge and codex lifecycle',
+    text:'/forge activate Forge delegation mode runs health check. /forge-stop returns to direct Claude implementation. sidekick:codex-delegate activates Codex delegation. /codex-stop returns to direct Claude implementation.' },
   { page:'Reference', url:'reference/', anchor:'forge-toml',
     title:'.forge.toml config — model API key compaction providers',
     text:'.forge.toml created on first /forge in project root. Contains compaction settings only: token_threshold 80000, eviction_window 0.20, retention_window 6, max_tokens 16384. API credentials stored globally in ~/forge/.credentials.json and ~/forge/.forge.toml. Two providers supported: open_router with qwen/qwen3-coder-plus and minimax with MiniMax-M2.7.' },
