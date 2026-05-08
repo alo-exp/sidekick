@@ -108,6 +108,9 @@ CODE_INSTALL_PROBE_SKIPPED=0
 if grep -q 'Code install completed but code binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
   CODE_INSTALL_PROBE_SKIPPED=1
 fi
+if grep -q 'Failed to resolve the latest Code release version' <<<"${INSTALL_OUTPUT:-}"; then
+  CODE_INSTALL_PROBE_SKIPPED=1
+fi
 PROFILE_FOUND=""
 if [ "${CODE_INSTALL_PROBE_SKIPPED}" -eq 0 ]; then
   for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do

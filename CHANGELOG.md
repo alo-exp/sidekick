@@ -11,6 +11,9 @@ Sidekick now ships a strict four-skill canonical runtime surface for Codex/Claud
 - **`skills/codex-delegate/SKILL.md`**, **`skills/codex-stop/SKILL.md`**, **`skills/forge/SKILL.md`**, **`skills/forge-stop/SKILL.md`**: canonical skill surface aligned to the only supported picker entries: `sidekick:codex-delegate`, `sidekick:codex-stop`, `sidekick:forge-delegate`, `sidekick:forge-stop`.
 - **`hooks/codex-progress-surface.sh`**, **`hooks/forge-progress-surface.sh`**, **`output-styles/codex.md`**, **`output-styles/forge.md`**: delegation footer and narration updated to stop workflows only (`/codex-stop`, `/forge-stop`).
 - **`tests/run_live_codex_plugin_read.bash`** and **`tests/run_live_codex_marketplace_install.bash`**: live Codex surface checks now enforce the exact 4-skill set and deterministic order.
+- **`tests/smoke/run_codex_smoke.bash`**: smoke harness now appends `--skip-git-repo-check` when supported so non-repo temp workdirs no longer fail the live release gate.
+- **`tests/run_live_codex_e2e.bash`**: live Codex E2E runner now appends `--skip-git-repo-check` when supported so temp sandboxes can run without trusted-repo failures.
+- **`tests/test_fresh_install_sim.bash`**: fresh-install sandbox now skips PATH-marker assertions when the Code release endpoint cannot be resolved (transient network/API 403s), preventing false release-gate failures unrelated to Sidekick logic.
 - **`docs/internal/codex-command-packaging-guide.md`**: rewritten as the current Codex skill-packaging source of truth (skills are runtime contract; no third-party command surface).
 - **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: version surfaces bumped to `v1.5.4` and architecture/docs wording aligned to the current four-skill runtime surface.
 - **`.claude-plugin/plugin.json`** and **`.codex-plugin/plugin.json`**: version bumped to `1.5.4`; integrity map refreshed for changed skill/hook/style/registry assets.
