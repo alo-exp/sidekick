@@ -4,7 +4,8 @@
 # =============================================================================
 # Removes non-essential transient artifacts from the local repo after a
 # release is published. The cleanup list is intentionally narrow and limited
-# to directories that are safe to delete between release cycles.
+# to directories that are safe to delete between release cycles. Planning,
+# spec, and design artifacts are intentionally preserved.
 #
 # Override SIDEKICK_REPO_ROOT in tests or ad-hoc dry runs.
 # =============================================================================

@@ -24,7 +24,11 @@ echo "=== T2: Cleanup semantics ==="
 SANDBOX="$(mktemp -d)"
 trap 'rm -rf "${SANDBOX}"' EXIT
 cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules)
+preserve_dirs=(.planning docs/specs docs/design)
 for dir in "${cleanup_dirs[@]}"; do
+  mkdir -p "${SANDBOX}/${dir}"
+done
+for dir in "${preserve_dirs[@]}"; do
   mkdir -p "${SANDBOX}/${dir}"
 done
 mkdir -p "${SANDBOX}/keep"
@@ -45,6 +49,14 @@ if [ -f "${SANDBOX}/keep/keep.txt" ]; then
 else
   assert_fail "Non-transient files" "keep file was removed"
 fi
+
+for dir in "${preserve_dirs[@]}"; do
+  if [ -d "${SANDBOX}/${dir}" ]; then
+    assert_pass "Cleanup preserves ${dir}"
+  else
+    assert_fail "Cleanup preserves ${dir}" "directory was removed"
+  fi
+done
 
 if echo "${OUTPUT}" | grep -q 'post-release cleanup removed'; then
   assert_pass "Cleanup reports removed artifacts"
