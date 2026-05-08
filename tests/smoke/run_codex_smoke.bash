@@ -56,11 +56,19 @@ prepare_codex_runner() {
 
   if "${bin}" exec --help >"${help_file}" 2>&1; then
     if grep -q -- '--full-auto' "${help_file}"; then
-      CODEX_RUNNER=( "${bin}" exec --full-auto )
+      if grep -q -- '--skip-git-repo-check' "${help_file}"; then
+        CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --full-auto )
+      else
+        CODEX_RUNNER=( "${bin}" exec --full-auto )
+      fi
     elif grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
       CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
     else
-      CODEX_RUNNER=( "${bin}" exec )
+      if grep -q -- '--skip-git-repo-check' "${help_file}"; then
+        CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check )
+      else
+        CODEX_RUNNER=( "${bin}" exec )
+      fi
     fi
   elif "${bin}" --help 2>&1 | grep -q -- '--no-approval'; then
     CODEX_RUNNER=( "${bin}" --no-approval )
