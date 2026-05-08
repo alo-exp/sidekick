@@ -1,6 +1,6 @@
 # sidekick-repo — Knowledge Index
 
-> Gateway index of all project documentation. Claude reads this at session startup.
+> Gateway index of all project documentation. Claude and Codex read this at session startup.
 > See `docs/doc-scheme.md` for the organizing scheme.
 
 ---
@@ -10,15 +10,21 @@
 | Doc | Path | Status |
 |-----|------|--------|
 | Documentation scheme | `docs/doc-scheme.md` | authoritative |
-| Architecture | `docs/ARCHITECTURE.md` | draft |
-| Testing Strategy | `docs/TESTING.md` | draft |
-| CI/CD | `docs/CICD.md` | draft |
-| Product Overview | `docs/PRD-Overview.md` | draft |
+| Public docs home | `docs/index.html` | public |
+| Help center | `docs/help/` | public |
+| Architecture | `docs/ARCHITECTURE.md` | durable |
+| Testing Strategy | `docs/TESTING.md` | durable |
+| CI/CD | `docs/CICD.md` | durable |
+| Product Overview | `docs/PRD-Overview.md` | durable |
+| Workflow docs | `docs/workflows/` | durable |
+| Internal review log | `docs/internal/REVIEW.md` | historical |
+| Internal security log | `docs/internal/SECURITY.md` | historical |
+| Pre-release gate | `docs/internal/pre-release-quality-gate.md` | internal |
 | Codex Skill-First Packaging Guide | `docs/internal/codex-command-packaging-guide.md` | internal |
-| Active Workflow | `docs/workflows/full-dev-cycle.md` | active |
 | Task Log | `docs/CHANGELOG.md` | rolling |
 | Release Changelog | `CHANGELOG.md` (root) | rolling |
-| Specs | `docs/specs/` | — |
+| Archived specs | `docs/specs/README.md` | archived |
+| Preserved design notes | `docs/design/README.md` | archived |
 | Sessions | `docs/sessions/` | per-session |
 | Monthly Knowledge | `docs/knowledge/YYYY-MM.md` | append-only |
 | Monthly Lessons | `docs/lessons/YYYY-MM.md` | append-only |

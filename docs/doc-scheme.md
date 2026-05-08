@@ -11,7 +11,7 @@ Project documentation lives in three layers:
 | Layer | Location | Lifespan | What goes here |
 |-------|----------|----------|---------------|
 | **Planning** | `.planning/` | Per-milestone (archived on completion) | Specs, plans, reviews, verification — the work-in-progress trail |
-| **Project docs** | `docs/` | Durable across milestones | Architecture, testing strategy, changelog, knowledge, lessons |
+| **Project docs** | `docs/` | Durable across milestones | Architecture, testing strategy, changelog, knowledge, lessons, help, internal audit material, workflow docs |
 | **Public** | `README.md` | Permanent | Project overview for external readers |
 
 ### Repository layout
@@ -22,12 +22,20 @@ The repository root stays intentionally small and role-based. The main groups ar
 |------|------|---------|
 | Plugin manifests | `.claude-plugin/`, `.codex-plugin/` | Runtime packaging and install metadata |
 | Orchestration | `.claude/`, `.forge/`, `hooks/`, `skills/`, `commands/`, `output-styles/`, `sidekicks/` | Sidekick behavior, enforcement, and user-facing entrypoints |
-| Documentation | `docs/` | Durable product, test, and process docs |
+| Documentation | `docs/` | Durable product, test, process, help, and internal audit docs |
 | Planning | `.planning/` | Ephemeral milestone and spec artifacts |
 | Tests | `tests/` | Fast unit/integration and release-gate checks |
 | Root contracts | `README.md`, `AGENTS.md`, `CLAUDE.md`, `silver-bullet.md`, `context.md` | Human entrypoints and operating rules |
 
 Transient build/cache output should not accumulate in the repo root. The post-release cleanup step removes only temporary artifacts; planning/spec/design content stays intact.
+
+The docs tree has a few stable subareas:
+
+- `docs/index.html` and `docs/help/` are the public docs surface
+- `docs/internal/` holds reviews, audits, and release-gate references
+- `docs/workflows/` holds durable workflow documentation
+- `docs/knowledge/` and `docs/lessons/` hold append-only project memory
+- `docs/specs/` and `docs/design/` preserve archived spec/design material when relevant
 
 ---
 
