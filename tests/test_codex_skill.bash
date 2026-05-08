@@ -68,14 +68,24 @@ else
   assert_fail "workflow guidance" "missing AGENTS.md or subagent mention"
 fi
 
-echo "=== T9: Legacy wrapper points to canonical skill ==="
+echo "=== T9: Skill-first wrapper note present ==="
+if grep -q 'skills/forge-stop/SKILL.md' "${SKILL_FILE}" \
+  && grep -q 'skills/codex-stop/SKILL.md' "${SKILL_FILE}" \
+  && grep -q 'commands/' "${SKILL_FILE}" \
+  && grep -qiE 'thin wrappers|source of truth' "${SKILL_FILE}"; then
+  assert_pass "skill-first wrapper note present"
+else
+  assert_fail "skill-first wrapper note" "missing skill-first packaging note"
+fi
+
+echo "=== T10: Legacy wrapper points to canonical skill ==="
 if grep -q 'skills/codex/SKILL.md' "${LEGACY_FILE}" && grep -qi 'deprecated' "${LEGACY_FILE}"; then
   assert_pass "legacy wrapper points to canonical skill"
 else
   assert_fail "legacy wrapper" "missing canonical skill reference or deprecation note"
 fi
 
-echo "=== T10: codex-delegate bridge points to canonical skill ==="
+echo "=== T11: codex-delegate bridge points to canonical skill ==="
 if grep -q 'skills/codex/SKILL.md' "${DELEGATE_FILE}" \
   && grep -qi 'bridge' "${DELEGATE_FILE}" \
   && grep -q '^name: codex-delegate' "${DELEGATE_FILE}"; then
@@ -84,7 +94,7 @@ else
   assert_fail "codex-delegate bridge" "missing canonical skill reference, bridge note, or alias name"
 fi
 
-echo "=== T11: codex-delegate legacy flat alias remains available ==="
+echo "=== T12: codex-delegate legacy flat alias remains available ==="
 if grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
   && grep -qi 'deprecated' "${DELEGATE_LEGACY_FILE}" \
   && grep -q '^name: codex-delegate' "${DELEGATE_LEGACY_FILE}"; then

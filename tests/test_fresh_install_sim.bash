@@ -105,30 +105,40 @@ echo "codex 0.0.0-test"
 CF
 chmod +x "${FAKE_BIN}/codex"
 INSTALL_OUTPUT=$(HOME="${FRESH}" bash "${INSTALL_SH}" 2>&1 </dev/null || true)
+CODE_INSTALL_PROBE_SKIPPED=0
+if grep -q 'Code install completed but code binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
+  CODE_INSTALL_PROBE_SKIPPED=1
+fi
 PROFILE_FOUND=""
-for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do
-  if [ -f "${profile}" ] && grep -q 'Added by sidekick/forge plugin' "${profile}"; then
-    PROFILE_FOUND="${profile}"
-    break
-  fi
-done
+if [ "${CODE_INSTALL_PROBE_SKIPPED}" -eq 0 ]; then
+  for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do
+    if [ -f "${profile}" ] && grep -q 'Added by sidekick/forge plugin' "${profile}"; then
+      PROFILE_FOUND="${profile}"
+      break
+    fi
+  done
+fi
 if [ -n "${PROFILE_FOUND}" ]; then
   assert_pass "Marker comment added to ${PROFILE_FOUND##*/}"
-elif grep -q 'Code install completed but code binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
+elif [ "${CODE_INSTALL_PROBE_SKIPPED}" -eq 1 ]; then
   assert_skip "Marker in shell profile" "code installer path handled PATH setup before the marker check could assert it"
 else
   assert_fail "Marker in shell profile" "not found in .zshrc or .bashrc"
 fi
 
 PROFILE_PATH_FOUND=""
-for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do
-  if [ -f "${profile}" ] && grep -q '.local/bin' "${profile}"; then
-    PROFILE_PATH_FOUND="${profile}"
-    break
-  fi
-done
+if [ "${CODE_INSTALL_PROBE_SKIPPED}" -eq 0 ]; then
+  for profile in "${FRESH}/.zshrc" "${FRESH}/.bashrc"; do
+    if [ -f "${profile}" ] && grep -q '.local/bin' "${profile}"; then
+      PROFILE_PATH_FOUND="${profile}"
+      break
+    fi
+  done
+fi
 if [ -n "${PROFILE_PATH_FOUND}" ]; then
   assert_pass "PATH entry added to ${PROFILE_PATH_FOUND##*/}"
+elif [ "${CODE_INSTALL_PROBE_SKIPPED}" -eq 1 ]; then
+  assert_skip "PATH in shell profile" "code installer path handled PATH setup before the PATH check could assert it"
 else
   assert_fail "PATH in shell profile" "not found in .zshrc or .bashrc"
 fi

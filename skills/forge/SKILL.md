@@ -12,6 +12,10 @@ This skill adds explicit activation/deactivation mode switching on top of the ex
 `skills/forge.md` orchestration protocol. It does NOT replace `skills/forge.md` -- it
 wraps it with a persistent session state mechanism via a marker file.
 
+The stop/history workflows live canonically in `skills/forge-stop/SKILL.md` and
+`skills/forge-history/SKILL.md`; the corresponding `commands/forge-stop.md` and
+`commands/forge-history.md` files are thin wrappers for slash-command discoverability.
+
 ---
 
 ## Activation (`/forge`)

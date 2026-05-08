@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.5.3 — 2026-05-08
+
+### Skill-first wrappers and live-gate hardening
+
+Sidekick now treats skills as the canonical instruction bodies for both Forge and Codex command surfaces, while `commands/` stays as the thin slash-command wrapper layer. The live Forge gate was also hardened so the full release pyramid can complete cleanly across provider-specific latency and commit-shortcut behavior.
+
+**Changed:**
+
+- **`commands/*.md`** and **`skills/*/SKILL.md`**: command wrappers now point at skill-first canonical workflows for `forge-stop`, `forge-history`, `codex-stop`, and `codex-history`.
+- **`tests/test_forge_e2e.bash`** and **`tests/test_fresh_install_sim.bash`**: live Forge checks now tolerate provider-specific commit latency and the Code installer's sandbox path behavior without masking real failures.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: version surfaces bumped to `v1.5.3`.
+- **`.claude-plugin/plugin.json`** and **`.codex-plugin/plugin.json`**: version bumped to `1.5.3`.
+
 ## v1.5.2 — 2026-05-07
 
 ### Kay release pin refresh

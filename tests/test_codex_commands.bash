@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — /codex-stop + /codex-history command doc + skill bridge tests
+# Sidekick Plugin — /codex-stop + /codex-history command wrapper + skill tests
 # =============================================================================
 
 set -euo pipefail
@@ -30,26 +30,23 @@ else
   assert_fail "test_stop_frontmatter_complete" "missing name/description"
 fi
 
-echo "=== test_stop_checks_marker_file ==="
-if grep -q '\.codex-delegation-active' "${STOP}"; then
-  assert_pass "test_stop_checks_marker_file"
+echo "=== test_stop_is_thin_wrapper ==="
+if grep -q 'skills/codex-stop/SKILL.md' "${STOP}" \
+  && grep -qiE 'wrapper|source of truth|slash-command UX' "${STOP}"; then
+  assert_pass "test_stop_is_thin_wrapper"
 else
-  assert_fail "test_stop_checks_marker_file" "no marker file reference"
+  assert_fail "test_stop_is_thin_wrapper" "stop command does not point to the canonical skill"
 fi
 
-echo "=== test_stop_confirms_deactivation ==="
-if grep -qiE 'deactivat|restored|direct mode' "${STOP}"; then
-  assert_pass "test_stop_confirms_deactivation"
+echo "=== test_stop_skill_is_canonical ==="
+if grep -q '^name: codex-stop' "${STOP_SKILL}" \
+  && grep -q '\.codex-delegation-active' "${STOP_SKILL}" \
+  && grep -qiE 'deactivat|restored|direct mode' "${STOP_SKILL}" \
+  && grep -q 'conversations.idx' "${STOP_SKILL}" \
+  && grep -qiE 'preserv|retain|not delet' "${STOP_SKILL}"; then
+  assert_pass "test_stop_skill_is_canonical"
 else
-  assert_fail "test_stop_confirms_deactivation" "no deactivation confirmation message"
-fi
-
-echo "=== test_stop_preserves_idx ==="
-if grep -q 'conversations.idx' "${STOP}" \
-  && grep -qiE 'preserv|retain|not delet' "${STOP}"; then
-  assert_pass "test_stop_preserves_idx"
-else
-  assert_fail "test_stop_preserves_idx" "no idx preservation note"
+  assert_fail "test_stop_skill_is_canonical" "canonical stop workflow missing from skill file"
 fi
 
 echo "=== test_history_frontmatter_complete ==="
@@ -60,22 +57,24 @@ else
   assert_fail "test_history_frontmatter_complete" "missing name/description"
 fi
 
-echo "=== test_history_documents_pruning_and_idx ==="
-if grep -qE '30[[:space:]]*days?' "${HISTORY}" \
-  && grep -q '.codex/conversations.idx' "${HISTORY}" \
-  && grep -q 'CLAUDE_PROJECT_DIR' "${HISTORY}" \
-  && grep -q 'tail -n 20' "${HISTORY}"; then
-  assert_pass "test_history_documents_pruning_and_idx"
+echo "=== test_history_is_thin_wrapper ==="
+if grep -q 'skills/codex-history/SKILL.md' "${HISTORY}" \
+  && grep -qiE 'wrapper|source of truth|slash-command UX' "${HISTORY}"; then
+  assert_pass "test_history_is_thin_wrapper"
 else
-  assert_fail "test_history_documents_pruning_and_idx" "missing pruning, idx, or 20-row cap guidance"
+  assert_fail "test_history_is_thin_wrapper" "history command does not point to the canonical skill"
 fi
 
-echo "=== test_history_mentions_native_history ==="
-if grep -q '~/.code/history.jsonl' "${HISTORY}" \
-  && grep -q '~/.codex/history.jsonl' "${HISTORY}"; then
-  assert_pass "test_history_mentions_native_history"
+echo "=== test_history_skill_documents_pruning_and_idx ==="
+if grep -qE '30[[:space:]]*days?' "${HISTORY_SKILL}" \
+  && grep -q '.codex/conversations.idx' "${HISTORY_SKILL}" \
+  && grep -q 'CLAUDE_PROJECT_DIR' "${HISTORY_SKILL}" \
+  && grep -q 'tail -n 20' "${HISTORY_SKILL}" \
+  && grep -q '~/.code/history.jsonl' "${HISTORY_SKILL}" \
+  && grep -q '~/.codex/history.jsonl' "${HISTORY_SKILL}"; then
+  assert_pass "test_history_skill_documents_pruning_and_idx"
 else
-  assert_fail "test_history_mentions_native_history" "native history references missing"
+  assert_fail "test_history_skill_documents_pruning_and_idx" "canonical history workflow missing from skill file"
 fi
 
 echo "=== test_history_prune_awk_logic_works ==="
@@ -108,14 +107,14 @@ else
 fi
 rm -rf "${TMP}"
 
-echo "=== test_codex_skill_bridges_point_to_command_docs ==="
-if grep -q 'commands/codex-stop.md' "${STOP_SKILL}" \
-  && grep -qiE 'bridge|source of truth|picker/import path' "${STOP_SKILL}" \
-  && grep -q 'commands/codex-history.md' "${HISTORY_SKILL}" \
-  && grep -qiE 'bridge|source of truth|picker/import path' "${HISTORY_SKILL}"; then
-  assert_pass "test_codex_skill_bridges_point_to_command_docs"
+echo "=== test_codex_skill_bridges_point_to_canonical_skill ==="
+if grep -q 'skills/codex-stop/SKILL.md' "${STOP}" \
+  && grep -q 'skills/codex-history/SKILL.md' "${HISTORY}" \
+  && grep -qiE 'source of truth|thin slash-command wrapper' "${STOP}" \
+  && grep -qiE 'source of truth|thin slash-command wrapper' "${HISTORY}"; then
+  assert_pass "test_codex_skill_bridges_point_to_canonical_skill"
 else
-  assert_fail "test_codex_skill_bridges_point_to_command_docs" "bridge text missing"
+  assert_fail "test_codex_skill_bridges_point_to_canonical_skill" "wrapper text missing"
 fi
 
 echo ""

@@ -50,6 +50,16 @@ grep -q 'Token' "${SKILL_FILE}" && grep -q 'Optim' "${SKILL_FILE}" && assert_pas
 echo "=== T10: Skill Injection section present ==="
 grep -q 'Skill Injection' "${SKILL_FILE}" && assert_pass "Skill Injection section present" || assert_fail "Skill Injection" "not found"
 
+echo "=== T11: Skill-first wrapper note present ==="
+if grep -q 'skills/forge-stop/SKILL.md' "${SKILL_FILE}" \
+  && grep -q 'skills/forge-history/SKILL.md' "${SKILL_FILE}" \
+  && grep -q 'commands/' "${SKILL_FILE}" \
+  && grep -qiE 'thin wrappers|source of truth' "${SKILL_FILE}"; then
+  assert_pass "Skill-first wrapper note present"
+else
+  assert_fail "Skill-first wrapper note" "missing skill-first packaging note"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped"
