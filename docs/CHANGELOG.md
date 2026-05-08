@@ -17,6 +17,14 @@
 
 <!-- ENTRIES BELOW — newest first -->
 
+## 2026-05-08 — docs-improvement-recommendations
+**What**: Captured the remaining world-class documentation gaps and priorities, including audience modeling, taxonomy, governance, verification, glossary, and runtime-parity recommendations.
+**Commits**: c503280
+**Skills run**: gsd:docs-update
+**Virtual cost**: ~$0.03 (docs note only)
+**knowledge/YYYY-MM.md**: updated (documentation strategy, docs governance) | no changes
+**lessons/YYYY-MM.md**: updated (documentation strategy, docs governance) | no changes
+
 ## 2026-05-08 — docs-help-coverage
 **What**: Brought the help-site and docs metadata into alignment with the docs scheme, including stable local icon assets, relative search URLs, and explicit homes for preserved docs material.
 **Commits**: 2110cfc
