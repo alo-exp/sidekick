@@ -116,6 +116,7 @@ SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 Before any release, complete the 4-stage pre-release quality gate until it passes twice in a row, then run the full live Forge/Codex pyramid twice with both live env vars, then publish through the release flow.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
+This cleanup only removes transient build/cache artifacts; `.planning/`, docs/specs, and docs/design content stay in place.
 
 Without those env vars the gate still runs stage 1 and cleanly skips the live stages (exit 0), so it's safe to wire into CI.
 
