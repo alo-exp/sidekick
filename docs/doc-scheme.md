@@ -14,6 +14,21 @@ Project documentation lives in three layers:
 | **Project docs** | `docs/` | Durable across milestones | Architecture, testing strategy, changelog, knowledge, lessons |
 | **Public** | `README.md` | Permanent | Project overview for external readers |
 
+### Repository layout
+
+The repository root stays intentionally small and role-based. The main groups are:
+
+| Group | Path | Purpose |
+|------|------|---------|
+| Plugin manifests | `.claude-plugin/`, `.codex-plugin/` | Runtime packaging and install metadata |
+| Orchestration | `.claude/`, `.forge/`, `hooks/`, `skills/`, `commands/`, `output-styles/`, `sidekicks/` | Sidekick behavior, enforcement, and user-facing entrypoints |
+| Documentation | `docs/` | Durable product, test, and process docs |
+| Planning | `.planning/` | Ephemeral milestone and spec artifacts |
+| Tests | `tests/` | Fast unit/integration and release-gate checks |
+| Root contracts | `README.md`, `AGENTS.md`, `CLAUDE.md`, `silver-bullet.md`, `context.md` | Human entrypoints and operating rules |
+
+Transient build/cache output should not accumulate in the repo root. The post-release cleanup step removes only temporary artifacts; planning/spec/design content stays intact.
+
 ---
 
 ## `docs/` — Project Documentation

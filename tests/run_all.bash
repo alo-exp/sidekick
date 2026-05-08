@@ -43,6 +43,7 @@ run_suite "Codex delegation enforcer hook tests" "test_codex_enforcer_hook.bash"
 run_suite "Codex progress surface hook tests"    "test_codex_progress_surface.bash"
 run_suite "Release gate hook tests"              "test_validate_release_gate_hook.bash"
 run_suite "Post-release cleanup script tests"    "test_post_release_cleanup.bash"
+run_suite "Repository layout tests"              "test_repo_layout.bash"
 
 echo ""
 echo -e "${bold}══════════════════════════════════════════${reset}"
