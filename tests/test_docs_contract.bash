@@ -6,7 +6,8 @@
 set -euo pipefail
 
 PASS=0; FAIL=0
-ROOT="/Users/shafqat/projects/sidekick/repo"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
