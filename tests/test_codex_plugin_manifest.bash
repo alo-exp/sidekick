@@ -9,6 +9,7 @@ PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 CLAUDE_MANIFEST="${PLUGIN_DIR}/.claude-plugin/plugin.json"
+CLAUDE_MARKETPLACE="${PLUGIN_DIR}/.claude-plugin/marketplace.json"
 CODEX_MANIFEST="${PLUGIN_DIR}/.codex-plugin/plugin.json"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
@@ -25,6 +26,14 @@ if [ "${CLAUDE_VERSION}" = "${CODEX_VERSION}" ]; then
   assert_pass "Codex manifest version matches Claude manifest (${CODEX_VERSION})"
 else
   assert_fail "manifest version" "claude=${CLAUDE_VERSION} codex=${CODEX_VERSION}"
+fi
+
+echo "=== marketplace_version_matches_manifest ==="
+CLAUDE_MARKETPLACE_VERSION="$(python3 -c "import json; data=json.load(open('${CLAUDE_MARKETPLACE}')); print(next(plugin['version'] for plugin in data['plugins'] if plugin['name'] == 'sidekick'))")"
+if [ "${CLAUDE_MARKETPLACE_VERSION}" = "${CODEX_VERSION}" ]; then
+  assert_pass "Claude marketplace version matches plugin manifest (${CLAUDE_MARKETPLACE_VERSION})"
+else
+  assert_fail "marketplace version" "marketplace=${CLAUDE_MARKETPLACE_VERSION} manifest=${CODEX_VERSION}"
 fi
 
 echo "=== manifest_core_fields ==="
@@ -45,6 +54,20 @@ then
   assert_pass "Codex manifest is skills-only and keeps hook wiring registered"
 else
   assert_fail "manifest core fields" "missing expected manifest data or unsupported Claude-only fields present"
+fi
+
+echo "=== claude_manifest_hooks_wired ==="
+if python3 - "${CLAUDE_MANIFEST}" <<'PY'
+import json
+import sys
+
+data = json.load(open(sys.argv[1]))
+assert data["hooks"] == "./hooks/hooks.json"
+PY
+then
+  assert_pass "Claude manifest points at the shared hooks/hooks.json bundle"
+else
+  assert_fail "claude manifest hooks" "Claude manifest is missing the shared hooks/hooks.json pointer"
 fi
 
 echo "=== manifest_interface_present ==="

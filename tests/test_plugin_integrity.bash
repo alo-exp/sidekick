@@ -51,6 +51,7 @@ check_hash "forge_delegation_enforcer_sha256" "hooks/forge-delegation-enforcer.s
 check_hash "codex_delegation_enforcer_sha256" "hooks/codex-delegation-enforcer.sh"
 check_hash "enforcer_utils_sha256" "hooks/lib/enforcer-utils.sh"
 check_hash "sidekick_registry_sha256" "sidekicks/registry.json"
+check_hash "legacy_hooks_scrub_sha256" "hooks/scrub-legacy-user-hooks.py"
 check_hash "forge_progress_surface_sha256" "hooks/forge-progress-surface.sh"
 check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
 check_hash "validate_release_gate_sha256" "hooks/validate-release-gate.sh"
@@ -92,8 +93,8 @@ fi
 # Verify plugin version major/minor expectation.
 PLUGIN_VERSION="$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d.get('version',''))")"
 case "${PLUGIN_VERSION}" in
-  1.5.*) assert_pass "plugin.json version is 1.5.x (${PLUGIN_VERSION})" ;;
-  *)     assert_fail "plugin.json version" "expected 1.5.x, got ${PLUGIN_VERSION}" ;;
+  0.5.*) assert_pass "plugin.json version is 0.5.x (${PLUGIN_VERSION})" ;;
+  *)     assert_fail "plugin.json version" "expected 0.5.x, got ${PLUGIN_VERSION}" ;;
 esac
 
 echo ""
