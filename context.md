@@ -29,11 +29,12 @@ sidekick-repo/
 ├── .claude-plugin/
 │   └── plugin.json          # Plugin manifest with _integrity SHA-256 block
 ├── hooks/
-│   └── hooks.json           # SessionStart hook → runs install.sh on first session
+│   ├── hooks.json           # SessionStart + PreToolUse/PostToolUse hooks
+│   └── scrub-legacy-user-hooks.py # One-time scrub + rollback helper for stale user config
 ├── skills/
 │   └── forge.md             # Core Claude orchestration skill (862 lines)
 ├── tests/
-│   ├── run_all.bash          # Test runner (all 4 suites)
+│   ├── run_all.bash          # Test runner (all suites)
 │   ├── test_install_sh.bash  # 15 unit tests for install.sh
 │   ├── test_plugin_integrity.bash  # 5 integrity/manifest tests
 │   ├── test_fresh_install_sim.bash # 9 sandboxed install simulation tests
@@ -50,10 +51,11 @@ sidekick-repo/
 
 ## Plugin Installation Mechanics
 
-- **Entry point:** `hooks/hooks.json` → SessionStart hook runs:
+- **Entry point:** `hooks/hooks.json` → SessionStart installs on first session; PreToolUse/PostToolUse hooks live here too:
   ```
   test -f "${CLAUDE_PLUGIN_ROOT}/.installed" || (bash install.sh && touch .installed)
   ```
+- **Upgrade scrub:** `hooks/scrub-legacy-user-hooks.py` runs on SessionStart to remove stale Sidekick blocks from `~/.codex/hooks.json` and `~/.Codex/hooks.json`. It snapshots touched files under `~/.claude/.sidekick/legacy-hooks-scrub-backups/` so a rollback can restore the exact originals.
 - **Sentinel:** `.installed` file written only on `exit 0` (`&&` not `;`) — prevents retry on failure
 - **install.sh** does:
   1. Downloads ForgeCode installer to temp file (not `curl | sh`)
@@ -71,7 +73,8 @@ sidekick-repo/
 |---|---|
 | `install.sh` | `d81694cc4dc5ea700e742b51069612060e231058a24670b7942ec30cff0e175e` |
 | `skills/forge.md` | `631f9d5ca68d441d51b46d98dbf6b3b8f7b7a84bf5a8a80bb1b4ef0ca7ae2b22` |
-| `hooks/hooks.json` | `4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64` |
+| `hooks/hooks.json` | `7f6812a38569080fff7e1f69bb824c04b65a0b3561d6141f1378f2cfddb75f28` |
+| `hooks/scrub-legacy-user-hooks.py` | `58602442542f3c189ae72a90929bacc4b69fb69ab52147cf86ddca3e65a7dd51` |
 | ForgeCode installer (forgecode.dev/cli) | `512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a` |
 
 ---

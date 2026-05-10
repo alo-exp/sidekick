@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived). Preserved design notes live in `docs/design/`.
 
-**Plugin version:** v1.5.4 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
+**Plugin version:** v0.5.4 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
 
 ---
 
@@ -30,6 +30,7 @@ Result: when Forge or Codex delegation mode is active, every mutating operation 
 | Component | Path | Purpose |
 |---|---|---|
 | Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap that installs Forge and Code runtimes and guards the session with `.installed`. |
+| Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json` / `~/.Codex/hooks.json`. Touches only matching Sidekick entries, snapshots the originals under `~/.claude/.sidekick/legacy-hooks-scrub-backups/`, and can restore them with `--rollback`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
 | Skill — `codex-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Codex delegation workflow: runtime health checks, `code exec --full-auto` primary path, and `codex`/`coder` compatibility fallbacks for the Every Code extension line. |
@@ -39,8 +40,8 @@ Result: when Forge or Codex delegation mode is active, every mutating operation 
 | Audit indexes | `.forge/conversations.idx`, `.codex/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
 | Delegation lifecycle skills | `skills/codex-delegate/SKILL.md`, `skills/codex-stop/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-stop/SKILL.md` | The canonical four-skill Sidekick surface for Codex/Claude pickers. |
 | Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[CODEX]` prefixes and `[...-SUMMARY]` blocks. |
-| Codex plugin manifest | `.codex-plugin/plugin.json` | v1.5.4. Skills-only packaging for Codex with shared hook wiring. |
-| Plugin manifest | `.claude-plugin/plugin.json` | v1.5.4. Registers hooks, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
+| Codex plugin manifest | `.codex-plugin/plugin.json` | v0.5.4. Skills-only packaging for Codex with shared hook wiring. |
+| Plugin manifest | `.claude-plugin/plugin.json` | v0.5.4. Points at `hooks/hooks.json`, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
 | Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. The Sidekick installer keeps the modern and legacy config paths aligned with MiniMax defaults. |

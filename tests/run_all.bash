@@ -42,6 +42,7 @@ run_suite "Codex progress surface hook tests"    "test_codex_progress_surface.ba
 run_suite "Docs contract tests"                  "test_docs_contract.bash"
 run_suite "Help-site navigation tests"           "test_help_site_navigation.bash"
 run_suite "Release gate hook tests"              "test_validate_release_gate_hook.bash"
+run_suite "Legacy hook scrub tests"              "test_legacy_hook_scrub.bash"
 run_suite "Post-release cleanup script tests"    "test_post_release_cleanup.bash"
 run_suite "Repository layout tests"              "test_repo_layout.bash"
 

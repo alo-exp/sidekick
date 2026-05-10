@@ -1,9 +1,9 @@
 {
   "name": "sidekick",
-  "version": "1.5.4",
-  "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Code are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication. The workflow bodies live in skills.",
+  "version": "0.5.4",
+  "description": "Sidekick \u2014 a collection of AI coding agents as Claude sidekicks. Forge and Code are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication. The workflow bodies live in skills.",
   "author": {
-    "name": "Ālo Labs",
+    "name": "\u0100lo Labs",
     "url": "https://alolabs.dev"
   },
   "homepage": "https://github.com/alo-exp/sidekick",
@@ -22,59 +22,20 @@
   ],
   "skills": "./skills/",
   "outputStyles": "./output-styles/",
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|NotebookEdit|Bash|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__filesystem__move_file|mcp__filesystem__create_directory",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-delegation-enforcer.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-delegation-enforcer.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-release-gate.sh\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-progress-surface.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-progress-surface.sh\""
-          }
-        ]
-      }
-    ]
-  },
+  "hooks": "./hooks/hooks.json",
   "_integrity": {
-    "_note": "SHA-256 hashes of plugin files — update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
+    "_note": "SHA-256 hashes of plugin files \u2014 update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
     "install_sh_sha256": "d81694cc4dc5ea700e742b51069612060e231058a24670b7942ec30cff0e175e",
     "forge_md_sha256": "d8cddf8f4eff8e47e09ebbde2a2bc949feb85c402cec42985de21ae33bb35d3e",
     "forge_skill_md_sha256": "a0ce1b840096d5faad20a20f61bd372cc4af9c1c859dd04bdcf49ba7056eece1",
     "codex_delegate_skill_md_sha256": "fd52605c94b29da9f25870a1f6d8b3fa24250e033b84aaaa05c50236505da07c",
     "codex_delegate_md_sha256": "ee4082e6629b7c40f6c13e1b7bf5b2b3212e291b0216813989d0e2a31fa13429",
-    "hooks_json_sha256": "4a131a3b1ceee87b968b13f6365daaa9f3a249605f9b8836a3f6d68421038e64",
+    "hooks_json_sha256": "7f6812a38569080fff7e1f69bb824c04b65a0b3561d6141f1378f2cfddb75f28",
     "forge_delegation_enforcer_sha256": "d7992eb85540607c5654c7a16d7e0486d3de64c6756a43d6b852d5d27201bb64",
     "codex_delegation_enforcer_sha256": "d5d99c73d576a4dfb87a6756dbae3ffe390c59275c954e3c41f31f4cd5ad6f27",
     "enforcer_utils_sha256": "2bcae48efa084e6c6396fe3b7aa2ba772a8653215589248befc1752140db55ae",
     "sidekick_registry_sha256": "ba42bd46b3a4a33cf86ab30884a673cfc0fae9be78fdf4521a585ed42bef4317",
+    "legacy_hooks_scrub_sha256": "58602442542f3c189ae72a90929bacc4b69fb69ab52147cf86ddca3e65a7dd51",
     "forge_progress_surface_sha256": "f78d18c93caae6bd833d1d5f201ecc2050a8363912dba9b5e4d3491f8127a12d",
     "codex_progress_surface_sha256": "d976c4ff04088e1f3201339abb17db46d2fe3630ec9e47230d2141d19b9c550f",
     "validate_release_gate_sha256": "cce77224d7ff340f296f78e35efd3f073cea4e61f0065c97f1d7d53cb660faa9",
