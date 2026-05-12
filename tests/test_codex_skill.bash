@@ -62,10 +62,11 @@ echo "=== T5: legacy alias points to canonical kay-delegate skill ==="
 if grep -q '^---$' "${DELEGATE_LEGACY_FILE}" \
   && grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
   && grep -qi 'deprecated' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q '^name: kay-delegate' "${DELEGATE_LEGACY_FILE}"; then
-  assert_pass "legacy alias points to canonical delegate skill"
+  && grep -q '^name: kay-delegate' "${DELEGATE_LEGACY_FILE}" \
+  && grep -q '^user-invocable: false' "${DELEGATE_LEGACY_FILE}"; then
+  assert_pass "legacy alias is hidden and points to canonical delegate skill"
 else
-  assert_fail "legacy alias" "missing YAML frontmatter, canonical reference, deprecation note, or alias name"
+  assert_fail "legacy alias" "missing YAML frontmatter, canonical reference, deprecation note, alias name, or hidden flag"
 fi
 
 echo "=== T6: removed codex canonical/history skills are absent ==="

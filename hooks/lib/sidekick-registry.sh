@@ -13,10 +13,21 @@ IFS=$'\n\t'
 _SIDEKICK_REGISTRY_LOADED=1
 
 sidekick_plugin_root() {
+  if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${SIDEKICK_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  if [[ -n "${CODEX_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${CODEX_PLUGIN_ROOT}"
+    return 0
+  fi
+
   if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
     printf '%s' "${CLAUDE_PLUGIN_ROOT}"
     return 0
   fi
+
   cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
 }
 
@@ -72,6 +83,11 @@ sidekick_session_id() {
     return 0
   fi
 
+  if [[ -n "${SIDEKICK_SESSION_ID:-}" ]]; then
+    printf '%s' "${SIDEKICK_SESSION_ID}"
+    return 0
+  fi
+
   if [[ -n "${CODEX_THREAD_ID:-}" ]]; then
     printf '%s' "${CODEX_THREAD_ID}"
     return 0
@@ -99,6 +115,8 @@ sidekick_session_marker_file() {
 
   marker_template="${marker_template//\$\{CODEX_THREAD_ID\}/$session_id}"
   marker_template="${marker_template//\$CODEX_THREAD_ID/$session_id}"
+  marker_template="${marker_template//\$\{CLAUDE_SESSION_ID\}/$session_id}"
+  marker_template="${marker_template//\$CLAUDE_SESSION_ID/$session_id}"
 
   if [[ -z "${marker_template}" ]]; then
     return 1
@@ -111,7 +129,7 @@ sidekick_session_marker_file() {
 }
 
 sidekick_project_root() {
-  local root="${CLAUDE_PROJECT_DIR:-$PWD}"
+  local root="${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}"
   if command -v realpath >/dev/null 2>&1; then
     realpath "$root" 2>/dev/null && return 0
   fi

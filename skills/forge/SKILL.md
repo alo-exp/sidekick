@@ -49,7 +49,7 @@ Per the non-destructive rule, create only if absent -- never overwrite existing 
 
 ### 3. Set Session State
 
-- Create zero-byte marker file for the current session: `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`
+- Create zero-byte marker file for the current session: `~/.codex/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`
 - If file already exists (stale from prior session): re-run full health check, then acknowledge: **"Forge-first mode is already active (re-validated)."**
 
 ### 4. Confirm
@@ -78,7 +78,7 @@ When composing a `Bash` tool call to invoke `forge -p "..."`:
 
 ## Delegation Protocol (while active)
 
-Before every implementation task, check: `[ -f ~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active ]`
+Before every implementation task, check: `[ -f ~/.codex/sessions/${CODEX_THREAD_ID}/.forge-delegation-active ]`
 
 - **If active:** follow `skills/forge.md` STEP 1 through STEP 9 for task execution.
 - **DLGT-04 enforcement:** while the marker exists, Claude MUST NOT directly use Write, Edit, or Bash tools for implementation work. Exception: Level 3 fallback (Phase 2).
@@ -90,7 +90,7 @@ Before every implementation task, check: `[ -f ~/.claude/sessions/${CODEX_THREAD
 
 ## Deactivation (`/forge-stop`)
 
-Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` marker for the current session and restores normal Claude behavior.
+Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.codex/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` marker for the current session and restores normal Claude behavior.
 
 Note: `.forge/conversations.idx` is preserved across deactivation as a durable audit trail of every Forge task issued from this project.
 
@@ -129,7 +129,7 @@ Maximum 3 subtask attempts total. If all 3 fail -> escalate to Level 3.
 
 ### Level 3 -- Take over
 
-DLGT-04 restriction is temporarily lifted. Claude uses Write/Edit/Bash tools directly to complete the task. **Scope constraint**: Write/Edit/Bash operations are limited to `$CLAUDE_PROJECT_DIR` (the Claude Code runtime project directory). Operations targeting any path outside this boundary are not permitted. After completion, produce a structured debrief:
+DLGT-04 restriction is temporarily lifted. Claude uses Write/Edit/Bash tools directly to complete the task. **Scope constraint**: Write/Edit/Bash operations are limited to `$CODEX_PROJECT_DIR` (the Claude Code runtime project directory). Operations targeting any path outside this boundary are not permitted. After completion, produce a structured debrief:
 
 ```
 DEBRIEF:

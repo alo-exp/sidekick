@@ -72,7 +72,7 @@ run_case() {
 
   mkdir -p "${root}/home"
   SYNC_LOG="${root}/sync.log" \
-    CLAUDE_PLUGIN_ROOT="${root}" \
+    SIDEKICK_PLUGIN_ROOT="${root}" \
     HOME="${root}/home" \
     BIN_DIR="${root}/bin" \
     PATH="${root}/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
@@ -102,7 +102,7 @@ run_case_capture() {
 
   mkdir -p "${root}/home"
   SYNC_LOG="${root}/sync.log" \
-    CLAUDE_PLUGIN_ROOT="${root}" \
+    SIDEKICK_PLUGIN_ROOT="${root}" \
     HOME="${root}/home" \
     BIN_DIR="${root}/bin" \
     PATH="${root}/bin:/usr/bin:/bin:/usr/sbin:/sbin" \

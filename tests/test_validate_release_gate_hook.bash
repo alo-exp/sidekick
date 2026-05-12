@@ -3,7 +3,7 @@
 #
 # The hook blocks `gh release create` commands via Claude Code's PreToolUse
 # permissionDecision=deny mechanism unless all quality-gate stage markers
-# are present in ~/.claude/.sidekick/quality-gate-state.
+# are present in ~/.sidekick/quality-gate-state.
 #
 # We override HOME to a temp directory for each scenario so we can
 # write marker files deterministically without touching the real state.
@@ -35,15 +35,15 @@ run_hook() {
 setup_home() {
   local h
   h="$(mktemp -d)"
-  mkdir -p "${h}/.claude/.sidekick"
+  mkdir -p "${h}/.sidekick"
   echo "${h}"
 }
 
 write_markers() {
   local h="$1"; shift
-  : > "${h}/.claude/.sidekick/quality-gate-state"
+  : > "${h}/.sidekick/quality-gate-state"
   for s in "$@"; do
-    echo "quality-gate-stage-${s}" >> "${h}/.claude/.sidekick/quality-gate-state"
+    echo "quality-gate-stage-${s}" >> "${h}/.sidekick/quality-gate-state"
   done
 }
 
@@ -110,9 +110,9 @@ rm -rf "${H}"
 # ---------------------------------------------------------------------------
 echo "Scenario 5: stage-10 does not satisfy stage-1 (anchored grep)"
 H="$(setup_home)"
-: > "${H}/.claude/.sidekick/quality-gate-state"
+: > "${H}/.sidekick/quality-gate-state"
 # Only a spurious stage-10 marker — stages 1-4 should all still be missing.
-echo "quality-gate-stage-10" >> "${H}/.claude/.sidekick/quality-gate-state"
+echo "quality-gate-stage-10" >> "${H}/.sidekick/quality-gate-state"
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1"}}'
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)

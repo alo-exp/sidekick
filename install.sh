@@ -17,14 +17,212 @@ CODEX_BIN="${SIDEKICK_BIN_DIR}/code"
 CODEX_CODE_ALIAS="${SIDEKICK_BIN_DIR}/codex"
 CODEX_CODER_ALIAS="${SIDEKICK_BIN_DIR}/coder"
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_PLUGIN_ROOT="${PLUGIN_ROOT}"
+SIDEKICK_PLUGIN_ROOT="${SIDEKICK_PLUGIN_ROOT:-${SOURCE_PLUGIN_ROOT}}"
+export SIDEKICK_PLUGIN_ROOT
 FORGE_INSTALL_TMP=""
 CODEX_INSTALL_TMP=""
 INSTALL_FORGE="${SIDEKICK_INSTALL_FORGE:-1}"
 INSTALL_CODE="${SIDEKICK_INSTALL_CODE:-1}"
 FORCE_REINSTALL="${SIDEKICK_FORCE_REINSTALL:-0}"
+CLEAN_REINSTALL="${SIDEKICK_CLEAN_REINSTALL:-0}"
 
 # shellcheck source=hooks/lib/sidekick-registry.sh
 source "${PLUGIN_ROOT}/hooks/lib/sidekick-registry.sh"
+
+detect_install_host() {
+  if [ -n "${SIDEKICK_INSTALL_HOST:-}" ]; then
+    printf '%s' "${SIDEKICK_INSTALL_HOST}"
+    return 0
+  fi
+
+  if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] || [ -n "${CODEX_PROJECT_DIR:-}" ]; then
+    printf '%s' "codex"
+    return 0
+  fi
+
+  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || [ -n "${CLAUDE_SESSION_ID:-}" ] || [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
+    printf '%s' "claude"
+    return 0
+  fi
+
+  return 1
+}
+
+rewrite_host_surface() {
+  local host="${1:-}"
+  local rewrite_target="${PLUGIN_ROOT}"
+
+  [ -n "${host}" ] || return 0
+
+  echo "[forge-plugin] Rewriting installed surface for ${host}."
+
+  python3 - "${rewrite_target}" "${host}" <<'PY'
+from pathlib import Path
+import json
+import sys
+
+root = Path(sys.argv[1])
+host = sys.argv[2]
+
+if host not in {"codex", "claude"}:
+    raise SystemExit(0)
+
+replacements = {
+    "codex": [
+        ("ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\";", "ROOT=\"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\";"),
+        ("if [[ -n \"${CLAUDE_PLUGIN_ROOT:-}\" ]]; then\n    printf '%s' \"${CLAUDE_PLUGIN_ROOT}\"\n    return 0\n  fi\n", ""),
+        ("if [[ -n \"${CLAUDE_SESSION_ID:-}\" ]]; then\n    printf '%s' \"${CLAUDE_SESSION_ID}\"\n    return 0\n  fi\n", ""),
+        ("local root=\"${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}\"", "local root=\"${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-$PWD}}\""),
+        ("marker_template=\"${marker_template//\\${CODEX_THREAD_ID}/$session_id}\"", "marker_template=\"${marker_template//\\${CODEX_THREAD_ID}/$session_id}\""),
+        ("marker_template=\"${marker_template//\\$CODEX_THREAD_ID/$session_id}\"", "marker_template=\"${marker_template//\\$CODEX_THREAD_ID/$session_id}\""),
+        ("~/.claude", "~/.codex"),
+        (".claude/", ".codex/"),
+        ("CLAUDE_PLUGIN_ROOT", "CODEX_PLUGIN_ROOT"),
+        ("CLAUDE_PROJECT_DIR", "CODEX_PROJECT_DIR"),
+        ("CLAUDE_SESSION_ID", "CODEX_THREAD_ID"),
+        (".claude/sessions/${CODEX_THREAD_ID}", ".codex/sessions/${CODEX_THREAD_ID}"),
+    ],
+    "claude": [
+        ("ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\";", "ROOT=\"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\";"),
+        ("if [[ -n \"${CODEX_PLUGIN_ROOT:-}\" ]]; then\n    printf '%s' \"${CODEX_PLUGIN_ROOT}\"\n    return 0\n  fi\n", ""),
+        ("if [[ -n \"${CODEX_THREAD_ID:-}\" ]]; then\n    printf '%s' \"${CODEX_THREAD_ID}\"\n    return 0\n  fi\n", ""),
+        ("local root=\"${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}\"", "local root=\"${SIDEKICK_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}\""),
+        ("marker_template=\"${marker_template//\\${CODEX_THREAD_ID}/$session_id}\"", "marker_template=\"${marker_template//\\${CLAUDE_SESSION_ID}/$session_id}\""),
+        ("marker_template=\"${marker_template//\\$CODEX_THREAD_ID/$session_id}\"", "marker_template=\"${marker_template//\\$CLAUDE_SESSION_ID/$session_id}\""),
+        ("~/.codex", "~/.claude"),
+        (".codex/", ".claude/"),
+        ("CODEX_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"),
+        ("CODEX_PROJECT_DIR", "CLAUDE_PROJECT_DIR"),
+        ("CODEX_THREAD_ID", "CLAUDE_SESSION_ID"),
+        (".codex/sessions/${CODEX_THREAD_ID}", ".claude/sessions/${CLAUDE_SESSION_ID}"),
+    ],
+}
+
+for rel in [
+    "hooks/hooks.json",
+    "hooks/lib/sidekick-registry.sh",
+    "sidekicks/registry.json",
+    "skills/forge/SKILL.md",
+    "skills/codex-stop/SKILL.md",
+    "hooks/forge-delegation-enforcer.sh",
+    "hooks/codex-delegation-enforcer.sh",
+]:
+    path = root / rel
+    if not path.exists():
+        continue
+    text = path.read_text(encoding="utf-8")
+    original = text
+    for old, new in replacements[host]:
+        text = text.replace(old, new)
+    if text != original:
+        path.write_text(text, encoding="utf-8")
+PY
+}
+
+purge_legacy_codex_sidekick_state() {
+  python3 - "${HOME}/.Codex/config.toml" "${HOME}/.codex/config.toml" "${HOME}/.Codex/plugins/installed_plugins.json" "${HOME}/.codex/plugins/installed_plugins.json" <<'PY'
+import json
+import pathlib
+import sys
+
+config_paths = [pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])]
+registry_paths = [pathlib.Path(sys.argv[3]), pathlib.Path(sys.argv[4])]
+
+legacy_plugin_prefix = "sidekick@"
+
+for config_path in config_paths:
+    if not config_path.is_file():
+        continue
+
+    text = config_path.read_text()
+    lines = text.splitlines()
+    output = []
+    changed = False
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if (
+            stripped.startswith('[plugins."')
+            and stripped.endswith('"]')
+            and stripped[len('[plugins."'):-2].startswith(legacy_plugin_prefix)
+        ) or (
+            stripped.startswith('[hooks.state."')
+            and stripped.endswith('"]')
+            and stripped[len('[hooks.state."'):-2].startswith(legacy_plugin_prefix)
+        ):
+            changed = True
+            i += 1
+            while i < len(lines) and not lines[i].startswith("["):
+                i += 1
+            continue
+        output.append(line)
+        i += 1
+
+    if changed:
+        new_text = "\n".join(output)
+        if text.endswith("\n"):
+            new_text += "\n"
+        config_path.write_text(new_text)
+
+for registry_path in registry_paths:
+    if not registry_path.is_file():
+        continue
+
+    try:
+        data = json.loads(registry_path.read_text())
+    except Exception:
+        continue
+
+    plugins = data.get("plugins")
+    if not isinstance(plugins, dict):
+        continue
+
+    removed = False
+    for plugin_id in list(plugins):
+        if isinstance(plugin_id, str) and plugin_id.startswith(legacy_plugin_prefix):
+            del plugins[plugin_id]
+            removed = True
+
+    if removed:
+        registry_path.write_text(json.dumps(data, indent=2) + "\n")
+PY
+}
+
+bootstrap_sidekick_cache_tree() {
+  local host="${1:-}"
+  local source_root="${2:-}"
+  local target_root="${3:-}"
+  local current_alias plugin_root_dir
+
+  [ -n "${host}" ] || return 0
+  [ -n "${source_root}" ] || return 0
+  [ -n "${target_root}" ] || return 0
+  plugin_root_dir="$(dirname "${target_root}")"
+
+  if [ "${CLEAN_REINSTALL}" = "1" ]; then
+    case "${host}" in
+      codex)
+        purge_legacy_codex_sidekick_state
+        ;;
+    esac
+    if [ "${source_root}" != "${plugin_root_dir}" ] && [[ "${source_root}" != "${plugin_root_dir}/"* ]]; then
+      rm -rf "${plugin_root_dir}"
+    fi
+  fi
+
+  if [ ! -d "${target_root}" ]; then
+    mkdir -p "${plugin_root_dir}"
+    cp -a "${source_root}/." "${target_root}/"
+  fi
+
+  current_alias="${plugin_root_dir}/current"
+  ln -sfn "${target_root}" "${current_alias}"
+
+  PLUGIN_ROOT="${target_root}"
+}
 
 cleanup_install_tmps() {
   rm -f "${FORGE_INSTALL_TMP:-}" "${CODEX_INSTALL_TMP:-}" 2>/dev/null || true
@@ -246,6 +444,14 @@ install_codex_runtime() {
   install_codex_runtime
 else
   echo "[forge-plugin] Skipping Code bootstrap/repair (SIDEKICK_INSTALL_CODE=0)."
+fi
+
+if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
+  bootstrap_sidekick_cache_tree "${bootstrap_host}" "${SOURCE_PLUGIN_ROOT}" "${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
+fi
+
+if install_host="$(detect_install_host 2>/dev/null)"; then
+  rewrite_host_surface "${install_host}"
 fi
 
 # --- Ensure PATH includes ~/.local/bin in common shell profiles ---

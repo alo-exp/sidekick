@@ -1,7 +1,7 @@
 {
   "forge": {
     "display_name": "Forge",
-    "marker_file": ".claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active",
+    "marker_file": ".claude/sessions/${CLAUDE_SESSION_ID}/.forge-delegation-active",
     "idx_dir": ".forge",
     "delegate_command": "forge -p",
     "stop_command": "/forge-stop",

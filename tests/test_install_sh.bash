@@ -192,21 +192,29 @@ skip "Non-interactive gate" "forge already installed on this machine — downloa
 
 echo "=== T16: hooks.json bootstrap and runtime sync ==="
 HOOKS="${PLUGIN_DIR}/hooks/hooks.json"
-SYNC_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
-BOOTSTRAP_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][1]['hooks'][0]['command'])")
-if echo "${SYNC_CMD}" | grep -q 'runtime-sync.sh' \
-  && echo "${SYNC_CMD}" | grep -q '.installed' \
-  && echo "${SYNC_CMD}" | grep -q 'if \[ -f'; then
+SESSION0_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
+SESSION1_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][1]['hooks'][0]['command'])")
+SESSION2_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][2]['hooks'][0]['command'])")
+if echo "${SESSION0_CMD}" | grep -q 'runtime-sync.sh' \
+  && echo "${SESSION0_CMD}" | grep -q '.installed' \
+  && echo "${SESSION0_CMD}" | grep -q 'if \[ -f'; then
   assert_pass "runtime sync hook is ordered before bootstrap install"
 else
   assert_fail "runtime sync hook order" "missing bootstrap-before-sync ordering"
 fi
 
-if echo "${BOOTSTRAP_CMD}" | grep -q 'test -f' \
-  && echo "${BOOTSTRAP_CMD}" | grep -q '.installed' \
-  && echo "${BOOTSTRAP_CMD}" | grep -q 'install.sh' \
-  && echo "${BOOTSTRAP_CMD}" | grep -q '&&' \
-  && echo "${BOOTSTRAP_CMD}" | grep -q 'touch'; then
+if echo "${SESSION1_CMD}" | grep -q 'scrub-legacy-user-hooks.py' \
+  && echo "${SESSION1_CMD}" | grep -q 'python3'; then
+  assert_pass "legacy scrub hook runs immediately after runtime sync"
+else
+  assert_fail "legacy scrub hook order" "missing scrub-legacy-user-hooks.py entry"
+fi
+
+if echo "${SESSION2_CMD}" | grep -q 'test -f' \
+  && echo "${SESSION2_CMD}" | grep -q '.installed' \
+  && echo "${SESSION2_CMD}" | grep -q 'install.sh' \
+  && echo "${SESSION2_CMD}" | grep -q '&&' \
+  && echo "${SESSION2_CMD}" | grep -q 'touch'; then
   assert_pass "bootstrap hook preserves the .installed sentinel guard"
 else
   assert_fail "bootstrap hook" "missing .installed guard or touch sentinel"
@@ -225,7 +233,7 @@ _toolbox_root="$(mktemp -d)"
 prepare_install_sandbox "${_runtime_root}"
 make_install_toolbox "${_toolbox_root}" "0"
 mkdir -p "${_runtime_root}/home"
-if OUT="$(HOME="${_runtime_root}/home" CLAUDE_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
   assert_fail "missing hash tools fail closed" "expected install.sh to fail, got success"
 else
   if echo "${OUT}" | grep -q 'Cannot verify Code installer integrity without shasum or sha256sum'; then
@@ -254,7 +262,7 @@ with open(path, "w", encoding="utf-8") as fh:
     fh.write("\n")
 PY
 mkdir -p "${_runtime_root}/home"
-if OUT="$(HOME="${_runtime_root}/home" CLAUDE_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
   assert_fail "missing registry SHA fails closed" "expected install.sh to fail, got success"
 else
   if echo "${OUT}" | grep -q 'No pinned Code SHA-256 is configured in sidekicks/registry.json'; then
@@ -264,6 +272,18 @@ else
   fi
 fi
 rm -rf "${_runtime_root}" "${_toolbox_root}"
+
+echo "=== T20: clean reinstall bootstrap ==="
+if grep -q 'SIDEKICK_CLEAN_REINSTALL' "${INSTALL_SH}" \
+  && grep -q 'purge_legacy_codex_sidekick_state' "${INSTALL_SH}" \
+  && grep -q 'bootstrap_sidekick_cache_tree' "${INSTALL_SH}" \
+  && grep -q 'rm -rf "${plugin_root_dir}"' "${INSTALL_SH}" \
+  && grep -q 'cp -a "${source_root}/." "${target_root}/"' "${INSTALL_SH}" \
+  && grep -q 'ln -sfn "${target_root}" "${current_alias}"' "${INSTALL_SH}"; then
+  assert_pass "clean reinstall bootstrap and current alias handling present"
+else
+  assert_fail "clean reinstall bootstrap" "missing clean reinstall or bootstrap-from-snapshot logic"
+fi
 
 echo ""
 echo "======================================="

@@ -27,10 +27,20 @@ EOF
   chmod +x "${path}"
 }
 
+prepare_install_sandbox() {
+  local root="$1"
+  mkdir -p "${root}/hooks/lib" "${root}/sidekicks"
+  cp "${INSTALL_SH}" "${root}/install.sh"
+  cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
+  cp "${PLUGIN_DIR}/sidekicks/registry.json" "${root}/sidekicks/registry.json"
+}
+
 TMP_ROOT="$(mktemp -d)"
 SANDBOX=$(mktemp -d "${TMP_ROOT}/forge-fresh-XXXXXX")
+INSTALL_ROOT="${TMP_ROOT}/install-tree"
 trap 'rm -rf "${TMP_ROOT}" 2>/dev/null || true' EXIT
 echo "Sandbox: ${SANDBOX}"
+prepare_install_sandbox "${INSTALL_ROOT}"
 
 # ---------------------------------------------------------------------------
 # F1 — Non-interactive + no pinned SHA: exits 0 (gate only fires when
@@ -84,7 +94,7 @@ chmod +x "${FAKE_BIN}/forge"
 make_codex_stub "${FAKE_BIN}/code"
 ln -sf code "${FAKE_BIN}/codex"
 ln -sf code "${FAKE_BIN}/coder"
-HOME="${SANDBOX}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_SH}" 2>&1 </dev/null || true
+HOME="${SANDBOX}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_ROOT}/install.sh" 2>&1 </dev/null || true
 COUNT=$(grep -c '.local/bin' "${FAKE_ZSHRC}" 2>/dev/null || echo 1)
 if [ "${COUNT}" -le 1 ]; then
   assert_pass "add_to_path is idempotent — no duplicate PATH entry (count=${COUNT})"
@@ -109,7 +119,7 @@ chmod +x "${FAKE_BIN}/forge"
 make_codex_stub "${FAKE_BIN}/code"
 ln -sf code "${FAKE_BIN}/codex"
 ln -sf code "${FAKE_BIN}/coder"
-INSTALL_OUTPUT=$(HOME="${FRESH}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_SH}" 2>&1 </dev/null || true)
+INSTALL_OUTPUT=$(HOME="${FRESH}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_ROOT}/install.sh" 2>&1 </dev/null || true)
 CODE_INSTALL_PROBE_SKIPPED=0
 if grep -q 'Code install completed but code binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
   CODE_INSTALL_PROBE_SKIPPED=1
