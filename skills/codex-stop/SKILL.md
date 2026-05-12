@@ -1,3 +1,4 @@
+---
 name: kay-stop
 description: Canonical Kay stop workflow. Use /kay-stop to deactivate delegation and return to direct Claude behavior.
 ---

@@ -60,10 +60,12 @@ To keep deterministic order across picker surfaces:
 
 For Sidekick, the canonical 4-skill Kay surface is:
 
-1. `sidekick:kay-delegate`
-2. `sidekick:kay-stop`
-3. `sidekick:forge-delegate`
-4. `sidekick:forge-stop`
+1. `sidekick:forge-delegate`
+2. `sidekick:forge-stop`
+3. `sidekick:kay-delegate`
+4. `sidekick:kay-stop`
+
+Codex currently reports plugin skills in lexicographic order, so `plugin/read` surfaces the Forge pair before the Kay pair even though both are canonical.
 
 ## Cross-plugin rollout checklist
 
