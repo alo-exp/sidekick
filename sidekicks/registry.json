@@ -25,8 +25,8 @@
     "output_style": "output-styles/codex.md",
     "install": {
       "kind": "codex-install-script",
-      "version": "v0.7.2",
-      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.7.2/scripts/install/install.sh",
+      "version": "v0.8.0",
+      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.8.0/scripts/install/install.sh",
       "sha256": "a08e754c5a532f7786340af9f0b21a72ff9cccb6d5c5ffa03c19553c0e7a31cc",
       "binary": "code",
       "alias": "codex",
