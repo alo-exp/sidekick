@@ -66,8 +66,56 @@ else:
 PY
 }
 
+sidekick_session_id() {
+  if [[ -n "${SIDEKICK_TEST_SESSION_ID:-}" ]]; then
+    printf '%s' "${SIDEKICK_TEST_SESSION_ID}"
+    return 0
+  fi
+
+  if [[ -n "${CODEX_THREAD_ID:-}" ]]; then
+    printf '%s' "${CODEX_THREAD_ID}"
+    return 0
+  fi
+
+  if [[ -n "${CLAUDE_SESSION_ID:-}" ]]; then
+    printf '%s' "${CLAUDE_SESSION_ID}"
+    return 0
+  fi
+
+  if [[ -n "${SESSION_ID:-}" ]]; then
+    printf '%s' "${SESSION_ID}"
+    return 0
+  fi
+
+  return 1
+}
+
+sidekick_session_marker_file() {
+  local sidekick="$1"
+  local marker_template session_id
+
+  marker_template="$(sidekick_registry_get "$sidekick" '.[$sidekick].marker_file')"
+  session_id="$(sidekick_session_id)" || return 1
+
+  marker_template="${marker_template//\$\{CODEX_THREAD_ID\}/$session_id}"
+  marker_template="${marker_template//\$CODEX_THREAD_ID/$session_id}"
+
+  if [[ -z "${marker_template}" ]]; then
+    return 1
+  fi
+
+  case "${marker_template}" in
+    /*) printf '%s' "${marker_template}" ;;
+    *) printf '%s/%s' "${HOME}" "${marker_template}" ;;
+  esac
+}
+
 sidekick_project_root() {
-  printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}"
+  local root="${CLAUDE_PROJECT_DIR:-$PWD}"
+  if command -v realpath >/dev/null 2>&1; then
+    realpath "$root" 2>/dev/null && return 0
+  fi
+  printf '%s' "$root"
 }
 
 sidekick_project_sidekick_dir() {

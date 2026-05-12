@@ -6,14 +6,14 @@
 
 ## Test pyramid
 
-Six tiers, fail-fast, each with a distinct purpose. The lower a failure appears in the pyramid, the cheaper it is to find.
+Six tiers, each with a distinct purpose. Tier 1 runs every local suite and aggregates failures; the release gate aborts on the first failed tier.
 
 | Tier | Script | Runs in CI | Exercises real agent | Purpose |
 |------|--------|:---:|:---:|---|
-| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Code coverage gaps, post-release cleanup, repository layout. |
+| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Code coverage gaps, docs contract, help-site navigation, runtime sync behavior, post-release cleanup, repository layout. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full Claude→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
-| **4. Code marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Code | Installs Sidekick from the Codex marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
+| **4. Code marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Code | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
 | **5. Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Code | `code --version` succeeds; trivial `code exec` round-trip completes against the real binary. |
 | **6. Code live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Code | Full Claude→Code delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 
@@ -41,16 +41,20 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_legacy_hook_scrub.bash` | One-time scrub/rollback of stale Sidekick user-hook entries in `~/.codex/hooks.json` and `~/.Codex/hooks.json` |
 | `test_post_release_cleanup.bash` | Post-release cleanup script: removes transient repo-local artifacts and is idempotent |
 | `test_repo_layout.bash` | Repository layout guard: expected top-level files/directories and docs structure stay organized |
-| `test_codex_skill.bash` | Code skill structure, activation/deactivation markers, and packaging expectations |
-| `test_codex_enforcer_hook.bash` | Code PreToolUse behavior: deny direct mutation, rewrite `code exec` (with compatibility aliases), allow read-only passthrough |
-| `test_codex_progress_surface.bash` | Code PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, stop hint |
-| `test_codex_plugin_manifest.bash` | Code plugin manifest structure, interface metadata, and path wiring |
-| `test_codex_marketplace_manifest.bash` | Sidekick marketplace entry, source pinning, and install-packaging expectations |
-| `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact |
-| `test_install_sh.bash` | Installer idempotency, sentinel behavior, credentials schema validation |
+| `test_codex_skill.bash` | Kay skill structure, activation/deactivation markers, and packaging expectations |
+| `test_codex_enforcer_hook.bash` | Kay PreToolUse behavior: deny direct mutation, rewrite `code exec` (with compatibility aliases), allow read-only passthrough |
+| `test_codex_progress_surface.bash` | Kay PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, stop hint |
+| `test_codex_plugin_manifest.bash` | Kay plugin manifest structure, interface metadata, and path wiring |
+| `test_codex_marketplace_manifest.bash` | Kay marketplace entry, source pinning, and install-packaging expectations |
+| `run_live_codex_plugin_read.bash` | Live marketplace plugin-read path for the packaged Kay surface |
+| `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact; Code/Kay bootstrap source stays on the upstream latest installer line |
+| `test_install_sh.bash` | Installer idempotency, sentinel behavior, selective repair env flags, credentials schema validation |
+| `test_runtime_sync.bash` | Session-start runtime sync: built-in update when available, selective install fallback when missing |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
+| `test_docs_contract.bash` | Public docs and canonical help pages stay in sync with the shipped workflows |
+| `test_help_site_navigation.bash` | Help-site links, anchors, and navigation order stay valid |
 
-All listed suites are invoked by `tests/run_all.bash` with fail-fast reporting.
+All listed suites are invoked by `tests/run_all.bash` with combined reporting.
 
 ---
 
@@ -94,7 +98,7 @@ SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full
 bash tests/run_release.bash                                               # stage 1 only, stages 2-6 skip cleanly — safe for CI
 ```
 
-Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the full live Forge/Codex pyramid twice locally before the version tag is pushed.
+Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the full live Forge/Kay pyramid twice locally before the version tag is pushed.
 
 After the GitHub release is published, run `bash tests/post_release_cleanup.bash` to remove any transient repo-local artifacts left behind by the release process.
 

@@ -2,7 +2,7 @@
 # =============================================================================
 # Sidekick Plugin — Live Codex End-to-End Driver
 # =============================================================================
-# Pre-release check that exercises a FULL Claude→Codex delegation round-trip
+# Pre-release check that exercises a FULL Claude→Kay delegation round-trip
 # against the real Codex binary and the real model, on a seeded buggy testapp.
 # Gated behind SIDEKICK_LIVE_CODEX=1. Never runs in CI.
 #
@@ -25,12 +25,12 @@ set -uo pipefail
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
 
 if [[ "${SIDEKICK_LIVE_CODEX:-}" != "1" ]]; then
-  echo -e "${yellow}Live E2E skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to run the full Codex round-trip)."
+  echo -e "${yellow}Live E2E skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to run the full Kay round-trip)."
   exit 0
 fi
 
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
-echo -e "${bold}Sidekick live-Codex E2E driver${reset}"
+echo -e "${bold}Sidekick live-Kay E2E driver${reset}"
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 
 if ! command -v codex >/dev/null 2>&1 && ! command -v code >/dev/null 2>&1 && ! command -v coder >/dev/null 2>&1; then

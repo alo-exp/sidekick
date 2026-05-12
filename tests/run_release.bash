@@ -18,7 +18,7 @@
 #                             — live `codex --version` + trivial codex exec
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #   6. run_live_codex_e2e.bash
-#                             — full Claude→Codex delegation on seeded testapp
+#                             — full Claude→Kay delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
 # The live stages skip cleanly (exit 0) when the env vars are unset, so this
@@ -63,9 +63,9 @@ else
   echo -e "  ${yellow}Tip:${reset} set SIDEKICK_LIVE_FORGE=1 before tagging to exercise the live path."
 fi
 if [[ "${SIDEKICK_LIVE_CODEX:-}" == "1" ]]; then
-  echo -e "  live Codex: ${green}enabled${reset} (marketplace + smoke + e2e will run)"
+  echo -e "  live Kay: ${green}enabled${reset} (marketplace + smoke + e2e will run)"
 else
-  echo -e "  live Codex: ${yellow}disabled${reset} (marketplace + smoke + e2e will skip)"
+  echo -e "  live Kay: ${yellow}disabled${reset} (marketplace + smoke + e2e will skip)"
   echo -e "  ${yellow}Tip:${reset} set SIDEKICK_LIVE_CODEX=1 before tagging to exercise the live path."
 fi
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
@@ -74,8 +74,8 @@ run_stage "Unit + integration suites"  "${SCRIPT_DIR}/run_all.bash"
 run_stage "Live-Forge smoke harness"   "${SCRIPT_DIR}/smoke/run_smoke.bash"
 run_stage "Live-Forge E2E testapp"     "${SCRIPT_DIR}/run_live_e2e.bash"
 run_stage "Live-Codex marketplace install" "${SCRIPT_DIR}/run_live_codex_marketplace_install.bash"
-run_stage "Live-Codex smoke harness"    "${SCRIPT_DIR}/smoke/run_codex_smoke.bash"
-run_stage "Live-Codex E2E testapp"      "${SCRIPT_DIR}/run_live_codex_e2e.bash"
+run_stage "Live-Kay smoke harness"       "${SCRIPT_DIR}/smoke/run_codex_smoke.bash"
+run_stage "Live-Kay E2E testapp"         "${SCRIPT_DIR}/run_live_codex_e2e.bash"
 
 echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"

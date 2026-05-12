@@ -31,7 +31,7 @@ The deployed site lives at https://sidekick.alolabs.dev (CNAME set in `docs/CNAM
 No automated tag-on-push. Releases are cut by the maintainer against a fully-green local gate, then pushed.
 
 1. **Pre-release quality gate** — maintainer completes the 4-stage gate in `docs/pre-release-quality-gate.md` until it passes twice in a row.
-2. **Pre-tag live gate** — maintainer runs the full pyramid with live Forge and Codex twice:
+2. **Pre-tag live gate** — maintainer runs the full pyramid with live Forge and Kay twice:
    ```bash
    SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    ```

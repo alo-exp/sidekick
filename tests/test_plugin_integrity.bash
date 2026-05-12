@@ -52,6 +52,7 @@ check_hash "codex_delegation_enforcer_sha256" "hooks/codex-delegation-enforcer.s
 check_hash "enforcer_utils_sha256" "hooks/lib/enforcer-utils.sh"
 check_hash "sidekick_registry_sha256" "sidekicks/registry.json"
 check_hash "legacy_hooks_scrub_sha256" "hooks/scrub-legacy-user-hooks.py"
+check_hash "runtime_sync_sha256" "hooks/runtime-sync.sh"
 check_hash "forge_progress_surface_sha256" "hooks/forge-progress-surface.sh"
 check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
 check_hash "validate_release_gate_sha256" "hooks/validate-release-gate.sh"
@@ -71,14 +72,19 @@ else
   assert_fail "removed skill surface" "one or more removed skill files still present"
 fi
 
-# Cross-check codex installer hash between manifest and registry.
+# Cross-check Codex installer source between manifest and registry.
 echo "=== Registry cross-checks ==="
 CLAIMED_CODEX_INSTALL="$(claim codex_installer_sha256)"
-REGISTRY_CODEX_INSTALL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['codex']['install']['sha256'])")"
-if [ "${CLAIMED_CODEX_INSTALL}" = "${REGISTRY_CODEX_INSTALL}" ]; then
-  assert_pass "codex installer hash matches registry"
+REGISTRY_KAY_URL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['url'])")"
+REGISTRY_KAY_VERSION="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['version'])")"
+REGISTRY_KAY_SHA="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['sha256'])")"
+if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/v0.7.2/scripts/install/install.sh" ] \
+  && [ "${REGISTRY_KAY_VERSION}" = "v0.7.2" ] \
+  && [ "${REGISTRY_KAY_SHA}" = "a08e754c5a532f7786340af9f0b21a72ff9cccb6d5c5ffa03c19553c0e7a31cc" ] \
+  && [ "${CLAIMED_CODEX_INSTALL}" = "a08e754c5a532f7786340af9f0b21a72ff9cccb6d5c5ffa03c19553c0e7a31cc" ]; then
+  assert_pass "kay installer points at the pinned Kay v0.7.2 release and checksum"
 else
-  assert_fail "codex installer hash" "manifest=${CLAIMED_CODEX_INSTALL} registry=${REGISTRY_CODEX_INSTALL}"
+  assert_fail "kay installer source" "url=${REGISTRY_KAY_URL} version=${REGISTRY_KAY_VERSION} registry_sha=${REGISTRY_KAY_SHA} manifest_sha=${CLAIMED_CODEX_INSTALL}"
 fi
 
 # install.sh pinned forge installer hash must match manifest.

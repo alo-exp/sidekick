@@ -8,7 +8,7 @@
 # the result distilled in the transcript with a stop-mode hint.
 #
 # Behavior contract:
-#   * No-op when ~/.claude/.forge-delegation-active is absent.
+#   * No-op when the current session marker is absent.
 #   * No-op when tool_name != "Bash".
 #   * No-op when tool_input.command does NOT contain `forge -p`.
 #   * No-op when output does NOT contain a `STATUS:` block.
@@ -26,7 +26,12 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-MARKER_FILE="${HOME}/.claude/.forge-delegation-active"
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=hooks/lib/sidekick-registry.sh
+source "${HOOK_DIR}/lib/sidekick-registry.sh"
+
+SIDEKICK_NAME="forge"
+MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
 
 # -----------------------------------------------------------------------------
 # strip_ansi — strip a broad set of terminal control sequences from stdin.
@@ -84,6 +89,7 @@ main() {
   fi
 
   # Silent no-op if marker not present.
+  [[ -n "$MARKER_FILE" ]] || exit 0
   [[ -f "$MARKER_FILE" ]] || exit 0
 
   local input tool_name cmd output
@@ -128,7 +134,10 @@ main() {
   # `${1}[...]` to force capture-group interpolation.
   status_block="$(printf '%s' "$status_block" | perl -pe '
     s/(?i)(authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
-    s/(?i)(api[_-]?key\s*[:=]\s*)\S+/${1}[REDACTED]/g;
+    s/(?i)("authorization"\s*:\s*")((?:bearer\s+)?[^"]+)(")/${1}[REDACTED]${3}/g;
+    s/(?i)("api[_-]?key"\s*:\s*")([^"]+)(")/${1}[REDACTED]${3}/g;
+    s/(?i)((?<!")authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
+    s/(?i)((?<!")api[_-]?key\s*[:=]\s*)\S+/${1}[REDACTED]/g;
     s/sk-[A-Za-z0-9_\-\.\/+]{10,}(?=\s|['"'"'">},]|$)/[REDACTED-SK-TOKEN]/g;
     s/\bgh[pousra]_[A-Za-z0-9]{20,}\b/[REDACTED-GH-TOKEN]/g;
     s/\bgithub_pat_[A-Za-z0-9_]{20,}\b/[REDACTED-GH-TOKEN]/g;

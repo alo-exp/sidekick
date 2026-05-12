@@ -16,6 +16,16 @@ The stop workflow lives canonically in `skills/forge-stop/SKILL.md`.
 
 ---
 
+## Runtime Sync
+
+Sidekick's SessionStart hook keeps Forge current before delegation begins:
+
+- If Forge is missing, the hook installs it.
+- If Forge is already installed and exposes a native `update` command, the hook uses that instead of reinstalling.
+- If the native update path is unavailable or fails, the hook falls back to a selective repair install.
+
+---
+
 ## Activation (`/forge`)
 
 ### 1. Health Check
@@ -24,7 +34,7 @@ All 4 criteria must pass before activation proceeds:
 
 1. **Binary exists:** `~/.local/bin/forge` exists OR `which forge` succeeds
 2. **Provider configured:** `forge info` exits 0 and output contains a provider name (non-empty line after "Provider:")
-3. **Credentials present:** Run `jq -e 'if type == "array" then (length > 0 and all(.[]; (.id | type == "string" and length > 0) and (.auth_details | type == "object" and (keys | length > 0)))) elif type == "object" then (.api_key | type == "string" and length > 0) else false end' ~/forge/.credentials.json > /dev/null 2>&1` — exits 0 if credentials are present. Supports both the current Forge schema (array of `{id, auth_details}` entries with non-empty `id` and non-empty `auth_details`) and the legacy flat `{api_key}` schema. Returns false (not a jq error) on malformed files. Never read, display, or include credential values in any output or context.
+3. **Credentials present:** Run `jq -e 'type == "array" and length > 0 and all(.[]; (.id | type == "string" and length > 0) and (.auth_details | type == "object" and (keys | length > 0)))' ~/forge/.credentials.json > /dev/null 2>&1` — exits 0 if credentials are present. Uses the current Forge schema: an array of `{id, auth_details}` entries with non-empty `id` values and non-empty `auth_details` objects. Returns false (not a jq error) on malformed files or any legacy shape. Never read, display, or include credential values in any output or context.
 4. **Config valid:** `~/forge/.forge.toml` contains non-empty `provider_id` and `model_id`
 
 If ANY check fails: print which check failed and direct the user to `skills/forge.md` STEP 0A for setup instructions. Stop activation.
@@ -39,7 +49,7 @@ Per the non-destructive rule, create only if absent -- never overwrite existing 
 
 ### 3. Set Session State
 
-- Create zero-byte marker file: `~/.claude/.forge-delegation-active`
+- Create zero-byte marker file for the current session: `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`
 - If file already exists (stale from prior session): re-run full health check, then acknowledge: **"Forge-first mode is already active (re-validated)."**
 
 ### 4. Confirm
@@ -68,7 +78,7 @@ When composing a `Bash` tool call to invoke `forge -p "..."`:
 
 ## Delegation Protocol (while active)
 
-Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-active ]`
+Before every implementation task, check: `[ -f ~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active ]`
 
 - **If active:** follow `skills/forge.md` STEP 1 through STEP 9 for task execution.
 - **DLGT-04 enforcement:** while the marker exists, Claude MUST NOT directly use Write, Edit, or Bash tools for implementation work. Exception: Level 3 fallback (Phase 2).
@@ -80,7 +90,7 @@ Before every implementation task, check: `[ -f ~/.claude/.forge-delegation-activ
 
 ## Deactivation (`/forge-stop`)
 
-Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.claude/.forge-delegation-active` marker and restores normal Claude behavior.
+Deactivation is handled by the `/forge-stop` skill. Invoking `/forge-stop` removes the `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` marker for the current session and restores normal Claude behavior.
 
 Note: `.forge/conversations.idx` is preserved across deactivation as a durable audit trail of every Forge task issued from this project.
 

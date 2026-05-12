@@ -158,21 +158,21 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Health check</h4>
-            <p>Claude verifies: (1) the Forge binary is on PATH, (2) <code>~/forge/.credentials.json</code> has a valid <code>api_key</code>, (3) <code>~/forge/.forge.toml</code> has a valid <code>provider_id</code> and <code>model_id</code>, (4) OpenRouter (or MiniMax) is reachable, and (5) the configured model is available. Any failure halts activation with a specific error message.</p>
+            <p>Claude verifies: (1) the Forge binary is on PATH, (2) <code>~/forge/.credentials.json</code> has a non-empty array of credential entries, (3) <code>~/forge/.forge.toml</code> has a valid <code>provider_id</code> and <code>model_id</code>, (4) OpenRouter (or MiniMax) is reachable, and (5) the configured model is available. Any failure halts activation with a specific error message.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">3</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Bootstrap AGENTS.md (first run only)</h4>
-            <p>If <code>./AGENTS.md</code> does not exist, Claude creates it with a project-specific template: Code Style, Testing, Git Workflow, Forge Behavior, and Project Conventions sections. If <code>~/forge/AGENTS.md</code> doesn't exist, it creates that too.</p>
+            <p>If <code>./AGENTS.md</code> does not exist, Claude creates it with project-specific sections: Project Conventions, Task Patterns, and Forge Corrections. If <code>~/forge/AGENTS.md</code> doesn't exist, it creates that too with global sections: Code Style, Testing, Git Workflow, and Forge Behavior.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">4</div></div>
           <div class="flow-body">
             <h4>Confirm activation</h4>
-            <p>Claude writes a zero-byte marker to <code>~/.claude/.forge-delegation-active</code> and confirms: "Forge delegation mode active." All subsequent coding tasks in this session will be delegated to Forge until you run <code>/forge-stop</code>.</p>
+            <p>Claude writes a zero-byte marker to <code>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</code> and confirms: "Forge delegation mode active." All subsequent coding tasks in this session will be delegated to Forge until you run <code>/forge-stop</code>.</p>
           </div>
         </div>
       </div>
@@ -272,7 +272,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <h2 id="deactivation">Step 7 — Deactivate (optional)</h2>
       <p>Forge delegation mode persists for the entire session. You can delegate as many tasks as needed without re-running <code>/forge</code>. To return to direct Claude implementation:</p>
       <div class="code-block"><span class="key">/forge-stop</span></div>
-      <p>This removes the <code>~/.claude/.forge-delegation-active</code> marker and restores normal Claude behavior. All AGENTS.md updates from the session are preserved and will be loaded on the next <code>/forge</code> invocation.</p>
+      <p>This removes the <code>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</code> marker and restores normal Claude behavior. All AGENTS.md updates from the session are preserved and will be loaded on the next <code>/forge</code> invocation.</p>
 
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>

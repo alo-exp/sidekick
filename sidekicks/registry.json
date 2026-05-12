@@ -1,7 +1,7 @@
 {
   "forge": {
     "display_name": "Forge",
-    "marker_file": ".claude/.forge-delegation-active",
+    "marker_file": ".claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active",
     "idx_dir": ".forge",
     "delegate_command": "forge -p",
     "stop_command": "/forge-stop",
@@ -14,20 +14,20 @@
       "sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
     }
   },
-  "codex": {
-    "display_name": "Codex",
-    "marker_file": ".claude/.codex-delegation-active",
-    "idx_dir": ".codex",
+  "kay": {
+    "display_name": "Kay",
+    "marker_file": ".kay/sessions/${CODEX_THREAD_ID}/.kay-delegation-active",
+    "idx_dir": ".kay",
     "delegate_command": "codex exec",
-    "stop_command": "/codex-stop",
+    "stop_command": "/kay-stop",
     "skill": "skills/codex-delegate/SKILL.md",
     "skill_legacy": "skills/codex-delegate.md",
     "output_style": "output-styles/codex.md",
     "install": {
       "kind": "codex-install-script",
-      "version": "0.128.0",
-      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.6.99/scripts/install/install.sh",
-      "sha256": "6919d791d9c5922206fbfce50b28850f9974b488618275a2313ce7055ff59c1d",
+      "version": "v0.7.2",
+      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.7.2/scripts/install/install.sh",
+      "sha256": "a08e754c5a532f7786340af9f0b21a72ff9cccb6d5c5ffa03c19553c0e7a31cc",
       "binary": "code",
       "alias": "codex",
       "fallback_alias": "coder"

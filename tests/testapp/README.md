@@ -1,8 +1,9 @@
 # Sidekick testapp — Live E2E target
 
-Tiny Python package used by `tests/run_live_e2e.bash` to prove a full
-Claude → Forge delegation round-trip succeeds against the real `forge`
-binary and the real model.
+Tiny Python package used by `tests/run_live_e2e.bash` and
+`tests/run_live_codex_e2e.bash` to prove a full Claude → Forge or
+Claude → Kay delegation round-trip succeeds against the real binary and
+the real model.
 
 ## Shape
 

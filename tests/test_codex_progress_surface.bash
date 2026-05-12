@@ -20,12 +20,15 @@ if [ ! -f "${HOOK_FILE}" ]; then
 fi
 
 HOME_SANDBOX="$(mktemp -d)"
+TEST_SESSION_ID="codex-test-$$"
+MARKER_DIR="${HOME_SANDBOX}/.kay/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.kay-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}"' EXIT
-mkdir -p "${HOME_SANDBOX}/.claude"
+mkdir -p "${MARKER_DIR}"
 
 run_hook() {
   local json="$1"
-  HOME="${HOME_SANDBOX}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+  HOME="${HOME_SANDBOX}" SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
 }
 
 echo "=== test_noop_when_marker_absent ==="
@@ -36,7 +39,7 @@ else
   assert_fail "test_noop_when_marker_absent" "expected empty, got: '${_out}'"
 fi
 
-touch "${HOME_SANDBOX}/.claude/.codex-delegation-active"
+touch "${MARKER_FILE}"
 
 echo "=== test_noop_when_tool_not_bash ==="
 _out="$(run_hook '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x"},"tool_response":{"output":"STATUS: SUCCESS"}}')"
@@ -55,7 +58,7 @@ else
 fi
 
 echo "=== test_noop_when_output_lacks_status ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"x\""},"tool_response":{"output":"[CODEX] working...\n[CODEX] still working"}}')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"x\""},"tool_response":{"output":"[KAY] working...\n[KAY] still working"}}')"
 if [ -z "${_out}" ]; then
   assert_pass "test_noop_when_output_lacks_status"
 else
@@ -63,20 +66,31 @@ else
 fi
 
 echo "=== test_emits_summary_when_status_block_present ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[CODEX] Reading utils.py...\n[CODEX] STATUS: SUCCESS\n[CODEX] FILES_CHANGED: [utils.py]\n[CODEX] ASSUMPTIONS: []\n[CODEX] PATTERNS_DISCOVERED: []"}}')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[KAY] Reading utils.py...\n[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: [utils.py]\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}')"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
     && echo "${_ctx}" | grep -q 'FILES_CHANGED: \[utils.py\]' \
-    && echo "${_ctx}" | grep -q '/codex-stop' \
-    && echo "${_ctx}" | grep -q '\[CODEX-SUMMARY\]' \
+    && echo "${_ctx}" | grep -q '/kay-stop' \
+    && echo "${_ctx}" | grep -q '\[KAY-SUMMARY\]' \
     && echo "${_ctx}" | grep -q '\[UNTRUSTED\]'; then
   assert_pass "test_emits_summary_when_status_block_present"
 else
   assert_fail "test_emits_summary_when_status_block_present" "ctx='${_ctx}'"
 fi
 
+echo "=== test_env_prefix_before_exec_is_handled ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"FOO=bar codex exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: [utils.py]\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}')"
+_ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
+if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
+    && echo "${_ctx}" | grep -q '/kay-stop' \
+    && echo "${_ctx}" | grep -q '\[KAY-SUMMARY\]'; then
+  assert_pass "test_env_prefix_before_exec_is_handled"
+else
+  assert_fail "test_env_prefix_before_exec_is_handled" "ctx='${_ctx}'"
+fi
+
 echo "=== test_ansi_stripped_before_status_parse ==="
-_ansi_output=$'\x1b[31m[CODEX] STATUS: SUCCESS\x1b[0m\n\x1b[32m[CODEX] FILES_CHANGED: [foo.py]\x1b[0m\n[CODEX] ASSUMPTIONS: []\n[CODEX] PATTERNS_DISCOVERED: []'
+_ansi_output=$'\x1b[31m[KAY] STATUS: SUCCESS\x1b[0m\n\x1b[32m[KAY] FILES_CHANGED: [foo.py]\x1b[0m\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []'
 _json="$(jq -cn --arg o "$_ansi_output" '{tool_name:"Bash",tool_input:{command:"codex exec \"x\""},tool_response:{output:$o}}')"
 _out="$(run_hook "$_json")"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
