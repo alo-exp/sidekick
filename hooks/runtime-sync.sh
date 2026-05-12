@@ -16,6 +16,12 @@ SIDEKICK_BIN_DIR="${BIN_DIR:-${HOME}/.local/bin}"
 
 export PATH="${SIDEKICK_BIN_DIR}:${PATH}"
 
+# shellcheck source=hooks/lib/sidekick-registry.sh
+source "${PLUGIN_ROOT}/hooks/lib/sidekick-registry.sh"
+
+KAY_INSTALL_VERSION="$(sidekick_registry_get kay '.[$sidekick].install.version')"
+KAY_INSTALL_URL="$(sidekick_registry_get kay '.[$sidekick].install.url')"
+
 log() {
   printf '[forge-plugin] %s\n' "$*"
 }
@@ -39,19 +45,40 @@ resolve_codex_binary() {
 
 repair_runtime() {
   local runtime="$1"
+  local install_output=""
   case "${runtime}" in
     forge)
       log "Repairing ForgeCode with the bootstrap installer."
-      if ! SIDEKICK_INSTALL_FORGE=1 SIDEKICK_INSTALL_CODE=0 SIDEKICK_FORCE_REINSTALL=1 bash "${INSTALL_SH}"; then
+      if ! install_output="$(SIDEKICK_INSTALL_FORGE=1 SIDEKICK_INSTALL_CODE=0 SIDEKICK_FORCE_REINSTALL=1 bash "${INSTALL_SH}" 2>&1)"; then
+        if [ -n "${install_output}" ]; then
+          printf '%s\n' "${install_output}" | sed "s/^/[forge-plugin] ForgeCode installer: /" >&2
+        fi
         log "WARNING: ForgeCode repair failed."
         return 1
+      fi
+      if [ -n "${install_output}" ]; then
+        printf '%s\n' "${install_output}" | sed "s/^/[forge-plugin] ForgeCode installer: /"
       fi
       ;;
     code)
       log "Repairing Code with the bootstrap installer."
-      if ! SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 SIDEKICK_FORCE_REINSTALL=1 bash "${INSTALL_SH}"; then
-        log "WARNING: Code repair failed."
+      if ! install_output="$(SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 SIDEKICK_FORCE_REINSTALL=1 bash "${INSTALL_SH}" 2>&1)"; then
+        if [ -n "${install_output}" ]; then
+          printf '%s\n' "${install_output}" | sed "s/^/[forge-plugin] Code installer: /" >&2
+        fi
+        if printf '%s' "${install_output}" | grep -qiE 'Could not find SHA-256 digest for release asset|missing SHA-256 digest|No assets found'; then
+          log "ERROR: Kay ${KAY_INSTALL_VERSION} is the latest configured Code release, but the upstream release is missing the installable asset digest."
+          log "ERROR: Sidekick will keep the current Code runtime in place until Kay publishes complete release assets."
+          if [ -n "${KAY_INSTALL_URL}" ]; then
+            log "ERROR: Kay release source: ${KAY_INSTALL_URL}"
+          fi
+        else
+          log "WARNING: Code repair failed."
+        fi
         return 1
+      fi
+      if [ -n "${install_output}" ]; then
+        printf '%s\n' "${install_output}" | sed "s/^/[forge-plugin] Code installer: /"
       fi
       ;;
     *)
@@ -65,9 +92,14 @@ sync_or_repair() {
   local runtime_label="$2"
   local binary="$3"
   local update_output=""
+  local repair_context=""
+
+  if [ "${runtime_key}" = "code" ] && [ -n "${KAY_INSTALL_VERSION}" ]; then
+    repair_context=" for Kay ${KAY_INSTALL_VERSION}"
+  fi
 
   if ! "${binary}" update --help >/dev/null 2>&1; then
-    log "${runtime_label} update command is unavailable; falling back to installer repair."
+    log "${runtime_label} update command is unavailable; falling back to installer repair${repair_context}."
     repair_runtime "${runtime_key}"
     return $?
   fi
@@ -82,7 +114,7 @@ sync_or_repair() {
     return 0
   fi
 
-  log "${runtime_label} update failed; attempting installer repair."
+  log "${runtime_label} update failed; attempting installer repair${repair_context}."
   if [ -n "${update_output}" ]; then
     printf '%s\n' "${update_output}" | sed "s/^/[forge-plugin] ${runtime_label}: /" >&2
   fi

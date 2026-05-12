@@ -47,6 +47,10 @@ make_install_stub() {
   cat > "${path}" <<'EOF'
 #!/usr/bin/env bash
 log="${SYNC_LOG:?}"
+if [ "${SYNC_INSTALL_FAIL:-0}" = "1" ]; then
+  printf '%s\n' "${SYNC_INSTALL_FAIL_MESSAGE:-installer failure}" >&2
+  exit 1
+fi
 printf 'install forge=%s code=%s force=%s\n' "${SIDEKICK_INSTALL_FORGE:-unset}" "${SIDEKICK_INSTALL_CODE:-unset}" "${SIDEKICK_FORCE_REINSTALL:-unset}" >> "${log}"
 EOF
   chmod +x "${path}"
@@ -60,7 +64,9 @@ run_case() {
   local root
   root="$(mktemp -d)"
   trap 'rm -rf "${root}" 2>/dev/null || true' RETURN
-  mkdir -p "${root}/bin"
+  mkdir -p "${root}/bin" "${root}/hooks/lib" "${root}/sidekicks"
+  cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
+  cp "${PLUGIN_DIR}/sidekicks/registry.json" "${root}/sidekicks/registry.json"
   make_install_stub "${root}/install.sh"
   "${setup_fn}" "${root}"
 
@@ -76,6 +82,39 @@ run_case() {
     assert_pass "${name}"
   else
     assert_fail "${name}" "log assertions failed"
+    cat "${root}/sync.log" 2>/dev/null || true
+  fi
+}
+
+run_case_capture() {
+  local name="$1"
+  local setup_fn="$2"
+  local expect_fn="$3"
+
+  local root
+  root="$(mktemp -d)"
+  trap 'rm -rf "${root}" 2>/dev/null || true' RETURN
+  mkdir -p "${root}/bin" "${root}/hooks/lib" "${root}/sidekicks"
+  cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
+  cp "${PLUGIN_DIR}/sidekicks/registry.json" "${root}/sidekicks/registry.json"
+  make_install_stub "${root}/install.sh"
+  "${setup_fn}" "${root}"
+
+  mkdir -p "${root}/home"
+  SYNC_LOG="${root}/sync.log" \
+    CLAUDE_PLUGIN_ROOT="${root}" \
+    HOME="${root}/home" \
+    BIN_DIR="${root}/bin" \
+    PATH="${root}/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
+    SYNC_INSTALL_FAIL=1 \
+    SYNC_INSTALL_FAIL_MESSAGE='Could not find SHA-256 digest for release asset code-aarch64-apple-darwin.tar.gz.' \
+    bash "${SYNC_SH}" >"${root}/sync.out" 2>&1 || true
+
+  if "${expect_fn}" "${root}/sync.out" "${root}/sync.log"; then
+    assert_pass "${name}"
+  else
+    assert_fail "${name}" "log assertions failed"
+    cat "${root}/sync.out" 2>/dev/null || true
     cat "${root}/sync.log" 2>/dev/null || true
   fi
 }
@@ -190,6 +229,14 @@ expect_code_repair_plus_forge_update() {
   grep -q '^install forge=0 code=1 force=1$' "${log}" && grep -q '^forge:update$' "${log}" && ! grep -q '^code:update$' "${log}"
 }
 
+expect_code_latest_release_failure_message() {
+  local out="$1"
+  grep -q 'installer repair for Kay v0.8.0' "${out}" \
+    && grep -q 'latest configured Code release' "${out}" \
+    && grep -q 'missing the installable asset digest' "${out}" \
+    && grep -q 'Could not find SHA-256 digest for release asset' "${out}"
+}
+
 echo "=== T1: built-in updates run when both runtimes are present ==="
 run_case "built-in updates" setup_both_present expect_updates
 
@@ -207,6 +254,9 @@ run_case "forge fallback" setup_forge_update_unsupported expect_forge_repair_plu
 
 echo "=== T6: unsupported Code update falls back to selective Code repair ==="
 run_case "code fallback" setup_code_update_unsupported expect_code_repair_plus_forge_update
+
+echo "=== T7: missing Kay release assets produce a clear failure message ==="
+run_case_capture "code latest release asset failure" setup_code_update_unsupported expect_code_latest_release_failure_message
 
 echo ""
 echo "======================================="
