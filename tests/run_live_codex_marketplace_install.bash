@@ -26,7 +26,7 @@ CODEX_REPO="/Users/shafqat/projects/codex-cli/kay"
 CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
 CODE_RUST_REPO="${CODEX_REPO}/code-rs"
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
-MARKETPLACE_NAME="alo-labs-codex-local"
+MARKETPLACE_NAME="alo-labs-codex"
 
 resolve_codex_runner() {
   local built_codex="${CODEX_RUST_REPO}/target/debug/codex"
@@ -133,7 +133,8 @@ if [ -f "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" ] \
   && grep -q '\.kay-delegation-active' "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" \
   && grep -q '^name: forge-delegate' "${SIDEKICK_DIR}/skills/forge/SKILL.md" \
   && grep -q '\.forge-delegation-active' "${SIDEKICK_DIR}/skills/forge-stop/SKILL.md" \
-  && grep -q '/forge-stop' "${SIDEKICK_DIR}/skills/forge/SKILL.md"
+  && grep -q '/forge-stop' "${SIDEKICK_DIR}/skills/forge/SKILL.md" \
+  && grep -q '^user-invocable: false' "${SIDEKICK_DIR}/skills/codex-delegate.md"
 then
   pass "Kay marketplace source exposes only the 4 canonical Sidekick skills"
 else
@@ -179,6 +180,36 @@ else
 fi
 
 echo "=== installed_plugin_cache ==="
+INSTALLED_HOOKS="$(
+  for base in "${HOME}/.codex/plugins" "${HOME}/.claude/plugins"; do
+    [ -d "${base}" ] || continue
+    find "${base}" -name hooks.json -path '*/sidekick/*' 2>/dev/null
+  done | head -n 1 || true
+)"
+if [ -n "${INSTALLED_HOOKS}" ]; then
+  INSTALLED_ROOT="$(dirname "$(dirname "${INSTALLED_HOOKS}")")"
+  cp "${SIDEKICK_DIR}/install.sh" "${INSTALLED_ROOT}/install.sh"
+  if ! CODEX_PLUGIN_ROOT="${INSTALLED_ROOT}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=0 bash "${INSTALLED_ROOT}/install.sh" >/dev/null 2>&1; then
+    fail "installed cache rewrite" "reinstalling the installed tree at ${INSTALLED_ROOT} failed"
+  fi
+  if grep -Fq 'CODEX_PLUGIN_ROOT' "${INSTALLED_ROOT}/hooks/hooks.json" \
+    && ! grep -Fq 'CLAUDE_PLUGIN_ROOT' "${INSTALLED_ROOT}/hooks/hooks.json" \
+    && grep -Fq 'CODEX_PROJECT_DIR' "${INSTALLED_ROOT}/hooks/lib/sidekick-registry.sh" \
+    && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${INSTALLED_ROOT}/hooks/lib/sidekick-registry.sh" \
+    && grep -Fq '.codex/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
+    && ! grep -Fq '.claude/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
+    && grep -Fq '~/.codex' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
+    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
+    && grep -Fq '~/.codex' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
+    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md"; then
+    pass "installed cache surface rewrote to Codex-only paths"
+  else
+    fail "installed cache surface" "host rewrite did not remove Claude-specific paths from ${INSTALLED_ROOT}"
+  fi
+else
+  fail "installed cache surface" "could not locate the installed Sidekick cache tree"
+fi
+
 echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 if [ "${FAIL}" -eq 0 ]; then

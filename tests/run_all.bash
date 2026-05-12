@@ -21,8 +21,10 @@ run_suite() {
 }
 
 run_suite "install.sh unit tests"         "test_install_sh.bash"
+run_suite "Host surface rewrite tests"    "test_host_surface_rewrite.bash"
 run_suite "Plugin integrity verification" "test_plugin_integrity.bash"
 run_suite "Fresh install simulation"      "test_fresh_install_sim.bash"
+run_suite "Clean reinstall bootstrap"     "test_clean_reinstall.bash"
 run_suite "End-to-end forge smoke tests"  "test_forge_e2e.bash"
 run_suite "Forge skill structure tests"      "test_forge_skill.bash"
 run_suite "AGENTS.md deduplication tests"    "test_agents_md_dedup.bash"

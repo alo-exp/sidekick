@@ -46,10 +46,10 @@ run_hook() {
   local json="$1"
   local extra_env="${2:-}"
   if [ -n "${extra_env}" ]; then
-    HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+    HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
       env SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" ${extra_env} bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
   else
-    HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+    HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
       SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
       bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
   fi

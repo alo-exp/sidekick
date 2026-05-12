@@ -34,9 +34,6 @@ case "${MARKETPLACE_NAME}" in
   alo-labs-codex)
     assert_pass "marketplace name is alo-labs-codex"
     ;;
-  alo-labs-codex-local)
-    assert_pass "marketplace name is alo-labs-codex-local"
-    ;;
   *)
     assert_fail "marketplace name" "got ${MARKETPLACE_NAME}"
     ;;
