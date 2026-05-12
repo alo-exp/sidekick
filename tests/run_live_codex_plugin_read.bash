@@ -155,8 +155,8 @@ try:
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
     expected_order = [
-        "sidekick:codex-delegate",
-        "sidekick:codex-stop",
+        "sidekick:kay-delegate",
+        "sidekick:kay-stop",
         "sidekick:forge-delegate",
         "sidekick:forge-stop",
     ]
@@ -182,9 +182,9 @@ finally:
         proc.kill()
 PY
 then
-  pass "Codex plugin/read surfaces only the 4 canonical Sidekick skills in the expected order"
+  pass "Kay plugin/read surfaces only the 4 canonical Sidekick skills in the expected order"
 else
-  fail "plugin_read" "Codex plugin/read did not match the expected 4-skill surface"
+  fail "plugin_read" "Kay plugin/read did not match the expected 4-skill surface"
 fi
 
 echo ""

@@ -168,16 +168,16 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-label">~/.claude/settings.json</div>
       <div class="code-block"><span class="comment">{
   "extraKnownMarketplaces": {
-    "alo-exp": {
+    "alo-labs": {
       "source": {
         "source": "github",
-        "repo": "alo-exp/sidekick"
+      "repo": "alo-exp/sidekick"
       },
       "autoUpdate": true
     }
   },
   "enabledPlugins": {
-    "sidekick@alo-exp": true
+    "sidekick@alo-labs": true
   }
 }</span></div>
       <p>On the next Claude Code session, Sidekick installs automatically and makes the <code>/forge</code> skill available in all future sessions. No project-specific setup is required — Sidekick works in any git repository.</p>
@@ -187,11 +187,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-label">in any Claude Code session</div>
       <div class="code-block"><span class="cmd">/forge</span>
 <span class="comment"># Claude will activate Forge delegation mode and run a health check</span></div>
-      <p>On first activation, Forge checks <code>~/forge/.credentials.json</code> for your API key and <code>~/forge/.forge.toml</code> for the configured provider. If absent, it guides you through <code>skills/forge.md</code> STEP 0A setup.</p>
+      <p>On first activation, Forge checks <code>~/forge/.credentials.json</code> for a credential array entry and <code>~/forge/.forge.toml</code> for the configured provider. If absent, it guides you through <code>skills/forge/SKILL.md</code> STEP 0A setup.</p>
       <p>A successful health check looks like:</p>
       <div class="code-block"><span class="comment">✓ Forge binary found (~/.local/bin/forge)</span>
 <span class="comment">✓ Provider configured (forge info exit 0)</span>
-<span class="comment">✓ Credentials present (~/forge/.credentials.json has api_key)</span>
+<span class="comment">✓ Credentials present (~/forge/.credentials.json has at least one {id, auth_details} entry)</span>
 <span class="comment">✓ Config valid (~/forge/.forge.toml has provider_id and model_id)</span>
 <span class="comment">✓ Bootstrap skills loaded (4 skills)</span>
 <span class="comment">✓ Forge delegation mode active</span></div>

@@ -11,11 +11,21 @@ SKIP=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 INSTALL_SH="${PLUGIN_DIR}/install.sh"
+CODEX_INSTALL_LABEL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['version'])")"
 
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 assert_skip() { echo -e "${yellow}SKIP${reset} $1: $2"; SKIP=$((SKIP+1)); }
+
+make_codex_stub() {
+  local path="$1"
+  cat > "${path}" <<EOF
+#!/bin/bash
+echo "code ${CODEX_INSTALL_LABEL}"
+EOF
+  chmod +x "${path}"
+}
 
 TMP_ROOT="$(mktemp -d)"
 SANDBOX=$(mktemp -d "${TMP_ROOT}/forge-fresh-XXXXXX")
@@ -71,12 +81,10 @@ cat > "${FAKE_BIN}/forge" << 'FF'
 echo "forge 0.0.0-test"
 FF
 chmod +x "${FAKE_BIN}/forge"
-cat > "${FAKE_BIN}/codex" << 'CF'
-#!/bin/bash
-echo "codex 0.0.0-test"
-CF
-chmod +x "${FAKE_BIN}/codex"
-HOME="${SANDBOX}" bash "${INSTALL_SH}" 2>&1 </dev/null || true
+make_codex_stub "${FAKE_BIN}/code"
+ln -sf code "${FAKE_BIN}/codex"
+ln -sf code "${FAKE_BIN}/coder"
+HOME="${SANDBOX}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_SH}" 2>&1 </dev/null || true
 COUNT=$(grep -c '.local/bin' "${FAKE_ZSHRC}" 2>/dev/null || echo 1)
 if [ "${COUNT}" -le 1 ]; then
   assert_pass "add_to_path is idempotent — no duplicate PATH entry (count=${COUNT})"
@@ -98,12 +106,10 @@ cat > "${FAKE_BIN}/forge" << 'FF'
 echo "forge 0.0.0-test"
 FF
 chmod +x "${FAKE_BIN}/forge"
-cat > "${FAKE_BIN}/codex" << 'CF'
-#!/bin/bash
-echo "codex 0.0.0-test"
-CF
-chmod +x "${FAKE_BIN}/codex"
-INSTALL_OUTPUT=$(HOME="${FRESH}" bash "${INSTALL_SH}" 2>&1 </dev/null || true)
+make_codex_stub "${FAKE_BIN}/code"
+ln -sf code "${FAKE_BIN}/codex"
+ln -sf code "${FAKE_BIN}/coder"
+INSTALL_OUTPUT=$(HOME="${FRESH}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_SH}" 2>&1 </dev/null || true)
 CODE_INSTALL_PROBE_SKIPPED=0
 if grep -q 'Code install completed but code binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
   CODE_INSTALL_PROBE_SKIPPED=1

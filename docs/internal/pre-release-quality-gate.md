@@ -162,7 +162,7 @@ Audit all `docs/help/*/index.html` pages:
 
 - **Step counts**: The numbered steps in `docs/help/workflows/index.html` match the actual steps in SKILL.md's delegation protocol. No steps added or removed without being reflected in the workflow page.
 - **Skill names**: The 4 bootstrap skill names (`testing-strategy`, `code-review`, `security`, `quality-gates`) are spelled identically on every help page where they appear.
-- **Config paths**: Every file path mentioned in help pages exists or is correctly described: `~/forge/.credentials.json`, `~/forge/.forge.toml`, `~/.claude/.forge-delegation-active`, `.forge/skills/*/SKILL.md`, `docs/sessions/`
+- **Config paths**: Every file path mentioned in help pages exists or is correctly described: `~/forge/.credentials.json`, `~/forge/.forge.toml`, `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`, `.forge/skills/*/SKILL.md`, `docs/sessions/`
 - **Command syntax**: `/forge`, `/forge-stop`, `/forge status` syntax is consistent across getting-started, workflows, reference, and troubleshooting pages
 - **Troubleshooting coverage**: Every error condition mentioned in SKILL.md's failure detection section has a corresponding troubleshooting entry
 - **Sidebar nav anchors**: Every anchor link in every sidebar nav (`sidebar-nav` elements) resolves to an actual `id` attribute on the same page — no dead links
@@ -321,7 +321,7 @@ This file controls Claude's behavior during every delegation session. A malforme
 
 4. **Delegation restriction bypass**: Verify the delegation restriction (Claude must not implement code directly while Forge delegation mode is active) can only be lifted by the L3 escalation path in the fallback ladder. There must be no instruction in SKILL.md that allows Forge's output content to trigger L3 directly, bypass L1/L2, or lift the restriction outside the defined escalation flow.
 
-5. **Deactivation completeness**: Verify the deactivation sequence (triggered by `/forge-stop`) clears `~/.claude/.forge-delegation-active` and fully restores Claude's normal behavior. No residual delegation state should remain after deactivation — verify this is explicit in the deactivation section of SKILL.md.
+5. **Deactivation completeness**: Verify the deactivation sequence (triggered by `/forge-stop`) clears `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` for the current thread and fully restores Claude's normal behavior. No residual delegation state should remain after deactivation — verify this is explicit in the deactivation section of SKILL.md.
 
 6. **Scope of PATTERNS_DISCOVERED**: Verify that the PATTERNS_DISCOVERED output field from Forge is treated as documentation/hints for AGENTS.md, not as executable instructions. Claude must not run commands or modify files based solely on PATTERNS_DISCOVERED content.
 
@@ -388,7 +388,7 @@ After all three targets are clean with no blocking issues:
 ## Release
 
 After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`,
-and after the full Forge/Codex live pyramid has been run twice, verify and
+and after the full Forge/Kay live pyramid has been run twice, verify and
 create the release:
 
 ```bash

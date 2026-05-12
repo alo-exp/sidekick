@@ -15,6 +15,57 @@ assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 skip()        { echo -e "${yellow}SKIP${reset} $1: $2"; SKIP=$((SKIP+1)); }
 
+make_install_toolbox() {
+  local dir="$1"
+  local include_hash_tools="${2:-1}"
+  mkdir -p "${dir}"
+
+  local cmd target
+  for cmd in bash cat chmod date dirname grep id ln mkdir mktemp python3 readlink sed stat touch awk tr; do
+    target="$(command -v "${cmd}" 2>/dev/null || true)"
+    if [ -n "${target}" ] && [ -x "${target}" ]; then
+      ln -sf "${target}" "${dir}/${cmd}"
+    fi
+  done
+
+  if [ "${include_hash_tools}" = "1" ]; then
+    for cmd in shasum sha256sum; do
+      target="$(command -v "${cmd}" 2>/dev/null || true)"
+      if [ -n "${target}" ] && [ -x "${target}" ]; then
+        ln -sf "${target}" "${dir}/${cmd}"
+      fi
+    done
+  fi
+
+  cat > "${dir}/curl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+printf '%s\n' '#!/usr/bin/env bash' > "${out}"
+chmod +x "${out}"
+EOF
+  chmod +x "${dir}/curl"
+}
+
+prepare_install_sandbox() {
+  local root="$1"
+  cp "${INSTALL_SH}" "${root}/install.sh"
+  mkdir -p "${root}/hooks/lib" "${root}/sidekicks"
+  cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
+  cp "${PLUGIN_DIR}/sidekicks/registry.json" "${root}/sidekicks/registry.json"
+}
+
 echo "=== T1: Syntax check ==="
 if bash -n "${INSTALL_SH}" 2>&1; then
   assert_pass "install.sh has no syntax errors"
@@ -31,6 +82,12 @@ if [ -n "${PINNED}" ]; then
   assert_pass "EXPECTED_FORGE_SHA is set: ${PINNED:0:16}…"
 else
   assert_fail "EXPECTED_FORGE_SHA" "empty — pinned hash verification disabled"
+fi
+if grep -q 'ERROR: No pinned Code SHA-256 is configured in sidekicks/registry.json' "${INSTALL_SH}" \
+  && ! grep -q 'No pinned Code SHA-256 set' "${INSTALL_SH}"; then
+  assert_pass "Code bootstrap fails closed when registry SHA is missing"
+else
+  assert_fail "Code bootstrap fail-closed path" "missing hard error or still contains display-only warning"
 fi
 
 echo "=== T4: SHA abort logic ==="
@@ -49,7 +106,13 @@ grep -q '\-\-max-time 60' "${INSTALL_SH}" && grep -q '\-\-connect-timeout 15' "$
 grep -q '\-\-timeout=60' "${INSTALL_SH}" && assert_pass "wget timeout present" || assert_fail "wget timeout" "missing"
 
 echo "=== T7: SHA tool fallback ==="
-grep -q 'sha256sum' "${INSTALL_SH}" && assert_pass "sha256sum fallback present" || assert_fail "sha256sum fallback" "not found"
+if grep -q 'sha256sum' "${INSTALL_SH}" \
+  && grep -q 'ERROR: Neither shasum nor sha256sum found — cannot verify download integrity.' "${INSTALL_SH}" \
+  && ! grep -q 'FORGE_SHA="UNAVAILABLE"' "${INSTALL_SH}"; then
+  assert_pass "Forge bootstrap fails closed without hash tool"
+else
+  assert_fail "Forge bootstrap fail-closed path" "missing hard error or still contains UNAVAILABLE fallback"
+fi
 
 echo "=== T8: Symlink validation ==="
 grep -q 'Symlink validation' "${INSTALL_SH}" && grep -q 'realpath' "${INSTALL_SH}" && \
@@ -67,7 +130,7 @@ grep -q 'Added by sidekick/forge plugin' "${INSTALL_SH}" && assert_pass "PATH ma
 
 echo "=== T12: Codex bootstrap ==="
 if grep -q 'install_codex_runtime' "${INSTALL_SH}" \
-  && grep -q 'sidekick_registry_get codex' "${INSTALL_SH}" \
+  && grep -q 'sidekick_registry_get kay' "${INSTALL_SH}" \
   && grep -q 'CODEX_INSTALL_TMP' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODE_ALIAS' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODER_ALIAS' "${INSTALL_SH}" \
@@ -127,14 +190,80 @@ fi
 echo "=== T15: Non-interactive gate execution ==="
 skip "Non-interactive gate" "forge already installed on this machine — download path not reached in sandbox"
 
-echo "=== T16: hooks.json && sentinel ==="
+echo "=== T16: hooks.json bootstrap and runtime sync ==="
 HOOKS="${PLUGIN_DIR}/hooks/hooks.json"
-CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
-if echo "${CMD}" | grep -q '&&'; then
-  assert_pass "hooks.json uses && (sentinel only written on exit 0)"
+SYNC_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
+BOOTSTRAP_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][1]['hooks'][0]['command'])")
+if echo "${SYNC_CMD}" | grep -q 'runtime-sync.sh' \
+  && echo "${SYNC_CMD}" | grep -q '.installed' \
+  && echo "${SYNC_CMD}" | grep -q 'if \[ -f'; then
+  assert_pass "runtime sync hook is ordered before bootstrap install"
 else
-  assert_fail "hooks.json sentinel" "uses ; instead of &&"
+  assert_fail "runtime sync hook order" "missing bootstrap-before-sync ordering"
 fi
+
+if echo "${BOOTSTRAP_CMD}" | grep -q 'test -f' \
+  && echo "${BOOTSTRAP_CMD}" | grep -q '.installed' \
+  && echo "${BOOTSTRAP_CMD}" | grep -q 'install.sh' \
+  && echo "${BOOTSTRAP_CMD}" | grep -q '&&' \
+  && echo "${BOOTSTRAP_CMD}" | grep -q 'touch'; then
+  assert_pass "bootstrap hook preserves the .installed sentinel guard"
+else
+  assert_fail "bootstrap hook" "missing .installed guard or touch sentinel"
+fi
+
+echo "=== T17: selective repair env flags ==="
+if grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_CODE' "${INSTALL_SH}"; then
+  assert_pass "selective repair env flags present"
+else
+  assert_fail "selective repair env flags" "missing SIDEKICK_INSTALL_FORGE or SIDEKICK_INSTALL_CODE"
+fi
+
+echo "=== T18: missing hash tools fail closed at runtime ==="
+_runtime_root="$(mktemp -d)"
+_toolbox_root="$(mktemp -d)"
+prepare_install_sandbox "${_runtime_root}"
+make_install_toolbox "${_toolbox_root}" "0"
+mkdir -p "${_runtime_root}/home"
+if OUT="$(HOME="${_runtime_root}/home" CLAUDE_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+  assert_fail "missing hash tools fail closed" "expected install.sh to fail, got success"
+else
+  if echo "${OUT}" | grep -q 'Cannot verify Code installer integrity without shasum or sha256sum'; then
+    assert_pass "missing hash tools fail closed at runtime"
+  else
+    assert_fail "missing hash tools fail closed" "unexpected output: ${OUT}"
+  fi
+fi
+rm -rf "${_runtime_root}" "${_toolbox_root}"
+
+echo "=== T19: missing registry SHA fails closed at runtime ==="
+_runtime_root="$(mktemp -d)"
+_toolbox_root="$(mktemp -d)"
+prepare_install_sandbox "${_runtime_root}"
+make_install_toolbox "${_toolbox_root}" "1"
+python3 - "${_runtime_root}/sidekicks/registry.json" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+data["kay"]["install"]["sha256"] = ""
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump(data, fh, indent=2)
+    fh.write("\n")
+PY
+mkdir -p "${_runtime_root}/home"
+if OUT="$(HOME="${_runtime_root}/home" CLAUDE_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+  assert_fail "missing registry SHA fails closed" "expected install.sh to fail, got success"
+else
+  if echo "${OUT}" | grep -q 'No pinned Code SHA-256 is configured in sidekicks/registry.json'; then
+    assert_pass "missing registry SHA fails closed at runtime"
+  else
+    assert_fail "missing registry SHA fails closed" "unexpected output: ${OUT}"
+  fi
+fi
+rm -rf "${_runtime_root}" "${_toolbox_root}"
 
 echo ""
 echo "======================================="

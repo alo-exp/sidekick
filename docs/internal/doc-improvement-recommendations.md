@@ -39,7 +39,7 @@ The docs do not yet say who they are for. World-class docs usually make the read
 - release operator
 - plugin author
 - Claude user
-- Codex user
+- Kay user
 - Kay operator
 
 Without this, the docs can be structurally correct but still feel indirect or muddy.

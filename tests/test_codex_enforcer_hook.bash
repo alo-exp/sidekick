@@ -28,8 +28,11 @@ fi
 HOME_SANDBOX="$(mktemp -d)"
 PROJECT_SANDBOX="$(mktemp -d)"
 CODEX_STUB_DIR="${HOME_SANDBOX}/bin"
+TEST_SESSION_ID="codex-test-$$"
+MARKER_DIR="${HOME_SANDBOX}/.kay/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.kay-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
-mkdir -p "${HOME_SANDBOX}/.claude" "${CODEX_STUB_DIR}"
+mkdir -p "${MARKER_DIR}" "${CODEX_STUB_DIR}"
 
 cat > "${CODEX_STUB_DIR}/codex" <<'STUB'
 #!/usr/bin/env bash
@@ -44,9 +47,10 @@ run_hook() {
   local extra_env="${2:-}"
   if [ -n "${extra_env}" ]; then
     HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
-      env "${extra_env}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+      env SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" ${extra_env} bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
   else
     HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+      SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
       bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
   fi
 }
@@ -59,15 +63,15 @@ else
   assert_fail "test_noop_when_marker_absent" "expected empty, got: '${_out}'"
 fi
 
-touch "${HOME_SANDBOX}/.claude/.codex-delegation-active"
+touch "${MARKER_FILE}"
 
-_assert_deny_with_codex_reason() {
+_assert_deny_with_kay_reason() {
   local name="$1" tool_name="$2"
   local _out _dec _rsn
   _out="$(run_hook "{\"tool_name\":\"${tool_name}\",\"tool_input\":{\"file_path\":\"/tmp/x\",\"content\":\"y\"}}")"
   _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
   _rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
-  if [ "${_dec}" = "deny" ] && echo "${_rsn}" | grep -qi 'codex'; then
+  if [ "${_dec}" = "deny" ] && echo "${_rsn}" | grep -qi 'kay'; then
     assert_pass "${name}"
   else
     assert_fail "${name}" "dec='${_dec}' reason='${_rsn}'"
@@ -75,13 +79,13 @@ _assert_deny_with_codex_reason() {
 }
 
 echo "=== test_deny_write_when_active ==="
-_assert_deny_with_codex_reason "test_deny_write_when_active" "Write"
+_assert_deny_with_kay_reason "test_deny_write_when_active" "Write"
 
 echo "=== test_deny_edit_when_active ==="
-_assert_deny_with_codex_reason "test_deny_edit_when_active" "Edit"
+_assert_deny_with_kay_reason "test_deny_edit_when_active" "Edit"
 
 echo "=== test_deny_notebook_edit_when_active ==="
-_assert_deny_with_codex_reason "test_deny_notebook_edit_when_active" "NotebookEdit"
+_assert_deny_with_kay_reason "test_deny_notebook_edit_when_active" "NotebookEdit"
 
 echo "=== test_rewrite_codex_exec_injects_full_auto_and_prefixes ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"Refactor utils.py\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
@@ -89,23 +93,44 @@ _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // e
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
 if [ "${_dec}" = "allow" ] \
     && echo "${_cmd}" | grep -Eq -- '^(codex|code|coder) exec --full-auto' \
-    && echo "${_cmd}" | grep -q "sed 's/\^/\[CODEX\] /'" \
-    && echo "${_cmd}" | grep -q "sed 's/\^/\[CODEX-LOG\] /'"; then
+    && echo "${_cmd}" | grep -q "sed 's/\^/\[KAY\] /'" \
+    && echo "${_cmd}" | grep -q "sed 's/\^/\[KAY-LOG\] /'"; then
   assert_pass "test_rewrite_codex_exec_injects_full_auto_and_prefixes"
 else
   assert_fail "test_rewrite_codex_exec_injects_full_auto_and_prefixes" "dec='${_dec}' cmd='${_cmd}'"
 fi
 
+echo "=== test_rewrite_codex_exec_quotes_shell_metacharacters ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"Refactor utils.py; rm -rf /tmp/evil\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q "'Refactor utils.py; rm -rf /tmp/evil'"; then
+  assert_pass "test_rewrite_codex_exec_quotes_shell_metacharacters"
+else
+  assert_fail "test_rewrite_codex_exec_quotes_shell_metacharacters" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+echo "=== test_rewrite_codex_exec_rejects_shell_tail ==="
+_tail_json="$(jq -cn --arg c 'codex exec "Refactor utils.py"; rm -rf /tmp/evil' '{tool_name:"Bash", tool_input:{command:$c}}')"
+_out="$(run_hook "${_tail_json}" 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "${_dec}" = "deny" ]; then
+  assert_pass "test_rewrite_codex_exec_rejects_shell_tail"
+else
+  assert_fail "test_rewrite_codex_exec_rejects_shell_tail" "dec='${_dec}' out='${_out}'"
+fi
+
 echo "=== test_idx_created_on_first_rewrite ==="
-if [ -f "${PROJECT_SANDBOX}/.codex/conversations.idx" ]; then
+if [ -f "${PROJECT_SANDBOX}/.kay/conversations.idx" ]; then
   assert_pass "test_idx_created_on_first_rewrite"
 else
   assert_fail "test_idx_created_on_first_rewrite" "idx not created"
 fi
 
 echo "=== test_idx_row_format_and_hint ==="
-_line="$(head -n 1 "${PROJECT_SANDBOX}/.codex/conversations.idx" 2>/dev/null || echo '')"
-if echo "${_line}" | grep -Eq $'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z\taaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\tcodex-[0-9]+-[0-9a-f]{8}\tRefactor utils\.py$'; then
+_line="$(head -n 1 "${PROJECT_SANDBOX}/.kay/conversations.idx" 2>/dev/null || echo '')"
+if echo "${_line}" | grep -Eq $'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z\taaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\tkay-[0-9]+-[0-9a-f]{8}\tRefactor utils\.py$'; then
   assert_pass "test_idx_row_format_and_hint"
 else
   assert_fail "test_idx_row_format_and_hint" "line='${_line}'"

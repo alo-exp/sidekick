@@ -127,8 +127,8 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 - **Severity:** LOW
 - **File:** `skills/forge/SKILL.md:40-41, 52`
 - **Category:** Over-permissive Instructions
-- **Description:** The skill uses `~/.claude/.forge-delegation-active` as a marker file. This hardcodes a path assumption rather than using `$CLAUDE_PLUGIN_ROOT` or `$XDG_STATE_HOME`. Could conflict with other plugins or non-standard setups.
-- **Recommendation:** Use `$CLAUDE_PLUGIN_ROOT/.forge-delegation-active` or `${XDG_STATE_HOME:-$HOME/.local/state}/forge-delegation-active`.
+- **Description:** The skill uses `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` as a marker file. This is better than a single global home-directory toggle, but it still assumes the current session id is available and stable.
+- **Recommendation:** Use a session-scoped path derived from `CODEX_THREAD_ID` or a helper in the plugin runtime so the marker remains isolated to the current thread.
 
 #### L-2: hooks.json lacks integrity hash in plugin.json (hooks/hooks.json)
 - **Severity:** LOW
@@ -174,3 +174,55 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 | **Total** | **PASS** | **0** | **1** | **4** | **2** |
 
 **Overall Verdict: CONDITIONAL PASS** — No critical or blocking findings. 1 HIGH finding (H-1) should be addressed before release. 4 MEDIUM findings are recommended for v1.1.0 but not blocking. 2 LOW findings are informational.
+
+---
+
+## Security Audit — 2026-05-12
+
+**Scope:** `hooks/codex-delegation-enforcer.sh`, `hooks/codex-progress-surface.sh`, `hooks/runtime-sync.sh`, `hooks/scrub-legacy-user-hooks.py`, `install.sh`, `skills/codex-stop/SKILL.md`, `sidekicks/registry.json`, `docs/help/**/*.html`, `docs/internal/pre-release-quality-gate.md`
+
+| Finding | Severity | Evidence | Status |
+|---------|----------|----------|--------|
+| Bootstrap / repair installer executes unverified remote Kay installer when verification cannot complete | BLOCKER | `hooks/hooks.json:3-17` auto-runs `install.sh` on SessionStart; `hooks/runtime-sync.sh:98-113` can also re-enter the install path; `install.sh:67-74` and `install.sh:198-222` continue when hashes are `UNAVAILABLE` or `CODEX_INSTALL_SHA` is blank; `sidekicks/registry.json:26-30` ships `sha256: ""` for the Kay installer | OPEN |
+
+**Notes:** The other audited surfaces in this release candidate did not show blocking/high-confidence issues beyond the bootstrap supply-chain gap above.
+
+---
+
+## Security Audit - 2026-05-12
+
+**Scope:** `skills/forge/SKILL.md`, `hooks/forge-delegation-enforcer.sh`, `hooks/forge-progress-surface.sh`, and shared helpers in `hooks/lib/`
+
+### Current Blocking Findings
+
+| ID | Severity | File(s) | Finding | Evidence |
+|----|----------|---------|---------|----------|
+| BC-1 | BLOCKER | `hooks/lib/enforcer-utils.sh:156-163`, `hooks/forge-delegation-enforcer.sh:67-77`, `hooks/forge-delegation-enforcer.sh:91-101` | The `docs/` and `.planning/` allowlist is lexical only. Paths like `docs/../hooks/...` or a symlink pivot under an allowed prefix are accepted for `Write`, `Edit`, and the MCP filesystem write tools. | Local repro: `is_allowed_doc_path "docs/../hooks/forge-delegation-enforcer.sh"` returns `allowed`, and both `decide_write_edit` and `decide_mcp_write` allow traversal paths instead of canonicalized doc-only paths. |
+| BC-2 | BLOCKER | `hooks/lib/enforcer-utils.sh:44-60`, `hooks/forge-delegation-enforcer.sh:213-246`, `hooks/forge-delegation-enforcer.sh:287-289` | Arbitrary leading env assignments are exported into the hook process before helper subprocesses run, so a user can poison `PATH` or other loader variables and hijack later `jq`, `python3`, `forge`, `realpath`, or `date` invocations. | Local repro: `PATH=/tmp/evil FORGE_LEVEL_3=1 forge -p hi` makes the hook process inherit `PATH=/tmp/evil`; the hook then continues to call PATH-resolved subprocesses after the export. |
+| BC-3 | BLOCKER | `hooks/forge-delegation-enforcer.sh:217-244` | The Forge fast-path rewrites `forge -p` by concatenating the original tail verbatim into `updatedInput.command`, so shell metacharacters survive the rewrite. | Local repro: `forge -p "hi"; touch /tmp/pwned` is emitted as a rewritten command that still contains `; touch /tmp/pwned`, which would execute after the Forge call. |
+
+### Stale Or Obsolete
+
+| Concern | Status | Why it is stale |
+|---------|--------|-----------------|
+| Global marker file in `~/.claude/.forge-delegation-active` | Obsolete | The current code now uses the session-scoped marker path `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` in both the skill and hooks, so the old single-global-toggle concern no longer matches the worktree. |
+| Legacy flat `{api_key}` credential schema | Obsolete | `skills/forge/SKILL.md:37` now checks only the current array-of-`{id, auth_details}` Forge credential schema and explicitly says not to read or log credential values. |
+| Existing `.forge/conversations.idx` leak artifact | Not current | The current worktree does not contain a live `repo/.forge/conversations.idx` file. The risk is in the write path above, not in an already-present malicious artifact. |
+
+### Non-Blocking Notes
+
+| File | Note |
+|------|------|
+| `skills/forge/SKILL.md` | No current blocking issue found in the skill text itself. The prior global-marker concern is resolved by the session-scoped marker path. |
+| `hooks/forge-progress-surface.sh` | No current blocking issue found. The hook now strips ANSI, caps the input stream, labels surfaced output as untrusted, and redacts the common token families it knows about. Residual secret-redaction gaps remain best-effort, but I do not see a release blocker here. |
+
+---
+
+## Security Audit - 2026-05-12
+
+**Scope:** `hooks/forge-delegation-enforcer.sh`, `hooks/lib/enforcer-utils.sh`
+
+| Finding | Severity | Evidence | Status |
+|---------|----------|----------|--------|
+| Command-text env prefixes still survive the `forge -p` rewrite, so `FORGE_LEVEL_3=1` and other attacker-supplied env vars are executed by the delegated shell instead of being stripped. This defeats the new "must come from the real process environment" guard and lets the command text smuggle L3 / root-rebinding env into downstream hooks. | HIGH | `hooks/forge-delegation-enforcer.sh:213-217, 250-304`; live repro: `FORGE_LEVEL_3=1 forge -p \"task\"` is allowed and returns `updatedInput.command` beginning with `FORGE_LEVEL_3=1 ...`; `CLAUDE_PROJECT_DIR=/ FORGE_LEVEL_3=1 ...` is preserved the same way. | OPEN |
+| The new `forge -p` pipeline-tail path explicitly allows `| tee <path>` and does not apply the docs/.planning/project allowlists to the tee destination, so the rewrite can write to arbitrary files through shell I/O. That is a mutating-command smuggling path, not just a logging convenience. | HIGH | `hooks/forge-delegation-enforcer.sh:228-304`; `hooks/lib/enforcer-utils.sh:308-317`; live repro: `forge -p \"task\" | tee hooks/forge-delegation-enforcer.sh` is allowed and preserves the `tee` write target. | OPEN |

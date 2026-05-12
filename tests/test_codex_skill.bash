@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Codex skill surface tests
+# Sidekick Plugin — Kay skill surface tests
 # =============================================================================
 
 set -euo pipefail
@@ -23,14 +23,14 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 [ -f "${DELEGATE_LEGACY_FILE}" ] || { echo "ERROR: ${DELEGATE_LEGACY_FILE} missing"; exit 1; }
 [ -f "${STOP_FILE}" ] || { echo "ERROR: ${STOP_FILE} missing"; exit 1; }
 
-echo "=== T1: canonical codex-delegate frontmatter ==="
-if grep -q '^name: codex-delegate' "${DELEGATE_FILE}"; then
-  assert_pass "name: codex-delegate present"
+echo "=== T1: canonical kay-delegate frontmatter ==="
+if grep -q '^name: kay-delegate' "${DELEGATE_FILE}"; then
+  assert_pass "name: kay-delegate present"
 else
-  assert_fail "frontmatter" "name: codex-delegate not found"
+  assert_fail "frontmatter" "name: kay-delegate not found"
 fi
 
-echo "=== T2: codex-delegate contains runtime delegation guidance ==="
+echo "=== T2: kay-delegate contains runtime delegation guidance ==="
 if grep -q 'code exec --full-auto' "${DELEGATE_FILE}" \
   && grep -q 'codex exec --full-auto' "${DELEGATE_FILE}" \
   && grep -q 'coder exec --full-auto' "${DELEGATE_FILE}"; then
@@ -39,7 +39,7 @@ else
   assert_fail "delegation guidance" "missing one or more runtime command variants"
 fi
 
-echo "=== T3: codex-delegate workflow sections present ==="
+echo "=== T3: kay-delegate workflow sections present ==="
 if grep -q 'STEP 0' "${DELEGATE_FILE}" \
   && grep -q 'Delegation Protocol' "${DELEGATE_FILE}" \
   && grep -q 'Native Workflow' "${DELEGATE_FILE}"; then
@@ -48,18 +48,18 @@ else
   assert_fail "workflow structure" "missing expected sections"
 fi
 
-echo "=== T4: codex-stop frontmatter and marker handling ==="
-if grep -q '^name: codex-stop' "${STOP_FILE}" \
-  && grep -q '\.codex-delegation-active' "${STOP_FILE}"; then
-  assert_pass "codex-stop marker workflow present"
+echo "=== T4: kay-stop frontmatter and marker handling ==="
+if grep -q '^name: kay-stop' "${STOP_FILE}" \
+  && grep -q '\.kay-delegation-active' "${STOP_FILE}"; then
+  assert_pass "kay-stop marker workflow present"
 else
-  assert_fail "codex-stop" "missing name or marker handling"
+  assert_fail "kay-stop" "missing name or marker handling"
 fi
 
-echo "=== T5: legacy alias points to canonical codex-delegate skill ==="
+echo "=== T5: legacy alias points to canonical kay-delegate skill ==="
 if grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
   && grep -qi 'deprecated' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q '^name: codex-delegate' "${DELEGATE_LEGACY_FILE}"; then
+  && grep -q '^name: kay-delegate' "${DELEGATE_LEGACY_FILE}"; then
   assert_pass "legacy alias points to canonical delegate skill"
 else
   assert_fail "legacy alias" "missing canonical reference, deprecation note, or alias name"
