@@ -28,7 +28,7 @@ mkdir -p "${MARKER_DIR}"
 
 run_hook() {
   local json="$1"
-  HOME="${HOME_SANDBOX}" SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+  HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${HOME_SANDBOX}" SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
 }
 
 echo "=== test_noop_when_marker_absent ==="

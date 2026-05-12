@@ -3,9 +3,8 @@
 
 This migration removes only Sidekick-owned legacy hook blocks from user-level
 Codex hook files, leaving unrelated user hooks untouched. When it changes a
-file, it stores an exact backup under
-~/.claude/.sidekick/legacy-hooks-scrub-backups/ so the scrub can be rolled
-back later.
+file, it stores an exact backup under ~/.sidekick/legacy-hooks-scrub-backups/
+so the scrub can be rolled back later.
 """
 
 from __future__ import annotations
@@ -22,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 
-STATE_DIR = Path.home() / ".claude" / ".sidekick"
+STATE_DIR = Path.home() / ".sidekick"
 STATE_FILE = STATE_DIR / "legacy-hooks-scrub-state.json"
 BACKUP_DIR = STATE_DIR / "legacy-hooks-scrub-backups"
 TARGETS = (Path.home() / ".codex" / "hooks.json", Path.home() / ".Codex" / "hooks.json")

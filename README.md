@@ -69,7 +69,7 @@ On the next Claude session, all sidekicks install automatically and keep themsel
 - **Uses** Every Code's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
 - **Follows** the Codex developer-doc pattern (developer mode, Docs MCP, Codex CLI) of packaging repeatable work as skills and driving implementation through a composable CLI Codex can use
 - **Defaults** to MiniMax `MiniMax-M2.7` through the packaged `~/.code/config.toml` / legacy `~/.codex/config.toml` compatibility path
-- **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias retained at `skills/codex-delegate.md`.
+- **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias preserved only as a hidden compatibility entry at `skills/codex-delegate.md`.
 
 ### How it works
 
@@ -113,7 +113,7 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 26 suites — hook classifiers, idx audit, plugin integrity, docs contract, help-site navigation, slash commands, post-release cleanup, and Forge/Kay coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 27 suites — hook classifiers, idx audit, plugin integrity, docs contract, help-site navigation, slash commands, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
 | **Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `code --version` + trivial `code exec` round-trip against the real binary, with `codex` kept as the compatibility alias. |

@@ -5,7 +5,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "if [ -f \"${CLAUDE_PLUGIN_ROOT}/.installed\" ]; then bash \"${CLAUDE_PLUGIN_ROOT}/hooks/runtime-sync.sh\"; fi"
+          "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; if [ -f \"${ROOT}/.installed\" ]; then bash \"${ROOT}/hooks/runtime-sync.sh\"; fi"
         }
       ]
     },
@@ -13,7 +13,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "test -f \"${CLAUDE_PLUGIN_ROOT}/.installed\" || (bash \"${CLAUDE_PLUGIN_ROOT}/install.sh\" && touch \"${CLAUDE_PLUGIN_ROOT}/.installed\")"
+          "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; python3 \"${ROOT}/hooks/scrub-legacy-user-hooks.py\""
         }
       ]
     },
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/scrub-legacy-user-hooks.py\""
+            "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; test -f \"${ROOT}/.installed\" || (bash \"${ROOT}/install.sh\" && touch \"${ROOT}/.installed\")"
           }
         ]
       }
@@ -32,11 +32,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-delegation-enforcer.sh\""
+            "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; bash \"${ROOT}/hooks/forge-delegation-enforcer.sh\""
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-delegation-enforcer.sh\""
+            "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; bash \"${ROOT}/hooks/codex-delegation-enforcer.sh\""
           }
         ]
       },
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-release-gate.sh\""
+            "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; bash \"${ROOT}/hooks/validate-release-gate.sh\""
           }
         ]
       }
@@ -56,11 +56,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/forge-progress-surface.sh\""
+            "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; bash \"${ROOT}/hooks/forge-progress-surface.sh\""
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-progress-surface.sh\""
+            "command": "ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-}}}\"; bash \"${ROOT}/hooks/codex-progress-surface.sh\""
           }
         ]
       }

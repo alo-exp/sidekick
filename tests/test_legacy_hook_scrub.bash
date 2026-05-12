@@ -117,7 +117,7 @@ expect_session = sys.argv[4]
 expect_pre = sys.argv[5]
 expect_other_status = sys.argv[6]
 
-state = json.load(open(home / ".claude/.sidekick/legacy-hooks-scrub-state.json"))
+state = json.load(open(home / ".sidekick/legacy-hooks-scrub-state.json"))
 assert state["status"] in {"applied", "rolled_back", "clean"}
 
 target_data = json.load(open(target))
@@ -192,7 +192,7 @@ import sys
 from pathlib import Path
 
 home = Path(sys.argv[1])
-state = json.load(open(home / ".claude/.sidekick/legacy-hooks-scrub-state.json"))
+state = json.load(open(home / ".sidekick/legacy-hooks-scrub-state.json"))
 assert state["status"] == "clean"
 assert state["targets"][0]["status"] == "absent"
 assert state["targets"][1]["status"] == "absent"

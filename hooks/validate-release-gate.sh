@@ -6,8 +6,8 @@
 #
 # Stage count and marker names are defined in docs/pre-release-quality-gate.md.
 # Each stage in that document ends with:
-#   mkdir -p ~/.claude/.sidekick
-#   echo "quality-gate-stage-N" >> ~/.claude/.sidekick/quality-gate-state
+#   mkdir -p ~/.sidekick
+#   echo "quality-gate-stage-N" >> ~/.sidekick/quality-gate-state
 # If stages are added or removed from that document, update STAGE_COUNT below
 # and commit both files together.
 #
@@ -18,7 +18,7 @@
 set -euo pipefail
 
 STAGE_COUNT=4
-STATE_FILE="$HOME/.claude/.sidekick/quality-gate-state"
+STATE_FILE="$HOME/.sidekick/quality-gate-state"
 
 # Fail closed if jq is absent — mirrors the sibling hook contract.
 if ! command -v jq >/dev/null 2>&1; then

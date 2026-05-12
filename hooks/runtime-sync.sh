@@ -10,14 +10,15 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=hooks/lib/sidekick-registry.sh
+source "${SCRIPT_ROOT}/hooks/lib/sidekick-registry.sh"
+
+PLUGIN_ROOT="$(sidekick_plugin_root)"
 INSTALL_SH="${PLUGIN_ROOT}/install.sh"
 SIDEKICK_BIN_DIR="${BIN_DIR:-${HOME}/.local/bin}"
 
 export PATH="${SIDEKICK_BIN_DIR}:${PATH}"
-
-# shellcheck source=hooks/lib/sidekick-registry.sh
-source "${PLUGIN_ROOT}/hooks/lib/sidekick-registry.sh"
 
 KAY_INSTALL_VERSION="$(sidekick_registry_get kay '.[$sidekick].install.version')"
 KAY_INSTALL_URL="$(sidekick_registry_get kay '.[$sidekick].install.url')"
