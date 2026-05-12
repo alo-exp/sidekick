@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived). Preserved design notes live in `docs/design/`.
 
-**Plugin version:** v0.5.4 • **Target:** Claude Code harness + Forge/Code / Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
+**Plugin version:** v0.5.4 • **Target:** Claude Code harness + Forge/Code / Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.8.0)
 
 ---
 
@@ -29,7 +29,7 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.7.2, then use each runtime's native update command when present. |
+| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.8.0, then use each runtime's native update command when present. |
 | Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json` / `~/.Codex/hooks.json`. Touches only matching Sidekick entries, snapshots the originals under `~/.claude/.sidekick/legacy-hooks-scrub-backups/`, and can restore them with `--rollback`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |

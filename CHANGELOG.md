@@ -20,7 +20,7 @@ Sidekick now treats the Code/Kay sidekick as a session-scoped target named Kay, 
 **Fixed:**
 
 - **Legacy hook migration**: upgrade paths now remove only Sidekick-owned stale hook entries from user config and leave unrelated user hooks untouched.
-- **Kay install source**: Sidekick now bootstraps from the pinned `alo-labs/kay` `v0.7.2` installer release, while still preferring native runtime updates when present.
+- **Kay install source**: Sidekick now bootstraps from the pinned `alo-labs/kay` `v0.8.0` installer release, while still preferring native runtime updates when present.
 
 ## v1.5.4 — 2026-05-08
 
