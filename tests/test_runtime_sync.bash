@@ -187,7 +187,7 @@ expect_forge_repair_plus_code_update() {
 
 expect_code_repair_plus_forge_update() {
   local log="$1"
-  grep -q '^install forge=0 code=1 force=1$' "${log}" && grep -q '^forge:update$' "${log}" && ! grep -q '^code:update$'
+  grep -q '^install forge=0 code=1 force=1$' "${log}" && grep -q '^forge:update$' "${log}" && ! grep -q '^code:update$' "${log}"
 }
 
 echo "=== T1: built-in updates run when both runtimes are present ==="

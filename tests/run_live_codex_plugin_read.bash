@@ -155,10 +155,10 @@ try:
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
     expected_order = [
-        "sidekick:kay-delegate",
-        "sidekick:kay-stop",
         "sidekick:forge-delegate",
         "sidekick:forge-stop",
+        "sidekick:kay-delegate",
+        "sidekick:kay-stop",
     ]
     missing = sorted(set(expected_order).difference(names))
     extras = sorted(set(names).difference(expected_order))

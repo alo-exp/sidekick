@@ -24,10 +24,11 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 [ -f "${STOP_FILE}" ] || { echo "ERROR: ${STOP_FILE} missing"; exit 1; }
 
 echo "=== T1: canonical kay-delegate frontmatter ==="
-if grep -q '^name: kay-delegate' "${DELEGATE_FILE}"; then
-  assert_pass "name: kay-delegate present"
+if grep -q '^---$' "${DELEGATE_FILE}" \
+  && grep -q '^name: kay-delegate' "${DELEGATE_FILE}"; then
+  assert_pass "kay-delegate frontmatter present"
 else
-  assert_fail "frontmatter" "name: kay-delegate not found"
+  assert_fail "frontmatter" "missing YAML frontmatter or name: kay-delegate"
 fi
 
 echo "=== T2: kay-delegate contains runtime delegation guidance ==="
@@ -49,20 +50,22 @@ else
 fi
 
 echo "=== T4: kay-stop frontmatter and marker handling ==="
-if grep -q '^name: kay-stop' "${STOP_FILE}" \
+if grep -q '^---$' "${STOP_FILE}" \
+  && grep -q '^name: kay-stop' "${STOP_FILE}" \
   && grep -q '\.kay-delegation-active' "${STOP_FILE}"; then
   assert_pass "kay-stop marker workflow present"
 else
-  assert_fail "kay-stop" "missing name or marker handling"
+  assert_fail "kay-stop" "missing YAML frontmatter, name, or marker handling"
 fi
 
 echo "=== T5: legacy alias points to canonical kay-delegate skill ==="
-if grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
+if grep -q '^---$' "${DELEGATE_LEGACY_FILE}" \
+  && grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
   && grep -qi 'deprecated' "${DELEGATE_LEGACY_FILE}" \
   && grep -q '^name: kay-delegate' "${DELEGATE_LEGACY_FILE}"; then
   assert_pass "legacy alias points to canonical delegate skill"
 else
-  assert_fail "legacy alias" "missing canonical reference, deprecation note, or alias name"
+  assert_fail "legacy alias" "missing YAML frontmatter, canonical reference, deprecation note, or alias name"
 fi
 
 echo "=== T6: removed codex canonical/history skills are absent ==="
