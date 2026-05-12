@@ -1,3 +1,4 @@
+---
 name: kay-delegate
 description: Canonical Kay delegation workflow for the Kay sidekick. Use when delegating implementation work to code/codex/coder exec.
 ---

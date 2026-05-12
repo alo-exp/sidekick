@@ -26,7 +26,7 @@ CODEX_REPO="/Users/shafqat/projects/codex-cli/kay"
 CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
 CODE_RUST_REPO="${CODEX_REPO}/code-rs"
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
-MARKETPLACE_NAME="alo-labs-codex"
+MARKETPLACE_NAME="alo-labs-codex-local"
 
 resolve_codex_runner() {
   local built_codex="${CODEX_RUST_REPO}/target/debug/codex"
