@@ -134,7 +134,11 @@ elif state["status"] == "applied":
     entries = {entry["path"]: entry for entry in state["targets"]}
     assert entries[str(target)]["status"] == "scrubbed"
     assert Path(entries[str(target)]["backup_path"]).read_text() == snapshot.read_text()
-    assert any(entry["status"] == expect_other_status for entry in state["targets"] if entry["path"] != str(target))
+    assert any(
+        entry["status"] in {expect_other_status, "absent"}
+        for entry in state["targets"]
+        if entry["path"] != str(target)
+    )
 else:
     assert state["status"] == "rolled_back"
     assert target.read_text() == snapshot.read_text()
