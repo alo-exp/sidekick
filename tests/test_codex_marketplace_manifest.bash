@@ -30,11 +30,17 @@ data = json.load(open(sys.argv[1]))
 print(data["name"])
 PY
 )"
-if [ "${MARKETPLACE_NAME}" = "alo-labs-codex" ]; then
-  assert_pass "marketplace name is alo-labs-codex"
-else
-  assert_fail "marketplace name" "got ${MARKETPLACE_NAME}"
-fi
+case "${MARKETPLACE_NAME}" in
+  alo-labs-codex)
+    assert_pass "marketplace name is alo-labs-codex"
+    ;;
+  alo-labs-codex-local)
+    assert_pass "marketplace name is alo-labs-codex-local"
+    ;;
+  *)
+    assert_fail "marketplace name" "got ${MARKETPLACE_NAME}"
+    ;;
+esac
 
 echo "=== sidekick_entry_present ==="
 if python3 - "${MARKETPLACE_FILE}" "${SIDEKICK_REF}" "${SIDEKICK_VERSION}" <<'PY'

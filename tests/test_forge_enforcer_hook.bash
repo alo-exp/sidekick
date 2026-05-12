@@ -3,8 +3,7 @@
 # Sidekick Plugin — hooks/forge-delegation-enforcer.sh Tests (Phase 6)
 # =============================================================================
 # Phase 6 foundation assertions. Plans 06-02 and 06-03 append further tests.
-# All tests sandbox HOME so the real ~/.claude/.forge-delegation-active is
-# never read or written.
+# All tests sandbox HOME so the real session marker is never read or written.
 
 set -euo pipefail
 
@@ -29,8 +28,11 @@ fi
 HOME_SANDBOX="$(mktemp -d)"
 PROJECT_SANDBOX="$(mktemp -d)"
 FORGE_STUB_DIR="${HOME_SANDBOX}/bin"
+TEST_SESSION_ID="forge-test-$$"
+MARKER_DIR="${HOME_SANDBOX}/.claude/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
-mkdir -p "${HOME_SANDBOX}/.claude" "${FORGE_STUB_DIR}"
+mkdir -p "${MARKER_DIR}" "${FORGE_STUB_DIR}"
 
 # Forge stub: a one-line script that exits with $FORGE_STUB_EXIT (default 0).
 # Tests mutate FORGE_STUB_EXIT between invocations to simulate DB-writable vs
@@ -100,7 +102,7 @@ else
 fi
 
 # Activate marker for decision-logic tests.
-touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+touch "${MARKER_FILE}"
 
 # Helper: pipe stdin JSON to the hook with sandboxed HOME + CLAUDE_PROJECT_DIR +
 # stubbed forge on PATH, capture stdout + rc.
@@ -109,9 +111,10 @@ run_hook() {
   local extra_env="${2:-}"
   if [ -n "${extra_env}" ]; then
     HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
-      env "${extra_env}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+      env SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" ${extra_env} bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
   else
     HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+      SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
       bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
   fi
 }
@@ -140,6 +143,29 @@ echo "=== test_deny_notebook_edit_when_active ==="
 _assert_deny_with_forge_reason "test_deny_notebook_edit_when_active" "NotebookEdit"
 
 # -----------------------------------------------------------------------------
+echo "=== test_level3_direct_edit_passthrough ==="
+_all_passed=1
+for _tool in Write Edit NotebookEdit; do
+  case "$_tool" in
+    Write)
+      _j="$(jq -cn --arg p "${PROJECT_SANDBOX}/direct-write.txt" '{tool_name:"Write",tool_input:{file_path:$p,content:"y"}}')"
+      ;;
+    Edit)
+      _j="$(jq -cn --arg p "${PROJECT_SANDBOX}/direct-edit.txt" '{tool_name:"Edit",tool_input:{file_path:$p,old_string:"a",new_string:"b"}}')"
+      ;;
+    NotebookEdit)
+      _j="$(jq -cn --arg p "${PROJECT_SANDBOX}/direct-notebook.ipynb" '{tool_name:"NotebookEdit",tool_input:{file_path:$p,cell_type:"code",source:"x"}}')"
+      ;;
+  esac
+  _out="$(FORGE_LEVEL_3=1 run_hook "$_j")"
+  if [ -n "${_out}" ]; then
+    assert_fail "test_level3_direct_edit_passthrough[${_tool}]" "expected empty, got: '${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_level3_direct_edit_passthrough"
+
+# -----------------------------------------------------------------------------
 echo "=== test_rewrite_forge_p_injects_uuid_and_pipes ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py\""}}')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
@@ -152,6 +178,35 @@ if [ "${_dec}" = "allow" ] \
   assert_pass "test_rewrite_forge_p_injects_uuid_and_pipes"
 else
   assert_fail "test_rewrite_forge_p_injects_uuid_and_pipes" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_rewrite_forge_p_with_tee_tail_preserves_logging ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py\"|tee .planning/forge.log"}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+    && echo "${_cmd}" | grep -q -- '--verbose' \
+    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE\] /'" \
+    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE-LOG\] /'" \
+    && echo "${_cmd}" | grep -q -- '| tee .planning/forge.log'; then
+  assert_pass "test_rewrite_forge_p_with_tee_tail_preserves_logging"
+else
+  assert_fail "test_rewrite_forge_p_with_tee_tail_preserves_logging" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_rewrite_forge_p_quotes_prompt_metacharacters ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py; rm -rf /tmp/evil | cat --conversation-id bad-id-with\""}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+    && echo "${_cmd}" | grep -q -- "'Refactor utils.py; rm -rf /tmp/evil | cat --conversation-id bad-id-with'"; then
+  assert_pass "test_rewrite_forge_p_quotes_prompt_metacharacters"
+else
+  assert_fail "test_rewrite_forge_p_quotes_prompt_metacharacters" "dec='${_dec}' cmd='${_cmd}'"
 fi
 
 # -----------------------------------------------------------------------------
@@ -311,6 +366,20 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+echo "=== test_symlinked_forge_dir_denied ==="
+_reset_project_sandbox
+_outside_forge_dir="$(mktemp -d)"
+ln -s "${_outside_forge_dir}" "${PROJECT_SANDBOX}/.forge"
+_out="$(FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"symlink task\""}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "${_dec}" = "deny" ] && [ ! -e "${_outside_forge_dir}/conversations.idx" ]; then
+  assert_pass "test_symlinked_forge_dir_denied"
+else
+  assert_fail "test_symlinked_forge_dir_denied" "dec='${_dec}' outside_idx=$([ -e "${_outside_forge_dir}/conversations.idx" ] && echo yes || echo no)"
+fi
+rm -rf "${_outside_forge_dir}"
+
+# -----------------------------------------------------------------------------
 # test_db_precheck_runs_once_via_sentinel
 # Step 1: passing forge stub on first invocation → sentinel is created.
 # Step 2: swap stub to always-fail, invoke again WITHOUT bumping marker mtime →
@@ -333,7 +402,7 @@ if [ "${_dec2}" = "allow" ]; then _step2_ok="yes"; fi
 
 # Step 3: bump marker mtime, keep failing stub → precheck re-runs and denies
 sleep 1
-touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+touch "${MARKER_FILE}"
 _out3="$(FORGE_STUB_EXIT=3 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step3\""}}')"
 _dec3="$(printf '%s' "$_out3" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _step3_ok="no"
@@ -354,10 +423,10 @@ fi
 echo "=== test_idx_preserved_across_deactivate ==="
 _reset_project_sandbox
 # Re-touch marker (test_db_precheck_runs_once_via_sentinel may have bumped it).
-touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+touch "${MARKER_FILE}"
 FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"task before deactivate\""}}' >/dev/null
 _rows_before="$(wc -l < "${PROJECT_SANDBOX}/.forge/conversations.idx" | tr -d ' ' || echo 0)"
-rm -f "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+rm -f "${MARKER_FILE}"
 if [ -f "${PROJECT_SANDBOX}/.forge/conversations.idx" ]; then
   _rows_after="$(wc -l < "${PROJECT_SANDBOX}/.forge/conversations.idx" | tr -d ' ' || echo 0)"
   if [ "${_rows_after}" = "${_rows_before}" ] && [ "${_rows_after}" -ge 1 ]; then
@@ -369,7 +438,7 @@ else
   assert_fail "test_idx_preserved_across_deactivate" "idx removed on deactivate (should be preserved)"
 fi
 # Restore marker for any subsequent tests.
-touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+touch "${MARKER_FILE}"
 
 echo ""
 echo "======================================="

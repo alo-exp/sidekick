@@ -4,7 +4,7 @@
     "name": "Ālo Labs"
   },
   "metadata": {
-    "description": "Sidekick — AI coding agents as Claude sidekicks. Forge and Codex are the first two: they auto-install, configure themselves, and let Claude delegate coding work while it stays focused on planning and communication."
+    "description": "Sidekick — AI coding agents as Claude sidekicks. Forge and Kay are the first two: they auto-install, configure themselves, and let Claude delegate coding work while it stays focused on planning and communication."
   },
   "plugins": [
     {
@@ -13,7 +13,7 @@
         "source": "github",
         "repo": "alo-exp/sidekick"
       },
-      "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Codex are the first two: they auto-install, configure themselves, and turn Claude into an orchestrator that delegates implementation while handling planning and user interaction itself.",
+      "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Kay are the first two: they auto-install, configure themselves, and turn Claude into an orchestrator that delegates implementation while handling planning and user interaction itself.",
       "version": "0.5.4",
       "author": {
         "name": "Ālo Labs",

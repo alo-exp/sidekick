@@ -37,8 +37,11 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 # Sandbox HOME and CLAUDE_PROJECT_DIR so no real files are touched.
 HOME_SANDBOX="$(mktemp -d)"
 PROJECT_SANDBOX="$(mktemp -d)"
+TEST_SESSION_ID="forge-test-$$"
+MARKER_DIR="${HOME_SANDBOX}/.claude/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
-mkdir -p "${HOME_SANDBOX}/.claude"
+mkdir -p "${MARKER_DIR}"
 mkdir -p "${HOME_SANDBOX}/bin"
 
 # Stub forge binary so db_precheck inside the enforcer succeeds without a
@@ -56,6 +59,7 @@ run_pre() {
   HOME="${HOME_SANDBOX}" \
   CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" \
   PATH="${STUB_PATH}" \
+  SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
     bash "${PRE_HOOK}" <<< "${json}" 2>/dev/null
 }
 
@@ -63,13 +67,14 @@ run_pre() {
 run_post() {
   local json="$1"
   HOME="${HOME_SANDBOX}" \
+  SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
     bash "${POST_HOOK}" <<< "${json}" 2>/dev/null
 }
 
 # -----------------------------------------------------------------------------
 echo "=== E2E step 1: activate marker (simulating /forge) ==="
-touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
-if [ -f "${HOME_SANDBOX}/.claude/.forge-delegation-active" ]; then
+touch "${MARKER_FILE}"
+if [ -f "${MARKER_FILE}" ]; then
   assert_pass "e2e_step1_marker_activated"
 else
   assert_fail "e2e_step1_marker_activated" "marker not created"
@@ -85,6 +90,7 @@ PRE_OUT="$(SIDEKICK_TEST_UUID_OVERRIDE="${EXPECTED_UUID}" \
   HOME="${HOME_SANDBOX}" \
   CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" \
   PATH="${STUB_PATH}" \
+  SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
   bash "${PRE_HOOK}" <<< "${PRE_INPUT}" 2>/dev/null)"
 
 PRE_DECISION="$(printf '%s' "${PRE_OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
@@ -138,7 +144,7 @@ fi
 
 # -----------------------------------------------------------------------------
 echo "=== E2E step 5: deactivate preserves idx, hooks become no-op ==="
-rm -f "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+rm -f "${MARKER_FILE}"
 
 # Idx file should still exist with the row from step 2.
 if [ -f "${IDX_FILE}" ] && grep -q -- "${EXPECTED_UUID}" "${IDX_FILE}"; then

@@ -219,7 +219,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="skill-injection">Skill Injection</h2>
-      <p>Forge has access to four bootstrap skills that Claude can inject into task prompts via the INJECTED SKILLS field. The table below also spells out the code-change and multi-phase delivery mappings that determine when <code>code-review</code> and <code>quality-gates</code> appear together:</p>
+      <p>Forge has access to four bootstrap skills that Claude can inject into task prompts via the INJECTED SKILLS field. The table below shows the canonical four-skill mapping used for task prompts:</p>
 
       <table class="skill-table">
         <thead>
@@ -227,10 +227,9 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         </thead>
         <tbody>
           <tr><td>testing-strategy</td><td>Writing or fixing tests, TDD tasks</td></tr>
-          <tr><td>code-change</td><td>General implementation edits and refactoring; add <code>quality-gates</code> for multi-phase delivery tasks</td></tr>
-          <tr><td>code-review</td><td>Code quality, refactoring, review-driven changes</td></tr>
+          <tr><td>code-review</td><td>General implementation edits, refactoring, and review-driven changes</td></tr>
           <tr><td>security</td><td>Auth, input validation, credential handling</td></tr>
-          <tr><td>quality-gates + code-review</td><td>Multi-phase delivery, release preparation</td></tr>
+          <tr><td>quality-gates</td><td>Multi-phase delivery, release preparation</td></tr>
         </tbody>
       </table>
 
@@ -279,7 +278,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>Sidekick supports two providers for Forge. The provider and model are set in <code>~/forge/.forge.toml</code> (global, not per-project). API credentials are stored separately in <code>~/forge/.credentials.json</code>.</p>
 
       <h3>OpenRouter (recommended)</h3>
-      <p>OpenRouter routes requests to the <code>forge/forge-code</code> model. This is the default and recommended provider — it has the broadest availability and is the model Sidekick is optimized for.</p>
+      <p>OpenRouter routes requests to the <code>qwen/qwen3-coder-plus</code> model. This is the default and recommended provider — it has the broadest availability and is the model Sidekick is optimized for.</p>
       <div class="code-label">~/forge/.forge.toml — OpenRouter</div>
       <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>
@@ -287,8 +286,10 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 [<span class="key">session</span>]
 <span class="key">provider_id</span> = <span class="val">"open_router"</span>
 <span class="key">model_id</span>    = <span class="val">"qwen/qwen3-coder-plus"</span></div>
-      <div class="code-label">~/forge/.credentials.json — OpenRouter API key</div>
-      <div class="code-block">{ <span class="key">"api_key"</span>: <span class="val">"sk-or-your-key-here"</span> }</div>
+      <div class="code-label">~/forge/.credentials.json — OpenRouter credentials array</div>
+      <div class="code-block">[
+  { <span class="key">"id"</span>: <span class="val">"open_router"</span>, <span class="key">"auth_details"</span>: { <span class="key">"api_key"</span>: <span class="val">"sk-or-your-key-here"</span> } }
+]</div>
 
       <h3>MiniMax Coding</h3>
       <p>MiniMax is an alternative provider with different rate limits and pricing. Use it if you have a MiniMax account or prefer its model characteristics. Switch by updating <code>~/forge/.forge.toml</code>:</p>

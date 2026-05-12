@@ -50,7 +50,7 @@ for needle in '# Start Here' 'What are you trying to do?' 'Install Sidekick' 'De
   expect_contains "docs/START-HERE.md" "${needle}" "start-here contains ${needle}"
 done
 
-for needle in '# Audience' 'Reader Matrix' 'New user' 'Maintainer' 'Release operator' 'Plugin author' 'Claude user' 'Codex user' 'Kay operator'; do
+for needle in '# Audience' 'Reader Matrix' 'New user' 'Maintainer' 'Release operator' 'Plugin author' 'Claude user' 'Kay user' 'Kay operator'; do
   expect_contains "docs/AUDIENCE.md" "${needle}" "audience contains ${needle}"
 done
 

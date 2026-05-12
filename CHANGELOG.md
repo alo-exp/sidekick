@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.5.4 — 2026-05-12
+
+### Kay session scoping and release rebasing
+
+Sidekick now treats the Code/Kay sidekick as a session-scoped target named Kay, not a global Codex toggle. The packaging surfaces, docs, and installer flow were rebased to `0.5.4` so the release line reads as pre-1.0 while keeping host-side Codex compatibility intact.
+
+**Added:**
+
+- **`hooks/runtime-sync.sh`** and **`tests/test_runtime_sync.bash`**: session-start runtime sync now prefers native update commands when available and falls back to selective repair only when needed.
+- **`hooks/scrub-legacy-user-hooks.py`** and **`tests/test_legacy_hook_scrub.bash`**: one-time cleanup for stale Sidekick hook blocks in user config, with backup and rollback support.
+
+**Changed:**
+
+- **`sidekicks/registry.json`**, **`hooks/codex-delegation-enforcer.sh`**, **`hooks/codex-progress-surface.sh`**, **`skills/codex-stop/SKILL.md`**, **`install.sh`**: delegate-target state moved to the Kay namespace and now uses `.kay/sessions/${CODEX_THREAD_ID}/.kay-delegation-active` plus `.kay/conversations.idx`.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**, **`docs/help/*`**: public-facing docs and help pages rebased to `v0.5.4` and aligned to the Kay naming and session-scoped state.
+- **`.claude-plugin/plugin.json`** and **`.claude-plugin/marketplace.json`**: packaging metadata and manifest integrity refreshed for the `0.5.4` release line.
+
+**Fixed:**
+
+- **Legacy hook migration**: upgrade paths now remove only Sidekick-owned stale hook entries from user config and leave unrelated user hooks untouched.
+- **Kay install source**: Sidekick now bootstraps from the pinned `alo-labs/kay` `v0.7.2` installer release, while still preferring native runtime updates when present.
+
 ## v1.5.4 — 2026-05-08
 
 ### Skills-only runtime surface and picker alignment

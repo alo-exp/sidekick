@@ -153,8 +153,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <tbody>
           <tr><td>/forge</td><td>Activate Forge delegation mode. Runs health check, bootstraps AGENTS.md if absent, loads SKILL.md.</td></tr>
           <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct Claude implementation.</td></tr>
-          <tr><td>sidekick:codex-delegate</td><td>Activate Codex delegation mode for `code` / `codex` / `coder` runtime workflows.</td></tr>
-          <tr><td>/codex-stop</td><td>Deactivate Codex delegation mode and return to direct Claude implementation.</td></tr>
+          <tr><td>sidekick:kay-delegate</td><td>Activate Kay delegation mode for `code` / `codex` / `coder` runtime workflows.</td></tr>
+          <tr><td>/kay-stop</td><td>Deactivate Kay delegation mode and return to direct Claude implementation.</td></tr>
         </tbody>
       </table>
 
@@ -165,7 +165,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <tbody>
           <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When delegation mode is active, rewrites <code>forge -p</code> calls to inject a UUID conversation ID and appends an entry to the idx file so each task is durably trackable.</td></tr>
           <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output and surfaces a compact STATUS block into the transcript so long-running delegations stream visible progress.</td></tr>
-          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code> and the full live Forge/Codex release pyramid has passed twice.</td></tr>
+          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code> and the full live Forge/Kay release pyramid has passed twice.</td></tr>
         </tbody>
       </table>
 
@@ -184,7 +184,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>Total prompt budget: <strong>2,000 tokens max</strong>.</p>
 
       <h2 id="forge-toml">.forge.toml Config</h2>
-      <p>Created in the project root on first <code>/forge</code> invocation. Contains compaction settings only — Forge API credentials are stored globally in <code>~/forge/.credentials.json</code> and <code>~/forge/.forge.toml</code>.</p>
+      <p>Created in the project root on first <code>/forge</code> invocation. Contains compaction settings only — Forge API credentials live in <code>~/forge/.credentials.json</code>, while provider and model config live in <code>~/forge/.forge.toml</code>.</p>
       <div class="code-label">.forge.toml (project root — compaction only)</div>
       <div class="code-block"><span class="comment"># API credentials: ~/forge/.credentials.json</span>
 
@@ -211,7 +211,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">model_id</span>    = <span class="string">"MiniMax-M2.7"</span></div>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code> (API key) and <code>~/forge/.forge.toml</code> (provider and model config), not in the project root. When Claude guides you through setup it writes these files automatically.</div>
+        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code>, and provider/model config is stored in <code>~/forge/.forge.toml</code>, not in the project root. When Claude guides you through setup it writes these files automatically.</div>
       </div>
 
       <h2 id="bootstrap-skills">Bootstrap Skills</h2>
@@ -259,38 +259,47 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="agents-md-format">AGENTS.md Format</h2>
-      <p>AGENTS.md uses an action-oriented, categorized format. Claude extracts content from sessions and writes it under these categories:</p>
-      <div class="code-label">AGENTS.md structure</div>
-      <div class="code-block"><span class="comment"># AGENTS.md — Forge Standing Instructions</span>
-<span class="comment"># Project: &lt;name&gt;</span>
+      <p>AGENTS.md is written in tiers: global instructions live in <code>~/forge/AGENTS.md</code>, project instructions live in <code>./AGENTS.md</code>, and session history is appended to <code>docs/sessions/YYYY-MM-DD-session.md</code>.</p>
+      <div class="code-label">Global AGENTS.md</div>
+      <div class="code-block"><span class="comment"># Forge Global Instructions</span>
 
-<span class="key">## Code Style</span>
-<span class="val">- Use TypeScript strict mode for all new files</span>
-<span class="val">- Prefer named exports over default exports</span>
+<span class="comment">## Code Style</span>
+<span class="val">- Cross-project style rules</span>
 
-<span class="key">## Testing</span>
-<span class="val">- All new functions must have unit tests</span>
-<span class="val">- Use vitest, not jest</span>
+<span class="comment">## Testing</span>
+<span class="val">- Cross-project test and verification habits</span>
 
-<span class="key">## Git Workflow</span>
-<span class="val">- Atomic commits — one logical change per commit</span>
-<span class="val">- Commit message format: &lt;type&gt;: &lt;description&gt;</span>
+<span class="comment">## Git Workflow</span>
+<span class="val">- Cross-project commit and release habits</span>
 
-<span class="key">## Forge Behavior</span>
-<span class="val">- Always run the test suite before marking task complete</span>
-<span class="val">- Report FILES_CHANGED at the end of every task</span>
+<span class="comment">## Forge Behavior</span>
+<span class="val">- Cross-project Forge corrections</span></div>
+      <div class="code-label">Project AGENTS.md</div>
+      <div class="code-block"><span class="comment"># Project Instructions</span>
 
-<span class="key">## Project Conventions</span>
-<span class="val">- &lt;project-specific rules extracted from sessions&gt;</span></div>
+<span class="comment">## Project Conventions</span>
+<span class="val">- Repo-specific structure and naming rules</span>
+
+<span class="comment">## Task Patterns</span>
+<span class="val">- Repeated task shapes and workflow notes</span>
+
+<span class="comment">## Forge Corrections</span>
+<span class="val">- Repo-specific Forge mistakes and fixes</span></div>
+      <div class="code-label">Session log</div>
+      <div class="code-block"><span class="comment"># docs/sessions/YYYY-MM-DD-session.md</span>
+<span class="val">- Task name</span>
+<span class="val">- Extracted instructions</span>
+<span class="val">- Deduplication decisions</span>
+<span class="val">- Tiers written</span></div>
 
       <h2 id="file-structure">File Structure</h2>
       <p>Files created and managed by Sidekick:</p>
       <table class="ref-table">
         <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td>skills/forge/SKILL.md</td><td>Forge delegation instruction set (321 lines, 8 sections)</td></tr>
-          <tr><td>.forge.toml</td><td>API key and compaction config (gitignored)</td></tr>
-          <tr><td>~/.claude/.forge-delegation-active</td><td>Active session state marker (zero-byte)</td></tr>
+          <tr><td>skills/forge/SKILL.md</td><td>Forge delegation instruction set</td></tr>
+          <tr><td>.forge.toml</td><td>Project root compaction config (gitignored); credentials live in <code>~/forge/.credentials.json</code></td></tr>
+          <tr><td>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</td><td>Active session state marker for the current thread (zero-byte)</td></tr>
           <tr><td>.forge/skills/*/SKILL.md</td><td>4 bootstrap skills for injection</td></tr>
           <tr><td>AGENTS.md</td><td>Project-level Forge standing instructions</td></tr>
           <tr><td>~/forge/AGENTS.md</td><td>Global cross-project Forge instructions</td></tr>

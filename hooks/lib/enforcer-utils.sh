@@ -8,10 +8,11 @@
 #
 # Functions exported (in definition order):
 #   strip_env_prefix         — strip leading FOO=bar env-var tokens from cmd
-#   export_env_prefix        — export leading env-var tokens into shell env (ENF-04)
+#   export_env_prefix        — consume leading env-var tokens from cmd text (ENF-04)
 #   has_write_redirect       — detect unquoted write-redirect (bug-fixed: ENF-01/02/03)
 #   first_token              — extract first 1-2 command tokens after env prefix
 #   is_allowed_doc_path      — return 0 if path is under .planning/ or docs/ (PATH-01)
+#   is_within_project_root    — return 0 if path resolves inside CLAUDE_PROJECT_DIR
 #   is_read_only             — return 0 if command is known read-only (includes gh ENF-05)
 #   is_mutating              — return 0 if command is known mutating (includes gh ENF-05)
 #   has_mutating_chain_segment — return 0 if any && or ; segment is mutating (ENF-06)
@@ -41,19 +42,14 @@ strip_env_prefix() {
 
 # -----------------------------------------------------------------------------
 # export_env_prefix  (ENF-04)
-# Export leading `FOO=bar BAZ=qux ` env-var assignments into the shell
-# environment so that the delegated command can read them.
-#
-# Security note: only [A-Za-z_][A-Za-z0-9_]* names are accepted (anchored
-# regex); shell metacharacters cannot appear in the variable name. Values are
-# exported as literals — they are not evaluated or interpreted by the shell.
-# This runs inside the short-lived hook subprocess, so exported vars do not
-# persist beyond the hook invocation.
+# Consume leading `FOO=bar BAZ=qux ` env-var assignments from the command
+# text without propagating them into the hook process or delegated command.
+# Command-text env prefixes are untrusted input and must not be able to
+# re-root the project, self-activate bypasses, or poison helper subprocesses.
 # -----------------------------------------------------------------------------
 export_env_prefix() {
   local cmd="$1"
   while [[ "$cmd" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=([^[:space:]]*)([[:space:]]+) ]]; do
-    export "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
     cmd="${cmd#"${BASH_REMATCH[0]}"}"
   done
 }
@@ -140,6 +136,246 @@ first_three_tokens() {
 }
 
 # -----------------------------------------------------------------------------
+# wrapper_is_read_only
+# Return 0 when a shell wrapper command is being used in a read-only way.
+# This keeps benign wrapper forms pass-through while still denying shell
+# execution wrappers and mutating xargs targets.
+# -----------------------------------------------------------------------------
+wrapper_is_read_only() {
+  local cmd="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$cmd" <<'PY'
+import shlex
+import sys
+
+cmd = sys.argv[1]
+try:
+    tokens = shlex.split(cmd)
+except Exception:
+    raise SystemExit(1)
+
+SAFE_SIMPLE = {
+    "ls", "la", "ll", "pwd", "cd", "echo", "printf", "cat", "head",
+    "tail", "wc", "file", "stat", "tree", "diff", "cmp", "grep",
+    "egrep", "fgrep", "rg", "ag", "ack", "find", "fd", "locate",
+    "which", "whereis", "type", "printenv", "whoami", "id", "hostname",
+    "date", "uname", "jq", "awk", "sort", "uniq", "column", "tr", "cut",
+    "sed",
+}
+SAFE_GIT = {
+    "status", "log", "diff", "show", "branch", "remote",
+    "rev-parse", "ls-files", "stash",
+}
+SAFE_GH = {
+    "gh issue list", "gh issue view", "gh pr list", "gh pr view",
+    "gh pr status", "gh pr checks", "gh label list",
+    "gh release list", "gh repo view", "gh project list",
+    "gh run list", "gh run view", "gh workflow list",
+}
+SHELL_WRAPPERS = {"sh", "bash", "zsh", "fish", "dash", "ksh"}
+
+def classify(seq):
+    if not seq:
+        return False
+
+    head = seq[0]
+
+    if head == "env":
+        i = 1
+        while i < len(seq):
+            tok = seq[i]
+            if tok == "|":
+                return True
+            if tok.startswith("-") or ("=" in tok and not tok.startswith("=")):
+                i += 1
+                continue
+            break
+        rest = seq[i:]
+        if not rest:
+            return True
+        return classify(rest)
+
+    if head == "command":
+        if len(seq) == 1:
+            return True
+        if seq[1] in {"-v", "-V"}:
+            return True
+        if seq[1] == "-p":
+            return classify(seq[2:])
+        return False
+
+    if head == "xargs":
+        i = 1
+        while i < len(seq) and seq[i].startswith("-"):
+            i += 1
+        return classify(seq[i:])
+
+    if head in SHELL_WRAPPERS and len(seq) >= 2 and seq[1] == "-c":
+        return False
+
+    if head == "sed" and len(seq) >= 2 and seq[1] == "-i":
+        return False
+
+    if head == "awk" and len(seq) >= 3 and seq[1] == "-i" and seq[2] == "inplace":
+        return False
+
+    if head == "find" and any(tok in {"-exec", "-execdir", "-ok", "-delete"} for tok in seq[1:]):
+        return False
+
+    if head in SAFE_SIMPLE:
+        return True
+
+    if head == "git":
+        return len(seq) >= 2 and seq[1] in SAFE_GIT
+
+    if head == "gh":
+        return len(seq) >= 3 and " ".join(seq[:3]) in SAFE_GH
+
+    return False
+
+raise SystemExit(0 if classify(tokens) else 1)
+PY
+}
+
+# -----------------------------------------------------------------------------
+# split_shell_segments
+# Split a shell command into top-level segments while respecting quotes.
+# `mode=chain` splits on && / ; / ||. `mode=pipe` splits on single | only.
+# Returns one segment per line. If parsing fails, exits non-zero.
+# -----------------------------------------------------------------------------
+split_shell_segments() {
+  local mode="$1"
+  local cmd="$2"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$mode" "$cmd" <<'PY'
+import sys
+
+mode, cmd = sys.argv[1:3]
+if mode not in {"chain", "pipe"}:
+    raise SystemExit(1)
+
+segments = []
+start = 0
+i = 0
+in_single = False
+in_double = False
+escaped = False
+
+while i < len(cmd):
+    ch = cmd[i]
+
+    if escaped:
+        escaped = False
+        i += 1
+        continue
+
+    if ch == "\\" and not in_single:
+        escaped = True
+        i += 1
+        continue
+
+    if ch == "'" and not in_double:
+        in_single = not in_single
+        i += 1
+        continue
+
+    if ch == '"' and not in_single:
+        in_double = not in_double
+        i += 1
+        continue
+
+    if not in_single and not in_double:
+        if mode == "chain":
+            if cmd.startswith("&&", i) or cmd.startswith("||", i):
+                seg = cmd[start:i]
+                if seg.strip():
+                    segments.append(seg)
+                i += 2
+                start = i
+                continue
+            if ch == ";":
+                seg = cmd[start:i]
+                if seg.strip():
+                    segments.append(seg)
+                i += 1
+                start = i
+                continue
+        elif mode == "pipe":
+            if cmd.startswith("||", i):
+                i += 2
+                continue
+            if ch == "|":
+                seg = cmd[start:i]
+                if seg.strip():
+                    segments.append(seg)
+                i += 1
+                start = i
+                continue
+
+    i += 1
+
+tail = cmd[start:]
+if tail.strip():
+    segments.append(tail)
+
+for seg in segments:
+    print(seg)
+PY
+}
+
+# -----------------------------------------------------------------------------
+# has_unquoted_command_substitution
+# Return 0 if the command contains `$(` or backticks outside single quotes.
+# Double-quoted substitutions are still active and therefore count as mutating.
+# -----------------------------------------------------------------------------
+has_unquoted_command_substitution() {
+  local cmd="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$cmd" <<'PY'
+import sys
+
+cmd = sys.argv[1]
+in_single = False
+in_double = False
+escaped = False
+i = 0
+
+while i < len(cmd):
+    ch = cmd[i]
+
+    if escaped:
+        escaped = False
+        i += 1
+        continue
+
+    if ch == "\\" and not in_single:
+        escaped = True
+        i += 1
+        continue
+
+    if ch == "'" and not in_double:
+        in_single = not in_single
+        i += 1
+        continue
+
+    if ch == '"' and not in_single:
+        in_double = not in_double
+        i += 1
+        continue
+
+    if not in_single:
+        if ch == "`":
+            raise SystemExit(0)
+        if ch == "$" and i + 1 < len(cmd) and cmd[i + 1] == "(":
+            raise SystemExit(0)
+
+    i += 1
+
+raise SystemExit(1)
+PY
+}
+
+# -----------------------------------------------------------------------------
 # is_allowed_doc_path  (PATH-01)
 # Return 0 (allow) if the given path is under .planning/ or docs/.
 # Strips a single leading "./" prefix to normalize "./planning/..." etc.
@@ -154,11 +390,67 @@ first_three_tokens() {
 # -----------------------------------------------------------------------------
 is_allowed_doc_path() {
   local path="$1"
+  local root
   [[ -z "$path" ]] && return 1
-  # Normalize: strip a single leading "./" prefix.
-  path="${path#./}"
-  [[ "$path" == .planning/* ]] && return 0
-  [[ "$path" == docs/* ]] && return 0
+
+  root="$(sidekick_project_root)" || return 1
+
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$root" "$path" <<'PY'
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1]).resolve()
+raw = Path(sys.argv[2])
+if not raw.is_absolute():
+    raw = root / raw
+
+real = raw.resolve(strict=False)
+for subdir in (root / ".planning", root / "docs"):
+    try:
+        real.relative_to(subdir.resolve(strict=False))
+    except ValueError:
+        continue
+    else:
+        sys.exit(0)
+sys.exit(1)
+PY
+    return $?
+  fi
+  return 1
+}
+
+# -----------------------------------------------------------------------------
+# is_within_project_root
+# Return 0 when the supplied path resolves inside CLAUDE_PROJECT_DIR.
+# Used to scope L3 takeover direct file tools to the current project tree.
+# -----------------------------------------------------------------------------
+is_within_project_root() {
+  local path="$1"
+  local root
+  [[ -z "$path" ]] && return 1
+
+  root="$(sidekick_project_root)" || return 1
+
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$root" "$path" <<'PY'
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1]).resolve()
+raw = Path(sys.argv[2])
+if not raw.is_absolute():
+    raw = root / raw
+
+real = raw.resolve(strict=False)
+try:
+    real.relative_to(root)
+except ValueError:
+    sys.exit(1)
+sys.exit(0)
+PY
+    return $?
+  fi
   return 1
 }
 
@@ -168,20 +460,28 @@ is_allowed_doc_path() {
 # Includes gh read-only sub-commands (ENF-05).
 # -----------------------------------------------------------------------------
 is_read_only() {
-  local cmd first first3
+  local cmd first first3 backtick=$'\x60'
   cmd="$1"
   # A command with a write redirect is never read-only, regardless of its
   # first token (e.g. `echo hi > /tmp/out` is mutating).
   if has_write_redirect "$cmd"; then
     return 1
   fi
-  # `sed -i` and `awk -i inplace` mutate files even though sed/awk are in
-  # the single-word read-only list below. Reject them here so decide_bash's
-  # ordered dispatch (read-only check before mutating check) still denies.
-  if [[ "$cmd" =~ (^|[[:space:]])sed[[:space:]]+-i ]] || [[ "$cmd" =~ (^|[[:space:]])awk[[:space:]]+-i[[:space:]]+inplace ]]; then
+  # Nested shell execution constructs are treated as mutating because they can
+  # hide arbitrary writes inside an otherwise harmless-looking outer command.
+  if has_unquoted_command_substitution "$cmd"; then
     return 1
   fi
   first="$(first_token "$cmd")"
+  case "${first%% *}" in
+    env|command|xargs)
+      wrapper_is_read_only "$cmd" && return 0
+      return 1
+      ;;
+  esac
+  if [[ "${first%% *}" = "find" ]] && [[ "$cmd" =~ (^|[[:space:]])find[[:space:]].*(-exec|-execdir|-ok|-delete)([[:space:]]|$) ]]; then
+    return 1
+  fi
   case "$first" in
     "git status"|"git log"|"git diff"|"git show"|"git branch"|"git remote"|"git rev-parse"|"git ls-files"|"git stash list") return 0 ;;
     "forge conversation"|"forge --version"|"forge --help"|"forge info") return 0 ;;
@@ -197,8 +497,8 @@ is_read_only() {
     ls|la|ll|pwd|cd|echo|printf|cat|head|tail|wc|file|stat|tree|diff|cmp) return 0 ;;
     grep|egrep|fgrep|rg|ag|ack|find|fd|locate|which|whereis|type|command) return 0 ;;
     test|'[') return 0 ;;
-    env|printenv|whoami|id|hostname|date|uname) return 0 ;;
-    jq|awk|sort|uniq|column|tr|cut|sed|xargs) return 0 ;;
+    printenv|whoami|id|hostname|date|uname) return 0 ;;
+    jq|awk|sort|uniq|column|tr|cut|sed) return 0 ;;
   esac
   return 1
 }
@@ -210,8 +510,17 @@ is_read_only() {
 # Includes gh mutating sub-commands (ENF-05).
 # -----------------------------------------------------------------------------
 is_mutating() {
-  local cmd first first3
+  local cmd first first3 backtick=$'\x60'
   cmd="$1"
+  # Nested shell execution is mutating because it can execute arbitrary code
+  # that the outer token classifier would otherwise miss.
+  if has_unquoted_command_substitution "$cmd"; then
+    return 0
+  fi
+  # Shell execution wrappers are mutating when they are asked to run code.
+  if [[ "$cmd" =~ (^|[[:space:]])(sh|bash|zsh|fish|dash|ksh)[[:space:]]+-c([[:space:]]|$) ]]; then
+    return 0
+  fi
   first="$(first_token "$cmd")"
   # Two-word git mutators.
   case "$first" in
@@ -227,7 +536,7 @@ is_mutating() {
     |"gh repo clone"|"gh repo fork") return 0 ;;
   esac
   case "${first%% *}" in
-    rm|rmdir|mv|cp|ln|chmod|chown|chgrp|touch|mkdir) return 0 ;;
+    rm|rmdir|mv|cp|ln|chmod|chown|chgrp|touch|mkdir|tee) return 0 ;;
     npm|pnpm|yarn|bundle|pip|gem|cargo|go) return 0 ;;
     tar|zip|unzip|gunzip|gzip) return 0 ;;
     systemctl|service|launchctl|brew|apt|apt-get|yum|dnf) return 0 ;;
@@ -252,11 +561,18 @@ is_mutating() {
 # -----------------------------------------------------------------------------
 has_mutating_chain_segment() {
   local cmd="$1" seg
-  while IFS= read -r seg; do
-    seg="${seg#"${seg%%[! ]*}"}"  # ltrim whitespace
-    [[ -z "$seg" ]] && continue
-    if is_mutating "$seg"; then return 0; fi
-  done < <(printf '%s' "$cmd" | awk '{gsub(/&&|;/, "\n"); print}')
+  if command -v python3 >/dev/null 2>&1; then
+    while IFS= read -r seg; do
+      seg="${seg#"${seg%%[! ]*}"}"  # ltrim whitespace
+      [[ -z "$seg" ]] && continue
+      if is_mutating "$seg"; then return 0; fi
+    done < <(split_shell_segments chain "$cmd") || return 1
+    return 1
+  fi
+
+  case "$cmd" in
+    *'&&'*|*';'*|*'||'*) return 0 ;;
+  esac
   return 1
 }
 
@@ -268,10 +584,15 @@ has_mutating_chain_segment() {
 # -----------------------------------------------------------------------------
 has_mutating_pipe_segment() {
   local cmd="$1" seg
-  while IFS= read -r seg; do
-    seg="${seg#"${seg%%[! ]*}"}"  # ltrim whitespace
-    [[ -z "$seg" ]] && continue
-    if is_mutating "$seg"; then return 0; fi
-  done < <(printf '%s' "$cmd" | awk '{gsub(/\|/, "\n"); print}')
+  if command -v python3 >/dev/null 2>&1; then
+    while IFS= read -r seg; do
+      seg="${seg#"${seg%%[! ]*}"}"  # ltrim whitespace
+      [[ -z "$seg" ]] && continue
+      if is_mutating "$seg"; then return 0; fi
+    done < <(split_shell_segments pipe "$cmd") || return 1
+    return 1
+  fi
+
+  [[ "$cmd" == *"|"* ]] && return 0
   return 1
 }

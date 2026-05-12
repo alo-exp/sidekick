@@ -31,8 +31,11 @@ fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 HOME_SBX="$(mktemp -d)"
 PROJ_SBX="$(mktemp -d)"
 STUB_DIR="$HOME_SBX/bin"
+TEST_SESSION_ID="forge-test-$$"
+MARKER_DIR="$HOME_SBX/.claude/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
 trap 'rm -rf "$HOME_SBX" "$PROJ_SBX"' EXIT
-mkdir -p "$HOME_SBX/.claude" "$STUB_DIR"
+mkdir -p "$MARKER_DIR" "$STUB_DIR"
 
 cat > "$STUB_DIR/forge" <<'STUB'
 #!/usr/bin/env bash
@@ -40,17 +43,18 @@ exit 0
 STUB
 chmod +x "$STUB_DIR/forge"
 
-touch "$HOME_SBX/.claude/.forge-delegation-active"
+touch "$MARKER_FILE"
 
 STUB_PATH="$STUB_DIR:$PATH"
 
 run_enf() {
   HOME="$HOME_SBX" CLAUDE_PROJECT_DIR="$PROJ_SBX" PATH="$STUB_PATH" \
+    SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" \
     bash "$ENFORCER" <<< "$1" 2>/dev/null
 }
 
 run_surf() {
-  HOME="$HOME_SBX" bash "$SURFACE" <<< "$1" 2>/dev/null
+  HOME="$HOME_SBX" SIDEKICK_TEST_SESSION_ID="$TEST_SESSION_ID" bash "$SURFACE" <<< "$1" 2>/dev/null
 }
 
 # =============================================================================
@@ -299,12 +303,46 @@ _valid_uuid="11111111-2222-3333-4444-555555555555"
 _j='{"tool_name":"Bash","tool_input":{"command":"FOO=forge_trap forge -p \"task\""}}'
 _out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_valid_uuid" run_enf "$_j")"
 _cmd="$(echo "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
-# Expect: "FOO=forge_trap forge --conversation-id 1111… --verbose -p "task" …pipes"
-if [[ "$_cmd" == "FOO=forge_trap forge --conversation-id $_valid_uuid --verbose -p \"task\""* ]]; then
+# Expect: the env prefix is stripped, not preserved, and the prompt remains intact.
+if [[ "$_cmd" == "forge --conversation-id $_valid_uuid --verbose -p task"* ]] \
+   && [[ "$_cmd" != *"FOO=forge_trap"* ]]; then
   pass "test_env_prefix_with_forge_inside_value"
 else
   fail "test_env_prefix_with_forge_inside_value" "cmd='$_cmd'"
 fi
+
+# -----------------------------------------------------------------------------
+# test_readonly_wrapper_commands
+# Benign wrapper forms should still pass through when they are read-only.
+# -----------------------------------------------------------------------------
+echo "=== test_readonly_wrapper_commands ==="
+_all=1
+for _c in 'command -v jq' 'env | sort' 'env grep foo bar.txt' 'xargs echo hello'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  if [ -n "$_out" ]; then
+    fail "test_readonly_wrapper_commands[$_c]" "got='$_out'"
+    _all=0
+  fi
+done
+[ "$_all" = "1" ] && pass "test_readonly_wrapper_commands"
+
+# -----------------------------------------------------------------------------
+# test_nested_shell_and_recursive_wrapper_denied
+# Nested shell execution and recursive wrapper forms should be denied.
+# -----------------------------------------------------------------------------
+echo "=== test_nested_shell_and_recursive_wrapper_denied ==="
+_all=1
+for _c in 'echo $(rm foo)' 'command -p rm foo' 'xargs find -delete' 'env | sh -c "rm foo"'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(echo "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ]; then
+    fail "test_nested_shell_and_recursive_wrapper_denied[$_c]" "dec='$_dec' out='$_out'"
+    _all=0
+  fi
+done
+[ "$_all" = "1" ] && pass "test_nested_shell_and_recursive_wrapper_denied"
 
 # test_idempotent_passthrough_rejects_invalid_uuid
 # SENTINEL L2 extension: when a pre-existing --conversation-id value fails

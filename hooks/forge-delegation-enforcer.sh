@@ -12,11 +12,14 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-MARKER_FILE="${HOME}/.claude/.forge-delegation-active"
-
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=hooks/lib/enforcer-utils.sh
 source "${HOOK_DIR}/lib/enforcer-utils.sh"
+# shellcheck source=hooks/lib/sidekick-registry.sh
+source "${HOOK_DIR}/lib/sidekick-registry.sh"
+
+SIDEKICK_NAME="forge"
+MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
 
 # gen_uuid — lowercase RFC 4122 UUID. Honors SIDEKICK_TEST_UUID_OVERRIDE (tests only).
 gen_uuid() {
@@ -60,23 +63,38 @@ deny_direct_edit() {
 }
 
 # PATH-01/02/03: .planning/** and docs/** edits pass through when /forge is active.
+# L3 takeover extends direct file tools to the current project tree only.
 decide_write_edit() {
   local tool_input_json="$1"
   local file_path
   file_path="$(printf '%s' "$tool_input_json" | jq -r '.file_path // .path // empty')"
+  if [[ "${FORGE_LEVEL_3:-}" == "1" ]] && is_within_project_root "$file_path"; then
+    return 0
+  fi
   if is_allowed_doc_path "$file_path"; then
     return 0
   fi
   deny_direct_edit
 }
 
-decide_notebook_edit() { deny_direct_edit; }
+decide_notebook_edit() {
+  local tool_input_json="$1"
+  local file_path
+  file_path="$(printf '%s' "$tool_input_json" | jq -r '.file_path // .path // empty')"
+  if [[ "${FORGE_LEVEL_3:-}" == "1" ]] && is_within_project_root "$file_path"; then
+    return 0
+  fi
+  deny_direct_edit
+}
 
 # ENF-07: deny mcp__filesystem__* write tools (with path allowlist).
 decide_mcp_write() {
   local tool_input_json="$1"
   local file_path
   file_path="$(printf '%s' "$tool_input_json" | jq -r '.path // .file_path // empty')"
+  if [[ "${FORGE_LEVEL_3:-}" == "1" ]] && is_within_project_root "$file_path"; then
+    return 0
+  fi
   if is_allowed_doc_path "$file_path"; then
     return 0
   fi
@@ -85,13 +103,27 @@ decide_mcp_write() {
 
 # Audit index + activation-lifecycle helpers.
 resolve_forge_dir() {
-  printf '%s/.forge' "${CLAUDE_PROJECT_DIR:-$PWD}"
+  local dir real_dir
+  dir="$(sidekick_project_root)/.forge"
+  if [[ -e "$dir" || -L "$dir" ]]; then
+    if [[ -L "$dir" ]]; then
+      return 1
+    fi
+    real_dir="$(realpath "$dir" 2>/dev/null || readlink -f "$dir" 2>/dev/null || true)"
+    [[ "$real_dir" = "$dir" ]] || return 1
+  fi
+  printf '%s' "$dir"
 }
 
 ensure_forge_dir_and_idx() {
-  local dir
-  dir="$(resolve_forge_dir)"
+  local dir real_dir
+  dir="$(resolve_forge_dir)" || return 1
+  [[ -n "$dir" ]] || return 1
   mkdir -p "$dir" 2>/dev/null || return 1
+  real_dir="$(realpath "$dir" 2>/dev/null || readlink -f "$dir" 2>/dev/null || true)"
+  [[ -n "$real_dir" ]] || return 1
+  [[ "$real_dir" = "$dir" ]] || return 1
+  [[ -L "$dir/conversations.idx" ]] && return 1
   touch -a "$dir/conversations.idx" 2>/dev/null || return 1
   return 0
 }
@@ -99,7 +131,8 @@ ensure_forge_dir_and_idx() {
 # db_precheck — sentinel-gated health check. Returns 0 if DB writable.
 db_precheck() {
   local dir sentinel
-  dir="$(resolve_forge_dir)"
+  dir="$(resolve_forge_dir)" || return 1
+  [[ -n "$dir" ]] || return 1
   sentinel="$dir/.db_check_ok"
   if [[ -f "$sentinel" ]] && ! [[ "$MARKER_FILE" -nt "$sentinel" ]]; then
     return 0
@@ -140,8 +173,10 @@ append_idx_row() {
   local uuid hint dir idx
   uuid="$1"
   hint="$2"
-  dir="$(resolve_forge_dir)"
+  dir="$(resolve_forge_dir)" || return 1
+  [[ -n "$dir" ]] || return 1
   idx="$dir/conversations.idx"
+  [[ -L "$idx" ]] && return 1
   if [[ -f "$idx" ]] && grep -qF "$uuid" "$idx" 2>/dev/null; then
     return 0
   fi
@@ -157,7 +192,56 @@ append_idx_row() {
 
 # Enforcer-specific helpers (not in lib).
 has_conversation_id() {
-  [[ "$1" =~ (^|[[:space:]])--conversation-id([[:space:]]|=) ]]
+  local cmd="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$cmd" <<'PY'
+import shlex
+import sys
+
+cmd = sys.argv[1]
+try:
+    tokens = shlex.split(cmd, posix=True)
+except Exception:
+    raise SystemExit(1)
+
+if len(tokens) < 2 or tokens[0] != "forge":
+    raise SystemExit(1)
+
+for token in tokens[1:]:
+    if token == "--conversation-id" or token.startswith("--conversation-id="):
+        sys.exit(0)
+
+sys.exit(1)
+PY
+}
+
+extract_conversation_id() {
+  local cmd="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$cmd" <<'PY'
+import shlex
+import sys
+
+cmd = sys.argv[1]
+try:
+    tokens = shlex.split(cmd, posix=True)
+except Exception:
+    raise SystemExit(1)
+
+if len(tokens) < 2 or tokens[0] != "forge":
+    raise SystemExit(1)
+
+for index, token in enumerate(tokens[1:], start=1):
+    if token == "--conversation-id":
+        if index + 1 < len(tokens):
+            print(tokens[index + 1])
+        raise SystemExit(0)
+    if token.startswith("--conversation-id="):
+        print(token.split("=", 1)[1])
+        raise SystemExit(0)
+
+raise SystemExit(1)
+PY
 }
 
 is_forge_p() {
@@ -178,13 +262,26 @@ decide_bash() {
 
   # ENF-04: export any leading env-var prefix assignments (e.g. FORGE_LEVEL_3=1)
   # into this hook's environment so the bypass check at step 3 can see them.
+  # FORGE_LEVEL_3 is intentionally NOT imported from the command text; it must
+  # come from the actual process environment to avoid self-activation.
   export_env_prefix "$cmd"
 
+  # 1b. ENF-06: Chain bypass — deny if any &&/; segment is mutating.
+  # This runs before the forge -p rewrite so a shell tail like `; rm -rf`
+  # cannot ride along behind an otherwise valid delegation request.
+  if has_mutating_chain_segment "$cmd"; then
+    if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then return 0; fi
+    emit_decision "deny" "Sidekick /forge mode: command chain contains a mutating segment. Use forge -p or set FORGE_LEVEL_3=1 for Level 3 takeover." ""
+    return 0
+  fi
+
   # 1. forge -p rewrite / idempotent passthrough.
-  if is_forge_p "$cmd"; then
-    if has_conversation_id "$cmd"; then
+  local stripped
+  stripped="$(strip_env_prefix "$cmd")"
+  if is_forge_p "$stripped"; then
+    if has_conversation_id "$stripped"; then
       local existing_uuid
-      existing_uuid="$(printf '%s' "$cmd" | sed -n 's/.*--conversation-id[[:space:]=]\([^[:space:]]*\).*/\1/p')"
+      existing_uuid="$(extract_conversation_id "$stripped" || true)"
       if [[ -z "$existing_uuid" ]] || ! validate_uuid "$existing_uuid"; then
         emit_decision "deny" "Sidekick: --conversation-id value is not a valid lowercase RFC 4122 UUID. Supply a valid UUID or omit --conversation-id to let the hook auto-generate one." ""
         return 0
@@ -196,33 +293,96 @@ decide_bash() {
       return 0
     fi
     ensure_forge_dir_and_idx || true
-    local uuid rewritten pipes hint stripped env_prefix
+    local uuid rewritten hint safe_rewrite project_root
     uuid="$(gen_uuid)"
     if ! validate_uuid "$uuid"; then
       emit_decision "deny" "Sidekick: refusing to inject malformed UUID (check SIDEKICK_TEST_UUID_OVERRIDE)." ""
       return 0
     fi
-    stripped="$(strip_env_prefix "$cmd")"
-    env_prefix="${cmd%"$stripped"}"
-    rewritten="${env_prefix}forge --conversation-id ${uuid} --verbose ${stripped#forge }"
-    pipes=" 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
-    rewritten="${rewritten}${pipes}"
+    project_root="$(sidekick_project_root)"
+    safe_rewrite="$(python3 - "$uuid" "$stripped" "$project_root" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+uuid, cmd, root_arg = sys.argv[1:4]
+root = Path(root_arg).resolve()
+try:
+    lexer = shlex.shlex(cmd, posix=True, punctuation_chars='|;&()<>')
+    lexer.whitespace_split = True
+    tokens = list(lexer)
+except Exception:
+    raise SystemExit(1)
+
+if len(tokens) < 3 or tokens[0] != "forge" or tokens[1] != "-p":
+    raise SystemExit(1)
+
+tail = None
+if "|" in tokens:
+    pipe_index = tokens.index("|")
+    left = tokens[:pipe_index]
+    tail = tokens[pipe_index + 1:]
+    if not tail or "|" in tail:
+        raise SystemExit(1)
+else:
+    left = tokens
+
+if len(left) < 3 or left[0] != "forge" or left[1] != "-p":
+    raise SystemExit(1)
+
+for tok in left:
+    if tok in {";", "&&", "||", "|", "&", ">", "<", "(", ")"}:
+        raise SystemExit(1)
+
+prompt = " ".join(left[2:])
+if not prompt:
+    raise SystemExit(1)
+
+rewritten = "forge --conversation-id {} --verbose -p {}".format(uuid, shlex.quote(prompt))
+rewritten += " 2> >(sed 's/^/[FORGE-LOG] /' >&2) | sed 's/^/[FORGE] /'"
+
+if tail is not None:
+    if tail[0] != "tee":
+        raise SystemExit(1)
+    for tok in tail[1:]:
+        if tok in {";", "&&", "||", "|", "&", ">", "<", "(", ")"}:
+            raise SystemExit(1)
+    file_args = [tok for tok in tail[1:] if not tok.startswith("-")]
+    if not file_args:
+        raise SystemExit(1)
+    for arg in file_args:
+        raw = Path(arg)
+        if not raw.is_absolute():
+            raw = root / raw
+        resolved = raw.resolve(strict=False)
+        allowed = False
+        for sub in (root / ".planning", root / "docs"):
+            try:
+                resolved.relative_to(sub.resolve(strict=False))
+            except ValueError:
+                continue
+            else:
+                allowed = True
+                break
+        if not allowed:
+            raise SystemExit(1)
+    rewritten += " | " + " ".join(shlex.quote(tok) for tok in tail)
+
+print(rewritten)
+PY
+)" || {
+      emit_decision "deny" "Sidekick: refusing to rewrite malformed forge -p invocation." ""
+      return 0
+    }
+    rewritten="${safe_rewrite}"
     emit_decision "allow" "Sidekick: injected --conversation-id + --verbose + output prefixing." "$rewritten"
     hint="$(extract_task_hint "$cmd")"
     append_idx_row "$uuid" "$hint"
     return 0
   fi
 
-  # 1b. ENF-06: Chain bypass — deny if any &&/; segment is mutating.
-  if has_mutating_chain_segment "$cmd"; then
-    if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then return 0; fi
-    emit_decision "deny" "Sidekick /forge mode: command chain contains a mutating segment. Use forge -p or set FORGE_LEVEL_3=1 for Level 3 takeover." ""
-    return 0
-  fi
-
   # 1c. ENF-08: Pipe bypass — deny if any | segment is mutating.
-  # is_forge_p check above already returned early for forge -p pipes;
-  # this scanner only runs for non-forge commands.
+  # forge -p is handled above so its output pipe prefixing can remain intact.
   if has_mutating_pipe_segment "$cmd"; then
     if [[ "${FORGE_LEVEL_3:-}" == "1" ]]; then return 0; fi
     emit_decision "deny" "Sidekick /forge mode: pipe chain contains a mutating segment. Use forge -p or set FORGE_LEVEL_3=1 for Level 3 takeover." ""
@@ -268,7 +428,7 @@ main() {
   fi
   tool_input="$(printf '%s' "$input" | jq -c '.tool_input // {}')"
 
-  if [[ ! -f "$MARKER_FILE" ]]; then
+  if [[ -z "$MARKER_FILE" ]] || [[ ! -f "$MARKER_FILE" ]]; then
     exit 0
   fi
 

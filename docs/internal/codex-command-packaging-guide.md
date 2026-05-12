@@ -58,10 +58,10 @@ To keep deterministic order across picker surfaces:
 3. Avoid duplicate/near-duplicate canonical+bridge skills unless compatibility truly requires it.
 4. Remove obsolete skills instead of leaving stale entries in `skills/`.
 
-For Sidekick, the canonical 4-skill Codex surface is:
+For Sidekick, the canonical 4-skill Kay surface is:
 
-1. `sidekick:codex-delegate`
-2. `sidekick:codex-stop`
+1. `sidekick:kay-delegate`
+2. `sidekick:kay-stop`
 3. `sidekick:forge-delegate`
 4. `sidekick:forge-stop`
 

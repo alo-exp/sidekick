@@ -29,6 +29,16 @@ grep -q '## Activation' "${SKILL_FILE}" && assert_pass "Activation section prese
 echo "=== T3: Health Check subsection present ==="
 grep -q 'Health Check' "${SKILL_FILE}" && assert_pass "Health Check subsection present" || assert_fail "Health Check" "not found"
 
+echo "=== T3b: Credentials schema is array-only ==="
+if grep -q "type == \\\"array\\\"" "${SKILL_FILE}" \
+  && grep -q 'auth_details' "${SKILL_FILE}" \
+  && ! grep -q 'elif type == "object"' "${SKILL_FILE}" \
+  && ! grep -q '.api_key' "${SKILL_FILE}"; then
+  assert_pass "Credentials schema is array-only"
+else
+  assert_fail "Credentials schema" "legacy flat schema support still present"
+fi
+
 echo "=== T4: Deactivation section present ==="
 grep -q 'Deactivat' "${SKILL_FILE}" && assert_pass "Deactivation section present" || assert_fail "Deactivation" "not found"
 

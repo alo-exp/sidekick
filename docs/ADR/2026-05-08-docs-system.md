@@ -1,6 +1,6 @@
 # ADR 2026-05-08: Docs System Upgrade
 
-Status: Accepted  
+Status: Accepted
 **Date:** 2026-05-08
 
 ## Context

@@ -53,7 +53,7 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 - Verify `run_in_background: true` + Monitor guidance for tasks >10s is present with foreground fallback noted
 - Confirm model references use the verified ID `qwen/qwen3-coder-plus` — not `qwen3.6-plus` or any unverified alias
 
-### Review Guidance — `skills/forge.md`  (legacy flat skill)
+### Review Guidance — `skills/forge/SKILL.md`
 - Verify it is consistent with `skills/forge/SKILL.md` or marked deprecated with a pointer to the canonical file
 - Confirm no stale model IDs (`qwen3.6-plus`, `gemma-4-31b`) are referenced without a validity note
 
@@ -71,7 +71,7 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
 - Confirm the 20-line STATUS cap is enforced
 
 ### Review Guidance — delegation lifecycle skills
-- Verify only the canonical 4-skill surface remains: `codex-delegate`, `codex-stop`, `forge-delegate`, `forge-stop`
+- Verify only the canonical 4-skill surface remains: `kay-delegate`, `kay-stop`, `forge-delegate`, `forge-stop`
 - Verify removed skill files stay deleted: `skills/codex/SKILL.md`, `skills/codex-history/SKILL.md`, `skills/forge-history/SKILL.md`
 - Verify stop workflows only clear marker state and do not delete conversation indexes
 
@@ -164,7 +164,7 @@ Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-
 - **UUID injection**: `SKILL.md` says not to add `--conversation-id` manually; `forge-delegation-enforcer.sh` injects it automatically. These two instructions are consistent and not contradictory.
 - **Fallback ladder**: The L1/L2/L3 escalation triggers in `SKILL.md` match the ladder structure; no step references a command or file that doesn't exist
 - **Completion markers**: `[FORGE]`, `[FORGE-LOG]`, `[FORGE-SUMMARY]` markers are used consistently across `SKILL.md`, both hooks, and `output-styles/forge.md`
-- **Delegation lifecycle skills**: `/forge-stop` and `/codex-stop` are referenced in canonical skill files. No stale references.
+- **Delegation lifecycle skills**: `/forge-stop` and `/kay-stop` are referenced in canonical skill files. No stale references.
 - **No obsolete references**: Search all files for removed commands, deprecated paths, old model IDs (`qwen3.6-plus`, `gemma-4-31b-it` without context), or old API key schemas
 
 ### Dimension B — Test Suite Coverage
@@ -258,7 +258,7 @@ Read the help site pages and verify/update:
 - **Getting Started**: Install steps, activation sequence, and health check output match current behaviour
 - **Core Concepts**: 5-field prompt format, fallback ladder, AGENTS.md loop are accurately described
 - **Delegation Workflow**: UUID auto-injection noted; no instruction to add `--conversation-id` manually
-- **Command/skill reference**: `/forge-stop` and `/codex-stop` syntax matches the canonical `skills/*/SKILL.md` files
+- **Command/skill reference**: `/forge-stop` and `/kay-stop` syntax matches the canonical `skills/*/SKILL.md` files
 - **Troubleshooting**: Known errors (402 insufficient credits, 429 rate limit, PATH not found, missing `tools: ["*"]`) are present and current
 
 ### Step 4 — CHANGELOG.md *(parallel)*
@@ -300,9 +300,9 @@ All suites in `tests/run_all.bash` must pass with 0 failures. Then push to main 
 
 **Dispatch in parallel** — run `/anthropic-skills:audit-security-of-skill` targeting the plugin root AND spawn one subagent per target below simultaneously. Collect all findings, fix all blocking issues, then re-run until clean.
 
-### Target 1 — `skills/forge/SKILL.md` *(parallel)*
+### Target 1 — `skills/forge/SKILL.md` and `skills/codex-delegate/SKILL.md` *(parallel)*
 
-This file controls Claude's behaviour during every Forge delegation session.
+These files control Claude's behaviour during every Forge and Kay delegation session.
 
 1. **Prompt injection surface**: Review every section for content that could be manipulated by Forge task output to alter Claude's subsequent behaviour. The highest-risk surface is the AGENTS.md extraction loop — verify Claude treats Forge output as DATA to be summarised, not as instructions to execute.
 
@@ -313,6 +313,8 @@ This file controls Claude's behaviour during every Forge delegation session.
 4. **Fallback L3 scope**: Verify the L3 Take Over fallback (Claude acts directly) is scoped to the failing subtask only — it must not grant Claude broad file-system write access outside the project directory.
 
 5. **Injection budget enforcement**: Verify the skill injection budget (≤2 skills) cannot be exceeded by a crafted Forge task output that includes skill invocation instructions in its STATUS block.
+
+6. **Kay delegate parity**: Verify the active Kay implementation skill mirrors the same prompt-injection, subprocess-scope, and fallback-scope guarantees, and that it uses the Kay session-scoped marker and `.kay/conversations.idx` paths rather than Claude-scoped state.
 
 ### Target 2 — `hooks/forge-delegation-enforcer.sh` *(parallel)*
 
@@ -357,7 +359,7 @@ After all three targets are clean with no blocking issues:
 ## Release
 
 After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`,
-and after the full Forge/Codex live pyramid has been run twice:
+and after the full Forge/Kay live pyramid has been run twice:
 
 ```bash
 # Verify all 4 distinct markers are present (handles duplicated rows)

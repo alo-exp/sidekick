@@ -44,7 +44,7 @@ Mapped to phases in `.planning/milestones/v1.4.0-REQUIREMENTS.md`. All validated
 | Live visibility | `VIS-01..04` | `run_in_background: true` + Monitor for >10s tasks, foreground fallback for Bedrock/Vertex/Foundry |
 | Progress surface | `SURF-01..05` | PostToolUse STATUS-block parsing, ANSI strip, stop-hint emission, 20-line cap |
 | Visual distinction | `STYLE-01..04` | Output-style narration contract — `[FORGE]` / `[FORGE-LOG]` / `[FORGE-SUMMARY]` markers |
-| Delegation lifecycle skills | `REPLAY-01..04` | Canonical `forge-stop` and `codex-stop` stop workflows, with indexed conversation traces preserved in `.forge/.codex` ledgers |
+| Delegation lifecycle skills | `REPLAY-01..04` | Canonical `forge-stop` and `kay-stop` stop workflows, with indexed conversation traces preserved in `.forge/.kay` ledgers |
 | Activation lifecycle | `ACT-01..04` | DB-writability check, idx init, output style switch/revert, SKILL.md STEP 4/5/6 documentation |
 | Plugin manifest | `MAN-01..04` | Version bumped to 1.2.0, hooks registered, commands + output styles registered, `_integrity` refreshed |
 | v1.2 test coverage | `TEST-V12-01..05` | 47 new assertions across enforcer hook, progress surface, UUID format, history pruning, full v1.2 flow |

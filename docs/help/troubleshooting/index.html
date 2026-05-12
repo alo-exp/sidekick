@@ -183,30 +183,32 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p><strong>Fix:</strong></p>
       <ul>
         <li>Verify your key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
-        <li>Check your key is in <code>~/forge/.credentials.json</code> under <code>api_key</code></li>
+        <li>Check your key is in <code>~/forge/.credentials.json</code> inside an entry's <code>auth_details.api_key</code></li>
         <li>Confirm provider and model are set in <code>~/forge/.forge.toml</code></li>
         <li>Confirm you have credits — free tier has rate limits</li>
       </ul>
       <div class="code-label">fix: update ~/forge/.credentials.json</div>
-      <div class="code-block">{ "api_key": <span style="color:var(--amber)">"sk-or-your-key-here"</span> }</div>
+      <div class="code-block">[
+  { "id": <span style="color:var(--amber)">"open_router"</span>, "auth_details": { "api_key": <span style="color:var(--amber)">"sk-or-your-key-here"</span> } }
+]</div>
 
       <h3>✗ Model not available</h3>
-      <p><strong>Cause:</strong> The <code>forge/forge-code</code> model is temporarily unavailable or your account tier doesn't include it.</p>
+      <p><strong>Cause:</strong> The <code>qwen/qwen3-coder-plus</code> model is temporarily unavailable or your account tier doesn't include it.</p>
       <p><strong>Fix:</strong> Check <a href="https://openrouter.ai/models" target="_blank">openrouter.ai/models</a> for availability. If unavailable, wait and retry — ForgeCode has high uptime.</p>
 
       <h3>✗ Bootstrap skills not loaded</h3>
       <p><strong>Cause:</strong> <code>.forge/skills/</code> directory is missing or corrupted.</p>
       <p><strong>Fix:</strong> Reinstall Sidekick to restore bootstrap skills:</p>
-      <div class="code-block"><span class="cmd">/plugin install alo-exp/sidekick</span></div>
+      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span></div>
 
       <h2 id="openrouter"><span class="issue-badge badge-config"><i data-lucide="settings"></i> Config</span> OpenRouter Configuration</h2>
 
       <h3>API key set but not persisting</h3>
       <p><strong>Cause:</strong> <code>~/forge/.credentials.json</code> may not have been written correctly.</p>
-      <p><strong>Fix:</strong> Check if <code>~/forge/.credentials.json</code> exists and contains an <code>api_key</code> field. If not, follow the STEP 0A setup in <code>skills/forge.md</code> to recreate it.</p>
+      <p><strong>Fix:</strong> Check if <code>~/forge/.credentials.json</code> exists and contains at least one credential entry with <code>auth_details.api_key</code>. If not, follow the STEP 0A setup in <code>skills/forge/SKILL.md</code> to recreate it.</p>
 
       <h3>Wrong model being used</h3>
-      <p><strong>Fix:</strong> Edit <code>.forge.toml</code> and set <code>model = "forge/forge-code"</code> explicitly. Other models may not have Forge's agentic coding capabilities.</p>
+      <p><strong>Fix:</strong> Edit <code>~/forge/.forge.toml</code> and set <code>provider_id = "open_router"</code> plus <code>model_id = "qwen/qwen3-coder-plus"</code> explicitly. Other models may not have Forge's agentic coding capabilities.</p>
 
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
@@ -232,7 +234,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <h2 id="payment-required"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 402 Payment Required</h2>
 
       <h3>OpenRouter account has no credits</h3>
-      <p><strong>Cause:</strong> Your OpenRouter account balance is zero or below the minimum required to run the <code>forge/forge-code</code> model. This model is not on the free tier.</p>
+      <p><strong>Cause:</strong> Your OpenRouter account balance is zero or below the minimum required to run the <code>qwen/qwen3-coder-plus</code> model. This model is not on the free tier.</p>
       <p><strong>Symptoms:</strong> Health check passes (credentials valid) but the first task delegation immediately returns 402.</p>
       <p><strong>Fix:</strong></p>
       <ul>
@@ -304,7 +306,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <h2 id="reinstall"><span class="issue-badge badge-config"><i data-lucide="download"></i> Reset</span> Reinstall / Full Reset</h2>
 
       <p>To do a clean reinstall of Sidekick (preserves AGENTS.md and session logs):</p>
-      <div class="code-block"><span class="cmd">/plugin install alo-exp/sidekick</span>
+      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span>
 <span class="comment"># This overwrites skills/ and .forge/skills/ but not AGENTS.md or docs/sessions/</span></div>
 
       <p>To fully reset your API credentials (e.g. to change your API key):</p>

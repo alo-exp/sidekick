@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Codex Delegation Enforcer (PreToolUse hook)
+# Sidekick Plugin — Kay Delegation Enforcer (PreToolUse hook)
 # =============================================================================
 
 set -euo pipefail
 IFS=$'\n\t'
-
-MARKER_FILE="${HOME}/.claude/.codex-delegation-active"
-SIDEKICK_NAME="codex"
 
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=hooks/lib/enforcer-utils.sh
 source "${HOOK_DIR}/lib/enforcer-utils.sh"
 # shellcheck source=hooks/lib/sidekick-registry.sh
 source "${HOOK_DIR}/lib/sidekick-registry.sh"
+
+SIDEKICK_NAME="kay"
+MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
 
 gen_uuid() {
   sidekick_gen_uuid
@@ -58,7 +58,7 @@ resolve_codex_binary_name() {
 }
 
 deny_reason() {
-  printf 'Sidekick /codex mode is active: direct file edits are delegated to Codex. Use: Bash { command: "%s --full-auto \"<your task description>\"" } or `code exec` / `coder exec` if `codex` is unavailable.' "$(delegate_command)"
+  printf 'Sidekick /kay mode is active: direct file edits are delegated to Kay. Use: Bash { command: "%s --full-auto \"<your task description>\"" } or `code exec` / `coder exec` if `codex` is unavailable.' "$(delegate_command)"
 }
 
 deny_direct_edit() {
@@ -100,25 +100,40 @@ has_codex_exec() {
 
 rewrite_codex_exec() {
   local cmd="$1"
-  local stripped env_prefix rewritten binary_name prefix_prompt original_binary remainder after_exec
+  local stripped binary_name original_binary
 
   stripped="$(strip_env_prefix "$cmd")"
-  env_prefix="${cmd%"$stripped"}"
   original_binary="$(printf '%s' "$stripped" | awk '{print $1}')"
   binary_name="$(resolve_codex_binary_name || printf '%s' "$original_binary")"
-  remainder="${stripped#${original_binary} }"
-  after_exec="${remainder#exec }"
 
-  if printf '%s' "$stripped" | grep -q -- '--full-auto'; then
-    prefix_prompt="${binary_name} ${remainder}"
-  else
-    prefix_prompt="${binary_name} exec --full-auto ${after_exec}"
-  fi
+  python3 - "$binary_name" "$stripped" <<'PY'
+import shlex
+import sys
 
-  rewritten="${env_prefix}${prefix_prompt}"
-  rewritten="${rewritten} 2> >(sed 's/^/[CODEX-LOG] /' >&2) | sed 's/^/[CODEX] /'"
+binary_name, cmd = sys.argv[1:3]
 
-  printf '%s' "$rewritten"
+try:
+    lexer = shlex.shlex(cmd, posix=True, punctuation_chars='|;&()<>')
+    lexer.whitespace_split = True
+    tokens = list(lexer)
+except Exception:
+    raise SystemExit(1)
+
+if len(tokens) < 3 or tokens[0] not in {"codex", "code", "coder"} or tokens[1] != "exec":
+    raise SystemExit(1)
+
+for tok in tokens:
+    if tok in {";", "&&", "||", "|", "&", ">", "<", "(", ")"}:
+        raise SystemExit(1)
+
+if "--full-auto" not in tokens[2:]:
+    tokens.insert(2, "--full-auto")
+
+tokens[0] = binary_name
+rewritten = " ".join(shlex.quote(tok) for tok in tokens)
+rewritten += " 2> >(sed 's/^/[KAY-LOG] /' >&2) | sed 's/^/[KAY] /'"
+print(rewritten)
+PY
 }
 
 decide_bash() {
@@ -132,30 +147,33 @@ decide_bash() {
   if has_codex_exec "$cmd"; then
     stripped="$(strip_env_prefix "$cmd")"
     if ! resolve_codex_binary_name >/dev/null 2>&1; then
-      emit_decision "deny" "Sidekick /codex mode: Codex runtime is not on PATH. Install the Codex sidekick package and re-run /codex." ""
+      emit_decision "deny" "Sidekick /kay mode: Kay runtime is not on PATH. Install the Kay sidekick package and re-run /kay." ""
       return 0
     fi
     uuid="$(gen_uuid)"
     if ! validate_uuid "$uuid"; then
-      emit_decision "deny" "Sidekick /codex mode: refusing to record malformed audit UUID." ""
+      emit_decision "deny" "Sidekick /kay mode: refusing to record malformed audit UUID." ""
       return 0
     fi
     hint="$(sidekick_extract_exec_prompt "$stripped")"
     [[ -z "$hint" ]] && hint="(task hint unavailable)"
     sidekick_ensure_idx "$SIDEKICK_NAME" || true
     sidekick_append_idx_row "$SIDEKICK_NAME" "$uuid" "$hint"
-    rewritten="$(rewrite_codex_exec "$cmd")"
+    if ! rewritten="$(rewrite_codex_exec "$cmd")"; then
+      emit_decision "deny" "Sidekick /kay mode: refusing to rewrite malformed codex exec invocation." ""
+      return 0
+    fi
     emit_decision "allow" "Sidekick: injected --full-auto and output prefixing." "$rewritten"
     return 0
   fi
 
   if has_mutating_chain_segment "$cmd"; then
-    emit_decision "deny" "Sidekick /codex mode: command chain contains a mutating segment. Use codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+    emit_decision "deny" "Sidekick /kay mode: command chain contains a mutating segment. Use codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
     return 0
   fi
 
   if has_mutating_pipe_segment "$cmd"; then
-    emit_decision "deny" "Sidekick /codex mode: pipe chain contains a mutating segment. Use codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+    emit_decision "deny" "Sidekick /kay mode: pipe chain contains a mutating segment. Use codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
     return 0
   fi
 
@@ -164,19 +182,20 @@ decide_bash() {
   fi
 
   if is_mutating "$cmd"; then
-    emit_decision "deny" "Sidekick /codex mode: mutating command denied. Delegate via codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+    emit_decision "deny" "Sidekick /kay mode: mutating command denied. Delegate via codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
     return 0
   fi
 
-  emit_decision "deny" "Sidekick /codex mode: command could not be classified. Delegate via codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+  emit_decision "deny" "Sidekick /kay mode: command could not be classified. Delegate via codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
 }
 
 main() {
   if ! command -v jq >/dev/null 2>&1; then
-    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Sidekick /codex mode requires jq for hook enforcement. Install jq and re-run /codex."}}'
+    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Sidekick /kay mode requires jq for hook enforcement. Install jq and re-run /kay."}}'
     exit 0
   fi
 
+  [[ -n "$MARKER_FILE" ]] || exit 0
   [[ -f "$MARKER_FILE" ]] || exit 0
 
   local input tool_name tool_input

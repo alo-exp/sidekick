@@ -7,7 +7,7 @@
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
 | **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.4 |
-| **Code** | `code` | Every Code extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v0.5.4 |
+| **Kay** | `code` | Every Kay extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v0.5.4 |
 
 More sidekicks planned.
 
@@ -46,14 +46,14 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-On the next Claude session, all sidekicks install automatically.
+On the next Claude session, all sidekicks install automatically and keep themselves current on later session starts.
 
 ---
 
 ## Forge — ForgeCode Sidekick
 
 ### What it does
-- **Auto-installs** ForgeCode on first session start
+- **Auto-installs** ForgeCode on first session start and self-updates it on later session starts using Forge's native `forge update`
 - **Guides** OpenRouter API key setup (Qwen3 Coder Plus — best coding model, $0.33/$1.95/MTok)
 - **Turns Claude into an orchestrator**: Claude plans and communicates, Forge executes all file changes, tests, and commits
 - **Fallback ladder**: automatic 3-level recovery on failure — L1 Guide (reframe), L2 Handhold (decompose), L3 Take over (Claude acts directly + DEBRIEF)
@@ -61,15 +61,15 @@ On the next Claude session, all sidekicks install automatically.
 - **Skill injection**: 4 bootstrap skills (testing-strategy, code-review, security, quality-gates) auto-injected into task prompts based on task type
 - **Token optimization**: task prompts capped at 2,000 tokens with validated `.forge.toml` compaction defaults
 
-## Code — Every Code Sidekick
+## Kay — Every Kay Sidekick
 
 ### What it does
-- **Auto-installs** the Code runtime into `~/.local/bin/code` on first session start
+- **Auto-installs** the Code runtime from the latest `alo-labs/kay` installer on first session start and self-updates it on later session starts using the native `codex update` command
 - **Provides** `codex` and `coder` aliases for compatibility so Sidekick can route tasks to `code exec --full-auto`, then `codex exec --full-auto`, or fall back to `coder exec --full-auto`
 - **Uses** Every Code's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
 - **Follows** the Codex developer-doc pattern (developer mode, Docs MCP, Codex CLI) of packaging repeatable work as skills and driving implementation through a composable CLI Codex can use
 - **Defaults** to MiniMax `MiniMax-M2.7` through the packaged `~/.code/config.toml` / legacy `~/.codex/config.toml` compatibility path
-- **Keeps** a project-local audit index at `.codex/conversations.idx`; the canonical Codex workflows live in `skills/codex-delegate/SKILL.md` and `skills/codex-stop/SKILL.md`, with the legacy flat alias retained at `skills/codex-delegate.md`.
+- **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias retained at `skills/codex-delegate.md`.
 
 ### How it works
 
@@ -78,7 +78,7 @@ You → Claude (plan + communicate) → Code (implement + commit) → Claude (re
 ```
 
 Claude handles: architecture, explanations, research, code review
-Code handles: writing files, features, tests, git commits
+Kay handles: writing files, features, tests, git commits
 
 ### How it works
 
@@ -109,11 +109,11 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 ## Testing
 
-`tests/run_release.bash` chains the unit suites plus the live Forge/Codex install, smoke, and E2E gates.
+`tests/run_release.bash` chains the unit suites plus the live Forge/Kay install, smoke, E2E, and Code marketplace-install gates.
 
-| Tier | Script | Runs without Forge/Code | Purpose |
+| Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 22 suites — hook classifiers, idx audit, plugin integrity, slash commands, post-release cleanup, and Forge/Code coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 26 suites — hook classifiers, idx audit, plugin integrity, docs contract, help-site navigation, slash commands, post-release cleanup, and Forge/Kay coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
 | **Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `code --version` + trivial `code exec` round-trip against the real binary, with `codex` kept as the compatibility alias. |
@@ -125,7 +125,7 @@ The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODE
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
 
-Before any release, complete the 4-stage pre-release quality gate until it passes twice in a row, then run the full live Forge/Codex pyramid twice with both live env vars, then publish through the release flow.
+Before any release, complete the 4-stage pre-release quality gate until it passes twice in a row, then run the full live Forge/Kay pyramid twice with both live env vars, then publish through the release flow.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, docs/specs, and docs/design content stay in place.

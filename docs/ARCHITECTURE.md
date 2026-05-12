@@ -2,13 +2,13 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived). Preserved design notes live in `docs/design/`.
 
-**Plugin version:** v0.5.4 • **Target:** Claude Code harness + Forge/Code sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
+**Plugin version:** v0.5.4 • **Target:** Claude Code harness + Forge/Code / Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.6.99)
 
 ---
 
 ## System Overview
 
-Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Code (`code` / `codex` / `coder`) are the first supported sidekicks. Code is built through the Every Code extension line, not as a direct Codex fork. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
+Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Code / Kay (`code` / `codex` / `coder`) are the first supported sidekicks. Code / Kay is built through the Every Code extension line, not as a direct Codex fork. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
 
 Two roles are preserved at every layer:
 
@@ -19,9 +19,9 @@ Enforcement is three-layered so that neither the LLM nor an untrusted prompt can
 
 1. **Skill prompting** (`skills/forge/SKILL.md`, `skills/codex-delegate/SKILL.md`) — tells Claude *what* to delegate and *how* to compose the task prompt for the active sidekick.
 2. **Harness enforcement** (`hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh`, PreToolUse) — while a marker file exists, mutating `Write`/`Edit`/`NotebookEdit` tools are denied and the matching sidekick shell commands are rewritten or refused according to the active registry entry.
-3. **Progress surface** (`hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh`, PostToolUse) — parses each sidekick's terminal output, strips ANSI, emits bounded `[FORGE-SUMMARY]` or `[CODEX-SUMMARY]` additionalContext, and surfaces the matching stop hint.
+3. **Progress surface** (`hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh`, PostToolUse) — parses each sidekick's terminal output, strips ANSI, emits bounded `[FORGE-SUMMARY]` or `[KAY-SUMMARY]` additionalContext, and surfaces the matching stop hint.
 
-Result: when Forge or Codex delegation mode is active, every mutating operation is either a sidekick subprocess call (rewritten + indexed + surfaced) or a hard-deny from the harness.
+Result: when Forge or Kay delegation mode is active, every mutating operation is either a sidekick subprocess call (rewritten + indexed + surfaced) or a hard-deny from the harness.
 
 ---
 
@@ -29,17 +29,17 @@ Result: when Forge or Codex delegation mode is active, every mutating operation 
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap that installs Forge and Code runtimes and guards the session with `.installed`. |
+| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.7.2, then use each runtime's native update command when present. |
 | Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json` / `~/.Codex/hooks.json`. Touches only matching Sidekick entries, snapshots the originals under `~/.claude/.sidekick/legacy-hooks-scrub-backups/`, and can restore them with `--rollback`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
-| Skill — `codex-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Codex delegation workflow: runtime health checks, `code exec --full-auto` primary path, and `codex`/`coder` compatibility fallbacks for the Every Code extension line. |
+| Skill — `kay-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Kay delegation workflow: runtime health checks, `code exec --full-auto` primary path, and `codex`/`coder` compatibility fallbacks for the Every Code extension line. |
 | Skill — legacy orchestration | `skills/forge.md`, `skills/codex-delegate.md` | Compatibility aliases retained for legacy entry points; canonical long-form bodies live in `skills/*/SKILL.md`. |
 | Enforcer hooks | `hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh` | PreToolUse on `Write\|Edit\|NotebookEdit\|Bash`. Per-sidekick read-only allowlists, mutating-flag rejectors, command rewriters, UUID/audit injectors, and deny paths. |
 | Progress hooks | `hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh` | PostToolUse on `Bash`. No-op unless the matching marker is active. Extracts terminal summary blocks, emits styled sidekick summaries, and links the matching stop command. |
-| Audit indexes | `.forge/conversations.idx`, `.codex/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
-| Delegation lifecycle skills | `skills/codex-delegate/SKILL.md`, `skills/codex-stop/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-stop/SKILL.md` | The canonical four-skill Sidekick surface for Codex/Claude pickers. |
-| Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[CODEX]` prefixes and `[...-SUMMARY]` blocks. |
+| Audit indexes | `.forge/conversations.idx`, `.kay/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
+| Delegation lifecycle skills | `skills/codex-delegate/SKILL.md`, `skills/codex-stop/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-stop/SKILL.md` | The canonical four-skill Sidekick surface for Kay/Claude pickers. |
+| Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[KAY]` prefixes and `[...-SUMMARY]` blocks. |
 | Codex plugin manifest | `.codex-plugin/plugin.json` | v0.5.4. Skills-only packaging for Codex with shared hook wiring. |
 | Plugin manifest | `.claude-plugin/plugin.json` | v0.5.4. Points at `hooks/hooks.json`, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
@@ -63,10 +63,10 @@ Claude Code (Brain)                         harness boundary
   │          │ │  if matching marker active:     │
   │          │ │    · deny Write/Edit/NotebookEdit
   │          │ │    · rewrite Forge or Code exec
-  │          │ │    · append .forge/.codex idx   │
+  │          │ │    · append .forge/.kay idx   │
   │          │ └────────────────────────────────┤
   │          ▼                                  │
-  │     Forge or Code subprocess (Hands)      │
+  │     Forge or Code / Kay subprocess (Hands) │
   │          │  reads/writes files,             │
   │          │  runs commands, commits          │
   │          │  emits STATUS / task summary     │
@@ -74,14 +74,14 @@ Claude Code (Brain)                         harness boundary
   │  ┌─ PostToolUse progress hook ──────────────┤
   │  │  strip ANSI, parse sidekick summary      │
   │  │  emit additionalContext:                 │
-  │  │   [FORGE-SUMMARY] ... or [CODEX-SUMMARY] │
-  │  │   Stop: /forge-stop or /codex-stop
+  │  │   [FORGE-SUMMARY] ... or [KAY-SUMMARY] │
+  │  │   Stop: /forge-stop or /kay-stop
   │  └──────────────────────────────────────────┤
   │                                             │
   ▼                                             │
 User receives styled narration           ◄──────┘
   │
-  │  (later) inspect `.forge/conversations.idx` or `.codex/conversations.idx` for task traceability
+  │  (later) inspect `.forge/conversations.idx` or `.kay/conversations.idx` for task traceability
 ```
 
 ---
@@ -92,7 +92,7 @@ User receives styled narration           ◄──────┘
 2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick so Forge and Code never collide in the same project directory.
 3. **Leverage each runtime's native storage.** Sidekick indexes only carry lookup metadata; Forge and Code keep their own conversation/history stores.
 4. **Zero Claude-to-sidekick roundtrip per rewrite.** The enforcer is shell, not an LLM wrapper — deterministic, millisecond latency, no token cost.
-5. **Non-destructive on install.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the health check but never overwrites user edits.
+5. **Non-destructive on install/update.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the health check and runtime sync but never overwrites user edits.
 6. **Graceful degradation off the happy path.** No marker file → both hooks are no-ops. Output style missing → line prefixes degrade to plain text, no break. Monitor unavailable (Bedrock/Vertex/Foundry) → skill documents foreground-Bash fallback.
 7. **Every sidekick task is traceable.** Stable UUID from the hook + durable project-local idx = any past task can be found and reviewed by tag, timestamp, and status.
 

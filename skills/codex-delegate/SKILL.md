@@ -1,22 +1,29 @@
----
-name: codex-delegate
-description: Canonical Codex delegation workflow for the Code sidekick. Use when delegating implementation work to code/codex/coder exec.
+name: kay-delegate
+description: Canonical Kay delegation workflow for the Kay sidekick. Use when delegating implementation work to code/codex/coder exec.
 ---
 
-# Codex Delegate Workflow
+# Kay Delegate Workflow
 
-Every Code is the implementation sidekick. Claude plans, explains, and verifies.
-Code writes files, runs tests, and executes implementation work.
+Every Kay is the implementation sidekick. Claude plans, explains, and verifies.
+Kay writes files, runs tests, and executes implementation work.
 
 ```
 Claude = Brain
-Code   = Hands
+Kay    = Hands
 ```
 
 ## Host Routing
 
 - When the active host is Claude Code, follow STEP 0 through STEP 2 as written.
 - When the active host is Code, keep this skill to packaging/runtime configuration guidance only. Do not attempt to delegate work to the same runtime.
+
+## Runtime Sync
+
+The Sidekick SessionStart hook keeps the Code runtime current before delegation starts:
+
+- If Kay is missing, the hook installs it.
+- If Kay is already installed and exposes a native `update` command, the hook uses that instead of reinstalling.
+- If the native update path is unavailable or fails, the hook falls back to a selective repair install for just the missing or stale runtime.
 
 ## STEP 0 -- Health Check
 

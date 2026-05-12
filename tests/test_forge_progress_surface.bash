@@ -22,12 +22,15 @@ if [ ! -f "${HOOK_FILE}" ]; then
 fi
 
 HOME_SANDBOX="$(mktemp -d)"
+TEST_SESSION_ID="forge-test-$$"
+MARKER_DIR="${HOME_SANDBOX}/.claude/sessions/${TEST_SESSION_ID}"
+MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}"' EXIT
-mkdir -p "${HOME_SANDBOX}/.claude"
+mkdir -p "${MARKER_DIR}"
 
 run_hook() {
   local json="$1"
-  HOME="${HOME_SANDBOX}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
+  HOME="${HOME_SANDBOX}" SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" bash "${HOOK_FILE}" <<< "${json}" 2>/dev/null
 }
 
 # -----------------------------------------------------------------------------
@@ -40,7 +43,7 @@ else
 fi
 
 # Activate marker for all remaining tests.
-touch "${HOME_SANDBOX}/.claude/.forge-delegation-active"
+touch "${MARKER_FILE}"
 
 # -----------------------------------------------------------------------------
 echo "=== test_noop_when_tool_not_bash ==="
@@ -95,6 +98,21 @@ if [ -n "${_ctx}" ] && ! printf '%s' "${_ctx}" | grep -q $'\x1b'; then
   assert_pass "test_ansi_stripped_before_status_parse"
 else
   assert_fail "test_ansi_stripped_before_status_parse" "ctx='${_ctx}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_json_quoted_secret_redaction ==="
+_quoted_output=$'STATUS: SUCCESS\n{"api_key": "super-secret-value", "authorization": "Bearer super-secret-token"}\nFILES_CHANGED: []\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []'
+_json_quoted="$(jq -cn --arg o "$_quoted_output" '{tool_name:"Bash",tool_input:{command:"forge -p \"x\""},tool_response:{output:$o}}')"
+_out_quoted="$(run_hook "$_json_quoted")"
+_ctx_quoted="$(printf '%s' "$_out_quoted" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
+if echo "${_ctx_quoted}" | grep -q '"api_key": "\[REDACTED\]"' \
+    && echo "${_ctx_quoted}" | grep -q '"authorization": "\[REDACTED\]"' \
+    && ! echo "${_ctx_quoted}" | grep -q 'super-secret-value' \
+    && ! echo "${_ctx_quoted}" | grep -q 'super-secret-token'; then
+  assert_pass "test_json_quoted_secret_redaction"
+else
+  assert_fail "test_json_quoted_secret_redaction" "ctx='${_ctx_quoted}'"
 fi
 
 # -----------------------------------------------------------------------------
