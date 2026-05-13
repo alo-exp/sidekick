@@ -52,6 +52,7 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_runtime_sync.bash` | Session-start runtime sync: built-in update when available, selective install fallback when missing |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
 | `test_clean_reinstall.bash` | Clean reinstall scrub: stale registry/config/hook/cache state removal, versioned-cache bootstrap, stable `current` alias |
+| `test_hook_trust_state.bash` | Source-specific hook trust seeding: package-local manifest vs mirrored host hook files, stable reinstall trust table, no stale alias residue |
 | `test_docs_contract.bash` | Public docs and canonical help pages stay in sync with the shipped workflows |
 | `test_help_site_navigation.bash` | Help-site links, anchors, and navigation order stay valid |
 
