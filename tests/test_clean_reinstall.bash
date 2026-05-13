@@ -107,7 +107,7 @@ EOF
       {
         "scope": "project",
         "projectPath": "${home}",
-        "installPath": "${home}/.Codex/plugins/cache/alo-labs-codex-local/sidekick/current",
+        "installPath": "${home}/.codex/plugins/cache/alo-labs-codex/sidekick/current",
         "version": "${TARGET_VERSION}",
         "installedAt": "2026-05-12T00:00:00Z",
         "lastUpdated": "2026-05-12T00:00:00Z"
@@ -117,7 +117,7 @@ EOF
       {
         "scope": "project",
         "projectPath": "${home}",
-        "installPath": "${home}/.Codex/plugins/cache/alo-labs-codex/topgun/current",
+        "installPath": "${home}/.codex/plugins/cache/alo-labs-codex/topgun/current",
         "version": "0.7.6",
         "installedAt": "2026-05-12T00:00:00Z",
         "lastUpdated": "2026-05-12T00:00:00Z"
@@ -136,7 +136,8 @@ assert_clean_state() {
   local home="$1"
   local target_root="$2"
   local plugin_root="$3"
-  local resolved_current resolved_target
+  local legacy_backup_root="$4"
+  local resolved_current resolved_target legacy_samefile
 
   resolved_current="$(python3 - "${plugin_root}/current" <<'PY'
 from pathlib import Path
@@ -148,6 +149,19 @@ PY
 from pathlib import Path
 import sys
 print(Path(sys.argv[1]).resolve())
+PY
+)"
+  legacy_samefile="$(python3 - "${home}/.Codex" "${home}/.codex" <<'PY'
+from pathlib import Path
+import os
+import sys
+
+legacy = Path(sys.argv[1])
+lower = Path(sys.argv[2])
+try:
+    print("yes" if os.path.samefile(legacy, lower) else "no")
+except FileNotFoundError:
+    print("no")
 PY
 )"
 
@@ -164,12 +178,13 @@ PY
     && ! grep -Fq '.claude/' "${target_root}/sidekicks/registry.json" \
     && grep -Fq '~/.kay' "${target_root}/skills/codex-stop/SKILL.md" \
     && ! grep -Fq '~/.claude' "${target_root}/skills/codex-stop/SKILL.md" \
-    && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.Codex/config.toml" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/config.toml" \
-    && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.Codex/plugins/installed_plugins.json" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/plugins/installed_plugins.json" \
-    && grep -Fq 'topgun@alo-labs-codex' "${home}/.Codex/config.toml" \
-    && grep -Fq 'topgun@alo-labs-codex' "${home}/.Codex/plugins/installed_plugins.json" \
+    && grep -Fq 'topgun@alo-labs-codex' "${home}/.codex/config.toml" \
+    && grep -Fq 'topgun@alo-labs-codex' "${home}/.codex/plugins/installed_plugins.json" \
+    && { [ ! -e "${home}/.Codex" ] || [ "${legacy_samefile}" = "yes" ]; } \
+    && [ -d "${legacy_backup_root}" ] \
+    && [ -n "$(find "${legacy_backup_root}" -mindepth 1 -maxdepth 2 -type f -print -quit 2>/dev/null)" ] \
     && grep -Fq 'keep@other-marketplace' "${home}/.claude/config.toml"
   then
     return 0
@@ -178,13 +193,14 @@ PY
   return 1
 }
 
-WORKDIR="$(mktemp -d)"
+WORKDIR="$(mktemp -d "${HOME}/.sidekick-clean-reinstall.XXXXXX")"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 
 SOURCE_SNAPSHOT="${WORKDIR}/source-snapshot"
 HOME_DIR="${WORKDIR}/home"
-TARGET_ROOT="${HOME_DIR}/.Codex/plugins/cache/alo-labs-codex-local/sidekick/${TARGET_VERSION}"
+TARGET_ROOT="${HOME_DIR}/.codex/plugins/cache/alo-labs-codex/sidekick/${TARGET_VERSION}"
 PLUGIN_ROOT="$(dirname "${TARGET_ROOT}")"
+LEGACY_BACKUP_ROOT="${HOME_DIR}/.codex/legacy-uppercase-backups"
 
 copy_snapshot "${SOURCE_SNAPSHOT}"
 seed_host_state "${HOME_DIR}"
@@ -212,7 +228,7 @@ else
   exit 1
 fi
 
-if assert_clean_state "${HOME_DIR}" "${TARGET_ROOT}" "${PLUGIN_ROOT}"; then
+if assert_clean_state "${HOME_DIR}" "${TARGET_ROOT}" "${PLUGIN_ROOT}" "${LEGACY_BACKUP_ROOT}"; then
   assert_pass "clean reinstall removes stale registry, config, hook-state, cache roots, and rewrites the live tree"
 else
   assert_fail "clean reinstall state" "one or more stale entries or rewrite checks failed"
@@ -237,7 +253,7 @@ else
   exit 1
 fi
 
-if assert_clean_state "${HOME_DIR}" "${TARGET_ROOT}" "${PLUGIN_ROOT}"; then
+if assert_clean_state "${HOME_DIR}" "${TARGET_ROOT}" "${PLUGIN_ROOT}" "${LEGACY_BACKUP_ROOT}"; then
   assert_pass "reinstall after cleanup keeps the current alias stable and leaves unrelated host state intact"
 else
   assert_fail "stable reinstall state" "one or more checks failed after the second pass"

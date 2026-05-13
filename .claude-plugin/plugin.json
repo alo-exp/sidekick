@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Sidekick \u2014 a collection of AI coding agents as Claude sidekicks. Forge and Kay are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication. The workflow bodies live in skills.",
   "author": {
     "name": "\u0100lo Labs",
@@ -25,12 +25,12 @@
   "hooks": "./hooks/hooks.json",
   "_integrity": {
     "_note": "SHA-256 hashes of plugin files \u2014 update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
-    "install_sh_sha256": "7c8856a254314cb4aa0b3d904df55ee0e2a92cd503bb5877a6025cfbcba97663",
+    "install_sh_sha256": "d53a47d72c7fff6c001f6e389442bfe48bd3a006cd28a33522e109d414e0b0c5",
     "forge_md_sha256": "19fa0d3d29fc58b2c80184cd4bdd736e10b1217c5659f4ecb244ab9511864813",
     "forge_skill_md_sha256": "b095bb326e315038e98afda5cdeea84dcf96cbebdf98d9e176b98d5894762cec",
     "codex_delegate_skill_md_sha256": "7cc46e495b4d1894d45793086ba2b6d2d5e58d97f26088fbb5a062bb5ee09e77",
     "codex_delegate_md_sha256": "78d16fbfaed4d780602a3ef40081f904817be5a0ba3885293a26feaaf1f1f969",
-    "hooks_json_sha256": "ed669d812e19821eab7c5e414d94add192a03d41092be3f53b2516a934ba4ff8",
+    "hooks_json_sha256": "4ea0b8398b80f51599ed49f3e70ea4531e4d72888ac7e4a02bd8d3c0882ba185",
     "forge_delegation_enforcer_sha256": "91dc22f260a8563d1dc970d23d2efc315ed88c935e2032922670812f24b79a45",
     "codex_delegation_enforcer_sha256": "a23dc058ef567999d265679ce78a67bb70721efe18fc56c9f9c8ddbe9b96737d",
     "enforcer_utils_sha256": "913512b4d8fab17c33a1c80767f6e445500a77f279f79369a16df788fd69cf79",

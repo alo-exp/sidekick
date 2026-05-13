@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived). Preserved design notes live in `docs/design/`.
 
-**Plugin version:** v0.5.4 • **Target:** Claude Code harness + Forge/Code / Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.8.0)
+**Plugin version:** v0.5.5 • **Target:** Claude Code harness + Forge/Code / Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.8.0)
 
 ---
 
@@ -29,8 +29,8 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.8.0, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, rewrite host-specific paths, then seed trust/state after the final merged hook surface using the exact source each trust prefix names. |
-| Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json` / `~/.Codex/hooks.json`. Touches only matching Sidekick entries, snapshots the originals under `~/.sidekick/legacy-hooks-scrub-backups/`, and can restore them with `--rollback`. |
+| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.8.0, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, rewrite host-specific paths, archive and retire any legacy uppercase `~/.Codex` tree after the lowercase install is valid, then seed trust/state after the final merged hook surface using the exact source each trust prefix names. |
+| Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json`; legacy `~/.Codex/hooks.json` mirrors are migration-only and get backed up under `~/.sidekick/legacy-hooks-scrub-backups/` before rollback/removal. Touches only matching Sidekick entries and can restore them with `--rollback`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
 | Skill — `kay-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Kay delegation workflow: runtime health checks, `code exec --full-auto` primary path, and `codex`/`coder` compatibility fallbacks for the Every Code extension line. |
@@ -40,11 +40,11 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 | Audit indexes | `.forge/conversations.idx`, `.kay/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
 | Delegation lifecycle skills | `skills/codex-delegate/SKILL.md`, `skills/codex-stop/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-stop/SKILL.md` | The canonical four-skill Sidekick surface for Kay/Claude pickers. |
 | Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[KAY]` prefixes and `[...-SUMMARY]` blocks. |
-| Codex plugin manifest | `.codex-plugin/plugin.json` | v0.5.4. Skills-only packaging for Codex with shared hook wiring. |
-| Plugin manifest | `.claude-plugin/plugin.json` | v0.5.4. Points at `hooks/hooks.json`, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
+| Codex plugin manifest | `.codex-plugin/plugin.json` | v0.5.5. Skills-only packaging for Codex with shared hook wiring. |
+| Plugin manifest | `.claude-plugin/plugin.json` | v0.5.5. Points at `hooks/hooks.json`, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
-| Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. The Sidekick installer keeps the modern and legacy config paths aligned with MiniMax defaults. |
+| Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. Active Codex state is lowercase `~/.codex` only; any uppercase `~/.Codex` tree is treated as legacy backup-only migration material and is retired after a successful reinstall. |
 
 ---
 
