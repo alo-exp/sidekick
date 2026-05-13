@@ -120,6 +120,252 @@ for rel in [
 PY
 }
 
+seed_hook_trust_state() {
+  local host="${1:-}"
+  local source_root="${2:-}"
+
+  [ -n "${host}" ] || return 0
+  [ -n "${source_root}" ] || return 0
+
+  case "${host}" in
+    codex)
+      python3 - "${source_root}/hooks/hooks.json" "${HOME}/.Codex/config.toml" "${HOME}/.codex/config.toml" "${HOME}/.Codex/hooks.json" "${HOME}/.codex/hooks.json" <<'PY'
+import hashlib
+import json
+import pathlib
+import re
+import sys
+
+package_hooks_path = pathlib.Path(sys.argv[1])
+config_paths = [pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3])]
+mirror_paths = [pathlib.Path(sys.argv[4]), pathlib.Path(sys.argv[5])]
+
+plugin_id = "sidekick@alo-labs-codex"
+legacy_plugin_prefix = "sidekick@"
+
+def event_slug(name: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+def trusted_hash(command: str) -> str:
+    return "sha256:" + hashlib.sha256(command.encode("utf-8")).hexdigest()
+
+def hooks_data_for(path: pathlib.Path) -> dict:
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text())
+    hooks = data.get("hooks", {})
+    return hooks if isinstance(hooks, dict) else {}
+
+resolved_sources: list[tuple[str, pathlib.Path]] = [(f"{plugin_id}:hooks/hooks.json", package_hooks_path)]
+for mirror_path in mirror_paths:
+    if mirror_path.is_file():
+        resolved_sources.append((str(mirror_path), mirror_path))
+
+entries: list[tuple[str, str]] = []
+for prefix, source_path in resolved_sources:
+    for event_name, groups in hooks_data_for(source_path).items():
+        if not isinstance(groups, list):
+            continue
+        slug = event_slug(event_name)
+        for group_index, group in enumerate(groups):
+            if not isinstance(group, dict):
+                continue
+            hooks = group.get("hooks", [])
+            if not isinstance(hooks, list):
+                continue
+            for hook_index, hook in enumerate(hooks):
+                if not isinstance(hook, dict):
+                    continue
+                key = f"{prefix}:{slug}:{group_index}:{hook_index}"
+                entries.append((key, trusted_hash(str(hook.get("command", "")))))
+
+remove_prefixes = [legacy_plugin_prefix] + [str(path) for path in mirror_paths]
+
+def render_entries() -> list[str]:
+    lines: list[str] = []
+    for key, digest in entries:
+        lines.append(f'[hooks.state."{key}"]')
+        lines.append(f'trusted_hash = "{digest}"')
+        lines.append("")
+    return lines
+
+for config_path in config_paths:
+    text = config_path.read_text() if config_path.is_file() else ""
+    lines = text.splitlines()
+    output: list[str] = []
+    changed = False
+    hooks_state_seen = False
+    inserted = False
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        if line == "[hooks.state]":
+            hooks_state_seen = True
+            output.append(line)
+            i += 1
+            continue
+
+        if hooks_state_seen:
+            if any(line.startswith(f'[hooks.state."{prefix}') for prefix in remove_prefixes):
+                changed = True
+                i += 1
+                while i < len(lines) and not lines[i].startswith("["):
+                    i += 1
+                continue
+
+            if line.startswith("[") and not line.startswith("[hooks.state."):
+                if not inserted:
+                    output.extend(render_entries())
+                    inserted = True
+                    changed = True
+                hooks_state_seen = False
+                output.append(line)
+                i += 1
+                continue
+
+        output.append(line)
+        i += 1
+
+    if hooks_state_seen and not inserted:
+        output.extend(render_entries())
+        inserted = True
+        changed = True
+
+    if not hooks_state_seen and not inserted:
+        if output and output[-1] != "":
+            output.append("")
+        output.append("[hooks.state]")
+        output.extend(render_entries())
+        changed = True
+
+    if changed:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text("\n".join(output).rstrip("\n") + "\n")
+PY
+      ;;
+    claude)
+      python3 - "${source_root}/hooks/hooks.json" "${HOME}/.claude/config.toml" "${HOME}/.claude/hooks.json" <<'PY'
+import hashlib
+import json
+import pathlib
+import re
+import sys
+
+package_hooks_path = pathlib.Path(sys.argv[1])
+config_paths = [pathlib.Path(sys.argv[2])]
+mirror_paths = [pathlib.Path(sys.argv[3])]
+
+plugin_id = "sidekick@alo-labs"
+legacy_plugin_prefix = "sidekick@"
+
+def event_slug(name: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+def trusted_hash(command: str) -> str:
+    return "sha256:" + hashlib.sha256(command.encode("utf-8")).hexdigest()
+
+def hooks_data_for(path: pathlib.Path) -> dict:
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text())
+    hooks = data.get("hooks", {})
+    return hooks if isinstance(hooks, dict) else {}
+
+resolved_sources: list[tuple[str, pathlib.Path]] = [(f"{plugin_id}:hooks/hooks.json", package_hooks_path)]
+for mirror_path in mirror_paths:
+    if mirror_path.is_file():
+        resolved_sources.append((str(mirror_path), mirror_path))
+
+entries: list[tuple[str, str]] = []
+for prefix, source_path in resolved_sources:
+    for event_name, groups in hooks_data_for(source_path).items():
+        if not isinstance(groups, list):
+            continue
+        slug = event_slug(event_name)
+        for group_index, group in enumerate(groups):
+            if not isinstance(group, dict):
+                continue
+            hooks = group.get("hooks", [])
+            if not isinstance(hooks, list):
+                continue
+            for hook_index, hook in enumerate(hooks):
+                if not isinstance(hook, dict):
+                    continue
+                key = f"{prefix}:{slug}:{group_index}:{hook_index}"
+                entries.append((key, trusted_hash(str(hook.get("command", "")))))
+
+remove_prefixes = [legacy_plugin_prefix] + [str(path) for path in mirror_paths]
+
+def render_entries() -> list[str]:
+    lines: list[str] = []
+    for key, digest in entries:
+        lines.append(f'[hooks.state."{key}"]')
+        lines.append(f'trusted_hash = "{digest}"')
+        lines.append("")
+    return lines
+
+for config_path in config_paths:
+    text = config_path.read_text() if config_path.is_file() else ""
+    lines = text.splitlines()
+    output: list[str] = []
+    changed = False
+    hooks_state_seen = False
+    inserted = False
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        if line == "[hooks.state]":
+            hooks_state_seen = True
+            output.append(line)
+            i += 1
+            continue
+
+        if hooks_state_seen:
+            if any(line.startswith(f'[hooks.state."{prefix}') for prefix in remove_prefixes):
+                changed = True
+                i += 1
+                while i < len(lines) and not lines[i].startswith("["):
+                    i += 1
+                continue
+
+            if line.startswith("[") and not line.startswith("[hooks.state."):
+                if not inserted:
+                    output.extend(render_entries())
+                    inserted = True
+                    changed = True
+                hooks_state_seen = False
+                output.append(line)
+                i += 1
+                continue
+
+        output.append(line)
+        i += 1
+
+    if hooks_state_seen and not inserted:
+        output.extend(render_entries())
+        inserted = True
+        changed = True
+
+    if not hooks_state_seen and not inserted:
+        if output and output[-1] != "":
+            output.append("")
+        output.append("[hooks.state]")
+        output.extend(render_entries())
+        changed = True
+
+    if changed:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text("\n".join(output).rstrip("\n") + "\n")
+PY
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 purge_legacy_codex_sidekick_state() {
   python3 - "${HOME}/.Codex/config.toml" "${HOME}/.codex/config.toml" "${HOME}/.Codex/plugins/installed_plugins.json" "${HOME}/.codex/plugins/installed_plugins.json" <<'PY'
 import json
@@ -452,6 +698,7 @@ fi
 
 if install_host="$(detect_install_host 2>/dev/null)"; then
   rewrite_host_surface "${install_host}"
+  seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"
 fi
 
 # --- Ensure PATH includes ~/.local/bin in common shell profiles ---

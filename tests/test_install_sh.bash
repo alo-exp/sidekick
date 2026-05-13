@@ -285,6 +285,20 @@ else
   assert_fail "clean reinstall bootstrap" "missing clean reinstall or bootstrap-from-snapshot logic"
 fi
 
+echo "=== T21: hook trust seeding ==="
+if grep -q 'seed_hook_trust_state' "${INSTALL_SH}" \
+  && grep -q 'plugin_id = "sidekick@alo-labs-codex"' "${INSTALL_SH}" \
+  && grep -q '\${HOME}/.Codex/hooks.json' "${INSTALL_SH}" \
+  && grep -q '\${HOME}/.codex/hooks.json' "${INSTALL_SH}" \
+  && grep -q 'plugin_id = "sidekick@alo-labs"' "${INSTALL_SH}" \
+  && grep -q '\${HOME}/.claude/hooks.json' "${INSTALL_SH}" \
+  && grep -q 'rewrite_host_surface "${install_host}"' "${INSTALL_SH}" \
+  && grep -q 'seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"' "${INSTALL_SH}"; then
+  assert_pass "hook trust seeding is source-specific and host-isolated"
+else
+  assert_fail "hook trust seeding" "missing source-specific trust seeding or host-isolated trust targets"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped"

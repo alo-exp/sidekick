@@ -29,7 +29,7 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.8.0, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, then use each runtime's native update command when present. |
+| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | One-shot bootstrap plus session-start sync: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.8.0, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, rewrite host-specific paths, then seed trust/state after the final merged hook surface using the exact source each trust prefix names. |
 | Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json` / `~/.Codex/hooks.json`. Touches only matching Sidekick entries, snapshots the originals under `~/.sidekick/legacy-hooks-scrub-backups/`, and can restore them with `--rollback`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
