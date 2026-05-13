@@ -276,6 +276,8 @@ rm -rf "${_runtime_root}" "${_toolbox_root}"
 echo "=== T20: clean reinstall bootstrap ==="
 if grep -q 'SIDEKICK_CLEAN_REINSTALL' "${INSTALL_SH}" \
   && grep -q 'purge_legacy_codex_sidekick_state' "${INSTALL_SH}" \
+  && grep -q 'normalize_codex_path' "${INSTALL_SH}" \
+  && grep -q 'retire_legacy_codex_uppercase_state' "${INSTALL_SH}" \
   && grep -q 'bootstrap_sidekick_cache_tree' "${INSTALL_SH}" \
   && grep -q 'rm -rf "${plugin_root_dir}"' "${INSTALL_SH}" \
   && grep -q 'cp -a "${source_root}/." "${target_root}/"' "${INSTALL_SH}" \
@@ -288,12 +290,14 @@ fi
 echo "=== T21: hook trust seeding ==="
 if grep -q 'seed_hook_trust_state' "${INSTALL_SH}" \
   && grep -q 'plugin_id = "sidekick@alo-labs-codex"' "${INSTALL_SH}" \
-  && grep -q '\${HOME}/.Codex/hooks.json' "${INSTALL_SH}" \
   && grep -q '\${HOME}/.codex/hooks.json' "${INSTALL_SH}" \
+  && ! grep -q '\${HOME}/.Codex/hooks.json' "${INSTALL_SH}" \
+  && ! grep -q '\${HOME}/.Codex/config.toml' "${INSTALL_SH}" \
   && grep -q 'plugin_id = "sidekick@alo-labs"' "${INSTALL_SH}" \
   && grep -q '\${HOME}/.claude/hooks.json' "${INSTALL_SH}" \
   && grep -q 'rewrite_host_surface "${install_host}"' "${INSTALL_SH}" \
-  && grep -q 'seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"' "${INSTALL_SH}"; then
+  && grep -q 'seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"' "${INSTALL_SH}" \
+  && grep -q 'retire_legacy_codex_uppercase_state "${install_host}" "${PLUGIN_ROOT}"' "${INSTALL_SH}"; then
   assert_pass "hook trust seeding is source-specific and host-isolated"
 else
   assert_fail "hook trust seeding" "missing source-specific trust seeding or host-isolated trust targets"

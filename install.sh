@@ -120,6 +120,53 @@ for rel in [
 PY
 }
 
+normalize_codex_path() {
+  local path="${1:-}"
+
+  [ -n "${path}" ] || return 0
+  path="${path//\/.Codex\//\/.codex\/}"
+  path="${path//\/.Codex/\/.codex}"
+  printf '%s' "${path}"
+}
+
+retire_legacy_codex_uppercase_state() {
+  local host="${1:-}"
+  local active_root="${2:-}"
+  local legacy_root="${HOME}/.Codex"
+  local lowercase_root="${HOME}/.codex"
+  local backup_root backup_target backup_stamp retired_at
+
+  [ "${host}" = "codex" ] || return 0
+  [ -n "${active_root}" ] || return 0
+  [ -d "${active_root}" ] || return 0
+  [ -e "${legacy_root}" ] || return 0
+  if [ "$(realpath "${legacy_root}" 2>/dev/null || printf '%s' "${legacy_root}")" = "$(realpath "${active_root}" 2>/dev/null || printf '%s' "${active_root}")" ]; then
+    return 0
+  fi
+
+  backup_root="${HOME}/.codex/legacy-uppercase-backups"
+  backup_stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "${backup_root}"
+  backup_target="$(mktemp -d "${backup_root}/${backup_stamp}.XXXXXX")"
+
+  cp -a "${legacy_root}" "${backup_target}/Codex"
+
+  retired_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  cat > "${backup_target}/manifest.json" <<EOF
+{
+  "legacy_root": "${legacy_root}",
+  "backup_path": "${backup_target}/Codex",
+  "retired_at": "${retired_at}"
+}
+EOF
+
+  if [ "$(realpath "${legacy_root}" 2>/dev/null || printf '%s' "${legacy_root}")" = "$(realpath "${lowercase_root}" 2>/dev/null || printf '%s' "${lowercase_root}")" ]; then
+    return 0
+  fi
+
+  rm -rf "${legacy_root}"
+}
+
 seed_hook_trust_state() {
   local host="${1:-}"
   local source_root="${2:-}"
@@ -129,7 +176,7 @@ seed_hook_trust_state() {
 
   case "${host}" in
     codex)
-      python3 - "${source_root}/hooks/hooks.json" "${HOME}/.Codex/config.toml" "${HOME}/.codex/config.toml" "${HOME}/.Codex/hooks.json" "${HOME}/.codex/hooks.json" <<'PY'
+      python3 - "${source_root}/hooks/hooks.json" "${HOME}/.codex/config.toml" "${HOME}/.codex/hooks.json" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -137,8 +184,8 @@ import re
 import sys
 
 package_hooks_path = pathlib.Path(sys.argv[1])
-config_paths = [pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3])]
-mirror_paths = [pathlib.Path(sys.argv[4]), pathlib.Path(sys.argv[5])]
+config_paths = [pathlib.Path(sys.argv[2])]
+mirror_paths = [pathlib.Path(sys.argv[3])]
 
 plugin_id = "sidekick@alo-labs-codex"
 legacy_plugin_prefix = "sidekick@"
@@ -367,15 +414,15 @@ PY
 }
 
 purge_legacy_codex_sidekick_state() {
-  python3 - "${HOME}/.Codex/config.toml" "${HOME}/.codex/config.toml" "${HOME}/.Codex/plugins/installed_plugins.json" "${HOME}/.codex/plugins/installed_plugins.json" <<'PY'
+  python3 - "${HOME}/.codex/config.toml" "${HOME}/.codex/plugins/installed_plugins.json" <<'PY'
 import json
 import pathlib
 import sys
 
-config_paths = [pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])]
-registry_paths = [pathlib.Path(sys.argv[3]), pathlib.Path(sys.argv[4])]
+config_paths = [pathlib.Path(sys.argv[1])]
+registry_paths = [pathlib.Path(sys.argv[2])]
 
-legacy_plugin_prefix = "sidekick@"
+legacy_plugin_id = "sidekick@alo-labs-codex-local"
 
 for config_path in config_paths:
     if not config_path.is_file():
@@ -393,11 +440,11 @@ for config_path in config_paths:
         if (
             stripped.startswith('[plugins."')
             and stripped.endswith('"]')
-            and stripped[len('[plugins."'):-2].startswith(legacy_plugin_prefix)
+            and stripped[len('[plugins."'):-2] == legacy_plugin_id
         ) or (
             stripped.startswith('[hooks.state."')
             and stripped.endswith('"]')
-            and stripped[len('[hooks.state."'):-2].startswith(legacy_plugin_prefix)
+            and stripped[len('[hooks.state."'):-2].startswith("sidekick@")
         ):
             changed = True
             i += 1
@@ -428,7 +475,7 @@ for registry_path in registry_paths:
 
     removed = False
     for plugin_id in list(plugins):
-        if isinstance(plugin_id, str) and plugin_id.startswith(legacy_plugin_prefix):
+        if isinstance(plugin_id, str) and plugin_id == legacy_plugin_id:
             del plugins[plugin_id]
             removed = True
 
@@ -446,6 +493,9 @@ bootstrap_sidekick_cache_tree() {
   [ -n "${host}" ] || return 0
   [ -n "${source_root}" ] || return 0
   [ -n "${target_root}" ] || return 0
+  if [ "${host}" = "codex" ]; then
+    target_root="$(normalize_codex_path "${target_root}")"
+  fi
   plugin_root_dir="$(dirname "${target_root}")"
 
   if [ "${CLEAN_REINSTALL}" = "1" ]; then
@@ -486,6 +536,10 @@ trap cleanup_install_tmps EXIT
 EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
 CODEX_INSTALL_URL="$(sidekick_registry_get kay '.[$sidekick].install.url')"
 CODEX_INSTALL_SHA="$(sidekick_registry_get kay '.[$sidekick].install.sha256')"
+
+if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
+  bootstrap_sidekick_cache_tree "${bootstrap_host}" "${SOURCE_PLUGIN_ROOT}" "${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
+fi
 
 if [ "${INSTALL_FORGE}" = "1" ]; then
   echo "[forge-plugin] Checking ForgeCode installation..."
@@ -692,13 +746,10 @@ else
   echo "[forge-plugin] Skipping Code bootstrap/repair (SIDEKICK_INSTALL_CODE=0)."
 fi
 
-if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
-  bootstrap_sidekick_cache_tree "${bootstrap_host}" "${SOURCE_PLUGIN_ROOT}" "${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
-fi
-
 if install_host="$(detect_install_host 2>/dev/null)"; then
   rewrite_host_surface "${install_host}"
   seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"
+  retire_legacy_codex_uppercase_state "${install_host}" "${PLUGIN_ROOT}"
 fi
 
 # --- Ensure PATH includes ~/.local/bin in common shell profiles ---

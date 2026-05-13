@@ -14,12 +14,12 @@ _SIDEKICK_REGISTRY_LOADED=1
 
 sidekick_plugin_root() {
   if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
-    printf '%s' "${SIDEKICK_PLUGIN_ROOT}"
+    sidekick_normalize_codex_path "${SIDEKICK_PLUGIN_ROOT}"
     return 0
   fi
 
   if [[ -n "${CODEX_PLUGIN_ROOT:-}" ]]; then
-    printf '%s' "${CODEX_PLUGIN_ROOT}"
+    sidekick_normalize_codex_path "${CODEX_PLUGIN_ROOT}"
     return 0
   fi
 
@@ -29,6 +29,15 @@ sidekick_plugin_root() {
   fi
 
   cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
+}
+
+sidekick_normalize_codex_path() {
+  local path="${1:-}"
+
+  [ -n "${path}" ] || return 0
+  path="${path//\/.Codex\//\/.codex\/}"
+  path="${path//\/.Codex/\/.codex}"
+  printf '%s' "${path}"
 }
 
 sidekick_registry_file() {

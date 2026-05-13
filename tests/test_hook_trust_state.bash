@@ -66,34 +66,6 @@ trusted_hash = "sha256:111111111111111111111111111111111111111111111111111111111
 trusted_hash = "sha256:072e5c1c6aed14dfe251ecc1314ccfd5ad3b806248e4a95aa31a4adbcf07d851"
 EOF
 
-  cat > "${home}/.Codex/hooks.json" <<'EOF'
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo mirrored-upper"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo upper-pre"
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
-
   cat > "${home}/.codex/hooks.json" <<'EOF'
 {
   "hooks": {
@@ -121,16 +93,43 @@ EOF
   }
 }
 EOF
+
+  cat > "${home}/.Codex/hooks.json" <<'EOF'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo mirrored-upper"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo upper-pre"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
 }
 
 assert_trust_state() {
   local desc="$1"
   local config_path="$2"
   local package_hooks="$3"
-  local codex_hooks="$4"
-  local codex_lower_hooks="$5"
+  local codex_lower_hooks="$4"
 
-  if python3 - "$config_path" "$package_hooks" "$codex_hooks" "$codex_lower_hooks" <<'PY' >/dev/null 2>&1
+  if python3 - "$config_path" "$package_hooks" "$codex_lower_hooks" <<'PY' >/dev/null 2>&1
 import hashlib
 import json
 import pathlib
@@ -139,8 +138,7 @@ import sys
 
 config_path = pathlib.Path(sys.argv[1])
 package_hooks_path = pathlib.Path(sys.argv[2])
-upper_hooks_path = pathlib.Path(sys.argv[3])
-lower_hooks_path = pathlib.Path(sys.argv[4])
+lower_hooks_path = pathlib.Path(sys.argv[3])
 home = config_path.parent.parent
 
 def event_slug(name: str) -> str:
@@ -158,7 +156,6 @@ def hooks_data_for(path: pathlib.Path) -> dict:
 
 expected_sources = {
     "sidekick@alo-labs-codex:hooks/hooks.json": package_hooks_path,
-    str(upper_hooks_path): upper_hooks_path,
     str(lower_hooks_path): lower_hooks_path,
 }
 
@@ -203,7 +200,6 @@ actual = {
     for key, digest in parse_state(config_path.read_text()).items()
     if (
       key.startswith("sidekick@")
-      or key.startswith(str(upper_hooks_path))
       or key.startswith(str(lower_hooks_path))
     )
 }
@@ -218,15 +214,31 @@ PY
     assert_pass "$desc"
   else
     assert_fail "$desc" "hook trust state did not match the exact live source surface"
-  fi
+fi
 }
 
-WORKDIR="$(mktemp -d)"
+legacy_codex_alias_mode() {
+  python3 - "$1" "$2" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+legacy = Path(sys.argv[1])
+lower = Path(sys.argv[2])
+try:
+    print("alias" if os.path.samefile(legacy, lower) else "distinct")
+except FileNotFoundError:
+    print("missing")
+PY
+}
+
+WORKDIR="$(mktemp -d "${HOME}/.sidekick-hook-trust.XXXXXX")"
 trap 'rm -rf "${WORKDIR}" 2>/dev/null || true' EXIT
 
 SOURCE_SNAPSHOT="${WORKDIR}/source-snapshot"
 HOME_DIR="${WORKDIR}/home"
-TARGET_ROOT="${HOME_DIR}/.Codex/plugins/cache/alo-labs-codex/sidekick/0.5.4"
+TARGET_ROOT="${HOME_DIR}/.codex/plugins/cache/alo-labs-codex/sidekick/0.5.5"
+LEGACY_BACKUP_ROOT="${HOME_DIR}/.codex/legacy-uppercase-backups"
 
 copy_snapshot "${SOURCE_SNAPSHOT}"
 seed_host_state "${HOME_DIR}"
@@ -252,26 +264,26 @@ else
 fi
 
 assert_trust_state "trust seeded from package-local and mirrored hook sources" \
-  "${HOME_DIR}/.Codex/config.toml" \
-  "${TARGET_ROOT}/hooks/hooks.json" \
-  "${HOME_DIR}/.Codex/hooks.json" \
-  "${HOME_DIR}/.codex/hooks.json"
-
-assert_trust_state "lower host config mirrors the exact same source-specific trust table" \
   "${HOME_DIR}/.codex/config.toml" \
   "${TARGET_ROOT}/hooks/hooks.json" \
-  "${HOME_DIR}/.Codex/hooks.json" \
   "${HOME_DIR}/.codex/hooks.json"
 
-if cmp -s "${HOME_DIR}/.Codex/config.toml" "${HOME_DIR}/.codex/config.toml"; then
-  assert_pass "Codex trust state mirrors cleanly across both host config files"
+if [ -d "${LEGACY_BACKUP_ROOT}" ] && [ -n "$(find "${LEGACY_BACKUP_ROOT}" -mindepth 1 -maxdepth 2 -type f -print -quit 2>/dev/null)" ]; then
+  assert_pass "legacy uppercase Codex state was archived under the lowercase backup root"
 else
-  assert_fail "host config mirror parity" "upper and lower config.toml trust tables diverged"
+  assert_fail "legacy uppercase backup" "backup archive missing after clean reinstall"
+fi
+
+LEGACY_ALIAS_MODE="$(legacy_codex_alias_mode "${HOME_DIR}/.Codex" "${HOME_DIR}/.codex")"
+if [ "${LEGACY_ALIAS_MODE}" = "alias" ] || [ ! -e "${HOME_DIR}/.Codex" ]; then
+  assert_pass "uppercase ~/.Codex is treated as migration-only after the lowercase install becomes valid"
+else
+  assert_fail "uppercase retirement" "~/.Codex is still present as an active path"
 fi
 
 FIRST_PASS_CONFIG="${WORKDIR}/config.after-first-pass.toml"
 FIRST_PASS_LOWER_CONFIG="${WORKDIR}/config.after-first-pass.lower.toml"
-cp "${HOME_DIR}/.Codex/config.toml" "${FIRST_PASS_CONFIG}"
+cp "${HOME_DIR}/.codex/config.toml" "${FIRST_PASS_CONFIG}"
 cp "${HOME_DIR}/.codex/config.toml" "${FIRST_PASS_LOWER_CONFIG}"
 
 echo "=== T2: reinstall is stable and does not reintroduce hook-review churn ==="
@@ -292,7 +304,7 @@ else
   exit 1
 fi
 
-if cmp -s "${FIRST_PASS_CONFIG}" "${HOME_DIR}/.Codex/config.toml"; then
+if cmp -s "${FIRST_PASS_CONFIG}" "${HOME_DIR}/.codex/config.toml"; then
   assert_pass "hook trust state is stable across reinstall"
 else
   assert_fail "stable hook trust state" "config.toml changed on the second clean reinstall"
@@ -304,16 +316,17 @@ else
   assert_fail "stable lower host trust state" "lower config.toml changed on the second clean reinstall"
 fi
 
-if cmp -s "${HOME_DIR}/.Codex/config.toml" "${HOME_DIR}/.codex/config.toml"; then
-  assert_pass "host trust tables still match after reinstall"
-else
-  assert_fail "host trust table parity" "upper and lower config.toml trust tables diverged after reinstall"
-fi
-
-if grep -Fq 'topgun@alo-labs-codex' "${HOME_DIR}/.Codex/config.toml"; then
+if grep -Fq 'topgun@alo-labs-codex' "${HOME_DIR}/.codex/config.toml"; then
   assert_pass "unrelated trust state is preserved"
 else
   assert_fail "unrelated trust state" "topgun trust entry was lost"
+fi
+
+LEGACY_ALIAS_MODE="$(legacy_codex_alias_mode "${HOME_DIR}/.Codex" "${HOME_DIR}/.codex")"
+if [ "${LEGACY_ALIAS_MODE}" = "alias" ] || [ ! -e "${HOME_DIR}/.Codex" ]; then
+  assert_pass "uppercase ~/.Codex remains migration-only after the second reinstall"
+else
+  assert_fail "uppercase retirement" "~/.Codex returned during the second reinstall"
 fi
 
 echo ""

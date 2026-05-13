@@ -38,7 +38,7 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_v12_coverage.bash` | Coverage-gap suite: `sed -i` / `awk -i inplace` denial, `>>` append, `> /dev/null` passthroughs, env-var prefix, 80-char task-hint truncation, unknown tool_name passthrough, stdout-only summary fallback |
 | `test_v13_coverage.bash` | Forge v1.3 coverage gaps: helper extraction, path allowlist, SRI, and sentinel-related regressions |
 | `test_validate_release_gate_hook.bash` | Release-gate hook: blocks `gh release create` until all four quality-gate markers are present |
-| `test_legacy_hook_scrub.bash` | One-time scrub/rollback of stale Sidekick user-hook entries in `~/.codex/hooks.json` and `~/.Codex/hooks.json` |
+| `test_legacy_hook_scrub.bash` | One-time scrub/rollback of stale Sidekick user-hook entries in `~/.codex/hooks.json`; legacy `~/.Codex/hooks.json` mirrors are cleaned only as migration artifacts |
 | `test_post_release_cleanup.bash` | Post-release cleanup script: removes transient repo-local artifacts and is idempotent |
 | `test_repo_layout.bash` | Repository layout guard: expected top-level files/directories and docs structure stay organized |
 | `test_codex_skill.bash` | Kay skill structure, activation/deactivation markers, and packaging expectations |
@@ -51,8 +51,8 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_install_sh.bash` | Installer idempotency, sentinel behavior, selective repair env flags, credentials schema validation |
 | `test_runtime_sync.bash` | Session-start runtime sync: built-in update when available, selective install fallback when missing |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
-| `test_clean_reinstall.bash` | Clean reinstall scrub: stale registry/config/hook/cache state removal, versioned-cache bootstrap, stable `current` alias |
-| `test_hook_trust_state.bash` | Source-specific hook trust seeding: package-local manifest vs mirrored host hook files, stable reinstall trust table, no stale alias residue |
+| `test_clean_reinstall.bash` | Clean reinstall scrub: stale registry/config/hook/cache state removal, lowercase-only versioned-cache bootstrap, legacy uppercase archive/retirement, stable `current` alias |
+| `test_hook_trust_state.bash` | Source-specific hook trust seeding: package-local manifest vs lowercase mirrored host hook files, stable reinstall trust table, no stale alias residue, legacy uppercase retirement |
 | `test_docs_contract.bash` | Public docs and canonical help pages stay in sync with the shipped workflows |
 | `test_help_site_navigation.bash` | Help-site links, anchors, and navigation order stay valid |
 

@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.5.5 — 2026-05-13
+
+### Lowercase Codex install roots and source-specific trust seeding
+
+Sidekick now treats lowercase `~/.codex` as the only active Codex install root, retires legacy uppercase mirrors safely after a valid lowercase install exists, and keeps hook trust seeding aligned to the exact hook surface each prefix names.
+
+**Added:**
+
+- **`install.sh`** and **`tests/test_clean_reinstall.bash`**: explicit clean-reinstall bootstrap from the local snapshot when the versioned cache tree is missing, with safe legacy uppercase backup/retirement.
+- **`tests/test_hook_trust_state.bash`**: regression coverage for source-specific trust prefixes and reinstall stability.
+
+**Changed:**
+
+- **`install.sh`**, **`hooks/lib/sidekick-registry.sh`**, **`hooks/hooks.json`**: Codex install/path rewriting is lowercase-only; host mirror state is rewritten and validated without treating `~/.Codex` as active.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**: public release surfaces rebased to `v0.5.5`.
+- **`.claude-plugin/plugin.json`**: release metadata refreshed for the `0.5.5` release line.
+
+**Fixed:**
+
+- **Legacy uppercase migration**: `~/.Codex` is retained only as a legacy backup when needed and removed from active install flow once lowercase is valid.
+- **Hook-review warnings**: trust is seeded from the exact hook source each prefix represents, keeping review state stable across reinstall.
+
 ## v0.5.4 — 2026-05-12
 
 ### Kay session scoping and release rebasing

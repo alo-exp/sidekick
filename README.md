@@ -6,8 +6,8 @@
 
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
-| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.4 |
-| **Kay** | `code` | Every Kay extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v0.5.4 |
+| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.5 |
+| **Kay** | `code` | Every Kay extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v0.5.5 |
 
 More sidekicks planned.
 
