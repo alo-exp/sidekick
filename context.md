@@ -55,7 +55,7 @@ sidekick-repo/
   ```
   test -f "${CLAUDE_PLUGIN_ROOT}/.installed" || (bash install.sh && touch .installed)
   ```
-- **Upgrade scrub:** `hooks/scrub-legacy-user-hooks.py` runs on SessionStart to remove stale Sidekick blocks from `~/.codex/hooks.json` and `~/.Codex/hooks.json`. It snapshots touched files under `~/.claude/.sidekick/legacy-hooks-scrub-backups/` so a rollback can restore the exact originals.
+- **Upgrade scrub:** `hooks/scrub-legacy-user-hooks.py` runs on SessionStart to remove stale Sidekick blocks from `~/.codex/hooks.json`; a legacy `~/.Codex/hooks.json` mirror is treated as migration-only, backed up, and then retired. It snapshots touched files under `~/.claude/.sidekick/legacy-hooks-scrub-backups/` so a rollback can restore the exact originals.
 - **Sentinel:** `.installed` file written only on `exit 0` (`&&` not `;`) — prevents retry on failure
 - **install.sh** does:
   1. Downloads ForgeCode installer to temp file (not `curl | sh`)

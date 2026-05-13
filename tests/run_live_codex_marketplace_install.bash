@@ -181,10 +181,7 @@ fi
 
 echo "=== installed_plugin_cache ==="
 INSTALLED_HOOKS="$(
-  for base in "${HOME}/.codex/plugins" "${HOME}/.claude/plugins"; do
-    [ -d "${base}" ] || continue
-    find "${base}" -name hooks.json -path '*/sidekick/*' 2>/dev/null
-  done | head -n 1 || true
+  find "${HOME}/.codex/plugins" -name hooks.json -path '*/sidekick/*' 2>/dev/null | head -n 1 || true
 )"
 if [ -n "${INSTALLED_HOOKS}" ]; then
   INSTALLED_ROOT="$(dirname "$(dirname "${INSTALLED_HOOKS}")")"
@@ -200,8 +197,23 @@ if [ -n "${INSTALLED_HOOKS}" ]; then
     && ! grep -Fq '.claude/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
     && grep -Fq '~/.codex' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
     && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
-    && grep -Fq '~/.codex' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
-    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md"; then
+    && grep -Fq '~/.kay' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
+    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
+    && python3 - "${HOME}/.Codex" "${HOME}/.codex" <<'PY' >/dev/null
+import os
+from pathlib import Path
+import sys
+legacy = Path(sys.argv[1])
+lower = Path(sys.argv[2])
+try:
+    if not legacy.exists():
+        raise SystemExit(0)
+    if not os.path.samefile(legacy, lower):
+        raise SystemExit(1)
+except FileNotFoundError:
+    raise SystemExit(0)
+PY
+    then
     pass "installed cache surface rewrote to Codex-only paths"
   else
     fail "installed cache surface" "host rewrite did not remove Claude-specific paths from ${INSTALLED_ROOT}"

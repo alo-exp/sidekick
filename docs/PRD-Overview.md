@@ -2,7 +2,7 @@
 
 > High-level product vision and requirement areas. Synced with `.planning/milestones/v1.4.0-REQUIREMENTS.md` — the authoritative source managed by GSD. Updated at the finalization step of each phase and at milestone completion.
 
-**Current milestone:** v0.5.4 (shipped 2026-05-08). All 77 requirements across v1 + v1.2 remain validated.
+**Current milestone:** v0.5.5 (shipped 2026-05-13). All 77 requirements across v1 + v1.2 remain validated.
 
 ---
 
@@ -73,7 +73,7 @@ Explicit non-goals. See `.planning/milestones/v1.4.0-REQUIREMENTS.md` §Out of S
 
 This doc is a high-level summary — not the source of truth.
 
-- **Source of truth for requirements:** `.planning/milestones/v1.4.0-REQUIREMENTS.md` (77 requirements, all validated as of v0.5.4).
+- **Source of truth for requirements:** `.planning/milestones/v1.4.0-REQUIREMENTS.md` (77 requirements, all validated as of v0.5.5).
 - **Source of truth for phase structure:** `.planning/ROADMAP.md` (9 phases, all shipped).
 - **Source of truth for project state:** `.planning/STATE.md` (`status: complete`, last_updated 2026-05-07).
 
