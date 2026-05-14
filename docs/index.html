@@ -361,6 +361,11 @@ section:nth-child(even){background:var(--section-alt)}
   letter-spacing:-.03em;margin-bottom:16px;line-height:1.2;
   text-align:center;color:var(--section-title-color);
 }
+.section-title.workflow-title{
+  font-size:clamp(1.65rem,4vw,2.35rem);
+  line-height:1.15;
+}
+.section-title.workflow-title span{display:block}
 .section-label{text-align:center}
 .section-desc{
   font-size:1rem;color:var(--text-secondary);max-width:600px;
@@ -803,7 +808,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
       <span class="hero-pill"><i data-lucide="bot"></i> Forge Agent</span>
       <span class="hero-pill"><i data-lucide="bot"></i> Kay Agent</span>
       <span class="hero-pill"><i data-lucide="key"></i> MiniMax.io</span>
-      <span class="hero-pill"><i data-lucide="code-2"></i> OpenCode Go</span>
+      <span class="hero-pill"><i data-lucide="key"></i> OpenCode Go</span>
     </div>
   </div>
 </section>
@@ -812,8 +817,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <section>
   <div class="container">
     <div class="callout reveal" id="support">
-      <h3>Advisor Pattern for Coding Agents</h3>
-      <p>Sidekick applies Anthropic's advisor-style pattern to coding work: through Sidekick, the host AI agent advises, reviews, and mentors delegated AI agents such as Forge and Kay. The same loop turns corrections into durable instructions so the delegated agents improve over time.</p>
+      <h3>Advisor Pattern and Continuous Mentoring for Execution Agents</h3>
+      <p>Sidekick applies Anthropic's advisor-style pattern to coding work: through Sidekick, the host AI agent advises, reviews, and mentors execution AI agents such as Forge and Kay. The same loop turns corrections into durable instructions so the execution agents improve over time.</p>
       <div class="cta-group">
         <a href="/help/" class="btn btn-primary">Open Help Center</a>
         <a href="#sidekicks" class="btn btn-outline">See Sidekicks</a>
@@ -826,8 +831,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <section id="how-it-works">
   <div class="container">
     <div class="section-label">How It Works</div>
-    <h2 class="section-title">Host AI Agents Advise and Mentor. Delegated AI Agents Execute.</h2>
-    <p class="section-desc">You stay in Claude Code or Codex. The host AI agent shapes the task, Sidekick routes execution to Forge or Kay, and the host AI agent reviews, corrects, and mentors the delegated AI agent before reporting back.</p>
+    <h2 class="section-title workflow-title"><span>Host AI Agents Advise and Mentor</span><span>Execution AI Agents Execute</span></h2>
+    <p class="section-desc">You stay in Claude Code or Codex. The host AI agent shapes the task, Sidekick routes execution to Forge or Kay, and the host AI agent reviews, corrects, and mentors the execution AI agent before reporting back.</p>
     <div class="flow-diagram">
       <div class="flow-step user-step">
         <div class="step-num">01 · You</div>
@@ -987,7 +992,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <tbody>
           <tr class="winner">
             <td><span class="rank-badge">#1</span></td>
-            <td><strong>Codex CLI → Kay basis</strong></td>
+            <td><strong>Codex CLI → Kay upstream</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.5</td>
             <td><strong style="color:var(--accent-light)">82.0%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.2</td>
@@ -1032,7 +1037,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
           </tr>
           <tr class="winner">
             <td><span class="rank-badge">#9</span></td>
-            <td><strong>Simple Codex → Kay basis</strong></td>
+            <td><strong>Simple Codex → Kay upstream</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.3-Codex</td>
             <td><strong style="color:var(--accent-light)">75.1%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.4</td>
@@ -1073,7 +1078,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
           <tr>
             <th>Agent</th>
             <th>Backend</th>
-            <th>Model / path</th>
+            <th>Model / Path</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -1146,30 +1151,30 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container text-center">
     <div class="section-label">Setup</div>
     <h2 class="section-title">Three Steps, Then Delegate</h2>
-    <p class="section-desc centered">After installation, Sidekick keeps agent setup explicit and host-aware.</p>
+    <p class="section-desc centered">For the user, setup is API access, plugin install, then delegation. Sidekick handles agent sync internally after installation.</p>
     <div class="setup-steps reveal">
       <div class="setup-step">
         <div class="step-num">1</div>
-        <h3>SessionStart Syncs Agents</h3>
-        <p>On the first session, Sidekick installs missing Forge and Kay agent assets. Later sessions use native updates before selective repair.</p>
+        <h3>Get API Access</h3>
+        <p>Prepare the lower-cost API path you want Sidekick to use. MiniMax.io covers MiniMax M2.7 access, while OpenCode Go stays available as a multi-AI path.</p>
         <div class="step-code">
-          <span class="comment"># Runs automatically on session start</span><br>
-          <span class="cmd">hooks/runtime-sync.sh</span>
+          <span class="string">MiniMax.io:</span> <span class="cmd">API key</span><br>
+          <span class="string">OpenCode Go:</span> <span class="cmd">API access</span>
         </div>
       </div>
       <div class="setup-step">
         <div class="step-num">2</div>
-        <h3>Configure Backends</h3>
-        <p>Use MiniMax.io for MiniMax M2.7-backed execution and keep OpenCode Go available for Kay's multi-AI compatibility path.</p>
+        <h3>Install Sidekick</h3>
+        <p>Install the plugin in the host you use. Claude Code and Codex both expose the same Sidekick agent workflows after installation.</p>
         <div class="step-code">
-          <span class="string">MiniMax.io:</span> <span class="cmd">MiniMax-M2.7</span><br>
-          <span class="string">OpenCode Go:</span> <span class="cmd">multi-AI</span>
+          <span class="string">Claude:</span> <span class="cmd">/plugin install alo-labs/sidekick</span><br>
+          <span class="string">Codex:</span> <span class="cmd">codex plugin marketplace add alo-labs/sidekick</span>
         </div>
       </div>
       <div class="setup-step">
         <div class="step-num">3</div>
-        <h3>Delegate Through the Host</h3>
-        <p>Claude Code and Codex can both route work to Forge or Kay. Use Forge for terminal-agent delegation or Kay for the Every Code path.</p>
+        <h3>Delegate to an Agent</h3>
+        <p>Ask the host AI to hand implementation to Forge or Kay. The host stays in the advisor and mentoring role while the execution agent changes files.</p>
         <div class="step-code">
           <span class="string">Forge:</span> <span class="cmd">/forge implement X</span><br>
           <span class="string">Kay:</span> <span class="cmd">code exec --full-auto "implement X"</span>
