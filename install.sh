@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Forge Plugin — auto-install script
 # Called by the first-run SessionStart bootstrap hook and manual repair paths.
-# Installs Forge and Code runtimes when explicitly invoked and adds them to PATH.
+# Installs Forge and Kay runtimes when explicitly invoked and adds them to PATH.
 # Provider/API key setup is guided interactively by the forge skill in Claude.
 #
 # SECURITY NOTE (R8-2): This script runs non-interactively under the SessionStart hook.
@@ -13,7 +13,7 @@ set -euo pipefail
 
 SIDEKICK_BIN_DIR="${BIN_DIR:-${HOME}/.local/bin}"
 FORGE_BIN="${SIDEKICK_BIN_DIR}/forge"
-CODEX_BIN="${SIDEKICK_BIN_DIR}/code"
+KAY_BIN="${SIDEKICK_BIN_DIR}/kay"
 CODEX_CODE_ALIAS="${SIDEKICK_BIN_DIR}/codex"
 CODEX_CODER_ALIAS="${SIDEKICK_BIN_DIR}/coder"
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,7 +23,7 @@ export SIDEKICK_PLUGIN_ROOT
 FORGE_INSTALL_TMP=""
 CODEX_INSTALL_TMP=""
 INSTALL_FORGE="${SIDEKICK_INSTALL_FORGE:-1}"
-INSTALL_CODE="${SIDEKICK_INSTALL_CODE:-1}"
+INSTALL_KAY="${SIDEKICK_INSTALL_KAY:-${SIDEKICK_INSTALL_CODE:-1}}"
 FORCE_REINSTALL="${SIDEKICK_FORCE_REINSTALL:-0}"
 CLEAN_REINSTALL="${SIDEKICK_CLEAN_REINSTALL:-0}"
 
@@ -631,38 +631,48 @@ else
   echo "[forge-plugin] Skipping ForgeCode bootstrap/repair (SIDEKICK_INSTALL_FORGE=0)."
 fi
 
-# --- Ensure Code runtime is installed and aliased ---
-if [ "${INSTALL_CODE}" = "1" ]; then
-  echo "[forge-plugin] Checking Code installation..."
+# --- Ensure Kay runtime is installed and aliased ---
+if [ "${INSTALL_KAY}" = "1" ]; then
+  echo "[forge-plugin] Checking Kay installation..."
 
   ensure_codex_aliases() {
     local source_bin="$1"
     mkdir -p "$(dirname "${CODEX_CODE_ALIAS}")"
     case "$(basename "${source_bin}")" in
+      kay)
+        ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
+        ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
+        ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
+        ;;
       code)
+        ln -sf "${source_bin}" "${KAY_BIN}"
         ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
         ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
         ;;
       codex)
+        ln -sf "${source_bin}" "${KAY_BIN}"
         ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
         ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
         ;;
       coder)
+        ln -sf "${source_bin}" "${KAY_BIN}"
         ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
         ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
         ;;
       *)
+        ln -sf "${source_bin}" "${KAY_BIN}"
+        ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
         ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
         ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
         ;;
     esac
-    echo "[forge-plugin] Installed Code aliases: code, codex, coder -> ${source_bin}"
+    echo "[forge-plugin] Installed Kay command and compatibility aliases: kay, code, codex, coder -> ${source_bin}"
   }
 
 resolve_codex_binary() {
   local candidate
 
-  for candidate in "${SIDEKICK_BIN_DIR}/code" "${SIDEKICK_BIN_DIR}/codex" "${SIDEKICK_BIN_DIR}/coder"; do
+  for candidate in "${KAY_BIN}" "${SIDEKICK_BIN_DIR}/code" "${SIDEKICK_BIN_DIR}/codex" "${SIDEKICK_BIN_DIR}/coder"; do
     if [ -x "${candidate}" ] \
       && { "${candidate}" exec --help >/dev/null 2>&1 || "${candidate}" update --help >/dev/null 2>&1; }; then
       printf '%s\n' "${candidate}"
@@ -680,21 +690,21 @@ install_codex_runtime() {
     codex_source="$(resolve_codex_binary || true)"
     if [ -n "${codex_source}" ]; then
       ensure_codex_aliases "${codex_source}"
-      echo "[forge-plugin] Code runtime already installed; aliases refreshed."
+      echo "[forge-plugin] Kay runtime already installed; aliases refreshed."
       return 0
     fi
   else
-    echo "[forge-plugin] Forcing Code reinstall from the bootstrap installer."
+    echo "[forge-plugin] Forcing Kay reinstall from the bootstrap installer."
   fi
 
-  echo "[forge-plugin] Installing pinned Kay/Code runtime release..."
+  echo "[forge-plugin] Installing pinned Kay runtime release..."
   CODEX_INSTALL_TMP=$(mktemp "${TMPDIR:-/tmp}/codex-install.XXXXXX")
   if command -v curl &>/dev/null; then
     curl -fsSL --max-time 60 --connect-timeout 15 "${CODEX_INSTALL_URL}" -o "${CODEX_INSTALL_TMP}"
   elif command -v wget &>/dev/null; then
     wget -qO "${CODEX_INSTALL_TMP}" --timeout=60 "${CODEX_INSTALL_URL}"
   else
-    echo "[forge-plugin] ERROR: Neither curl nor wget found. Install Code manually from https://github.com/alo-labs/kay/releases" >&2
+    echo "[forge-plugin] ERROR: Neither curl nor wget found. Install Kay manually from https://github.com/alo-labs/kay/releases" >&2
     exit 1
   fi
 
@@ -703,47 +713,47 @@ install_codex_runtime() {
   elif command -v sha256sum &>/dev/null; then
     codex_sha=$(sha256sum "${CODEX_INSTALL_TMP}" | awk '{print $1}')
   else
-    echo "[forge-plugin] WARNING: Neither shasum nor sha256sum found — cannot verify Code installer integrity." >&2
+    echo "[forge-plugin] WARNING: Neither shasum nor sha256sum found — cannot verify Kay installer integrity." >&2
     codex_sha="UNAVAILABLE"
   fi
 
-  echo "[forge-plugin] Code installer SHA-256: ${codex_sha}"
+  echo "[forge-plugin] Kay installer SHA-256: ${codex_sha}"
   echo "[forge-plugin] IMPORTANT: Compare this hash against the pinned registry entry before proceeding."
 
   if [ -z "${CODEX_INSTALL_SHA}" ]; then
-    echo "[forge-plugin] ERROR: No pinned Code SHA-256 is configured in sidekicks/registry.json." >&2
+    echo "[forge-plugin] ERROR: No pinned Kay SHA-256 is configured in sidekicks/registry.json." >&2
     exit 1
   fi
 
   if [ "${codex_sha}" = "UNAVAILABLE" ]; then
-    echo "[forge-plugin] ERROR: Cannot verify Code installer integrity without shasum or sha256sum." >&2
+    echo "[forge-plugin] ERROR: Cannot verify Kay installer integrity without shasum or sha256sum." >&2
     exit 1
   fi
 
   if [ "${codex_sha}" != "${CODEX_INSTALL_SHA}" ]; then
-    echo "[forge-plugin] ERROR: Code SHA-256 MISMATCH — aborting installation." >&2
+    echo "[forge-plugin] ERROR: Kay SHA-256 MISMATCH — aborting installation." >&2
     echo "[forge-plugin]   Got:      ${codex_sha}" >&2
     echo "[forge-plugin]   Expected: ${CODEX_INSTALL_SHA}" >&2
     exit 1
   fi
 
-  echo "[forge-plugin] Code installer verified against pinned hash — OK."
+  echo "[forge-plugin] Kay installer verified against pinned hash — OK."
 
   bash "${CODEX_INSTALL_TMP}"
 
   codex_source="$(resolve_codex_binary || true)"
   if [ -z "${codex_source}" ]; then
-    echo "[forge-plugin] ERROR: Code install completed but code binary was not found." >&2
+    echo "[forge-plugin] ERROR: Kay install completed but kay binary was not found." >&2
     exit 1
   fi
 
   ensure_codex_aliases "${codex_source}"
-  echo "[forge-plugin] Code runtime ready."
+  echo "[forge-plugin] Kay runtime ready."
 }
 
   install_codex_runtime
 else
-  echo "[forge-plugin] Skipping Code bootstrap/repair (SIDEKICK_INSTALL_CODE=0)."
+  echo "[forge-plugin] Skipping Kay bootstrap/repair (SIDEKICK_INSTALL_KAY=0 or SIDEKICK_INSTALL_CODE=0)."
 fi
 
 if install_host="$(detect_install_host 2>/dev/null)"; then
@@ -757,7 +767,7 @@ fi
 # Each addition is preceded by a marker comment so it can be easily found and
 # removed if you want to undo this change.
 # (SENTINEL FINDING-10.1: persistence transparency)
-if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_CODE}" = "1" ]; then
+if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
   add_to_path() {
     local profile="$1"
     local marker='# Added by sidekick/forge plugin (https://github.com/alo-exp/sidekick) — remove this block to undo'
@@ -837,4 +847,4 @@ if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_CODE}" = "1" ]; then
   fi
 fi
 
-echo "[forge-plugin] Setup complete. Ask Claude to configure your OpenRouter API key."
+echo "[forge-plugin] Setup complete. Ask the host to configure the provider credentials for the sidekick you want to use."

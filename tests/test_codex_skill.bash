@@ -32,12 +32,13 @@ else
 fi
 
 echo "=== T2: kay-delegate contains runtime delegation guidance ==="
-if grep -q 'code exec --full-auto' "${DELEGATE_FILE}" \
-  && grep -q 'codex exec --full-auto' "${DELEGATE_FILE}" \
-  && grep -q 'coder exec --full-auto' "${DELEGATE_FILE}"; then
-  assert_pass "delegate commands for code/codex/coder present"
+if grep -q 'kay exec --full-auto' "${DELEGATE_FILE}" \
+  && grep -q 'kay --version' "${DELEGATE_FILE}" \
+  && grep -q 'compatibility aliases' "${DELEGATE_FILE}" \
+  && ! grep -q 'code exec --full-auto' "${DELEGATE_FILE}"; then
+  assert_pass "Kay primary command present and deprecated code exec copy removed"
 else
-  assert_fail "delegation guidance" "missing one or more runtime command variants"
+  assert_fail "delegation guidance" "missing Kay primary command, compatibility note, or still documents code exec"
 fi
 
 echo "=== T3: kay-delegate workflow sections present ==="

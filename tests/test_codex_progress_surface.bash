@@ -32,7 +32,7 @@ run_hook() {
 }
 
 echo "=== test_noop_when_marker_absent ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"x\""},"tool_response":{"output":"STATUS: SUCCESS\nFILES_CHANGED: [foo]\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []"}}')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"x\""},"tool_response":{"output":"STATUS: SUCCESS\nFILES_CHANGED: [foo]\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []"}}')"
 if [ -z "${_out}" ]; then
   assert_pass "test_noop_when_marker_absent"
 else
@@ -49,16 +49,16 @@ else
   assert_fail "test_noop_when_tool_not_bash" "got: '${_out}'"
 fi
 
-echo "=== test_noop_when_command_lacks_codex_exec ==="
+echo "=== test_noop_when_command_lacks_kay_exec ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"git status"},"tool_response":{"output":"nothing to commit"}}')"
 if [ -z "${_out}" ]; then
-  assert_pass "test_noop_when_command_lacks_codex_exec"
+  assert_pass "test_noop_when_command_lacks_kay_exec"
 else
-  assert_fail "test_noop_when_command_lacks_codex_exec" "got: '${_out}'"
+  assert_fail "test_noop_when_command_lacks_kay_exec" "got: '${_out}'"
 fi
 
 echo "=== test_noop_when_output_lacks_status ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"x\""},"tool_response":{"output":"[KAY] working...\n[KAY] still working"}}')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"x\""},"tool_response":{"output":"[KAY] working...\n[KAY] still working"}}')"
 if [ -z "${_out}" ]; then
   assert_pass "test_noop_when_output_lacks_status"
 else
@@ -79,7 +79,7 @@ else
 fi
 
 echo "=== test_env_prefix_before_exec_is_handled ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"FOO=bar codex exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: [utils.py]\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"FOO=bar kay exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: [utils.py]\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}')"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
     && echo "${_ctx}" | grep -q '/kay-stop' \
@@ -91,7 +91,7 @@ fi
 
 echo "=== test_ansi_stripped_before_status_parse ==="
 _ansi_output=$'\x1b[31m[KAY] STATUS: SUCCESS\x1b[0m\n\x1b[32m[KAY] FILES_CHANGED: [foo.py]\x1b[0m\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []'
-_json="$(jq -cn --arg o "$_ansi_output" '{tool_name:"Bash",tool_input:{command:"codex exec \"x\""},tool_response:{output:$o}}')"
+_json="$(jq -cn --arg o "$_ansi_output" '{tool_name:"Bash",tool_input:{command:"kay exec \"x\""},tool_response:{output:$o}}')"
 _out="$(run_hook "$_json")"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if [ -n "${_ctx}" ] && ! printf '%s' "${_ctx}" | grep -q $'\x1b'; then
@@ -102,7 +102,7 @@ fi
 
 echo "=== test_redacts_secrets ==="
 _secret_output=$'STATUS: SUCCESS\nAuthorization: Bearer super-secret-token\napi_key=abc1234567890\nFILES_CHANGED: []\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []'
-_json_secret="$(jq -cn --arg o "$_secret_output" '{tool_name:"Bash",tool_input:{command:"codex exec \"x\""},tool_response:{output:$o}}')"
+_json_secret="$(jq -cn --arg o "$_secret_output" '{tool_name:"Bash",tool_input:{command:"kay exec \"x\""},tool_response:{output:$o}}')"
 _out="$(run_hook "$_json_secret")"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if ! printf '%s' "${_ctx}" | grep -qi 'super-secret-token' \

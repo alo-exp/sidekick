@@ -10,12 +10,12 @@ Six tiers, each with a distinct purpose. Tier 1 runs every local suite and aggre
 
 | Tier | Script | Runs in CI | Exercises real agent | Purpose |
 |------|--------|:---:|:---:|---|
-| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Code coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup, repository layout. |
+| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Kay coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup, repository layout. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full Claude→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
-| **4. Code marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Code | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
-| **5. Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Code | `code --version` succeeds; trivial `code exec` round-trip completes against the real binary. |
-| **6. Code live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Code | Full Claude→Code delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
+| **4. Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Kay | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
+| **5. Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Kay | `kay --version` succeeds; trivial `kay exec` round-trip completes against the real binary. |
+| **6. Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Kay | Full Claude→Kay delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 
 Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
 
@@ -42,12 +42,12 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_post_release_cleanup.bash` | Post-release cleanup script: removes transient repo-local artifacts and is idempotent |
 | `test_repo_layout.bash` | Repository layout guard: expected top-level files/directories and docs structure stay organized |
 | `test_codex_skill.bash` | Kay skill structure, activation/deactivation markers, and packaging expectations |
-| `test_codex_enforcer_hook.bash` | Kay PreToolUse behavior: deny direct mutation, rewrite `code exec` (with compatibility aliases), allow read-only passthrough |
+| `test_codex_enforcer_hook.bash` | Kay PreToolUse behavior: deny direct mutation, rewrite `kay exec` (with compatibility aliases), allow read-only passthrough |
 | `test_codex_progress_surface.bash` | Kay PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, stop hint |
 | `test_codex_plugin_manifest.bash` | Kay plugin manifest structure, interface metadata, and path wiring |
 | `test_codex_marketplace_manifest.bash` | Kay marketplace entry, source pinning, and install-packaging expectations |
 | `run_live_codex_plugin_read.bash` | Live marketplace plugin-read path for the packaged Kay surface |
-| `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact; Code/Kay bootstrap source stays on the upstream latest installer line |
+| `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact; Kay bootstrap source stays pinned to the installer that creates the `kay` binary |
 | `test_install_sh.bash` | Installer idempotency, sentinel behavior, SessionStart hook scope, selective install env flags, credentials schema validation |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
 | `test_clean_reinstall.bash` | Clean reinstall scrub: stale registry/config/hook/cache state removal, lowercase-only versioned-cache bootstrap, legacy uppercase archive/retirement, stable `current` alias |

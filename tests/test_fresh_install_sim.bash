@@ -22,7 +22,7 @@ make_codex_stub() {
   local path="$1"
   cat > "${path}" <<EOF
 #!/bin/bash
-echo "code ${CODEX_INSTALL_LABEL}"
+echo "kay ${CODEX_INSTALL_LABEL}"
 EOF
   chmod +x "${path}"
 }
@@ -46,7 +46,7 @@ prepare_install_sandbox "${INSTALL_ROOT}"
 # F1 — Non-interactive + no pinned SHA: exits 0 (gate only fires when
 #       forge is NOT installed and we try to download)
 # ---------------------------------------------------------------------------
-echo "=== F1: Non-interactive gate is present in code ==="
+echo "=== F1: Non-interactive gate is present ==="
 # Structural test: verify the gate logic exists in install.sh
 if grep -q '! -t 1' "${INSTALL_SH}" && grep -q 'skipping auto-install' "${INSTALL_SH}"; then
   assert_pass "Non-interactive abort gate present in install.sh"
@@ -91,9 +91,10 @@ cat > "${FAKE_BIN}/forge" << 'FF'
 echo "forge 0.0.0-test"
 FF
 chmod +x "${FAKE_BIN}/forge"
-make_codex_stub "${FAKE_BIN}/code"
-ln -sf code "${FAKE_BIN}/codex"
-ln -sf code "${FAKE_BIN}/coder"
+make_codex_stub "${FAKE_BIN}/kay"
+ln -sf kay "${FAKE_BIN}/code"
+ln -sf kay "${FAKE_BIN}/codex"
+ln -sf kay "${FAKE_BIN}/coder"
 HOME="${SANDBOX}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_ROOT}/install.sh" 2>&1 </dev/null || true
 COUNT=$(grep -c '.local/bin' "${FAKE_ZSHRC}" 2>/dev/null || echo 1)
 if [ "${COUNT}" -le 1 ]; then
@@ -116,12 +117,13 @@ cat > "${FAKE_BIN}/forge" << 'FF'
 echo "forge 0.0.0-test"
 FF
 chmod +x "${FAKE_BIN}/forge"
-make_codex_stub "${FAKE_BIN}/code"
-ln -sf code "${FAKE_BIN}/codex"
-ln -sf code "${FAKE_BIN}/coder"
+make_codex_stub "${FAKE_BIN}/kay"
+ln -sf kay "${FAKE_BIN}/code"
+ln -sf kay "${FAKE_BIN}/codex"
+ln -sf kay "${FAKE_BIN}/coder"
 INSTALL_OUTPUT=$(HOME="${FRESH}" PATH="${FAKE_BIN}:/usr/bin:/bin:/usr/sbin:/sbin" bash "${INSTALL_ROOT}/install.sh" 2>&1 </dev/null || true)
 CODE_INSTALL_PROBE_SKIPPED=0
-if grep -q 'Code install completed but code binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
+if grep -q 'Kay install completed but kay binary was not found' <<<"${INSTALL_OUTPUT:-}"; then
   CODE_INSTALL_PROBE_SKIPPED=1
 fi
 if grep -q 'Failed to resolve the latest Code release version' <<<"${INSTALL_OUTPUT:-}"; then
@@ -161,10 +163,10 @@ else
   assert_fail "PATH in shell profile" "not found in .zshrc or .bashrc"
 fi
 
-if [ -L "${FAKE_BIN}/code" ] && [ -L "${FAKE_BIN}/coder" ]; then
-  assert_pass "Codex aliases created in sandbox bin"
+if [ -L "${FAKE_BIN}/code" ] && [ -L "${FAKE_BIN}/codex" ] && [ -L "${FAKE_BIN}/coder" ]; then
+  assert_pass "Kay compatibility aliases created in sandbox bin"
 else
-  assert_skip "Codex aliases" "code/coder symlinks not created in this environment"
+  assert_skip "Kay compatibility aliases" "code/codex/coder symlinks not created in this environment"
 fi
 
 # ---------------------------------------------------------------------------
