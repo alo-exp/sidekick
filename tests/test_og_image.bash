@@ -22,11 +22,13 @@ expect_contains() {
   fi
 }
 
-echo "=== T1: Social preview highlights current Kay support ==="
-expect_contains "docs/og-image.html" "Forge for Claude Code. Kay for Code/Codex" "og image highlights host-specific support"
-expect_contains "docs/og-image.html" "Available · Kay" "og image badge names Kay"
+echo "=== T1: Social preview highlights current shared-agent support ==="
+expect_contains "docs/og-image.html" "Reduce Claude Code and Codex costs by up to" "og image keeps the cost-focused headline"
+expect_contains "docs/og-image.html" "Claude Code and Codex can both route work to Forge or Kay" "og image describes Forge and Kay as shared agents"
+expect_contains "docs/og-image.html" "MiniMax.io and OpenCode Go" "og image highlights MiniMax.io and OpenCode Go"
+expect_contains "docs/og-image.html" "Available · Kay Agent" "og image badge names Kay as an agent"
 expect_contains "docs/og-image.html" "<div class=\"card-name\">Kay</div>" "og image card names Kay"
-expect_contains "docs/og-image.html" "Every Code Runtime" "og image role describes Kay"
+expect_contains "docs/og-image.html" "Every Code Agent" "og image role describes Kay"
 expect_contains "docs/og-image.html" "Code exec path" "og image describes Kay execution path"
 
 echo "=== T2: Kay is surfaced before Forge in the preview pills ==="

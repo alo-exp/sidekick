@@ -40,32 +40,44 @@ extract_sidekick_section() {
 }
 
 echo "=== T1: Homepage copy highlights current Sidekick support ==="
-expect_contains "docs/index.html" "Delegate implementation work to" "homepage hero headline describes delegation"
-expect_contains "docs/index.html" "<p class=\"subtitle\"><strong>Give Claude Code and Codex execution sidekicks.</strong>" "homepage subtitle leads with the sidekick claim"
+expect_contains "docs/index.html" "Reduce Claude Code and Codex Costs by up to" "homepage keeps the cost-focused hero headline"
+expect_contains "docs/index.html" "<p class=\"subtitle\"><strong>Give Both Hosts the Sidekick They're Missing.</strong>" "homepage subtitle leads with the shared-host claim"
 if grep -F '<h1>' "${ROOT}/docs/index.html" | grep -Fq "Give Claude Code and Codex execution sidekicks"; then
   fail "homepage hero headline excludes the sidekick claim" "subtitle text still appears in the h1"
 else
   pass "homepage hero headline excludes the sidekick claim"
 fi
-expect_contains "docs/index.html" "Sidekick installs and orchestrates Forge for Claude Code and Kay for Code/Codex workflows" "homepage describes current shipped runtimes"
-expect_contains "docs/index.html" "Claude Code delegates to Forge. Code and Codex workflows route to Kay" "homepage describes host-specific delegation"
-expect_contains "docs/index.html" "Every Code extension line" "homepage describes Kay as the Every Code runtime"
+expect_contains "docs/index.html" "Sidekick gives Claude Code and Codex the same two implementation agents: Forge and Kay" "homepage describes Forge and Kay as shared agents"
+expect_contains "docs/index.html" "Claude Code and Codex can both work with Forge and Kay" "homepage avoids host-specific agent mapping"
+expect_contains "docs/index.html" "Every Code Agent · MiniMax.io + OpenCode Go" "homepage describes Kay as the Every Code agent"
 expect_contains "docs/index.html" "code exec --full-auto" "homepage documents Kay primary exec path"
 expect_contains "docs/index.html" "MiniMax M2.7" "homepage highlights Kay MiniMax default"
-expect_not_contains "docs/index.html" "OpenCode Go" "homepage removes stale OpenCode Go copy"
+expect_contains "docs/index.html" "OpenCode Go" "homepage highlights OpenCode Go compatibility"
+expect_not_contains "docs/index.html" "OpenRouter" "homepage does not highlight OpenRouter"
+expect_not_contains "docs/index.html" "Forge for Claude Code. Kay for Code/Codex" "homepage removes stale host-specific mapping"
+expect_not_contains "docs/index.html" "Sidekick installs and orchestrates Forge for Claude Code and Kay for Code/Codex workflows" "homepage removes stale runtime-specific copy"
 expect_not_contains "docs/index.html" "<div class=\"sk-name\">OpenCode</div>" "homepage removes OpenCode sidekick card"
 
 echo "=== T2: Sidekick cards appear in the requested order ==="
 section="$(extract_sidekick_section)"
 kay_line="$(printf '%s\n' "${section}" | grep -n '<div class="sk-name">Kay</div>' | head -n1 | cut -d: -f1 || true)"
 forge_line="$(printf '%s\n' "${section}" | grep -n '<div class="sk-name">Forge</div>' | head -n1 | cut -d: -f1 || true)"
+pilot_line="$(printf '%s\n' "${section}" | grep -n '<div class="sk-name">Pilot</div>' | head -n1 | cut -d: -f1 || true)"
 
-if [ -n "${kay_line}" ] && [ -n "${forge_line}" ] && [ "${kay_line}" -lt "${forge_line}" ]; then
-  pass "homepage card order is Kay → Forge"
+if [ -n "${kay_line}" ] && [ -n "${forge_line}" ] && [ -n "${pilot_line}" ] && [ "${kay_line}" -lt "${forge_line}" ] && [ "${forge_line}" -lt "${pilot_line}" ]; then
+  pass "homepage card order is Kay → Forge → Pilot"
 else
-  fail "homepage card order is Kay → Forge" "lines: Kay='${kay_line}', Forge='${forge_line}'"
+  fail "homepage card order is Kay → Forge → Pilot" "lines: Kay='${kay_line}', Forge='${forge_line}', Pilot='${pilot_line}'"
 fi
-expect_not_contains "docs/index.html" "<div class=\"sk-name\">Pilot</div>" "homepage sidekick cards exclude unshipped Pilot card"
+expect_contains "docs/index.html" "<div class=\"sk-name\">Pilot</div>" "homepage restores the Pilot card"
+
+echo "=== T3: Terminal-Bench 2.0 rows are current ==="
+expect_contains "docs/index.html" "ForgeCode currently holds #2, #4, and #6" "homepage benchmark summary uses current Forge ranks"
+expect_contains "docs/index.html" "GPT-5.5" "homepage benchmark includes current Codex CLI leader"
+expect_contains "docs/index.html" "TongAgents" "homepage benchmark includes current #3 entry"
+expect_contains "docs/index.html" "<span class=\"rank-badge\">#4</span>" "homepage benchmark marks ForgeCode at #4"
+expect_contains "docs/index.html" "<span style=\"color:var(--text-dim);font-family:var(--font-mono)\">#53</span>" "homepage benchmark updates OpenCode rank"
+expect_not_contains "docs/index.html" "82.9%" "homepage removes stale Pilot benchmark score"
 
 echo ""
 echo "======================================="
