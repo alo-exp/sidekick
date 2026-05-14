@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Delegation Workflow — Sidekick Help</title>
-<meta name="description" content="The complete end-to-end delegation workflow — from activating the skill to reviewing output and updating AGENTS.md. Start Here shows the task-first docs map.">
+<meta name="description" content="The complete end-to-end Sidekick workflow for Forge and Kay — from activating the runtime path to reviewing output, preserving history, and updating AGENTS.md where applicable.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -115,7 +115,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Delegation Workflow</span>
     </div>
     <h1>Delegation Workflow</h1>
-    <p>The complete flow for delegating a coding task — from activation through output review and the post-session AGENTS.md update. If you need the task-first docs map, read <a href="../../START-HERE.md">Start Here</a> first.</p>
+    <p>The complete flow for delegating a coding task through Forge or Kay — from runtime activation through output review, task history, and the Forge AGENTS.md mentoring loop. If you need the task-first docs map, read <a href="../../START-HERE.md">Start Here</a> first.</p>
   </div>
 </div>
 
@@ -131,7 +131,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <aside class="doc-sidebar">
       <ul class="sidebar-nav">
         <li class="sidebar-section">Setup</li>
-        <li><a href="#activation">1. Activation</a></li>
+        <li><a href="#activation">1. Forge Activation</a></li>
+        <li><a href="#kay-workflow">Kay Workflow</a></li>
         <li class="sidebar-section">Delegation</li>
         <li><a href="#task-prompt">2. Task Prompt</a></li>
         <li><a href="#monitoring">3. Monitoring</a></li>
@@ -180,6 +181,32 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
         <div class="callout-body"><strong>Health check failing?</strong> See <a href="../troubleshooting/#health-check">Troubleshooting → Health Check Failures</a> for step-by-step fixes. The most common cause is a missing or misconfigured <code>~/forge/.credentials.json</code>.</div>
+      </div>
+
+      <h2 id="kay-workflow">Kay Workflow</h2>
+      <p>Kay uses Code's native automation flow. Sidekick keeps the runtime installed, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger.</p>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Verify Code runtime</h4>
+            <p>Run <code>code --version</code> and <code>code exec --help</code>. If the primary binary is unavailable, use <code>codex</code> or <code>coder</code>. If MiniMax login is missing, run <code>code login --provider minimax --with-api-key</code>.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
+          <div class="flow-body">
+            <h4>Run the delegated task</h4>
+            <p>Use <code>code exec --full-auto "&lt;task&gt;"</code>. Kay relies on Code-native agents, skills, subagents, and <code>AGENTS.md</code> rather than Forge's 5-field prompt and fallback ladder.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-connector"><div class="flow-num">3</div></div>
+          <div class="flow-body">
+            <h4>Review the summary</h4>
+            <p>The Kay progress surface emits compact task context and preserves lookup metadata in <code>.kay/conversations.idx</code>. Review changed files, test output, and the final task summary before continuing.</p>
+          </div>
+        </div>
       </div>
 
       <h2 id="task-prompt">Step 2 — Compose Task Prompt</h2>

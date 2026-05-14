@@ -146,7 +146,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <aside class="doc-sidebar">
       <ul class="sidebar-nav">
         <li class="sidebar-section">Delegation</li>
-        <li><a href="#delegation">Delegation Mode</a></li>
+        <li><a href="#delegation">Forge Delegation</a></li>
+        <li><a href="#kay-delegation">Kay Delegation</a></li>
         <li><a href="#skill-md">SKILL.md</a></li>
         <li><a href="#failure-detection">Failure Detection</a></li>
         <li><a href="#fallback-ladder">Fallback Ladder</a></li>
@@ -167,6 +168,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
         <div class="callout-body"><strong>Delegation persists until deactivated.</strong> Once <code>/forge</code> is active, all coding tasks are delegated to Forge. To return to Claude doing implementation directly, deactivate with <code>/forge-stop</code>. If you are orienting yourself first, read <a href="../../START-HERE.md">Start Here</a>.</div>
+      </div>
+
+      <h2 id="kay-delegation">Kay Delegation Model</h2>
+      <p>Kay is the Sidekick identity for the Every Code runtime. It uses Code's native automation surface instead of recreating Forge's prompt-injection loop: <code>code exec --full-auto</code> is the primary path, with <code>codex exec --full-auto</code> and <code>coder exec --full-auto</code> kept as compatibility fallbacks.</p>
+      <p>Kay keeps Code-native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, SessionStart runtime sync, a session-scoped <code>.kay</code> marker, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
+      <div class="callout callout-info">
+        <span class="callout-icon"><i data-lucide="info"></i></span>
+        <div class="callout-body"><strong>Forge and Kay are intentionally different.</strong> Forge uses a Claude-led fallback ladder and mentoring loop. Kay uses Code's native execution model with Sidekick packaging and compatibility around it.</div>
       </div>
 
       <h2 id="skill-md">SKILL.md — The Instruction Set</h2>
@@ -233,7 +242,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         </tbody>
       </table>
 
-      <p>For general code changes and refactoring, inject <code>code-review</code>. Add <code>quality-gates</code> for multi-phase delivery tasks.</p>
+      <p>For general code changes and refactoring, inject <code>code-review</code> and <code>quality-gates</code>. Add <code>security</code> when the task touches auth, validation, credentials, or data handling.</p>
       <p>Claude enforces an <strong>injection budget</strong>: inject ≤2 skills per task unless the task is clearly multi-domain. Over-injection bloats the prompt and degrades Forge's focus.</p>
 
       <h2 id="agents-md">AGENTS.md Mentoring Loop</h2>
@@ -275,7 +284,12 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per Forge call</span></div>
 
       <h2 id="provider-config">Provider Configuration</h2>
-      <p>Sidekick supports two providers for Forge. The provider and model are set in <code>~/forge/.forge.toml</code> (global, not per-project). API credentials are stored separately in <code>~/forge/.credentials.json</code>.</p>
+      <p>Sidekick keeps provider ownership with the active runtime. Forge provider and model settings live in <code>~/forge/.forge.toml</code> with API credentials in <code>~/forge/.credentials.json</code>. Kay defaults to MiniMax M2.7 in <code>~/.code/config.toml</code>, with legacy <code>~/.codex/config.toml</code> retained only as a compatibility path.</p>
+
+      <h3>Kay MiniMax config</h3>
+      <p>For Kay, use Code's native login flow when credentials are missing:</p>
+      <div class="code-label">Kay MiniMax login</div>
+      <div class="code-block"><span class="key">code login</span> <span class="val">--provider minimax --with-api-key</span></div>
 
       <h3>OpenRouter (recommended)</h3>
       <p>OpenRouter routes requests to the <code>qwen/qwen3-coder-plus</code> model. This is the default and recommended provider — it has the broadest availability and is the model Sidekick is optimized for.</p>

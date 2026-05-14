@@ -22,11 +22,12 @@ expect_contains() {
   fi
 }
 
-echo "=== T1: Social preview highlights Kay support ==="
-expect_contains "docs/og-image.html" "Now supporting Kay, the multi-AI fork of OSS Codex" "og image highlights Kay support"
+echo "=== T1: Social preview highlights current Kay support ==="
+expect_contains "docs/og-image.html" "Forge for Claude Code. Kay for Code/Codex" "og image highlights host-specific support"
 expect_contains "docs/og-image.html" "Available · Kay" "og image badge names Kay"
 expect_contains "docs/og-image.html" "<div class=\"card-name\">Kay</div>" "og image card names Kay"
-expect_contains "docs/og-image.html" "Multi-AI Fork of OSS Codex" "og image role describes Kay"
+expect_contains "docs/og-image.html" "Every Code Runtime" "og image role describes Kay"
+expect_contains "docs/og-image.html" "Code exec path" "og image describes Kay execution path"
 
 echo "=== T2: Kay is surfaced before Forge in the preview pills ==="
 kay_line="$(grep -n '<span class="pill">🧠 Kay</span>' "${ROOT}/docs/og-image.html" | head -n1 | cut -d: -f1 || true)"
