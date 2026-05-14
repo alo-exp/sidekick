@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Forge Plugin — auto-install script
-# Called by the SessionStart bootstrap hook and the runtime repair path.
-# Installs or repairs the Forge and Code runtimes and adds them to PATH.
+# Called by the first-run SessionStart bootstrap hook and manual repair paths.
+# Installs Forge and Code runtimes when explicitly invoked and adds them to PATH.
 # Provider/API key setup is guided interactively by the forge skill in Claude.
 #
 # SECURITY NOTE (R8-2): This script runs non-interactively under the SessionStart hook.

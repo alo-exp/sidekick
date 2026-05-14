@@ -52,7 +52,6 @@ check_hash "codex_delegation_enforcer_sha256" "hooks/codex-delegation-enforcer.s
 check_hash "enforcer_utils_sha256" "hooks/lib/enforcer-utils.sh"
 check_hash "sidekick_registry_sha256" "sidekicks/registry.json"
 check_hash "legacy_hooks_scrub_sha256" "hooks/scrub-legacy-user-hooks.py"
-check_hash "runtime_sync_sha256" "hooks/runtime-sync.sh"
 check_hash "forge_progress_surface_sha256" "hooks/forge-progress-surface.sh"
 check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
 check_hash "validate_release_gate_sha256" "hooks/validate-release-gate.sh"

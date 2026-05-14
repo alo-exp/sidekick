@@ -18,13 +18,9 @@ Kay    = Hands
 - When the active host is Claude Code, follow STEP 0 through STEP 2 as written.
 - When the active host is Code, keep this skill to packaging/runtime configuration guidance only. Do not attempt to delegate work to the same runtime.
 
-## Runtime Sync
+## Runtime Readiness
 
-The Sidekick SessionStart hook keeps the Code runtime current before delegation starts:
-
-- If Kay is missing, the hook installs it.
-- If Kay is already installed and exposes a native `update` command, the hook uses that instead of reinstalling.
-- If the native update path is unavailable or fails, the hook falls back to a selective repair install for just the missing or stale runtime.
+Kay readiness is checked when delegation starts for the current session. SessionStart does not update or repair the Code/Kay runtime; if the health check fails, guide the user through the Code/Kay setup or login path below.
 
 ## STEP 0 -- Health Check
 

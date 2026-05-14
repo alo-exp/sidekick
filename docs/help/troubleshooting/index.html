@@ -169,8 +169,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-block"><span class="cmd">curl -fsSL https://forgecode.dev/cli | sh</span></div>
 
       <h3>Sidekick installed but forge binary was not</h3>
-      <p><strong>Cause:</strong> The SessionStart install hook did not complete, or the runtime cache could not be repaired from the local snapshot.</p>
-      <p><strong>Fix:</strong> Restart the host app to let SessionStart run again, then check <code>~/.local/bin/forge</code>. If it still fails, reinstall Sidekick from the host plugin surface.</p>
+      <p><strong>Cause:</strong> The first-run plugin bootstrap did not complete, or Forge was removed after the plugin was installed.</p>
+      <p><strong>Fix:</strong> Reinstall Sidekick from the host plugin surface, then run <code>/forge</code> again so the current session health check can verify the binary.</p>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
@@ -185,7 +185,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <ul>
         <li>Run <code>code --version</code>, then <code>codex --version</code>, then <code>coder --version</code> to find the available alias.</li>
         <li>Run the matching <code>exec --help</code> command to verify non-interactive execution is available.</li>
-        <li>Restart the host app so Sidekick's runtime sync hook can repair a missing or stale Kay install.</li>
+        <li>If no alias is available, reinstall Sidekick or install the Kay runtime path again before starting delegation.</li>
       </ul>
       <div class="code-block"><span class="cmd">code exec --help</span>
 <span class="cmd">codex exec --help</span>

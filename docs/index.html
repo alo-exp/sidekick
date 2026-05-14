@@ -873,8 +873,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background:var(--violet-subtle);color:#a78bfa"><i data-lucide="plug"></i></div>
-        <h3>Agent Sync</h3>
-        <p>SessionStart hooks install missing agent assets, prefer native updates when available, and selectively repair stale Forge or Kay installs.</p>
+        <h3>Session-Gated Hooks</h3>
+        <p>Forge and Kay enforcement stays dormant until delegation starts for the current session, then activates through the session marker.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background:var(--pink-subtle);color:#f472b6"><i data-lucide="file-text"></i></div>
@@ -1123,8 +1123,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <section id="install">
   <div class="container text-center">
     <div class="section-label">Installation</div>
-    <h2 class="section-title">Install Once, Sync Every Session</h2>
-    <p class="section-desc centered">Install the Sidekick plugin in your host. The plugin handles the shared skills, hooks, agent sync, and backend wiring after the next session start.</p>
+    <h2 class="section-title">Install Once, Delegate Per Session</h2>
+    <p class="section-desc centered">Install the Sidekick plugin in your host. The plugin provides the shared skills, hooks, and host wiring; Forge and Kay readiness is checked when delegation starts.</p>
     <div class="install-block">
       <div class="install-header">
         <span class="block-title">Plugin install</span>
@@ -1142,7 +1142,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <span class="comment"># Then enable Sidekick from the Codex plugin surface</span>
       </div>
     </div>
-    <p class="mt-4" style="font-size:.85rem;color:var(--text-dim)">Restart your host app — Sidekick installs missing agent assets and syncs existing ones on the next session start.</p>
+    <p class="mt-4" style="font-size:.85rem;color:var(--text-dim)">Restart your host app after installation so the hook surface is loaded before starting a Forge or Kay session.</p>
   </div>
 </section>
 
@@ -1151,7 +1151,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container text-center">
     <div class="section-label">Setup</div>
     <h2 class="section-title">Three Steps, Then Delegate</h2>
-    <p class="section-desc centered">For the user, setup is API access, plugin install, then delegation. Sidekick handles agent sync internally after installation.</p>
+    <p class="section-desc centered">For the user, setup is API access, plugin install, then delegation. Sidekick checks runtime readiness when the session delegation starts.</p>
     <div class="setup-steps reveal">
       <div class="setup-step">
         <div class="step-num">1</div>

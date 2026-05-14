@@ -69,6 +69,8 @@ expect_not_contains "docs/index.html" "Auto-Install" "homepage removes the Auto-
 expect_not_contains "docs/index.html" "Config path" "homepage backend table removes config path column"
 expect_not_contains "docs/index.html" "Forge for Claude Code. Kay for Code/Codex" "homepage removes stale host-specific mapping"
 expect_not_contains "docs/index.html" "Sidekick installs and orchestrates Forge for Claude Code and Kay for Code/Codex workflows" "homepage removes stale runtime-specific copy"
+expect_not_contains "docs/index.html" "SessionStart hooks install missing agent assets" "homepage removes session-start runtime sync copy"
+expect_contains "docs/index.html" "Session-Gated Hooks" "homepage describes per-session hook activation"
 expect_not_contains "docs/index.html" "<div class=\"sk-name\">OpenCode</div>" "homepage removes OpenCode sidekick card"
 
 echo "=== T2: Sidekick cards appear in the requested order ==="
@@ -102,6 +104,8 @@ expect_contains "docs/index.html" "/plugin install" "homepage gives Claude Code 
 expect_contains "docs/index.html" "alo-labs/sidekick" "homepage names Claude Sidekick plugin"
 expect_contains "docs/index.html" "codex plugin marketplace add" "homepage gives Codex plugin marketplace instruction"
 expect_not_contains "docs/index.html" "codex plugin marketplace add</span> <span class=\"val\">alo-exp/sidekick" "homepage uses alo-labs for both install examples"
+expect_contains "docs/index.html" "Install Once, Delegate Per Session" "homepage removes sync-every-session install framing"
+expect_not_contains "docs/index.html" "Install Once, Sync Every Session" "homepage removes sync-every-session heading"
 expect_contains "docs/index.html" "Get API Access" "homepage first setup step is API access"
 expect_contains "docs/index.html" "Install Sidekick" "homepage second setup step is plugin install"
 expect_contains "docs/index.html" "Delegate to an Agent" "homepage third setup step is delegation"

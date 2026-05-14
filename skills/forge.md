@@ -39,10 +39,10 @@ Forge  = Hands (write, edit, run, commit, test)
 > ⚠️ **First-run notice (SENTINEL FINDING-5.1 R2):** On the first Claude session after
 > installing this plugin, `install.sh` runs automatically via the SessionStart hook. It
 > downloads the forge binary from `forgecode.dev` and adds `~/.local/bin` to your shell
-> PATH in `~/.zshrc`, `~/.bashrc`, and `~/.bash_profile`. On later session starts, the
-> runtime sync helper uses Forge's native `forge update` when available and only repairs
-> the install if Forge is missing or the update path fails. To opt out, remove the plugin
-> before starting a new session. See `install.sh` for the exact changes made.
+> PATH in `~/.zshrc`, `~/.bashrc`, and `~/.bash_profile`. Later session starts do not
+> update or repair Forge automatically; `/forge` re-checks runtime readiness for the
+> current session. To opt out, remove the plugin before starting a new session. See
+> `install.sh` for the exact changes made.
 
 Always verify forge is operational before delegating. Run silently:
 
