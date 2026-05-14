@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Sidekick Help Center — Claude and Codex</title>
-<meta name="description" content="Comprehensive documentation for Sidekick — AI coding agents for Claude Code and Codex. Learn how to delegate with Forge and Kay, configure AGENTS.md, and master the fallback ladder.">
+<meta name="description" content="Comprehensive documentation for Sidekick — AI coding agents for Claude Code and Codex. Learn how to install the plugin, delegate with Forge and Kay, understand per-session hooks, and use AGENTS.md mentoring.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -115,7 +115,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="container">
     <div class="badge"><i data-lucide="book-open"></i> Help Center</div>
     <h1>How Can We Help You?</h1>
-    <p>Everything you need to find the right Sidekick docs for your task — from first install to delegation, debugging, release prep, and runtime differences across Claude and Codex.</p>
+    <p>Everything you need to find the right Sidekick docs for your task — from first install to per-session delegation, debugging, release prep, and runtime differences across Claude and Codex.</p>
     <div class="search-wrap">
       <span class="search-icon"><i data-lucide="search"></i></span>
       <input type="text" placeholder="Search tasks, docs, commands, concepts…" id="search-input" autocomplete="off">
@@ -182,14 +182,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-cta">Open start page →</div>
       </a>
 
-      <a href="getting-started/" class="help-card" data-keywords="install setup prerequisites beginner first run forge invocation openrouter health check">
+      <a href="getting-started/" class="help-card" data-keywords="install setup prerequisites beginner first run forge invocation provider minimax health readiness check">
         <div class="card-icon"><i data-lucide="rocket"></i></div>
         <span class="card-badge" style="background:var(--green-subtle);color:var(--green)">Start here</span>
         <h3>Getting Started</h3>
-        <p>New to Sidekick? Install the plugin, configure Forge or Kay for your agent path, and delegate your first coding task in minutes.</p>
+        <p>New to Sidekick? Install the plugin, choose Forge or Kay for your agent path, run the current-session readiness check, and delegate your first coding task.</p>
         <ul class="card-topics">
           <li>Installing Sidekick via /plugin install</li>
-          <li>Runtime prerequisites and health checks</li>
+          <li>Runtime prerequisites and readiness checks</li>
           <li>Your first delegation task</li>
           <li>Reading the task-first docs map</li>
           <li>Understanding AGENTS.md bootstrap</li>
@@ -197,41 +197,41 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-cta">Read guide →</div>
       </a>
 
-      <a href="concepts/" class="help-card" data-keywords="concepts forge delegation skill injection fallback ladder agents mentoring token optimization">
+      <a href="concepts/" class="help-card" data-keywords="concepts forge delegation advisor mentoring skill injection fallback ladder agents token optimization hooks">
         <div class="card-icon"><i data-lucide="brain"></i></div>
         <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Fundamentals</span>
         <h3>Core Concepts</h3>
-        <p>Understand how Sidekick works across Claude Code and Codex — SKILL.md activation, enforced hooks, progress surfaces, the Forge fallback ladder, and the Kay agent model.</p>
+        <p>Understand how Sidekick works across Claude Code and Codex — host-advisor delegation, SKILL.md activation, enforced hooks, progress surfaces, the Forge fallback ladder, and the Kay agent model.</p>
         <ul class="card-topics">
           <li>Delegation mode and SKILL.md</li>
           <li>Fallback ladder: L1 Guide → L2 Handhold → L3 Take over</li>
           <li>Skill injection and the mapping table</li>
-          <li>AGENTS.md three-tier mentoring loop</li>
+          <li>AGENTS.md mentoring and deduplication</li>
           <li>Token optimization and agent-specific config</li>
         </ul>
         <div class="card-cta">Read concepts →</div>
       </a>
 
-      <a href="workflows/" class="help-card" data-keywords="delegation workflow delegate monitor review debrief session loop forge task prompt">
+      <a href="workflows/" class="help-card" data-keywords="delegation workflow delegate monitor review debrief session loop marker forge task prompt kay">
         <div class="card-icon"><i data-lucide="git-branch-plus"></i></div>
         <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Workflow</span>
         <h3>Delegation Workflow</h3>
-        <p>The end-to-end flow for delegating a task through Forge or Kay — from activating the runtime path to reviewing output and preserving task history.</p>
+        <p>The end-to-end flow for delegating a task through Forge or Kay — from current-session readiness to reviewing output and preserving task history.</p>
         <ul class="card-topics">
           <li>Activating delegation mode</li>
           <li>Crafting the 5-field task prompt</li>
           <li>Monitoring sidekick output and detecting failures</li>
           <li>DEBRIEF template on L3 takeover</li>
-          <li>Post-session AGENTS.md update</li>
+          <li>AGENTS.md mentoring with confirmation where needed</li>
         </ul>
         <div class="card-cta">View workflow →</div>
       </a>
 
-      <a href="reference/" class="help-card" data-keywords="reference commands forge config toml bootstrap skills health check options yaml frontmatter">
+      <a href="reference/" class="help-card" data-keywords="reference commands forge kay config toml bootstrap skills hooks health readiness options yaml frontmatter">
         <div class="card-icon"><i data-lucide="clipboard-list"></i></div>
         <span class="card-badge" style="background:var(--amber-subtle);color:var(--amber)">Reference</span>
         <h3>Command Reference</h3>
-        <p>Every command, SKILL.md section, config option, bootstrap skill, and canonical term — all in one place.</p>
+        <p>Every delegation skill, hook, runtime command, config file, bootstrap skill, and canonical term — all in one place.</p>
         <ul class="card-topics">
           <li>Activation and deactivation commands</li>
           <li>5-field task prompt structure</li>
@@ -242,13 +242,13 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-cta">Open reference →</div>
       </a>
 
-      <a href="troubleshooting/" class="help-card" data-keywords="troubleshoot debug error health check openrouter api key fallback forge failure recovery">
+      <a href="troubleshooting/" class="help-card" data-keywords="troubleshoot debug error health readiness provider api key fallback forge kay failure recovery hooks">
         <div class="card-icon"><i data-lucide="wrench"></i></div>
         <span class="card-badge" style="background:var(--red-subtle);color:var(--red)">Help</span>
         <h3>Troubleshooting</h3>
-        <p>Common issues with Claude or Codex health checks, runtime configuration, fallback ladder triggers, and session recovery.</p>
+        <p>Common issues with current-session readiness, provider configuration, hook enforcement, fallback ladder triggers, and session recovery.</p>
         <ul class="card-topics">
-          <li>Health check failures and fixes</li>
+          <li>Readiness failures and fixes</li>
           <li>Provider and model config</li>
           <li>Fallback ladder not triggering</li>
           <li>AGENTS.md dedup false positives</li>

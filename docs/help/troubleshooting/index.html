@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Troubleshooting — Sidekick Help</title>
-<meta name="description" content="Troubleshoot common Sidekick issues: health check failures, runtime config, fallback ladder, AGENTS.md dedup, runtime compatibility, and session recovery.">
+<meta name="description" content="Troubleshoot current Sidekick issues: per-session readiness, Forge provider config, Kay runtime config, hook enforcement, fallback behavior, AGENTS.md dedup, runtime compatibility, and session recovery.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Troubleshooting</span>
     </div>
     <h1>Troubleshooting</h1>
-    <p>Common issues with health checks, runtime config, fallback ladder behavior, and AGENTS.md — with fixes. If you need the reader map, start with <a href="../../START-HERE.md">Start Here</a>.</p>
+    <p>Common issues with per-session readiness, runtime config, hook enforcement, fallback behavior, and AGENTS.md — with fixes. If you need the reader map, start with <a href="../../START-HERE.md">Start Here</a>.</p>
   </div>
 </div>
 
@@ -133,11 +133,12 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <li><a href="#kay-runtime">Kay runtime</a></li>
         <li class="sidebar-section">Health &amp; Config</li>
         <li><a href="#health-check">Health Check Failures</a></li>
-        <li><a href="#openrouter">OpenRouter Config</a></li>
+        <li><a href="#provider-config">Forge Provider Config</a></li>
         <li class="sidebar-section">API Errors</li>
         <li><a href="#rate-limit">429 Rate Limit</a></li>
-        <li><a href="#payment-required">402 Payment Required</a></li>
+        <li><a href="#payment-required">402 / Billing Errors</a></li>
         <li class="sidebar-section">Behavior</li>
+        <li><a href="#hook-enforcement">Hook Enforcement</a></li>
         <li><a href="#forge-loop">Forge Stuck in Loop</a></li>
         <li><a href="#fallback">Fallback Not Triggering</a></li>
         <li><a href="#agents-md">AGENTS.md Issues</a></li>
@@ -164,17 +165,18 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="comment"># Then reload your shell</span>
 <span class="cmd">source ~/.zshrc</span></div>
       <ul>
-        <li>If Forge is not found at all, re-run the install script:</li>
+        <li>If Forge is not found at all, reinstall Sidekick from the host plugin surface or follow the safe repair path in <code>skills/forge.md</code> STEP 0A. Do not pipe a downloaded installer directly into a shell.</li>
       </ul>
-      <div class="code-block"><span class="cmd">curl -fsSL https://forgecode.dev/cli | sh</span></div>
+      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span>
+<span class="comment"># then restart the host and run /forge to re-check current-session readiness</span></div>
 
       <h3>Sidekick installed but forge binary was not</h3>
       <p><strong>Cause:</strong> The first-run plugin bootstrap did not complete, or Forge was removed after the plugin was installed.</p>
-      <p><strong>Fix:</strong> Reinstall Sidekick from the host plugin surface, then run <code>/forge</code> again so the current session health check can verify the binary.</p>
+      <p><strong>Fix:</strong> Reinstall Sidekick from the host plugin surface, restart the host, then run <code>/forge</code> again so the current-session readiness check can verify the binary.</p>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>After installing, always run <code>/forge</code> health check.</strong> This verifies the binary is reachable, credentials are configured, and OpenRouter is responding before you delegate any task.</div>
+        <div class="callout-body"><strong>After installing, always run <code>/forge</code>.</strong> This verifies the binary is reachable, credentials are present, and the Forge provider/model config is valid before you delegate any task.</div>
       </div>
 
       <h2 id="kay-runtime"><span class="issue-badge badge-config"><i data-lucide="terminal"></i> Config</span> Kay Runtime Issues</h2>
@@ -198,75 +200,84 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="health-check"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> Health Check Failures</h2>
 
-      <h3>✗ ForgeCode not reachable via OpenRouter</h3>
-      <p><strong>Cause:</strong> Invalid API key, no network access, or OpenRouter service issue.</p>
+      <h3>✗ Forge provider or credentials not valid</h3>
+      <p><strong>Cause:</strong> Missing binary, malformed credential array, missing provider/model config, invalid API key, no network access, or provider-side service issue.</p>
       <p><strong>Fix:</strong></p>
       <ul>
-        <li>Verify your key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
-        <li>Check your key is in <code>~/forge/.credentials.json</code> inside an entry's <code>auth_details.api_key</code></li>
-        <li>Confirm provider and model are set in <code>~/forge/.forge.toml</code></li>
-        <li>Confirm you have credits — free tier has rate limits</li>
+        <li>Run <code>which forge</code> or check <code>~/.local/bin/forge</code>.</li>
+        <li>Confirm <code>forge info</code> exits successfully and shows a provider.</li>
+        <li>Check <code>~/forge/.credentials.json</code> is a JSON array with at least one entry containing <code>id</code> and non-empty <code>auth_details</code>.</li>
+        <li>Confirm <code>provider_id</code> and <code>model_id</code> are set in <code>~/forge/.forge.toml</code>.</li>
+        <li>Confirm the chosen provider account has usable credits or quota.</li>
       </ul>
-      <div class="code-label">fix: update ~/forge/.credentials.json</div>
+      <div class="code-label">credential schema: ~/forge/.credentials.json</div>
       <div class="code-block">[
   { "id": <span style="color:var(--amber)">"open_router"</span>, "auth_details": { "api_key": <span style="color:var(--amber)">"sk-or-your-key-here"</span> } }
 ]</div>
 
       <h3>✗ Model not available</h3>
-      <p><strong>Cause:</strong> The <code>qwen/qwen3-coder-plus</code> model is temporarily unavailable or your account tier doesn't include it.</p>
-      <p><strong>Fix:</strong> Check <a href="https://openrouter.ai/models" target="_blank">openrouter.ai/models</a> for availability. If unavailable, wait and retry — ForgeCode has high uptime.</p>
+      <p><strong>Cause:</strong> The model configured in <code>~/forge/.forge.toml</code> is unavailable for your provider account or temporarily unavailable provider-side.</p>
+      <p><strong>Fix:</strong> Verify the provider/model pair in <code>~/forge/.forge.toml</code>. For OpenRouter, the current Qwen path is <code>provider_id = "open_router"</code> with <code>model_id = "qwen/qwen3-coder-plus"</code>. For MiniMax Coding, use <code>provider_id = "minimax"</code> with <code>model_id = "MiniMax-M2.7"</code>.</p>
 
       <h3>✗ Bootstrap skills not loaded</h3>
       <p><strong>Cause:</strong> <code>.forge/skills/</code> directory is missing or corrupted.</p>
       <p><strong>Fix:</strong> Reinstall Sidekick to restore bootstrap skills:</p>
       <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span></div>
 
-      <h2 id="openrouter"><span class="issue-badge badge-config"><i data-lucide="settings"></i> Config</span> OpenRouter Configuration</h2>
+      <h2 id="provider-config"><span class="issue-badge badge-config"><i data-lucide="settings"></i> Config</span> Forge Provider Configuration</h2>
 
       <h3>API key set but not persisting</h3>
       <p><strong>Cause:</strong> <code>~/forge/.credentials.json</code> may not have been written correctly.</p>
       <p><strong>Fix:</strong> Check if <code>~/forge/.credentials.json</code> exists and contains at least one credential entry with <code>auth_details.api_key</code>. If not, follow the STEP 0A setup in <code>skills/forge/SKILL.md</code> to recreate it.</p>
 
       <h3>Wrong model being used</h3>
-      <p><strong>Fix:</strong> Edit <code>~/forge/.forge.toml</code> and set <code>provider_id = "open_router"</code> plus <code>model_id = "qwen/qwen3-coder-plus"</code> explicitly. Other models may not have Forge's agentic coding capabilities.</p>
+      <p><strong>Fix:</strong> Edit <code>~/forge/.forge.toml</code> and set an explicit provider/model pair. Use <code>open_router</code> with <code>qwen/qwen3-coder-plus</code>, or <code>minimax</code> with <code>MiniMax-M2.7</code>, depending on the provider access you want Forge to use.</p>
 
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>Never commit API credentials.</strong> Your OpenRouter API key lives in <code>~/forge/.credentials.json</code> (global, never in the repo). The project-root <code>.forge.toml</code> contains only compaction settings and is gitignored automatically.</div>
+        <div class="callout-body"><strong>Never commit API credentials.</strong> Forge API keys live in <code>~/forge/.credentials.json</code> (global, never in the repo). The project-root <code>.forge.toml</code> contains only compaction settings and is gitignored automatically.</div>
       </div>
 
       <h2 id="rate-limit"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 429 Rate Limit from Forge</h2>
 
-      <h3>Too many requests — OpenRouter rate limit hit</h3>
-      <p><strong>Cause:</strong> Your OpenRouter account has hit its per-minute or per-day request limit. Free tier accounts have much lower limits than paid accounts.</p>
-      <p><strong>Symptoms:</strong> Forge returns a 429 error mid-task, or the health check fails with a rate limit message.</p>
+      <h3>Too many requests — provider rate limit hit</h3>
+      <p><strong>Cause:</strong> Your configured provider account has hit its per-minute or per-day request limit.</p>
+      <p><strong>Symptoms:</strong> Forge returns a 429 error mid-task, or the provider check fails with a rate limit message.</p>
       <p><strong>Fix:</strong></p>
       <ul>
         <li>Wait 60 seconds and retry — per-minute limits reset quickly</li>
-        <li>If you hit daily limits frequently, upgrade your OpenRouter account at <a href="https://openrouter.ai/credits" target="_blank">openrouter.ai/credits</a></li>
-        <li>Switch to MiniMax provider if it has better rate limits for your usage pattern (see <a href="../concepts/#provider-config">Provider Config</a>)</li>
+        <li>If you hit daily limits frequently, add credits or raise limits with the provider you configured.</li>
+        <li>Switch providers if the other supported Forge path has better limits for your usage pattern (see <a href="../concepts/#provider-config">Provider Config</a>)</li>
       </ul>
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>L2 subtask decomposition can spike request counts.</strong> When the fallback ladder reaches L2, Claude submits multiple atomic subtasks sequentially. If you're near your rate limit, L2 escalation may trigger a 429. Deactivate with <code>/forge-stop</code>, wait a minute, then reactivate and retry.</div>
+        <div class="callout-body"><strong>L2 subtask decomposition can spike request counts.</strong> When the fallback ladder reaches L2, the host submits multiple atomic subtasks sequentially. If you're near your rate limit, L2 escalation may trigger a 429. Deactivate with <code>/forge-stop</code>, wait a minute, then reactivate and retry.</div>
       </div>
 
       <h2 id="payment-required"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 402 Payment Required</h2>
 
-      <h3>OpenRouter account has no credits</h3>
-      <p><strong>Cause:</strong> Your OpenRouter account balance is zero or below the minimum required to run the <code>qwen/qwen3-coder-plus</code> model. This model is not on the free tier.</p>
+      <h3>Provider account has no credits</h3>
+      <p><strong>Cause:</strong> Your configured provider account balance is zero, below the minimum required for the configured model, or blocked by billing/quota rules.</p>
       <p><strong>Symptoms:</strong> Health check passes (credentials valid) but the first task delegation immediately returns 402.</p>
       <p><strong>Fix:</strong></p>
       <ul>
-        <li>Add credits to your OpenRouter account at <a href="https://openrouter.ai/credits" target="_blank">openrouter.ai/credits</a></li>
-        <li>A small top-up ($5–10) is typically enough for extensive Forge usage</li>
-        <li>After adding credits, rerun <code>/forge</code> — the health check will confirm the model is now accessible</li>
+        <li>Add credits or quota to the provider account configured in <code>~/forge/.forge.toml</code>.</li>
+        <li>After adding credits, rerun <code>/forge</code> so the current session re-checks readiness.</li>
       </ul>
       <div class="code-label">Check your balance before delegating</div>
-      <div class="code-block"><span class="comment"># Visit your OpenRouter dashboard</span>
-<span class="cmd">open https://openrouter.ai/credits</span>
-<span class="comment"># Then re-run the Sidekick health check</span>
+      <div class="code-block"><span class="comment"># Visit the dashboard for the provider configured in ~/forge/.forge.toml</span>
+<span class="comment"># Then re-run the Sidekick readiness check</span>
 <span class="cmd">/forge</span></div>
+
+      <h2 id="hook-enforcement"><span class="issue-badge badge-behavior"><i data-lucide="shield-check"></i> Behavior</span> Hook Enforcement Issues</h2>
+
+      <h3>Direct edits are denied after /forge or Kay mode starts</h3>
+      <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. It blocks direct implementation writes and asks the host to route work through Forge or Kay.</p>
+      <p><strong>Fix:</strong> Delegate the task through <code>forge -p "&lt;task&gt;"</code> for Forge or <code>code exec --full-auto "&lt;task&gt;"</code> for Kay. For Forge L3 takeover only, the host can temporarily use the documented <code>FORGE_LEVEL_3=1</code> bypass inside the project boundary.</p>
+
+      <h3>Forge says the conversation database is not writable</h3>
+      <p><strong>Cause:</strong> The Forge enforcer runs <code>forge conversation list</code> before injecting a conversation ID. If that database check fails, the hook refuses the delegation so it does not create untrackable work.</p>
+      <p><strong>Fix:</strong> Run <code>/forge-stop</code>, repair the Forge state using <code>skills/forge.md</code> STEP 0A, then run <code>/forge</code> again. The <code>.forge/conversations.idx</code> ledger is preserved.</p>
 
       <h2 id="forge-loop"><span class="issue-badge badge-behavior"><i data-lucide="refresh-cw"></i> Behavior</span> Forge Stuck in a Loop</h2>
 
@@ -275,68 +286,68 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p><strong>Symptoms:</strong> Forge output shows the same file being edited multiple times with no net change, or the same error appearing after each attempt.</p>
       <p><strong>Fix:</strong></p>
       <ul>
-        <li>Interrupt the current task by telling Claude: "Forge is looping — trigger L3 takeover"</li>
-        <li>Claude will lift the delegation restriction, implement the task directly, and produce a DEBRIEF</li>
-        <li>The DEBRIEF's AGENTS_UPDATE field will add instructions to AGENTS.md to prevent the loop pattern on similar future tasks</li>
+        <li>Interrupt the current task by telling the host: "Forge is looping — trigger L3 takeover"</li>
+        <li>The host will lift the delegation restriction for the project boundary, implement the task directly, and produce a DEBRIEF</li>
+        <li>The DEBRIEF's AGENTS_UPDATE field will propose instructions for AGENTS.md to prevent the loop pattern on similar future tasks</li>
       </ul>
 
       <h3>Forge loops on test failures</h3>
       <p><strong>Cause:</strong> Forge is trying to fix a failing test but the test itself has a bug, or the test expects behaviour that conflicts with what's in AGENTS.md.</p>
-      <p><strong>Fix:</strong> Tell Claude: "The test has a bug, not the implementation." Claude will inspect both, fix the root cause, and update AGENTS.md with the correct testing pattern.</p>
+      <p><strong>Fix:</strong> Tell the host: "The test has a bug, not the implementation." The host will inspect both, fix the root cause, and propose AGENTS.md guidance with the correct testing pattern.</p>
 
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Loops are L3 learning events.</strong> Every time Forge loops and Claude takes over, the DEBRIEF captures what pattern caused the loop. After a few sessions, AGENTS.md accumulates enough loop-prevention instructions that the same pattern rarely triggers a loop again.</div>
+        <div class="callout-body"><strong>Loops are L3 learning events.</strong> Every time Forge loops and the host takes over, the DEBRIEF captures what pattern caused the loop. Accepted AGENTS.md guidance helps prevent the same pattern in later tasks.</div>
       </div>
 
       <h2 id="fallback"><span class="issue-badge badge-behavior"><i data-lucide="layers"></i> Behavior</span> Fallback Ladder Not Triggering</h2>
 
-      <h3>Forge failed but Claude didn't escalate</h3>
+      <h3>Forge failed but the host didn't escalate</h3>
       <p><strong>Cause:</strong> The failure signal wasn't in one of the three recognized patterns (error output, wrong output, stall).</p>
-      <p><strong>Fix:</strong> Describe to Claude what went wrong — "Forge's output doesn't satisfy the success criteria because…". Claude will manually trigger the fallback ladder from the appropriate level.</p>
+      <p><strong>Fix:</strong> Describe to the host what went wrong — "Forge's output doesn't satisfy the success criteria because…". The host can manually trigger the fallback ladder from the appropriate level.</p>
 
       <h3>L1 retry produced the same wrong output</h3>
-      <p>This is expected — L1 is a single retry with a reframed prompt. If L1 fails, the ladder escalates to L2 automatically. If you see Claude not escalating after L1 fails, say "that's still wrong, escalate to L2".</p>
+      <p>This is expected — L1 is a single retry with a reframed prompt. If L1 fails, the ladder escalates to L2. If you see the host not escalating after L1 fails, say "that's still wrong, escalate to L2".</p>
 
       <h3>L3 takeover didn't produce a DEBRIEF</h3>
-      <p><strong>Fix:</strong> Ask Claude explicitly: "Please produce a DEBRIEF for this L3 takeover." The DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE) should always follow an L3 takeover.</p>
+      <p><strong>Fix:</strong> Ask the host explicitly: "Please produce a DEBRIEF for this L3 takeover." The DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE) should always follow an L3 takeover.</p>
 
       <h2 id="agents-md"><span class="issue-badge badge-behavior"><i data-lucide="brain"></i> Behavior</span> AGENTS.md Issues</h2>
 
       <h3>New instructions not being added to AGENTS.md</h3>
       <p><strong>Cause:</strong> The deduplication check found a semantically similar entry already exists.</p>
-      <p><strong>This is correct behavior</strong> — the dedup prevents duplicate entries. If you believe the new instruction is genuinely different, ask Claude to add it with explicit phrasing that distinguishes it from existing entries.</p>
+      <p><strong>This is correct behavior</strong> — the dedup prevents duplicate entries. If you believe the new instruction is genuinely different, ask the host to add it with explicit phrasing that distinguishes it from existing entries.</p>
 
       <h3>AGENTS.md bootstrapped with wrong content</h3>
-      <p><strong>Fix:</strong> Edit <code>./AGENTS.md</code> directly — it's a plain Markdown file. Remove incorrect entries and add your project's actual conventions. Claude will use your edits on the next <code>/forge</code> invocation.</p>
+      <p><strong>Fix:</strong> Edit <code>./AGENTS.md</code> directly — it's a plain Markdown file. Remove incorrect entries and add your project's actual conventions. The host will use your edits on the next <code>/forge</code> invocation.</p>
 
       <h3>~/forge/AGENTS.md not found</h3>
-      <p>The global AGENTS.md at <code>~/forge/AGENTS.md</code> is optional. If it doesn't exist, Claude creates it on the first cross-session write. No action needed.</p>
+      <p>The global AGENTS.md at <code>~/forge/AGENTS.md</code> is optional. If it doesn't exist, the host creates it on the first cross-session write. No action needed.</p>
 
       <h2 id="recovery"><span class="issue-badge badge-config"><i data-lucide="refresh-cw"></i> Recovery</span> Session Recovery</h2>
 
-      <h3>Forge session appears stuck / Claude is confused about state</h3>
+      <h3>Forge session appears stuck / host is confused about state</h3>
       <p><strong>Fix:</strong> Deactivate and reactivate Forge:</p>
       <div class="code-block"><span class="cmd">/forge-stop</span>
 <span class="cmd">/forge</span>   <span class="comment"># re-activate with fresh state</span></div>
 
       <h3>After an L3 takeover, delegation isn't resuming</h3>
-      <p>After L3, Claude returns to delegation mode automatically for the next task. If Claude seems to be implementing directly instead of delegating, say "re-enter Forge delegation mode" — it will reload the delegation protocol from SKILL.md.</p>
+      <p>After L3, Forge delegation mode remains active for the next task. If the host seems to be implementing directly instead of delegating, say "re-enter Forge delegation mode" — it will reload the delegation protocol from SKILL.md.</p>
 
       <h2 id="reinstall"><span class="issue-badge badge-config"><i data-lucide="download"></i> Reset</span> Reinstall / Full Reset</h2>
 
-      <p>To do a clean reinstall of Sidekick (preserves AGENTS.md and session logs):</p>
+      <p>To do a clean reinstall of Sidekick from the host plugin surface (preserves AGENTS.md and session logs):</p>
       <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span>
-<span class="comment"># This overwrites skills/ and .forge/skills/ but not AGENTS.md or docs/sessions/</span></div>
+<span class="comment"># This refreshes the plugin surface but does not delete AGENTS.md or docs/sessions/</span></div>
 
       <p>To fully reset your API credentials (e.g. to change your API key):</p>
       <div class="code-block"><span class="comment"># Delete credentials and re-run STEP 0A setup</span>
-rm ~/forge/.credentials.json
+<span class="cmd">rm ~/forge/.credentials.json</span>
 <span class="cmd">/forge</span>   <span class="comment"># will guide through credentials setup again</span></div>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>Still stuck?</strong> Open an issue at <a href="https://github.com/alo-exp/sidekick/issues" target="_blank">github.com/alo-exp/sidekick/issues</a> with your health check output and .forge.toml (with the API key redacted).</div>
+        <div class="callout-body"><strong>Still stuck?</strong> Open an issue at <a href="https://github.com/alo-exp/sidekick/issues" target="_blank">github.com/alo-exp/sidekick/issues</a> with your health check output and <code>.forge.toml</code> / <code>~/forge/.forge.toml</code> contents, with any API key redacted.</div>
       </div>
 
       <div class="page-nav-bottom">
