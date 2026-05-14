@@ -31,10 +31,12 @@ expect_not_contains() {
   fi
 }
 
-echo "=== T1: Main docs landing page exposes reader docs ==="
-for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'ADRs' 'Start with the right doc'; do
-  expect_contains "docs/index.html" "${needle}" "docs landing contains ${needle}"
+echo "=== T1: Homepage keeps Help Center access without the docs-map section ==="
+for needle in 'How It Works' 'Sidekicks' 'Benchmark' 'Backends' 'Install' 'Help' 'Open Help Center'; do
+  expect_contains "docs/index.html" "${needle}" "homepage contains ${needle}"
 done
+expect_not_contains "docs/index.html" "Start with the right doc" "homepage removes the docs-map headline"
+expect_not_contains "docs/index.html" "id=\"docs-map\"" "homepage removes the docs-map section"
 
 echo "=== T2: Help center exposes task-first navigation ==="
 for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'code exec' 'codex' 'coder'; do

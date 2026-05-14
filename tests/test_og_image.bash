@@ -24,7 +24,8 @@ expect_contains() {
 
 echo "=== T1: Social preview highlights current shared-agent support ==="
 expect_contains "docs/og-image.html" "Reduce Claude Code and Codex costs by up to" "og image keeps the cost-focused headline"
-expect_contains "docs/og-image.html" "Claude Code and Codex can both route work to Forge or Kay" "og image describes Forge and Kay as shared agents"
+expect_contains "docs/og-image.html" "Forge and Kay route implementation through lower-cost AI APIs" "og image explains low-cost API routing"
+expect_contains "docs/og-image.html" "stays as the advisor that reviews and mentors the agents" "og image describes host advisor mentoring"
 expect_contains "docs/og-image.html" "MiniMax.io and OpenCode Go" "og image highlights MiniMax.io and OpenCode Go"
 expect_contains "docs/og-image.html" "Available · Kay Agent" "og image badge names Kay as an agent"
 expect_contains "docs/og-image.html" "<div class=\"card-name\">Kay</div>" "og image card names Kay"
