@@ -30,8 +30,12 @@ extract_sidekick_section() {
   ' "${ROOT}/docs/index.html"
 }
 
-echo "=== T1: Homepage copy highlights Kay support ==="
-expect_contains "docs/index.html" "Sidekick now supports Kay, the multi-AI fork of OSS Codex" "homepage highlights Kay support"
+echo "=== T1: Homepage copy highlights Claude and Codex support ==="
+expect_contains "docs/index.html" "Reduce Claude Code and Codex Costs" "homepage hero headline mentions both hosts"
+expect_contains "docs/index.html" "Sidekick now supports both Claude and Codex" "homepage highlights Claude and Codex support"
+expect_contains "docs/index.html" "Claude delegates to Forge, Codex delegates to Kay" "homepage describes host-specific delegation"
+expect_contains "docs/index.html" "Forge and Kay both support MiniMax.io" "homepage highlights MiniMax.io support"
+expect_contains "docs/index.html" "Kay also supports OpenCode Go" "homepage highlights OpenCode Go support"
 expect_contains "docs/index.html" "multi-AI fork of OSS Codex" "homepage describes Kay as a multi-AI Codex fork"
 
 echo "=== T2: Sidekick cards appear in the requested order ==="
