@@ -2,13 +2,13 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `docs/specs/` (archived). Preserved design notes live in `docs/design/`.
 
-**Plugin version:** v0.5.5 • **Target:** Claude Code harness + Forge/Code / Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/code` ≥ 0.8.0)
+**Plugin version:** v0.5.5 • **Target:** Claude Code and Codex hosts + Forge/Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/kay` ≥ 0.9.0)
 
 ---
 
 ## System Overview
 
-Sidekick is a Claude Code plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Code / Kay (`code` / `codex` / `coder`) are the first supported sidekicks. Code / Kay is built through the Every Code extension line, not as a direct Codex fork. Sidekick turns Claude into a planner/communicator and delegates all implementation work to the active sidekick through a **harness-enforced** delegation protocol.
+Sidekick is a Claude Code and Codex plugin that installs and orchestrates multiple coding agents. ForgeCode (`forge`) and Kay (`kay`) are the first supported sidekicks. Kay keeps `code`, `codex`, and `coder` as compatibility aliases, but `kay` is the primary runtime identity. Sidekick turns the host AI into a planner, reviewer, and mentor while delegated agents perform implementation work through a **harness-enforced** delegation protocol.
 
 Two roles are preserved at every layer:
 
@@ -29,11 +29,11 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | Guarded first-run bootstrap when the package-local `.installed` sentinel is absent: install missing Forge/Code runtimes, fetch the pinned Kay installer release from upstream v0.8.0, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, rewrite host-specific paths, archive and retire any legacy uppercase `~/.Codex` tree after the lowercase install is valid, then seed trust/state after the final merged hook surface using the exact source each trust prefix names. It does not update or repair runtimes on later session starts. |
+| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | Guarded first-run bootstrap when the package-local `.installed` sentinel is absent: install missing Forge/Kay runtimes, fetch the pinned Kay installer that creates `kay` plus compatibility aliases, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, rewrite host-specific paths, archive and retire any legacy uppercase `~/.Codex` tree after the lowercase install is valid, then seed trust/state after the final merged hook surface using the exact source each trust prefix names. It does not update or repair runtimes on later session starts. |
 | Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json`; legacy `~/.Codex/hooks.json` mirrors are migration-only and get backed up under `~/.sidekick/legacy-hooks-scrub-backups/` before rollback/removal. Touches only matching Sidekick entries and can restore them with `--rollback`. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill — `/forge` | `skills/forge/SKILL.md` | Activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over), skill injection, AGENTS.md mentoring loop. |
-| Skill — `kay-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Kay delegation workflow: runtime health checks, `code exec --full-auto` primary path, and `codex`/`coder` compatibility fallbacks for the Every Code extension line. |
+| Skill — `kay-delegate` | `skills/codex-delegate/SKILL.md` | Canonical Kay delegation workflow: runtime health checks, `kay exec --full-auto` primary path, and compatibility aliases for older environments. |
 | Skill — legacy orchestration | `skills/forge.md`, `skills/codex-delegate.md` | Compatibility aliases retained for legacy entry points; canonical long-form bodies live in `skills/*/SKILL.md`. |
 | Enforcer hooks | `hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh` | PreToolUse on `Write\|Edit\|NotebookEdit\|Bash`. Per-sidekick read-only allowlists, mutating-flag rejectors, command rewriters, UUID/audit injectors, and deny paths. |
 | Progress hooks | `hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh` | PostToolUse on `Bash`. No-op unless the matching marker is active. Extracts terminal summary blocks, emits styled sidekick summaries, and links the matching stop command. |
@@ -44,7 +44,7 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 | Plugin manifest | `.claude-plugin/plugin.json` | v0.5.5. Points at `hooks/hooks.json`, `outputStyles/`, and `skills/`. `_integrity` carries SHA-256 for the canonical skill bodies plus runtime assets. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
-| Code project config | `~/.code/config.toml`, `~/.codex/config.toml` | Runtime configuration for Code. Active Codex state is lowercase `~/.codex` only; any uppercase `~/.Codex` tree is treated as legacy backup-only migration material and is retired after a successful reinstall. |
+| Kay project config | `~/.kay/config.toml` | Runtime configuration for Kay. Legacy `~/.code` / `~/.codex` paths are compatibility-only; any uppercase `~/.Codex` tree is treated as backup-only migration material and is retired after a successful reinstall. |
 
 ---
 
@@ -57,16 +57,16 @@ User
 Claude Code (Brain)                         harness boundary
   │                                             │
   │  composes task prompt                        │
-  ├──► Bash("forge -p '…'") or Bash("code exec --full-auto '…'") │
+  ├──► Bash("forge -p '…'") or Bash("kay exec --full-auto '…'") │
   │          │                                  │
   │          │ ┌─ PreToolUse sidekick hooks ─────┤
   │          │ │  if matching marker active:     │
   │          │ │    · deny Write/Edit/NotebookEdit
-  │          │ │    · rewrite Forge or Code exec
+  │          │ │    · rewrite Forge or Kay exec
   │          │ │    · append .forge/.kay idx   │
   │          │ └────────────────────────────────┤
   │          ▼                                  │
-  │     Forge or Code / Kay subprocess (Hands) │
+  │     Forge or Kay subprocess (Hands)       │
   │          │  reads/writes files,             │
   │          │  runs commands, commits          │
   │          │  emits STATUS / task summary     │
@@ -89,8 +89,8 @@ User receives styled narration           ◄──────┘
 ## Design Principles
 
 1. **Delegate at the harness layer, not the prompt layer.** Prompt-only rules can be rationalized around. A PreToolUse hook returning `permissionDecision: "deny"` cannot.
-2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick so Forge and Code never collide in the same project directory.
-3. **Leverage each runtime's native storage.** Sidekick indexes only carry lookup metadata; Forge and Code keep their own conversation/history stores.
+2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick so Forge and Kay never collide in the same project directory.
+3. **Leverage each runtime's native storage.** Sidekick indexes only carry lookup metadata; Forge and Kay keep their own conversation/history stores.
 4. **Zero Claude-to-sidekick roundtrip per rewrite.** The enforcer is shell, not an LLM wrapper — deterministic, millisecond latency, no token cost.
 5. **Non-destructive on install/update.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the current-session health check but never overwrites user edits.
 6. **Graceful degradation off the happy path.** No marker file → both hooks are no-ops. Output style missing → line prefixes degrade to plain text, no break. Monitor unavailable (Bedrock/Vertex/Foundry) → skill documents foreground-Bash fallback.

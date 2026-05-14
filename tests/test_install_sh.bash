@@ -83,11 +83,11 @@ if [ -n "${PINNED}" ]; then
 else
   assert_fail "EXPECTED_FORGE_SHA" "empty — pinned hash verification disabled"
 fi
-if grep -q 'ERROR: No pinned Code SHA-256 is configured in sidekicks/registry.json' "${INSTALL_SH}" \
-  && ! grep -q 'No pinned Code SHA-256 set' "${INSTALL_SH}"; then
-  assert_pass "Code bootstrap fails closed when registry SHA is missing"
+if grep -q 'ERROR: No pinned Kay SHA-256 is configured in sidekicks/registry.json' "${INSTALL_SH}" \
+  && ! grep -q 'No pinned Kay SHA-256 set' "${INSTALL_SH}"; then
+  assert_pass "Kay bootstrap fails closed when registry SHA is missing"
 else
-  assert_fail "Code bootstrap fail-closed path" "missing hard error or still contains display-only warning"
+  assert_fail "Kay bootstrap fail-closed path" "missing hard error or still contains display-only warning"
 fi
 
 echo "=== T4: SHA abort logic ==="
@@ -128,16 +128,17 @@ grep -q 'grep -qiE.*forge' "${INSTALL_SH}" && assert_pass "Binary identity check
 echo "=== T11: PATH marker ==="
 grep -q 'Added by sidekick/forge plugin' "${INSTALL_SH}" && assert_pass "PATH marker comment present" || assert_fail "PATH marker" "not found"
 
-echo "=== T12: Codex bootstrap ==="
+echo "=== T12: Kay bootstrap ==="
 if grep -q 'install_codex_runtime' "${INSTALL_SH}" \
   && grep -q 'sidekick_registry_get kay' "${INSTALL_SH}" \
   && grep -q 'CODEX_INSTALL_TMP' "${INSTALL_SH}" \
+  && grep -q 'KAY_BIN' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODE_ALIAS' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODER_ALIAS' "${INSTALL_SH}" \
   && grep -q 'cleanup_install_tmps' "${INSTALL_SH}"; then
-  assert_pass "Codex runtime bootstrap logic present"
+  assert_pass "Kay runtime bootstrap logic present with compatibility aliases"
 else
-  assert_fail "Codex bootstrap" "missing runtime install or cleanup logic"
+  assert_fail "Kay bootstrap" "missing Kay runtime install, aliases, or cleanup logic"
 fi
 
 echo "=== T13: Idempotency (add_to_path) ==="
@@ -226,10 +227,10 @@ else
 fi
 
 echo "=== T17: selective install env flags ==="
-if grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_CODE' "${INSTALL_SH}"; then
+if grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_KAY' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_CODE' "${INSTALL_SH}"; then
   assert_pass "selective install env flags present"
 else
-  assert_fail "selective install env flags" "missing SIDEKICK_INSTALL_FORGE or SIDEKICK_INSTALL_CODE"
+  assert_fail "selective install env flags" "missing SIDEKICK_INSTALL_FORGE, SIDEKICK_INSTALL_KAY, or compatibility SIDEKICK_INSTALL_CODE"
 fi
 
 echo "=== T18: missing hash tools fail closed at runtime ==="
@@ -238,10 +239,10 @@ _toolbox_root="$(mktemp -d)"
 prepare_install_sandbox "${_runtime_root}"
 make_install_toolbox "${_toolbox_root}" "0"
 mkdir -p "${_runtime_root}/home"
-if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
   assert_fail "missing hash tools fail closed" "expected install.sh to fail, got success"
 else
-  if echo "${OUT}" | grep -q 'Cannot verify Code installer integrity without shasum or sha256sum'; then
+  if echo "${OUT}" | grep -q 'Cannot verify Kay installer integrity without shasum or sha256sum'; then
     assert_pass "missing hash tools fail closed at runtime"
   else
     assert_fail "missing hash tools fail closed" "unexpected output: ${OUT}"
@@ -267,10 +268,10 @@ with open(path, "w", encoding="utf-8") as fh:
     fh.write("\n")
 PY
 mkdir -p "${_runtime_root}/home"
-if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
   assert_fail "missing registry SHA fails closed" "expected install.sh to fail, got success"
 else
-  if echo "${OUT}" | grep -q 'No pinned Code SHA-256 is configured in sidekicks/registry.json'; then
+  if echo "${OUT}" | grep -q 'No pinned Kay SHA-256 is configured in sidekicks/registry.json'; then
     assert_pass "missing registry SHA fails closed at runtime"
   else
     assert_fail "missing registry SHA fails closed" "unexpected output: ${OUT}"

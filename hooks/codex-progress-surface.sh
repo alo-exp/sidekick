@@ -53,7 +53,7 @@ main() {
   cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
   [[ -n "$cmd" ]] || exit 0
   cmd="$(strip_env_prefix "$cmd")"
-  [[ "$cmd" =~ ^(codex|code|coder)[[:space:]]+exec([[:space:]]|$) ]] || exit 0
+  [[ "$cmd" =~ ^(kay|code|codex|coder)[[:space:]]+exec([[:space:]]|$) ]] || exit 0
 
   output="$(printf '%s' "$input" | jq -r '.tool_response.output // .tool_response.stdout // empty' 2>/dev/null || true)"
   [[ -n "$output" ]] || exit 0

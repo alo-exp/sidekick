@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Live Codex Smoke Harness
+# Sidekick Plugin — Live Kay Smoke Harness
 # =============================================================================
-# Hits the real Codex binary on PATH. Gated behind SIDEKICK_LIVE_CODEX=1 so CI
+# Hits the real Kay binary on PATH. Gated behind SIDEKICK_LIVE_CODEX=1 so CI
 # never runs it. Intended to run pre-release on the maintainer's machine,
 # where Codex is already installed and configured.
 #
 # What this DOES test
-#   - `codex --version` (or `code` / `coder` fallback) is reachable
-#   - a trivial non-interactive Codex prompt round-trip emits the expected
+#   - `kay --version` (or legacy aliases) is reachable
+#   - a trivial non-interactive Kay prompt round-trip emits the expected
 #     STATUS / FILES_CHANGED lines
 #
 # What this does NOT test
@@ -18,7 +18,7 @@
 #
 # Exit codes
 #   0 — smoke passed, OR env var absent (skipped cleanly)
-#   1 — smoke failed (Codex unreachable or STATUS missing)
+#   1 — smoke failed (Kay unreachable or STATUS missing)
 # =============================================================================
 
 set -uo pipefail
@@ -26,12 +26,12 @@ set -uo pipefail
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
 
 if [[ "${SIDEKICK_LIVE_CODEX:-}" != "1" ]]; then
-  echo -e "${yellow}Smoke harness skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to run against the real Codex binary)."
+  echo -e "${yellow}Smoke harness skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to run against the real Kay binary)."
   exit 0
 fi
 
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
-echo -e "${bold}Sidekick live-Codex smoke harness${reset}"
+echo -e "${bold}Sidekick live-Kay smoke harness${reset}"
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 
 PASS=0; FAIL=0
@@ -39,7 +39,7 @@ pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 resolve_codex_binary() {
-  for candidate in codex code coder; do
+  for candidate in kay code codex coder; do
     if command -v "${candidate}" >/dev/null 2>&1; then
       printf '%s\n' "${candidate}"
       return 0
@@ -92,10 +92,10 @@ run_with_timeout() {
 
 echo "=== smoke_codex_on_path ==="
 if CODEX_BIN="$(resolve_codex_binary)"; then
-  pass "Codex binary exists at $(command -v "${CODEX_BIN}")"
+  pass "Kay binary exists at $(command -v "${CODEX_BIN}")"
 else
-  fail "smoke_codex_on_path" "codex/code/coder not found on PATH"
-  echo "Aborting smoke — Codex binary required."
+  fail "smoke_codex_on_path" "kay/code/codex/coder not found on PATH"
+  echo "Aborting smoke — Kay binary required."
   exit 1
 fi
 
@@ -103,8 +103,8 @@ prepare_codex_runner "${CODEX_BIN}"
 
 echo "=== smoke_codex_version ==="
 _ver_out="$("${CODEX_BIN}" --version 2>&1 || true)"
-if [[ "${_ver_out}" == *"codex"* ]] || [[ "${_ver_out}" =~ [0-9]+\.[0-9]+ ]]; then
-  pass "codex --version identifies the runtime (${_ver_out})"
+if [[ "${_ver_out}" == *"kay"* ]] || [[ "${_ver_out}" =~ [0-9]+\.[0-9]+ ]]; then
+  pass "kay --version identifies the runtime (${_ver_out})"
 else
   fail "smoke_codex_version" "unexpected: ${_ver_out}"
 fi
@@ -123,10 +123,10 @@ _clean="$(printf '%s' "${_out}" | sed $'s/\x1b\\[[0-9;]*m//g')"
 if [ "${_rc}" -eq 0 ] \
     && printf '%s' "${_clean}" | grep -q '^STATUS: SUCCESS' \
     && printf '%s' "${_clean}" | grep -q '^FILES_CHANGED: \[\]'; then
-  pass "codex prompt round-trip returned STATUS and FILES_CHANGED"
+  pass "Kay prompt round-trip returned STATUS and FILES_CHANGED"
 else
   fail "smoke_codex_prompt_round_trip" "rc=${_rc}"
-  echo "--- codex output (first 40 lines) ---"
+  echo "--- Kay output (first 40 lines) ---"
   printf '%s\n' "${_clean}" | head -n 40
   echo "--- end ---"
 fi

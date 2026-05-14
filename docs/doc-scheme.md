@@ -37,7 +37,7 @@ The docs system is easier to use when readers can find the right entry point wit
 |-----|---------|
 | `docs/START-HERE.md` | Question-first navigation for install, delegate, debug, release, extend, and migrate |
 | `docs/AUDIENCE.md` | Reader matrix — who each doc is for and where they should begin |
-| `docs/GLOSSARY.md` | Canonical vocabulary for Sidekick, Forge, Code/Kay, skills, selectors, bridges, and wrappers |
+| `docs/GLOSSARY.md` | Canonical vocabulary for Sidekick, Forge, Kay, skills, selectors, bridges, and wrappers |
 | `docs/COMPATIBILITY.md` | Runtime matrix for Claude, Codex, and Kay |
 | `docs/ADR/README.md` | Entry point for durable decision records |
 

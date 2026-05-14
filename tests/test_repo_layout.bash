@@ -31,6 +31,15 @@ expect_file() {
   fi
 }
 
+expect_valid_json() {
+  local path="$1"
+  if python3 -m json.tool "${ROOT}/${path}" >/dev/null 2>&1; then
+    assert_pass "valid JSON: ${path}"
+  else
+    assert_fail "valid JSON: ${path}" "parse failed"
+  fi
+}
+
 echo "=== T1: Top-level project shape ==="
 for dir in .claude .claude-plugin .codex-plugin .forge .github .planning docs hooks output-styles sidekicks skills tests; do
   expect_dir "${dir}"
@@ -57,6 +66,24 @@ done
 for file in docs/doc-scheme.md docs/START-HERE.md docs/AUDIENCE.md docs/GLOSSARY.md docs/COMPATIBILITY.md docs/TESTING.md docs/ARCHITECTURE.md docs/CICD.md docs/pre-release-quality-gate.md docs/ADR/README.md; do
   expect_file "${file}"
 done
+
+echo "=== T4: Editor configs match this Bash/Markdown repo ==="
+for file in .vscode/settings.json .vscode/tasks.json .vscode/launch.json .vscode/extensions.json; do
+  expect_file "${file}"
+  expect_valid_json "${file}"
+done
+
+if grep -R -q 'runOn"[[:space:]]*:[[:space:]]*"folderOpen"' "${ROOT}/.vscode"; then
+  assert_fail "VS Code folder-open tasks absent" "automatic folder-open tasks are not allowed"
+else
+  assert_pass "VS Code folder-open tasks absent"
+fi
+
+if grep -R -q 'node ./public/fonts' "${ROOT}/.vscode"; then
+  assert_fail "VS Code stale Node/font task absent" "stale Node task still present"
+else
+  assert_pass "VS Code stale Node/font task absent"
+fi
 
 echo ""
 echo "======================================="

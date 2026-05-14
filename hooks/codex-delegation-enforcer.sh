@@ -48,7 +48,7 @@ delegate_command() {
 
 resolve_codex_binary_name() {
   local candidate
-  for candidate in codex code coder; do
+  for candidate in kay code codex coder; do
     if command -v "$candidate" >/dev/null 2>&1; then
       printf '%s' "$candidate"
       return 0
@@ -58,7 +58,7 @@ resolve_codex_binary_name() {
 }
 
 deny_reason() {
-  printf 'Sidekick /kay mode is active: direct file edits are delegated to Kay. Use: Bash { command: "%s --full-auto \"<your task description>\"" } or `code exec` / `coder exec` if `codex` is unavailable.' "$(delegate_command)"
+  printf 'Sidekick /kay mode is active: direct file edits are delegated to Kay. Use: Bash { command: "%s --full-auto \"<your task description>\"" }. Legacy code/codex/coder aliases remain compatibility-only.' "$(delegate_command)"
 }
 
 deny_direct_edit() {
@@ -93,7 +93,7 @@ has_codex_exec() {
   local cmd stripped
   cmd="$1"
   stripped="$(strip_env_prefix "$cmd")"
-  [[ "$stripped" =~ ^(codex|code|coder)([[:space:]]|$) ]] || return 1
+  [[ "$stripped" =~ ^(kay|code|codex|coder)([[:space:]]|$) ]] || return 1
   [[ "$stripped" =~ (^|[[:space:]])exec([[:space:]]|$) ]] || return 1
   return 0
 }
@@ -119,7 +119,7 @@ try:
 except Exception:
     raise SystemExit(1)
 
-if len(tokens) < 3 or tokens[0] not in {"codex", "code", "coder"} or tokens[1] != "exec":
+if len(tokens) < 3 or tokens[0] not in {"kay", "code", "codex", "coder"} or tokens[1] != "exec":
     raise SystemExit(1)
 
 for tok in tokens:
@@ -160,7 +160,7 @@ decide_bash() {
     sidekick_ensure_idx "$SIDEKICK_NAME" || true
     sidekick_append_idx_row "$SIDEKICK_NAME" "$uuid" "$hint"
     if ! rewritten="$(rewrite_codex_exec "$cmd")"; then
-      emit_decision "deny" "Sidekick /kay mode: refusing to rewrite malformed codex exec invocation." ""
+      emit_decision "deny" "Sidekick /kay mode: refusing to rewrite malformed Kay exec invocation." ""
       return 0
     fi
     emit_decision "allow" "Sidekick: injected --full-auto and output prefixing." "$rewritten"
@@ -168,12 +168,12 @@ decide_bash() {
   fi
 
   if has_mutating_chain_segment "$cmd"; then
-    emit_decision "deny" "Sidekick /kay mode: command chain contains a mutating segment. Use codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+    emit_decision "deny" "Sidekick /kay mode: command chain contains a mutating segment. Use kay exec --full-auto." ""
     return 0
   fi
 
   if has_mutating_pipe_segment "$cmd"; then
-    emit_decision "deny" "Sidekick /kay mode: pipe chain contains a mutating segment. Use codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+    emit_decision "deny" "Sidekick /kay mode: pipe chain contains a mutating segment. Use kay exec --full-auto." ""
     return 0
   fi
 
@@ -182,11 +182,11 @@ decide_bash() {
   fi
 
   if is_mutating "$cmd"; then
-    emit_decision "deny" "Sidekick /kay mode: mutating command denied. Delegate via codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+    emit_decision "deny" "Sidekick /kay mode: mutating command denied. Delegate via kay exec --full-auto." ""
     return 0
   fi
 
-  emit_decision "deny" "Sidekick /kay mode: command could not be classified. Delegate via codex exec --full-auto, code exec --full-auto, or coder exec --full-auto." ""
+  emit_decision "deny" "Sidekick /kay mode: command could not be classified. Delegate via kay exec --full-auto." ""
 }
 
 main() {
