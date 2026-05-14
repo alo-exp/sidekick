@@ -8,8 +8,8 @@
 |------|---------|
 | **Sidekick** | The Ālo Labs plugin system that hosts multiple coding-agent runtimes under one host-side orchestration layer. |
 | **Forge** | The ForgeCode sidekick runtime. It is the Claude-oriented delegation path used by the Forge skill set. |
-| **Code / Kay** | The Every Code extension line that powers the MiniMax-backed `code` runtime. `Kay` is the Sidekick packaging identity for that runtime. |
-| **host Codex** | The user-installed Codex environment that Kay consumes by reference for shared tools, skills, hooks, MCPs, and agent assets. |
+| **Kay** | The OSS Codex-lineage execution agent packaged by Sidekick. `kay` is the canonical binary; legacy Code aliases (`code`, `codex`, `coder`) are compatibility-only. |
+| **host Codex** | The user-installed Codex environment that can host the Sidekick plugin and route work to Forge or Kay. |
 | **delegate** | To hand execution of a coding task to a sidekick while Claude stays in the orchestration role. |
 | **skill** | The canonical instruction body for a capability. In Sidekick, skills are the source of truth. |
 | **selector** | A host/runtime picker entry (for example `sidekick:forge-stop`) that resolves directly to a canonical skill body. |

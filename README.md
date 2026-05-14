@@ -1,4 +1,4 @@
-# Sidekick — AI Coding Agents for Claude Code
+# Sidekick — AI Coding Agents for Claude Code and Codex
 
 **Coding agents as Claude sidekicks** — each agent auto-installs, configures itself, and lets Claude delegate implementation work while focusing on planning and communication.
 
@@ -7,7 +7,7 @@
 | Sidekick | Skill | Agent | Status |
 |----------|-------|-------|--------|
 | **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.5 |
-| **Kay** | `code` | Every Kay extension — `code exec` / `codex exec` / `coder exec`, MiniMax M2.7 | ✅ v0.5.5 |
+| **Kay** | `kay` | OSS Codex-lineage execution agent — `kay exec`, MiniMax M2.7, OpenCode Go compatibility | ✅ v0.5.5 |
 
 More sidekicks planned.
 
@@ -61,26 +61,26 @@ On the next Claude session, all sidekicks install automatically and keep themsel
 - **Skill injection**: 4 bootstrap skills (testing-strategy, code-review, security, quality-gates) auto-injected into task prompts based on task type
 - **Token optimization**: task prompts capped at 2,000 tokens with validated `.forge.toml` compaction defaults
 
-## Kay — Every Kay Sidekick
+## Kay — OSS Codex-Lineage Sidekick
 
 ### What it does
-- **Auto-installs** the Code runtime from the latest `alo-labs/kay` installer on first session start and self-updates it on later session starts using the native `codex update` command
-- **Provides** `codex` and `coder` aliases for compatibility so Sidekick can route tasks to `code exec --full-auto`, then `codex exec --full-auto`, or fall back to `coder exec --full-auto`
-- **Uses** Every Code's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
+- **Auto-installs** Kay from the pinned `alo-labs/kay` installer on first session start and keeps legacy `code`, `codex`, and `coder` aliases compatibility-only
+- **Routes** delegated work through `kay exec --full-auto` so Kay remains the primary runtime identity
+- **Uses** Kay's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
 - **Follows** the Codex developer-doc pattern (developer mode, Docs MCP, Codex CLI) of packaging repeatable work as skills and driving implementation through a composable CLI Codex can use
-- **Defaults** to MiniMax `MiniMax-M2.7` through the packaged `~/.code/config.toml` / legacy `~/.codex/config.toml` compatibility path
+- **Defaults** to MiniMax `MiniMax-M2.7` through Kay-local `~/.kay/config.toml`, with OpenCode Go available for multi-AI compatibility
 - **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias preserved only as a hidden compatibility entry at `skills/codex-delegate.md`.
 
-### How it works
+### Kay flow
 
 ```
-You → Claude (plan + communicate) → Code (implement + commit) → Claude (review + report)
+You → Claude or Codex (plan + communicate) → Kay (implement + commit) → host (review + report)
 ```
 
 Claude handles: architecture, explanations, research, code review
 Kay handles: writing files, features, tests, git commits
 
-### How it works
+### Forge flow
 
 ```
 You → Claude (plan + communicate) → Forge (implement + commit) → Claude (review + report)
@@ -109,15 +109,15 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 ## Testing
 
-`tests/run_release.bash` chains the unit suites plus the live Forge/Kay install, smoke, E2E, and Code marketplace-install gates.
+`tests/run_release.bash` chains the unit suites plus the live Forge/Kay install, smoke, E2E, and Kay marketplace-install gates.
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
 | **Unit + integration** | `tests/run_all.bash` | ✅ | 27 suites — hook classifiers, idx audit, plugin integrity, docs contract, help-site navigation, slash commands, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
-| **Code smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `code --version` + trivial `code exec` round-trip against the real binary, with `codex` kept as the compatibility alias. |
-| **Code live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full Claude→Code delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
+| **Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `kay --version` + trivial `kay exec` round-trip against the real binary, with legacy names kept as compatibility aliases. |
+| **Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full host→Kay delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
 
 The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Before tagging a new version:
 

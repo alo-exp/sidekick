@@ -8,13 +8,13 @@
 
 ## Product Vision
 
-Sidekick is a Claude Code plugin that turns Claude into a **planner and communicator** and delegates all implementation work — file writes, edits, shell mutations, git operations — to an embedded coding agent. The first shipped sidekick is **Forge** (ForgeCode). Target user: a developer using Claude Code who wants a capable, low-cost coding agent handling the execution while Claude handles the thinking and the conversation.
+Sidekick is a Claude Code and Codex plugin that turns the host AI into a **planner, reviewer, and mentor** and delegates implementation work — file writes, edits, shell mutations, git operations — to execution agents. The shipped sidekicks are **Forge** (ForgeCode) and **Kay** (OSS Codex-lineage, `kay` binary). Target user: a developer using Claude Code or Codex who wants capable, lower-cost execution agents handling implementation while the host handles thinking and the conversation.
 
 ---
 
 ## Core Value
 
-**When `/forge` is active, Claude does not write code.** Delegation is harness-enforced (PreToolUse hook returns `permissionDecision: "deny"` on direct `Write`/`Edit`/`NotebookEdit`), Forge subprocess output is live-visible in the transcript with stable `[FORGE]` markers, and every task is durably indexed by UUID in `.forge/conversations.idx`. The ONE thing that must work above all else: **delegation cannot be bypassed, and every task is traceable.**
+**When Forge or Kay delegation is active, the host does not write code directly.** Delegation is harness-enforced (PreToolUse hook returns `permissionDecision: "deny"` on direct `Write`/`Edit`/`NotebookEdit`), agent subprocess output is live-visible in the transcript with stable `[FORGE]` / `[KAY]` markers, and every task is durably indexed in `.forge/conversations.idx` or `.kay/conversations.idx`. The ONE thing that must work above all else: **delegation cannot be bypassed, and every task is traceable.**
 
 ---
 

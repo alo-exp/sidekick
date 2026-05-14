@@ -34,11 +34,14 @@ MARKER_FILE="${MARKER_DIR}/.kay-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
 mkdir -p "${MARKER_DIR}" "${CODEX_STUB_DIR}"
 
-cat > "${CODEX_STUB_DIR}/codex" <<'STUB'
+cat > "${CODEX_STUB_DIR}/kay" <<'STUB'
 #!/usr/bin/env bash
 exit 0
 STUB
-chmod +x "${CODEX_STUB_DIR}/codex"
+chmod +x "${CODEX_STUB_DIR}/kay"
+ln -sf kay "${CODEX_STUB_DIR}/code"
+ln -sf kay "${CODEX_STUB_DIR}/codex"
+ln -sf kay "${CODEX_STUB_DIR}/coder"
 
 STUB_PATH="${CODEX_STUB_DIR}:${PATH}"
 
@@ -88,11 +91,11 @@ echo "=== test_deny_notebook_edit_when_active ==="
 _assert_deny_with_kay_reason "test_deny_notebook_edit_when_active" "NotebookEdit"
 
 echo "=== test_rewrite_codex_exec_injects_full_auto_and_prefixes ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"Refactor utils.py\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Refactor utils.py\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
 if [ "${_dec}" = "allow" ] \
-    && echo "${_cmd}" | grep -Eq -- '^(codex|code|coder) exec --full-auto' \
+    && echo "${_cmd}" | grep -Eq -- '^kay exec --full-auto' \
     && echo "${_cmd}" | grep -q "sed 's/\^/\[KAY\] /'" \
     && echo "${_cmd}" | grep -q "sed 's/\^/\[KAY-LOG\] /'"; then
   assert_pass "test_rewrite_codex_exec_injects_full_auto_and_prefixes"
@@ -101,7 +104,7 @@ else
 fi
 
 echo "=== test_rewrite_codex_exec_quotes_shell_metacharacters ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec \"Refactor utils.py; rm -rf /tmp/evil\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Refactor utils.py; rm -rf /tmp/evil\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
 if [ "${_dec}" = "allow" ] \
@@ -112,7 +115,7 @@ else
 fi
 
 echo "=== test_rewrite_codex_exec_rejects_shell_tail ==="
-_tail_json="$(jq -cn --arg c 'codex exec "Refactor utils.py"; rm -rf /tmp/evil' '{tool_name:"Bash", tool_input:{command:$c}}')"
+_tail_json="$(jq -cn --arg c 'kay exec "Refactor utils.py"; rm -rf /tmp/evil' '{tool_name:"Bash", tool_input:{command:$c}}')"
 _out="$(run_hook "${_tail_json}" 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 if [ "${_dec}" = "deny" ]; then
@@ -147,10 +150,13 @@ fi
 echo "=== test_mutating_bash_denied ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"rm foo"}}')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
-if [ "${_dec}" = "deny" ]; then
+_rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
+if [ "${_dec}" = "deny" ] \
+    && echo "${_rsn}" | grep -q 'kay exec --full-auto' \
+    && ! echo "${_rsn}" | grep -q 'code exec'; then
   assert_pass "test_mutating_bash_denied"
 else
-  assert_fail "test_mutating_bash_denied" "dec='${_dec}' out='${_out}'"
+  assert_fail "test_mutating_bash_denied" "dec='${_dec}' reason='${_rsn}' out='${_out}'"
 fi
 
 echo ""

@@ -31,6 +31,15 @@ expect_contains() {
   fi
 }
 
+expect_not_contains() {
+  local path="$1" needle="$2" label="$3"
+  if grep -Fq -- "${needle}" "${ROOT}/${path}"; then
+    assert_fail "${label}" "unexpected '${needle}' in ${path}"
+  else
+    assert_pass "${label}"
+  fi
+}
+
 echo "=== T1: Reader docs exist ==="
 for file in docs/START-HERE.md docs/AUDIENCE.md docs/GLOSSARY.md docs/COMPATIBILITY.md docs/ADR/README.md docs/ADR/2026-05-08-docs-system.md; do
   expect_file "${file}"
@@ -54,13 +63,15 @@ for needle in '# Audience' 'Reader Matrix' 'New user' 'Maintainer' 'Release oper
   expect_contains "docs/AUDIENCE.md" "${needle}" "audience contains ${needle}"
 done
 
-for needle in '# Glossary' 'Code / Kay' 'host Codex' 'bridge' 'wrapper'; do
+for needle in '# Glossary' 'Kay' 'legacy Code aliases' 'host Codex' 'bridge' 'wrapper'; do
   expect_contains "docs/GLOSSARY.md" "${needle}" "glossary contains ${needle}"
 done
+expect_not_contains "docs/GLOSSARY.md" 'MiniMax-backed `code` runtime' "glossary removes code as primary Kay runtime"
 
-for needle in '# Compatibility' 'Claude / Forge' 'Codex / Code / Kay' 'Execution identity' 'Provider precedence'; do
+for needle in '# Compatibility' 'Claude / Forge' 'Codex / Kay' 'Execution identity' 'Provider precedence' '`kay`'; do
   expect_contains "docs/COMPATIBILITY.md" "${needle}" "compatibility contains ${needle}"
 done
+expect_not_contains "docs/COMPATIBILITY.md" '| Execution identity | `forge` | `code` |' "compatibility removes code as primary execution identity"
 
 echo "=== T4: ADR home and decision record ==="
 for needle in '# Architecture Decision Records' '2026-05-08-docs-system.md' 'Docs System Upgrade'; do

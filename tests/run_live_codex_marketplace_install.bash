@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Live Codex marketplace install test
+# Sidekick Plugin — Live Codex marketplace install test with Kay runtime
 # =============================================================================
 
 set -uo pipefail
@@ -8,12 +8,12 @@ set -uo pipefail
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
 
 if [[ "${SIDEKICK_LIVE_CODEX:-}" != "1" ]]; then
-  echo -e "${yellow}Marketplace install skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to exercise the real Codex install path)."
+  echo -e "${yellow}Marketplace install skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to exercise the real Codex install path with Kay runtime)."
   exit 0
 fi
 
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
-echo -e "${bold}Sidekick live-Codex marketplace install${reset}"
+echo -e "${bold}Sidekick live-Codex marketplace install with Kay runtime${reset}"
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 
 PASS=0; FAIL=0
@@ -44,7 +44,7 @@ resolve_codex_runner() {
 }
 
 resolve_code_runner() {
-  local built_code="${CODE_RUST_REPO}/target/debug/code"
+  local built_code="${CODE_RUST_REPO}/target/debug/kay"
   if [[ -x "${built_code}" ]]; then
     CODE_BIN=( "${built_code}" )
     return 0
@@ -54,7 +54,7 @@ resolve_code_runner() {
     return 1
   fi
 
-  CODE_BIN=( cargo run --manifest-path "${CODE_RUST_REPO}/Cargo.toml" -q -p code-cli -- )
+  CODE_BIN=( cargo run --manifest-path "${CODE_RUST_REPO}/Cargo.toml" -q -p code-cli --bin kay -- )
   return 0
 }
 
@@ -75,7 +75,7 @@ if ! resolve_codex_runner; then
 fi
 
 if ! resolve_code_runner; then
-  fail "code runner" "could not find a built code binary or cargo on PATH"
+  fail "kay runner" "could not find a built Kay binary or cargo on PATH"
   exit 1
 fi
 
@@ -147,7 +147,7 @@ STATUS: OK
 Do not edit any files.
 EOF
 
-echo "=== live_codex_exec ==="
+echo "=== live_kay_exec ==="
 MINIMAX_API_KEY_VALUE="${MINIMAX_API_KEY:-}"
 if [ -z "${MINIMAX_API_KEY_VALUE}" ] && [ -f /Users/shafqat/forge/.credentials.json ]; then
   MINIMAX_API_KEY_VALUE="$(python3 -c 'import json, sys, pathlib
@@ -168,15 +168,15 @@ set +e
 EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" MINIMAX_API_KEY="${MINIMAX_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=minimax -c model=MiniMax-M2.7 "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
-echo "codex rc=${EXEC_RC}"
-echo "--- codex output (tail 40 lines) ---"
+echo "kay rc=${EXEC_RC}"
+echo "--- Kay output (tail 40 lines) ---"
 printf '%s\n' "${EXEC_OUT}" | tail -n 40
 echo "--- end codex output ---"
 
 if [ "${EXEC_RC}" -eq 0 ]; then
-  pass "Codex exec completed with the marketplace installed"
+  pass "Kay exec completed with the marketplace installed"
 else
-  fail "live_codex_exec" "Codex exited non-zero (rc=${EXEC_RC})"
+  fail "live_kay_exec" "Kay exited non-zero (rc=${EXEC_RC})"
 fi
 
 echo "=== installed_plugin_cache ==="
@@ -186,7 +186,7 @@ INSTALLED_HOOKS="$(
 if [ -n "${INSTALLED_HOOKS}" ]; then
   INSTALLED_ROOT="$(dirname "$(dirname "${INSTALLED_HOOKS}")")"
   cp "${SIDEKICK_DIR}/install.sh" "${INSTALLED_ROOT}/install.sh"
-  if ! CODEX_PLUGIN_ROOT="${INSTALLED_ROOT}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_CODE=0 bash "${INSTALLED_ROOT}/install.sh" >/dev/null 2>&1; then
+  if ! CODEX_PLUGIN_ROOT="${INSTALLED_ROOT}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=0 bash "${INSTALLED_ROOT}/install.sh" >/dev/null 2>&1; then
     fail "installed cache rewrite" "reinstalling the installed tree at ${INSTALLED_ROOT} failed"
   fi
   if grep -Fq 'CODEX_PLUGIN_ROOT' "${INSTALLED_ROOT}/hooks/hooks.json" \

@@ -12,7 +12,7 @@ var IDX = [
     text:'Reader matrix for new users, maintainers, release operators, plugin authors, Claude users, Kay users, and Kay operators.' },
   { page:'Glossary', url:'../GLOSSARY.md', anchor:'glossary',
     title:'Glossary — canonical terms',
-    text:'Single source of truth for Sidekick, Forge, Code / Kay, host Codex, delegate, skill, command, bridge, and wrapper.' },
+    text:'Single source of truth for Sidekick, Forge, Kay, host Codex, delegate, skill, command, bridge, and wrapper.' },
   { page:'Compatibility', url:'../COMPATIBILITY.md', anchor:'compatibility',
     title:'Compatibility — Claude, Codex, and Kay',
     text:'Compatibility matrix covering shared vs agent-specific behavior, skill source of truth, command discoverability, and provider / execution identity.' },
@@ -113,7 +113,7 @@ var IDX = [
     text:'AGENTS.md uses action-oriented categorized format. Global instructions live in ~/forge/AGENTS.md, project instructions live in ./AGENTS.md, and session logs append to docs/sessions/YYYY-MM-DD-session.md when new guidance exists. Categories include Code Style, Testing, Git Workflow, Forge Behavior, Project Conventions, Task Patterns, and Forge Corrections. Plain markdown editable at any time.' },
   { page:'Reference', url:'reference/', anchor:'file-structure',
     title:'File structure — all Sidekick-managed files',
-    text:'skills/forge/SKILL.md and skills/codex-delegate/SKILL.md instruction bodies. .forge.toml compaction config; credentials live in ~/forge/.credentials.json. .forge and .kay indexes preserve task lookup metadata. Kay config uses ~/.code/config.toml, with legacy ~/.codex compatibility.' },
+    text:'skills/forge/SKILL.md and skills/codex-delegate/SKILL.md instruction bodies. .forge.toml compaction config; credentials live in ~/forge/.credentials.json. .forge and .kay indexes preserve task lookup metadata. Kay config uses ~/.kay/config.toml, with legacy ~/.code and ~/.codex compatibility.' },
 
   // ── TROUBLESHOOTING ───────────────────────────────────────────
   { page:'Troubleshooting', url:'troubleshooting/', anchor:'health-check',

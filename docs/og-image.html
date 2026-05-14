@@ -50,7 +50,7 @@ body::after{
   display:flex;flex-direction:column;gap:2px;
 }
 .logo-name{
-  font-size:1.18rem;font-weight:900;letter-spacing:-.02em;
+  font-size:1.18rem;font-weight:900;letter-spacing:0;
 }
 .logo-domain{
   font-family:'Fira Code',monospace;font-size:.72rem;color:#7c8aa1;
@@ -68,13 +68,14 @@ body::after{
 }
 h1{
   font-size:3.62rem;font-weight:900;line-height:1.02;
-  letter-spacing:-.055em;margin-bottom:22px;color:#f8fbff;
+  letter-spacing:0;word-spacing:.04em;margin-bottom:22px;color:#f8fbff;
   max-width:720px;
 }
 h1 .gradient{
   background:linear-gradient(135deg,#93c5fd 0%,#a78bfa 44%,#f0abfc 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
+h1 .comma-gap{display:inline-block;margin-left:.3em}
 .subtitle{
   font-size:1.2rem;line-height:1.48;color:#b7c4d6;max-width:610px;
 }
@@ -116,7 +117,7 @@ h1 .gradient{
 }
 .forge .rank{background:linear-gradient(135deg,#059669,#2563eb)}
 .card-name{
-  font-size:1.5rem;font-weight:900;letter-spacing:-.04em;margin-bottom:2px;color:#f8fbff;
+  font-size:1.5rem;font-weight:900;letter-spacing:0;margin-bottom:2px;color:#f8fbff;
 }
 .card-role{
   font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin-bottom:16px;
@@ -128,7 +129,7 @@ h1 .gradient{
   border-radius:13px;padding:12px 16px;
 }
 .score{
-  font-size:1.8rem;font-weight:900;letter-spacing:-.04em;
+  font-size:1.8rem;font-weight:900;letter-spacing:0;
   background:linear-gradient(135deg,#93c5fd,#c4b5fd);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
@@ -147,7 +148,7 @@ h1 .gradient{
     </div>
     <div class="headline">
       <div class="eyebrow">Claude Code + Codex</div>
-      <h1>The <span class="gradient">#1 and #2</span> coding agents, as Sidekicks</h1>
+      <h1>The <span class="gradient">#1 and #2</span> coding agents,<span class="comma-gap">as</span> Sidekicks</h1>
       <p class="subtitle">Claude Code and Codex can delegate to Kay (OSS Codex) or Forge. Ranked by Terminal-Bench 2.0.</p>
     </div>
   </div>
@@ -158,7 +159,7 @@ h1 .gradient{
         <div class="rank">#1</div>
       </div>
       <div class="card-name">Kay (OSS Codex)</div>
-      <div class="card-role">Every Code execution agent</div>
+      <div class="card-role">OSS Codex execution agent</div>
       <div class="score-row">
         <div class="score">82.0%</div>
         <div class="score-copy">Codex CLI · GPT-5.5</div>

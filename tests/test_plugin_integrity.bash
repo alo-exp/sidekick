@@ -77,11 +77,11 @@ CLAIMED_CODEX_INSTALL="$(claim codex_installer_sha256)"
 REGISTRY_KAY_URL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['url'])")"
 REGISTRY_KAY_VERSION="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['version'])")"
 REGISTRY_KAY_SHA="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['sha256'])")"
-if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/v0.8.0/scripts/install/install.sh" ] \
-  && [ "${REGISTRY_KAY_VERSION}" = "v0.8.0" ] \
-  && [ "${REGISTRY_KAY_SHA}" = "a08e754c5a532f7786340af9f0b21a72ff9cccb6d5c5ffa03c19553c0e7a31cc" ] \
-  && [ "${CLAIMED_CODEX_INSTALL}" = "a08e754c5a532f7786340af9f0b21a72ff9cccb6d5c5ffa03c19553c0e7a31cc" ]; then
-  assert_pass "kay installer points at the pinned Kay v0.8.0 release and checksum"
+if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/8c076de01bbc3185e1bd2acd082daeabb2d61ea2/scripts/install/install.sh" ] \
+  && [ "${REGISTRY_KAY_VERSION}" = "v0.9.0" ] \
+  && [ "${REGISTRY_KAY_SHA}" = "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555" ] \
+  && [ "${CLAIMED_CODEX_INSTALL}" = "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555" ]; then
+  assert_pass "kay installer points at the pinned Kay installer with kay primary binary support"
 else
   assert_fail "kay installer source" "url=${REGISTRY_KAY_URL} version=${REGISTRY_KAY_VERSION} registry_sha=${REGISTRY_KAY_SHA} manifest_sha=${CLAIMED_CODEX_INSTALL}"
 fi

@@ -4,14 +4,14 @@
 
 ---
 
-| Concern | Claude / Forge | Codex / Code / Kay | Notes |
+| Concern | Claude / Forge | Codex / Kay | Notes |
 |---------|----------------|--------------------|-------|
 | Canonical instruction body | `skills/<name>/SKILL.md` | `skills/<name>/SKILL.md` | Skills stay canonical in both runtimes. |
 | Command discoverability | Claude command surface and wrappers | Kay skill bridges plus wrapper commands where supported | The wrapper is for discovery, not for source text. |
-| Execution identity | `forge` | `code` | Sidekick should launch the active runtime binary, not a preinstalled fallback. |
-| Provider precedence | OpenRouter / Forge defaults | MiniMax-backed `code` defaults | Provider choice is runtime-owned and should stay explicit. |
+| Execution identity | `forge` | `kay` | Sidekick should launch the active runtime binary, not a deprecated compatibility alias. |
+| Provider precedence | OpenRouter or MiniMax through Forge config | MiniMax.io and OpenCode Go through Kay config | Provider choice is runtime-owned and should stay explicit. |
 | Run history | Forge-owned audit/index state | Kay-owned audit/index state | History is intentionally separate. |
-| Shared environment | Project docs, tasks, help, and agent conventions | Host Codex tools, skills, hooks, MCPs, and agents by reference | The user should feel continuity without duplicated writable state. |
+| Shared environment | Project docs, tasks, help, and agent conventions | Host Codex plugin surface plus Kay-local state under `~/.kay` | The user should feel continuity without duplicated writable state. |
 | Runtime differences | Forge-specific fallback ladder and mentoring loop | Kay-specific `kay exec` flow and native extension line | Do not assume one runtime automatically supports the other's UX surface. |
 
 ## Reading the Matrix
