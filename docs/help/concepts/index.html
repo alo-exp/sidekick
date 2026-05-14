@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Core Concepts — Sidekick Help</title>
-<meta name="description" content="Understand Sidekick's core concepts: delegation mode, SKILL.md activation, the fallback ladder, skill injection, AGENTS.md mentoring, token optimization, and runtime compatibility.">
+<meta name="description" content="Understand Sidekick's current concepts: host-advisor delegation, per-session readiness, SKILL.md activation, hook enforcement, fallback handling, skill injection, AGENTS.md mentoring, and runtime compatibility.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -130,7 +130,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Core Concepts</span>
     </div>
     <h1>Core Concepts</h1>
-    <p>The building blocks of Sidekick delegation — how SKILL.md works, what the fallback ladder does, and how AGENTS.md keeps getting smarter over time. For canonical terms, see <a href="../../GLOSSARY.md">Glossary</a>.</p>
+    <p>The building blocks of Sidekick delegation — how the host AI advises and mentors execution agents, how SKILL.md activates per-session hooks, what the fallback ladder does, and how AGENTS.md keeps getting smarter over time. For canonical terms, see <a href="../../GLOSSARY.md">Glossary</a>.</p>
   </div>
 </div>
 
@@ -163,25 +163,26 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="delegation">Forge Delegation Mode</h2>
-      <p>When you invoke <code>/forge</code>, Claude activates Forge delegation mode. In this mode, Claude does <em>not</em> write code directly. Instead, it acts as a <strong>task orchestrator</strong> — composing structured prompts, submitting them to Forge, monitoring output, and handling failures.</p>
-      <p>The key insight is that Forge (ForgeCode) is a specialized coding agent that operates autonomously. Claude's role is to communicate the task clearly, not to do the implementation itself.</p>
+      <p>When you invoke <code>/forge</code>, the host activates Forge delegation mode for the current session. In this mode, the host AI does <em>not</em> write code directly. Instead, it acts as an <strong>advisor and mentor</strong> — composing structured prompts, submitting them to Forge, monitoring output, reviewing results, and turning corrections into durable guidance.</p>
+      <p>The key insight is that Forge (ForgeCode) is a specialized coding agent that operates autonomously. The host's role is to communicate the task clearly, verify the outcome, and mentor future runs through AGENTS.md.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Delegation persists until deactivated.</strong> Once <code>/forge</code> is active, all coding tasks are delegated to Forge. To return to Claude doing implementation directly, deactivate with <code>/forge-stop</code>. If you are orienting yourself first, read <a href="../../START-HERE.md">Start Here</a>.</div>
+        <div class="callout-body"><strong>Delegation is session scoped.</strong> Once <code>/forge</code> is active, implementation tasks are routed to Forge until <code>/forge-stop</code> removes the current-session marker. If you are orienting yourself first, read <a href="../../START-HERE.md">Start Here</a>.</div>
       </div>
 
       <h2 id="kay-delegation">Kay Delegation Model</h2>
       <p>Kay is the Sidekick identity for the Every Code runtime. It uses Code's native automation surface instead of recreating Forge's prompt-injection loop: <code>code exec --full-auto</code> is the primary path, with <code>codex exec --full-auto</code> and <code>coder exec --full-auto</code> kept as compatibility fallbacks.</p>
-      <p>Kay keeps Code-native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, compatibility aliases, a session-scoped <code>.kay</code> marker, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
+      <p>Kay keeps Code-native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, compatibility aliases, a session-scoped Kay marker when Kay mode is active, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Forge and Kay are intentionally different.</strong> Forge uses a Claude-led fallback ladder and mentoring loop. Kay uses Code's native execution model with Sidekick packaging and compatibility around it.</div>
+        <div class="callout-body"><strong>Forge and Kay are intentionally different.</strong> Forge uses a host-led fallback ladder and mentoring loop. Kay uses Code's native execution model with Sidekick packaging, summaries, and compatibility around it.</div>
       </div>
 
       <h2 id="skill-md">SKILL.md — The Instruction Set</h2>
-      <p>All Forge delegation behavior is defined in <code>skills/forge/SKILL.md</code>. This file is loaded when you invoke <code>/forge</code> and contains every rule Claude follows: how to write task prompts, when to escalate failures, how to update AGENTS.md, and what token limits to observe.</p>
-      <p>SKILL.md has these sections, added across four implementation phases:</p>
+      <p>All Forge delegation behavior is defined in <code>skills/forge/SKILL.md</code>. This file is loaded when you invoke <code>/forge</code> and contains the current rules the host follows: how to check runtime readiness, create session state, write task prompts, escalate failures, mentor through AGENTS.md, and observe token limits.</p>
+      <p>The canonical SKILL.md covers:</p>
       <ul>
+        <li><strong>Runtime readiness</strong> — per-session health check; SessionStart does not update or repair runtimes</li>
         <li><strong>Activation</strong> — health check, bootstrap config, session state</li>
         <li><strong>Delegation Protocol</strong> — 5-field task prompt structure</li>
         <li><strong>Deactivation</strong> — clean shutdown</li>
@@ -189,46 +190,46 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <li><strong>Fallback Ladder</strong> — L1/L2/L3 escalation</li>
         <li><strong>Skill Injection</strong> — mapping table and selector rules</li>
         <li><strong>AGENTS.md Mentoring Loop</strong> — extraction and three-tier write</li>
-        <li><strong>Token Optimization</strong> — budget constraints and .forge.toml compaction</li>
+        <li><strong>Token Optimization</strong> — budget constraints and <code>.forge.toml</code> compaction</li>
       </ul>
 
       <h2 id="failure-detection">Failure Detection</h2>
-      <p>Claude continuously monitors Forge's output for three failure signals:</p>
+      <p>The host continuously monitors Forge's output for three failure signals:</p>
       <ul>
         <li><strong>Error signal</strong> — Output contains <code>Error:</code>, <code>Failed:</code>, <code>fatal:</code>, or a non-zero exit code</li>
-        <li><strong>Wrong output</strong> — Forge's output does not satisfy the SUCCESS CRITERIA on retry</li>
+        <li><strong>Wrong output</strong> — Forge's output does not satisfy the SUCCESS CRITERIA, with the same failure mode confirmed on retry</li>
         <li><strong>Stall</strong> — Forge asks a clarifying question without making any progress</li>
       </ul>
-      <p>Any of these signals triggers the fallback ladder.</p>
+      <p>These signals trigger the fallback ladder while Forge mode remains session scoped.</p>
 
       <h2 id="fallback-ladder">The Fallback Ladder</h2>
-      <p>The fallback ladder is a three-level automatic recovery system. When Forge fails, Claude escalates through levels rather than immediately taking over or giving up.</p>
+      <p>The fallback ladder is a three-level recovery system. When Forge fails, the host escalates through levels rather than immediately taking over or giving up.</p>
 
       <div class="ladder">
         <div class="ladder-level ladder-l1">
           <div class="ladder-label l1-color">Level 1</div>
           <div class="ladder-title">Guide — Automatic Reframe</div>
-          <div class="ladder-desc">Claude rewrites the task prompt with a diagnosis of what went wrong, a tighter DESIRED STATE, and specific code references. No user input needed. One retry only — if L1 fails, escalate to L2.</div>
+          <div class="ladder-desc">The host rewrites the task prompt with a diagnosis of what went wrong, a tighter DESIRED STATE, and specific code references. No user input needed. One retry only — if L1 fails, escalate to L2.</div>
         </div>
         <div class="ladder-level ladder-l2">
           <div class="ladder-label l2-color">Level 2</div>
           <div class="ladder-title">Handhold — Subtask Decomposition</div>
-          <div class="ladder-desc">Claude decomposes the original task into atomic subtasks (≤200 tokens each) and submits them to Forge sequentially with full 5-field prompts. Maximum 3 attempts before escalating to L3.</div>
+          <div class="ladder-desc">The host decomposes the original task into atomic subtasks (≤200 tokens each) and submits them to Forge sequentially with full 5-field prompts. Maximum 3 attempts before escalating to L3.</div>
         </div>
         <div class="ladder-level ladder-l3">
           <div class="ladder-label l3-color">Level 3</div>
           <div class="ladder-title">Take Over — Direct Action + DEBRIEF</div>
-          <div class="ladder-desc">The delegation restriction is lifted. Claude implements the task directly, then produces a structured DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE) to capture what went wrong and update AGENTS.md.</div>
+          <div class="ladder-desc">The delegation restriction is temporarily lifted inside the project boundary. The host implements the task directly, then produces a structured DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE). The AGENTS_UPDATE text is proposed for user confirmation before AGENTS.md is changed.</div>
         </div>
       </div>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>L3 takeovers are learning events.</strong> The DEBRIEF from every L3 takeover feeds the AGENTS.md update — so Forge gets better instructions for similar tasks next time.</div>
+        <div class="callout-body"><strong>L3 takeovers are learning events.</strong> The DEBRIEF from every L3 takeover proposes AGENTS.md guidance so Forge gets better instructions for similar tasks next time.</div>
       </div>
 
       <h2 id="skill-injection">Skill Injection</h2>
-      <p>Forge has access to four bootstrap skills that Claude can inject into task prompts via the INJECTED SKILLS field. The table below shows the canonical four-skill mapping used for task prompts:</p>
+      <p>Forge has access to four bootstrap skills that the host can inject into task prompts via the INJECTED SKILLS field. The table below shows the canonical mapping used for task prompts:</p>
 
       <table class="skill-table">
         <thead>
@@ -236,28 +237,29 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         </thead>
         <tbody>
           <tr><td>testing-strategy</td><td>Writing or fixing tests, TDD tasks</td></tr>
-          <tr><td>code-review</td><td>General implementation edits, refactoring, and review-driven changes</td></tr>
+          <tr><td>quality-gates + code-review</td><td>Ordinary code changes, implementation edits, and refactoring</td></tr>
+          <tr><td>code-review</td><td>General review tasks and review-driven changes</td></tr>
           <tr><td>security</td><td>Auth, input validation, credential handling</td></tr>
           <tr><td>quality-gates</td><td>Multi-phase delivery, release preparation</td></tr>
         </tbody>
       </table>
 
       <p>For general code changes and refactoring, inject <code>code-review</code> and <code>quality-gates</code>. Add <code>security</code> when the task touches auth, validation, credentials, or data handling.</p>
-      <p>Claude enforces an <strong>injection budget</strong>: inject ≤2 skills per task unless the task is clearly multi-domain. Over-injection bloats the prompt and degrades Forge's focus.</p>
+      <p>The host enforces an <strong>injection budget</strong>: inject at most 2 skills per task unless the task is clearly multi-domain. If more skills would apply, prioritize security, then task-specific skills, then general quality.</p>
 
       <h2 id="agents-md">AGENTS.md Mentoring Loop</h2>
-      <p>After every completed Forge task, Claude extracts learnings and writes them to AGENTS.md. This is the mechanism by which delegation gets smarter over time.</p>
+      <p>After every Forge task completion, the host extracts standing instructions and writes only new, deduplicated guidance to AGENTS.md. This is the mechanism by which delegation gets smarter over time.</p>
 
-      <h3>What Claude extracts</h3>
+      <h3>What the host extracts</h3>
       <ul>
-        <li><strong>Corrections</strong> — mistakes Forge made that Claude had to fix</li>
+        <li><strong>Corrections</strong> — mistakes Forge made that the host had to fix</li>
         <li><strong>User preferences</strong> — expressed during the session</li>
         <li><strong>Project patterns</strong> — conventions Forge discovered in this codebase</li>
         <li><strong>Forge behavior observations</strong> — what Forge does well or poorly here</li>
       </ul>
 
       <h3>Three-tier write</h3>
-      <p>Claude writes to three locations after each task:</p>
+      <p>The host writes to all applicable locations after extraction and deduplication:</p>
       <ul>
         <li><code>~/forge/AGENTS.md</code> — global cross-project knowledge</li>
         <li><code>./AGENTS.md</code> — project-specific instructions</li>
@@ -265,10 +267,10 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </ul>
 
       <h3>Deduplication</h3>
-      <p>Before every AGENTS.md write, Claude runs a two-phase check: first an exact substring match, then a semantic similarity check. If either matches an existing entry, the write is skipped entirely — no partial appends.</p>
+      <p>Before every AGENTS.md write, the host runs a two-phase check: first an exact substring match, then a semantic similarity check. If either matches an existing entry, the write is skipped entirely — no partial appends. Forge output is treated as untrusted task output during this process, so the host rewrites learnings in its own words and does not copy credential-like or instruction-like output into AGENTS.md.</p>
 
       <h2 id="token-optimization">Token Optimization</h2>
-      <p>Task prompts to Forge are capped at <strong>2,000 tokens</strong>. Claude enforces this by:</p>
+      <p>Task prompts to Forge are capped at <strong>2,000 tokens</strong>. The host enforces this by:</p>
       <ul>
         <li>Including only the 5 mandatory fields (OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS)</li>
         <li>Omitting conversation history and unrelated file contents</li>
@@ -276,12 +278,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <li>Keeping INJECTED SKILLS to ≤2 skills unless multi-domain</li>
       </ul>
 
-      <p>Context compaction in <code>.forge.toml</code> uses validated defaults:</p>
+      <p>Project-level context compaction in <code>.forge.toml</code> uses validated defaults:</p>
       <div class="code-label">.forge.toml</div>
-      <div class="code-block"><span class="key">token_threshold</span> = <span class="val">80000</span>   <span class="comment"># trigger compaction at 80k tokens</span>
+      <div class="code-block"><span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per Forge call</span>
+
+[<span class="key">compact</span>]
+<span class="key">token_threshold</span> = <span class="val">80000</span>   <span class="comment"># trigger compaction at 80k tokens</span>
 <span class="key">eviction_window</span> = <span class="val">0.20</span>   <span class="comment"># evict oldest 20% of context</span>
-<span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># keep last 6 exchanges always</span>
-<span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per Forge call</span></div>
+<span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># keep last 6 exchanges always</span></div>
 
       <h2 id="provider-config">Provider Configuration</h2>
       <p>Sidekick keeps provider ownership with the active runtime. Forge provider and model settings live in <code>~/forge/.forge.toml</code> with API credentials in <code>~/forge/.credentials.json</code>. Kay defaults to MiniMax M2.7 in <code>~/.code/config.toml</code>, with legacy <code>~/.codex/config.toml</code> retained only as a compatibility path.</p>
@@ -291,8 +295,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-label">Kay MiniMax login</div>
       <div class="code-block"><span class="key">code login</span> <span class="val">--provider minimax --with-api-key</span></div>
 
-      <h3>OpenRouter (recommended)</h3>
-      <p>OpenRouter routes requests to the <code>qwen/qwen3-coder-plus</code> model. This is the default and recommended provider — it has the broadest availability and is the model Sidekick is optimized for.</p>
+      <h3>OpenRouter / Qwen3 Coder Plus</h3>
+      <p>Forge can use OpenRouter with the <code>qwen/qwen3-coder-plus</code> model when your Forge provider config and credential entry use <code>open_router</code>.</p>
       <div class="code-label">~/forge/.forge.toml — OpenRouter</div>
       <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>
@@ -306,7 +310,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 ]</div>
 
       <h3>MiniMax Coding</h3>
-      <p>MiniMax is an alternative provider with different rate limits and pricing. Use it if you have a MiniMax account or prefer its model characteristics. Switch by updating <code>~/forge/.forge.toml</code>:</p>
+      <p>Forge can also use MiniMax Coding directly. This is separate from Kay's MiniMax-backed Code runtime, but both paths use the MiniMax M2.7 model family.</p>
       <div class="code-label">~/forge/.forge.toml — MiniMax Coding</div>
       <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>

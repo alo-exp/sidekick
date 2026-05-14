@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Delegation Workflow — Sidekick Help</title>
-<meta name="description" content="The complete end-to-end Sidekick workflow for Forge and Kay — from activating the runtime path to reviewing output, preserving history, and updating AGENTS.md where applicable.">
+<meta name="description" content="The current end-to-end Sidekick workflow for Forge and Kay — from per-session readiness to delegated execution, hook summaries, task history, and AGENTS.md mentoring where applicable.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -115,7 +115,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Delegation Workflow</span>
     </div>
     <h1>Delegation Workflow</h1>
-    <p>The complete flow for delegating a coding task through Forge or Kay — from runtime activation through output review, task history, and the Forge AGENTS.md mentoring loop. If you need the task-first docs map, read <a href="../../START-HERE.md">Start Here</a> first.</p>
+    <p>The complete flow for delegating a coding task through Forge or Kay — from current-session readiness through output review, task history, and the Forge AGENTS.md mentoring loop. If you need the task-first docs map, read <a href="../../START-HERE.md">Start Here</a> first.</p>
   </div>
 </div>
 
@@ -152,39 +152,39 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Run /forge</h4>
-            <p>Type <code>/forge</code> in Claude Code. Claude loads <code>skills/forge/SKILL.md</code> and executes the activation sequence:</p>
+            <p>Type <code>/forge</code> in the host. The host loads <code>skills/forge/SKILL.md</code> and executes the activation sequence:</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Health check</h4>
-            <p>Claude verifies: (1) the Forge binary is on PATH, (2) <code>~/forge/.credentials.json</code> has a non-empty array of credential entries, (3) <code>~/forge/.forge.toml</code> has a valid <code>provider_id</code> and <code>model_id</code>, (4) OpenRouter (or MiniMax) is reachable, and (5) the configured model is available. Any failure halts activation with a specific error message.</p>
+            <p>The host verifies four current conditions: (1) the Forge binary exists or is on PATH, (2) <code>forge info</code> exits successfully and reports a provider, (3) <code>~/forge/.credentials.json</code> is a non-empty array of credential entries with <code>id</code> and <code>auth_details</code>, and (4) <code>~/forge/.forge.toml</code> has non-empty <code>provider_id</code> and <code>model_id</code>. Any failure halts activation with a specific repair path.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">3</div><div class="flow-line"></div></div>
           <div class="flow-body">
-            <h4>Bootstrap AGENTS.md (first run only)</h4>
-            <p>If <code>./AGENTS.md</code> does not exist, Claude creates it with project-specific sections: Project Conventions, Task Patterns, and Forge Corrections. If <code>~/forge/AGENTS.md</code> doesn't exist, it creates that too with global sections: Code Style, Testing, Git Workflow, and Forge Behavior.</p>
+            <h4>Bootstrap project files if absent</h4>
+            <p>On first invocation only, the host creates missing Sidekick-owned project files without overwriting existing files: <code>.forge/agents/forge.md</code>, project <code>.forge.toml</code> compaction defaults, and the four <code>.forge/skills/</code> bootstrap skills. If <code>./AGENTS.md</code> is absent or empty, the Forge mentoring bootstrap creates the project instruction sections.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">4</div></div>
           <div class="flow-body">
             <h4>Confirm activation</h4>
-            <p>Claude writes a zero-byte marker to <code>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</code> and confirms: "Forge delegation mode active." All subsequent coding tasks in this session will be delegated to Forge until you run <code>/forge-stop</code>.</p>
+            <p>The host writes a zero-byte Forge marker under the current host session directory and confirms: "Forge-first delegation mode activated." The hook layer stays dormant until that marker exists, then routes implementation work to Forge until you run <code>/forge-stop</code>.</p>
           </div>
         </div>
       </div>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>Health check failing?</strong> See <a href="../troubleshooting/#health-check">Troubleshooting → Health Check Failures</a> for step-by-step fixes. The most common cause is a missing or misconfigured <code>~/forge/.credentials.json</code>.</div>
+        <div class="callout-body"><strong>Health check failing?</strong> See <a href="../troubleshooting/#health-check">Troubleshooting → Health Check Failures</a> for step-by-step fixes. The most common causes are a missing Forge binary, malformed <code>~/forge/.credentials.json</code>, or missing provider/model values in <code>~/forge/.forge.toml</code>.</div>
       </div>
 
       <h2 id="kay-workflow">Kay Workflow</h2>
-      <p>Kay uses Code's native automation flow. Sidekick keeps the runtime installed, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger.</p>
+      <p>Kay uses Code's native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. In Claude Code, the Kay workflow can launch a child Code runtime; in Code/Codex, the same skill is runtime guidance because the host already is the execution runtime.</p>
       <div class="flow">
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
@@ -197,94 +197,94 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Run the delegated task</h4>
-            <p>Use <code>code exec --full-auto "&lt;task&gt;"</code>. Kay relies on Code-native agents, skills, subagents, and <code>AGENTS.md</code> rather than Forge's 5-field prompt and fallback ladder.</p>
+            <p>Use <code>code exec --full-auto "&lt;task&gt;"</code> when launching a child Kay runtime. Sidekick accepts <code>code</code>, <code>codex</code>, or <code>coder</code>; when Kay mode is active, the hook adds <code>--full-auto</code> if it is missing and prefixes output with <code>[KAY]</code> / <code>[KAY-LOG]</code>.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">3</div></div>
           <div class="flow-body">
             <h4>Review the summary</h4>
-            <p>The Kay progress surface emits compact task context and preserves lookup metadata in <code>.kay/conversations.idx</code>. Review changed files, test output, and the final task summary before continuing.</p>
+            <p>The Kay progress surface emits compact <code>[KAY-SUMMARY]</code> context when a STATUS block appears and preserves lookup metadata in <code>.kay/conversations.idx</code>. Review changed files, test output, and the final task summary before continuing.</p>
           </div>
         </div>
       </div>
 
       <h2 id="task-prompt">Step 2 — Compose Task Prompt</h2>
-      <p>When you describe a task, Claude builds a structured 5-field prompt capped at 2,000 tokens:</p>
+      <p>When you describe a Forge task, the host builds a structured 5-field prompt capped at 2,000 tokens:</p>
       <div class="code-label">task prompt structure</div>
       <div class="code-block"><span class="key">OBJECTIVE:</span>     <span class="val">One-sentence statement of what Forge must accomplish</span>
 <span class="key">CONTEXT:</span>       <span class="val">Only relevant files + their current state</span>
 <span class="key">DESIRED STATE:</span> <span class="val">Specific, verifiable outcome (no ambiguity)</span>
-<span class="key">SUCCESS CRITERIA:</span> <span class="val">Checklist Claude uses to verify Forge succeeded</span>
+<span class="key">SUCCESS CRITERIA:</span> <span class="val">Checklist the host uses to verify Forge succeeded</span>
 <span class="key">INJECTED SKILLS:</span>  <span class="val">≤2 bootstrap skills relevant to the task type</span></div>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Claude writes this for you.</strong> You describe what you need in plain language. Claude translates that into the 5-field structure with the right specificity and skill selection.</div>
+        <div class="callout-body"><strong>The host writes this for you.</strong> You describe what you need in plain language. The host translates that into the 5-field structure with the right specificity and skill selection.</div>
       </div>
 
       <h2 id="monitoring">Step 3 — Monitor Forge Output</h2>
-      <p>Claude streams Forge's output and checks for three failure signals on every response:</p>
+      <p>The host streams Forge's output and checks for three failure signals on every response:</p>
       <ul>
         <li><strong>Error signal</strong> — <code>Error:</code>, <code>Failed:</code>, <code>fatal:</code>, or non-zero exit</li>
-        <li><strong>Wrong output</strong> — SUCCESS CRITERIA not satisfied on retry</li>
+        <li><strong>Wrong output</strong> — SUCCESS CRITERIA not satisfied, with the same failure mode confirmed on retry</li>
         <li><strong>Stall</strong> — Forge asks questions without making progress</li>
       </ul>
-      <p>If no failure signal is detected and SUCCESS CRITERIA are met, the task is complete — skip to Step 5.</p>
+      <p>If no failure signal is detected and SUCCESS CRITERIA are met, review the output summary in Step 5.</p>
 
       <h2 id="fallback">Step 4 — Fallback Handling (on failure)</h2>
-      <p>Failures trigger the three-level fallback ladder automatically — no user input required until L3:</p>
+      <p>Failures trigger the three-level fallback ladder in sequence:</p>
 
       <div class="flow">
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#059669,#047857)">L1</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Guide — Reframe and retry once</h4>
-            <p>Claude diagnoses the failure, rewrites the prompt with a tighter DESIRED STATE and code references, and resubmits. If this succeeds, jump to Step 5. If it fails, escalate to L2.</p>
+            <p>The host diagnoses the failure, rewrites the prompt with a tighter DESIRED STATE and code references, and resubmits. If this succeeds, jump to Step 5. If it fails, escalate to L2.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#d97706,#b45309)">L2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Handhold — Decompose and sequence</h4>
-            <p>Claude breaks the task into atomic subtasks (≤200 tokens each) and submits them one at a time. Up to 3 attempts. If any subtask fails 3 times, escalate to L3.</p>
+            <p>The host breaks the task into atomic subtasks (≤200 tokens each) and submits them one at a time. Up to 3 subtask attempts total. If they fail, escalate to L3.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#dc2626,#b91c1c)">L3</div></div>
           <div class="flow-body">
-            <h4>Take over — Claude implements directly</h4>
-            <p>Delegation restriction lifted. Claude implements the task. After completion, produces a DEBRIEF with TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE fields to capture what happened and update AGENTS.md.</p>
+            <h4>Take over — host implements directly</h4>
+            <p>Delegation restriction is temporarily lifted inside the project boundary. The host implements the task. After completion, it produces a DEBRIEF with TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE fields. AGENTS_UPDATE is proposed for user confirmation before AGENTS.md is changed.</p>
           </div>
         </div>
       </div>
 
       <h2 id="review">Step 5 — Output Review</h2>
-      <p>Whether Forge succeeded or Claude took over at L3, Claude presents a structured output summary for your review. The summary is drawn from Forge's output block fields:</p>
+      <p>Whether Forge succeeded or the host took over at L3, the host presents a structured output summary for your review. The summary is drawn from Forge's output block fields:</p>
       <ul>
         <li><strong>FILES_CHANGED</strong> — every file Forge created, modified, or deleted</li>
         <li><strong>ASSUMPTIONS</strong> — anything Forge inferred that wasn't explicit in the prompt (review these carefully)</li>
         <li><strong>PATTERNS_DISCOVERED</strong> — codebase conventions Forge noticed during the task</li>
         <li><strong>Test results</strong> — if Forge ran tests, pass/fail summary</li>
       </ul>
-      <p>Confirm the output looks correct. If something needs adjustment, describe the change in plain language — Claude will compose a new 5-field delegation prompt for the follow-up task. There is no need to re-activate; delegation mode remains active.</p>
+      <p>Confirm the output looks correct. If something needs adjustment, describe the change in plain language — the host will compose a new 5-field delegation prompt for the follow-up task. There is no need to re-activate; delegation mode remains active.</p>
 
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>Always review ASSUMPTIONS.</strong> If Forge made an incorrect assumption (wrong env variable name, wrong test framework, etc.), correct it now. Claude will add the correction to AGENTS.md so Forge doesn't repeat the assumption.</div>
+        <div class="callout-body"><strong>Always review ASSUMPTIONS.</strong> If Forge made an incorrect assumption (wrong env variable name, wrong test framework, etc.), correct it now. The host can convert the correction into deduplicated AGENTS.md guidance so Forge doesn't repeat the assumption.</div>
       </div>
 
       <h2 id="agents-update">Step 6 — AGENTS.md Update</h2>
-      <p>After each task (success or L3 takeover), Claude runs the AGENTS.md mentoring loop. This is automatic — you don't need to trigger it.</p>
+      <p>After each Forge task completion, the host runs the AGENTS.md mentoring loop. This is automatic for extraction and deduplication; L3 takeover updates are proposed for confirmation before being written.</p>
 
       <h3>What gets written</h3>
       <ul>
-        <li><strong>Successful tasks</strong> — PATTERNS_DISCOVERED and any user preferences expressed during review are extracted and written to <code>./AGENTS.md</code> and <code>~/forge/AGENTS.md</code></li>
-        <li><strong>L3 takeovers</strong> — the DEBRIEF's <code>AGENTS_UPDATE</code> field is applied directly, capturing what Forge failed on and what the correct approach is</li>
+        <li><strong>Successful tasks</strong> — PATTERNS_DISCOVERED and any user preferences expressed during review are extracted and written only when they are new and action-oriented</li>
+        <li><strong>L3 takeovers</strong> — the DEBRIEF's <code>AGENTS_UPDATE</code> field captures what Forge failed on and what the correct approach is; the host asks before applying it</li>
         <li><strong>Session log</strong> — a full evolution log is appended to <code>docs/sessions/YYYY-MM-DD-session.md</code>, recording every task, outcome, and AGENTS.md change from the session</li>
       </ul>
 
       <h3>Deduplication</h3>
-      <p>Before every write, Claude runs a two-phase dedup check: exact substring match first, then semantic similarity. If either matches an existing AGENTS.md entry, the write is skipped — preventing duplicate or contradictory instructions from accumulating.</p>
+      <p>Before every write, the host runs a two-phase dedup check: exact substring match first, then semantic similarity. If either matches an existing AGENTS.md entry, the write is skipped — preventing duplicate or contradictory instructions from accumulating. Forge output is treated as untrusted data, so the host rewrites learnings in its own words.</p>
 
       <div class="code-label">AGENTS.md three-tier write targets</div>
       <div class="code-block"><span class="comment"># Global — applies to all projects</span>
@@ -297,13 +297,13 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">docs/sessions/YYYY-MM-DD-session.md</span></div>
 
       <h2 id="deactivation">Step 7 — Deactivate (optional)</h2>
-      <p>Forge delegation mode persists for the entire session. You can delegate as many tasks as needed without re-running <code>/forge</code>. To return to direct Claude implementation:</p>
+      <p>Forge delegation mode persists for the entire session. You can delegate as many tasks as needed without re-running <code>/forge</code>. To return to direct host implementation:</p>
       <div class="code-block"><span class="key">/forge-stop</span></div>
-      <p>This removes the <code>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</code> marker and restores normal Claude behavior. All AGENTS.md updates from the session are preserved and will be loaded on the next <code>/forge</code> invocation.</p>
+      <p>This removes the current-session Forge marker and restores normal direct-host behavior. The <code>.forge/conversations.idx</code> audit ledger and any accepted AGENTS.md updates are preserved.</p>
 
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>You don't have to deactivate between tasks.</strong> Forge delegation mode is designed to stay active for a full working session. Only deactivate if you specifically want Claude to implement something directly — for example, a quick one-liner that doesn't warrant the delegation overhead.</div>
+        <div class="callout-body"><strong>You don't have to deactivate between tasks.</strong> Forge delegation mode is designed to stay active for a full working session. Only deactivate if you specifically want the host to implement something directly — for example, a quick one-liner that doesn't warrant the delegation overhead.</div>
       </div>
 
       <div class="page-nav-bottom">

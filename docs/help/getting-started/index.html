@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Getting Started — Sidekick Help</title>
-<meta name="description" content="Get started with Sidekick for Claude Code or Codex. Use Start Here for the reader map, then install the plugin, configure the active sidekick, run your first health check, and delegate your first coding task.">
+<meta name="description" content="Get started with Sidekick for Claude Code or Codex. Install the plugin, choose Forge or Kay, run the current-session readiness check, and delegate your first coding task.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -116,7 +116,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Getting Started</span>
     </div>
     <h1>Getting Started</h1>
-    <p>Install Sidekick, connect the active sidekick for Claude Code or Codex, and delegate your first coding task — all in under 10 minutes. If you're not sure where to begin, read <a href="../../START-HERE.md">Start Here</a> first.</p>
+    <p>Install Sidekick, choose Forge or Kay, and delegate your first coding task from Claude Code or Codex. If you're not sure where to begin, read <a href="../../START-HERE.md">Start Here</a> first.</p>
   </div>
 </div>
 
@@ -146,7 +146,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="what-is-sidekick">What is Sidekick?</h2>
       <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. <strong>Forge</strong> packages ForgeCode for delegated terminal work. <strong>Kay</strong> packages the Every Code agent line with MiniMax M2.7 defaults, <code>code</code> / <code>codex</code> / <code>coder</code> compatibility, and the OpenCode Go multi-AI path. Claude Code and Codex can both route work to Forge or Kay.</p>
-      <p>When you activate Forge delegation mode, the host stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures automatically using a three-level fallback ladder. Kay uses Code's native execution workflow for implementation while keeping Sidekick's packaging, session, and agent guidance aligned.</p>
+      <p>When you activate Forge delegation mode, the host stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures through the fallback ladder. Kay uses Code's native execution workflow for implementation while Sidekick keeps packaging, hook enforcement, summaries, and task lookup metadata aligned.</p>
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="zap"></i></span>
         <div class="callout-body"><strong>Why use a sidekick?</strong> Forge and Kay keep implementation work in a purpose-built agent while the host stays focused on task composition, quality review, and communication.</div>
@@ -157,7 +157,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <ul>
         <li><strong>Claude Code or Codex host</strong> — required to run the Sidekick plugin surface.</li>
         <li><strong>Forge or Kay agent path</strong> — choose the agent that fits the task.</li>
-        <li><strong>Provider key</strong> — Forge uses OpenRouter with Qwen3 Coder Plus by default, or MiniMax Coding. Kay uses MiniMax M2.7 through <code>~/.code/config.toml</code>, with legacy <code>~/.codex/config.toml</code> compatibility.</li>
+        <li><strong>Provider access</strong> — Forge needs a valid Forge provider config and credential entry. Kay defaults to MiniMax M2.7 through <code>~/.code/config.toml</code>, with legacy <code>~/.codex/config.toml</code> compatibility.</li>
         <li><strong>Node.js 18+</strong> — required by Claude Code.</li>
       </ul>
       <div class="callout callout-info">
@@ -166,39 +166,27 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="install">Installation</h2>
-      <p>Claude Code users add the following to <code>~/.claude/settings.json</code>:</p>
-      <div class="code-label">~/.claude/settings.json</div>
-      <div class="code-block"><span class="comment">{
-  "extraKnownMarketplaces": {
-    "alo-labs": {
-      "source": {
-        "source": "github",
-      "repo": "alo-exp/sidekick"
-      },
-      "autoUpdate": true
-    }
-  },
-  "enabledPlugins": {
-    "sidekick@alo-labs": true
-  }
-}</span></div>
-      <p>On the next Claude Code session, Sidekick installs automatically and makes the <code>/forge</code> skill available in future sessions. No project-specific setup is required — Sidekick works in any git repository.</p>
+      <p>Install Sidekick through the plugin surface for the host you use:</p>
+      <div class="code-label">Claude Code</div>
+      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span></div>
+      <div class="code-label">Codex / Kay</div>
+      <div class="code-block"><span class="cmd">codex plugin marketplace add alo-labs/sidekick</span></div>
+      <p>Restart the host after installation so the hook surface loads before you start a Forge or Kay session. The SessionStart hooks only run first-run bootstrap and legacy hook cleanup; Forge and Kay runtime readiness is checked when delegation starts for the current session.</p>
       <p>Codex users should install the Codex-facing Sidekick package through the Codex plugin surface. That path exposes the shared skill bodies and Kay runtime guidance without duplicating writable state from Claude Code.</p>
 
       <h2 id="health-check">Health Check</h2>
-      <p>After installing, verify the runtime for your host path.</p>
+      <p>After installing, verify the runtime for the agent path you plan to use.</p>
       <h3>Forge health check</h3>
-      <p>In Claude Code, run:</p>
-      <div class="code-label">in any Claude Code session</div>
+      <p>In the host, run:</p>
+      <div class="code-label">in any host session</div>
       <div class="code-block"><span class="cmd">/forge</span>
-<span class="comment"># Claude will activate Forge delegation mode and run a health check</span></div>
-      <p>On first activation, Forge checks <code>~/forge/.credentials.json</code> for a credential array entry and <code>~/forge/.forge.toml</code> for the configured provider and model.</p>
+<span class="comment"># the host activates Forge delegation mode and runs the readiness check</span></div>
+      <p>On activation, Forge checks four things: the Forge binary, <code>forge info</code> provider output, the credential array in <code>~/forge/.credentials.json</code>, and non-empty <code>provider_id</code> / <code>model_id</code> values in <code>~/forge/.forge.toml</code>.</p>
       <p>A successful health check looks like:</p>
       <div class="code-block"><span class="comment">✓ Forge binary found (~/.local/bin/forge)</span>
 <span class="comment">✓ Provider configured (forge info exit 0)</span>
 <span class="comment">✓ Credentials present (~/forge/.credentials.json has at least one {id, auth_details} entry)</span>
 <span class="comment">✓ Config valid (~/forge/.forge.toml has provider_id and model_id)</span>
-<span class="comment">✓ Bootstrap skills loaded (4 skills)</span>
 <span class="comment">✓ Forge delegation mode active</span></div>
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
@@ -206,41 +194,41 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h3>Kay health check</h3>
-      <p>For the Kay path, verify that the Every Code runtime is reachable and has a MiniMax-backed config:</p>
+      <p>For the Kay path, verify that the Every Code runtime is reachable and has a MiniMax-backed config. In Claude Code, Kay delegation launches a child Code runtime. In Code/Codex itself, the Kay skill is packaging and runtime guidance because the host already is the execution runtime.</p>
       <div class="code-label">Code / Codex host</div>
       <div class="code-block"><span class="cmd">code --version</span> <span class="comment"># or codex --version / coder --version</span>
 <span class="cmd">code exec --help</span> <span class="comment"># or codex exec --help / coder exec --help</span>
 <span class="cmd">code login --provider minimax --with-api-key</span> <span class="comment"># if login is missing</span></div>
 
       <h2 id="first-forge">Your First /forge Task</h2>
-      <p>Once the health check passes, Claude is in Forge delegation mode. Every task you give Claude will be delegated to Forge via a structured 5-field task prompt.</p>
+      <p>Once the health check passes, the host is in Forge delegation mode. Every implementation task you give the host is delegated to Forge via a structured 5-field task prompt.</p>
       <ol class="step-list">
         <li>
           <div class="step-num">1</div>
           <div class="step-body">
             <h4>Describe what to build</h4>
-            <p>Tell Claude what you need in plain language. Claude will compose the OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, and INJECTED SKILLS fields automatically.</p>
+            <p>Tell the host what you need in plain language. It will compose the OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, and INJECTED SKILLS fields automatically.</p>
           </div>
         </li>
         <li>
           <div class="step-num">2</div>
           <div class="step-body">
-            <h4>Claude submits to Forge</h4>
-            <p>Claude sends the structured prompt to Forge (max 2,000 tokens). Forge works autonomously — making changes, running tests, creating commits.</p>
+            <h4>Host submits to Forge</h4>
+            <p>The host sends the structured prompt to Forge (max 2,000 tokens). The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>, and output prefixes automatically; do not add those flags manually.</p>
           </div>
         </li>
         <li>
           <div class="step-num">3</div>
           <div class="step-body">
-            <h4>Claude monitors output</h4>
-            <p>Claude watches for three failure signals: error output, SUCCESS CRITERIA not met, or Forge asking a clarifying question without progress.</p>
+            <h4>Host monitors output</h4>
+            <p>The host watches for three failure signals: error output, SUCCESS CRITERIA not met on retry, or Forge asking a clarifying question without progress.</p>
           </div>
         </li>
         <li>
           <div class="step-num">4</div>
           <div class="step-body">
             <h4>Review and confirm</h4>
-            <p>Claude presents Forge's output for your review. If Forge succeeded, the task is done. If Forge failed, the fallback ladder kicked in automatically.</p>
+            <p>The host presents Forge's output for your review. If Forge succeeded, the task is done. If Forge failed, the fallback ladder kicked in.</p>
           </div>
         </li>
       </ol>
@@ -256,14 +244,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="comment"># fallback aliases</span>
 <span class="cmd">codex exec --full-auto "implement the focused task, run tests, summarize changes"</span>
 <span class="cmd">coder exec --full-auto "implement the focused task, run tests, summarize changes"</span></div>
-      <p>Kay keeps native Code agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, compatibility aliases, session-scoped marker, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
+      <p>Kay keeps native Code agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, compatibility aliases, session-scoped marker, hook summaries, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
 
       <h2 id="agents-md-bootstrap">AGENTS.md Bootstrap</h2>
-      <p>On your first <code>/forge</code> invocation, if no <code>AGENTS.md</code> exists in the project root, Sidekick creates one. This file accumulates standing instructions for Forge — project conventions, preferences, and patterns Claude discovers over time.</p>
+      <p>On your first <code>/forge</code> invocation, if no non-empty <code>AGENTS.md</code> exists in the project root, Sidekick creates one. This file accumulates standing instructions for Forge — project conventions, preferences, and patterns the host AI discovers over time.</p>
       <p>The bootstrap file contains the default Forge output format expectations (STATUS, FILES_CHANGED, ASSUMPTIONS, PATTERNS_DISCOVERED) and delegation principles. You can edit it at any time to add project-specific rules.</p>
       <div class="card">
         <h4>AGENTS.md tiers</h4>
-        <p>Sidekick maintains instructions at three levels: <strong>Global</strong> (~/forge/AGENTS.md — cross-project), <strong>Project</strong> (./AGENTS.md — this repo), and <strong>Session log</strong> (docs/sessions/ — per-session evolution). Claude writes to all three after each completed task.</p>
+        <p>Sidekick maintains instructions at three levels: <strong>Global</strong> (~/forge/AGENTS.md — cross-project), <strong>Project</strong> (./AGENTS.md — this repo), and <strong>Session log</strong> (docs/sessions/ — per-session evolution). The host writes only new, deduplicated instructions; L3 takeover updates are proposed for user confirmation before AGENTS.md is changed.</p>
       </div>
 
       <h2 id="whats-next">What's Next</h2>
