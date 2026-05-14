@@ -43,6 +43,8 @@ run_suite "Kay plugin/read skill exposure tests" "run_live_codex_plugin_read.bas
 run_suite "Kay delegation enforcer hook tests"   "test_codex_enforcer_hook.bash"
 run_suite "Kay progress surface hook tests"      "test_codex_progress_surface.bash"
 run_suite "Docs contract tests"                  "test_docs_contract.bash"
+run_suite "Homepage sidekick card tests"         "test_homepage_sidekicks.bash"
+run_suite "Social preview image tests"           "test_og_image.bash"
 run_suite "Help-site navigation tests"           "test_help_site_navigation.bash"
 run_suite "Release gate hook tests"              "test_validate_release_gate_hook.bash"
 run_suite "Legacy hook scrub tests"              "test_legacy_hook_scrub.bash"
