@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
-<title>Sidekick Help Center</title>
-<meta name="description" content="Comprehensive documentation for Sidekick — AI coding agents for Claude Code. Learn how to delegate with Forge, configure AGENTS.md, and master the fallback ladder.">
+<title>Sidekick Help Center — Claude and Codex</title>
+<meta name="description" content="Comprehensive documentation for Sidekick — AI coding agents for Claude Code and Codex. Learn how to delegate with Forge and Kay, configure AGENTS.md, and master the fallback ladder.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -115,10 +115,20 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   <div class="container">
     <div class="badge"><i data-lucide="book-open"></i> Help Center</div>
     <h1>How Can We Help You?</h1>
-    <p>Everything you need to find the right Sidekick docs for your task — from first install to delegation, debugging, release prep, and runtime differences.</p>
+    <p>Everything you need to find the right Sidekick docs for your task — from first install to delegation, debugging, release prep, and runtime differences across Claude and Codex.</p>
     <div class="search-wrap">
       <span class="search-icon"><i data-lucide="search"></i></span>
       <input type="text" placeholder="Search tasks, docs, commands, concepts…" id="search-input" autocomplete="off">
+    </div>
+  </div>
+</section>
+
+<!-- SUPPORT CALLOUT -->
+<section style="padding:32px 0 16px">
+  <div class="container">
+    <div class="callout callout-info" id="support">
+      <span class="callout-icon"><i data-lucide="layers-3"></i></span>
+      <div class="callout-body"><strong>Sidekick supports Claude and Codex.</strong> Claude users delegate to Forge. Codex users delegate to Kay. Forge and Kay both support MiniMax.io, and Kay also supports OpenCode Go. If you're not sure which path to read first, start with <a href="../COMPATIBILITY.md">Compatibility</a>.</div>
     </div>
   </div>
 </section>
@@ -176,7 +186,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="rocket"></i></div>
         <span class="card-badge" style="background:var(--green-subtle);color:var(--green)">Start here</span>
         <h3>Getting Started</h3>
-        <p>New to Sidekick? Install the plugin, configure the active sidekick, and delegate your first coding task in minutes.</p>
+        <p>New to Sidekick? Install the plugin, configure the active sidekick for Claude or Codex, and delegate your first coding task in minutes.</p>
         <ul class="card-topics">
           <li>Installing Sidekick via /plugin install</li>
           <li>Runtime prerequisites and health checks</li>
@@ -191,7 +201,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="brain"></i></div>
         <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Fundamentals</span>
         <h3>Core Concepts</h3>
-        <p>Understand how Sidekick works — SKILL.md activation, the fallback ladder, AGENTS.md mentoring, and the runtime compatibility model.</p>
+        <p>Understand how Sidekick works across Claude and Codex — SKILL.md activation, the fallback ladder, AGENTS.md mentoring, and the runtime compatibility model.</p>
         <ul class="card-topics">
           <li>Delegation mode and SKILL.md</li>
           <li>Fallback ladder: L1 Guide → L2 Handhold → L3 Take over</li>
@@ -206,7 +216,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="git-branch-plus"></i></div>
         <span class="card-badge" style="background:var(--accent-subtle);color:var(--accent-light)">Workflow</span>
         <h3>Delegation Workflow</h3>
-        <p>The end-to-end flow for delegating a task — from activating the skill to reviewing output and updating AGENTS.md.</p>
+        <p>The end-to-end flow for delegating a task from Claude or Codex — from activating the skill to reviewing output and updating AGENTS.md.</p>
         <ul class="card-topics">
           <li>Activating delegation mode</li>
           <li>Crafting the 5-field task prompt</li>
@@ -236,7 +246,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="card-icon"><i data-lucide="wrench"></i></div>
         <span class="card-badge" style="background:var(--red-subtle);color:var(--red)">Help</span>
         <h3>Troubleshooting</h3>
-        <p>Common issues with health checks, runtime configuration, fallback ladder triggers, and session recovery.</p>
+        <p>Common issues with Claude or Codex health checks, runtime configuration, fallback ladder triggers, and session recovery.</p>
         <ul class="card-topics">
           <li>Health check failures and fixes</li>
           <li>Provider and model config</li>
