@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
-<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
+<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
 <title>Sidekick — AI Coding Agents for Claude Code and Codex</title>
 <meta name="description" content="Sidekick lets Claude Code and Codex route implementation to Forge and Kay over lower-cost AI API backends like MiniMax.io and OpenCode Go while the host AI advises and mentors the agents.">
 <meta property="og:title" content="Sidekick — AI Coding Agents for Claude Code and Codex">
@@ -1151,21 +1151,21 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container text-center">
     <div class="section-label">Setup</div>
     <h2 class="section-title">Three Steps, Then Delegate</h2>
-    <p class="section-desc centered">For the user, setup is API access, plugin install, then delegation. Sidekick checks runtime readiness when the session delegation starts.</p>
+    <p class="section-desc centered">For the user, setup is MiniMax access, plugin install, then per-session delegation. Sidekick checks runtime readiness when delegation starts.</p>
     <div class="setup-steps reveal">
       <div class="setup-step">
         <div class="step-num">1</div>
-        <h3>Get API Access</h3>
-        <p>Prepare the lower-cost API path you want Sidekick to use. MiniMax.io covers MiniMax M2.7 access, while OpenCode Go stays available as a multi-AI path.</p>
+        <h3>Get MiniMax.io API Access</h3>
+        <p>Create a MiniMax.io API key for the default MiniMax M2.7 path. OpenCode Go stays in Kay's compatibility path, not as a separate setup step.</p>
         <div class="step-code">
-          <span class="string">MiniMax.io:</span> <span class="cmd">API key</span><br>
-          <span class="string">OpenCode Go:</span> <span class="cmd">API access</span>
+          <span class="string">MiniMax.io:</span> <span class="cmd">platform.minimaxi.com</span><br>
+          <span class="string">Kay login:</span> <span class="cmd">code login --provider minimax --with-api-key</span>
         </div>
       </div>
       <div class="setup-step">
         <div class="step-num">2</div>
         <h3>Install Sidekick</h3>
-        <p>Install the plugin in the host you use. Claude Code and Codex both expose the same Sidekick agent workflows after installation.</p>
+        <p>Install the plugin through the host's plugin surface, then restart the host so Sidekick hooks load before a Forge or Kay session.</p>
         <div class="step-code">
           <span class="string">Claude:</span> <span class="cmd">/plugin install alo-labs/sidekick</span><br>
           <span class="string">Codex:</span> <span class="cmd">codex plugin marketplace add alo-labs/sidekick</span>
@@ -1173,11 +1173,11 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
       </div>
       <div class="setup-step">
         <div class="step-num">3</div>
-        <h3>Delegate to an Agent</h3>
-        <p>Ask the host AI to hand implementation to Forge or Kay. The host stays in the advisor and mentoring role while the execution agent changes files.</p>
+        <h3>Delegate Per Session</h3>
+        <p>Start the agent workflow for the current session. The host stays in the advisor and mentoring role while Forge or Kay performs implementation work.</p>
         <div class="step-code">
-          <span class="string">Forge:</span> <span class="cmd">/forge implement X</span><br>
-          <span class="string">Kay:</span> <span class="cmd">code exec --full-auto "implement X"</span>
+          <span class="string">Forge:</span> <span class="cmd">/forge</span><br>
+          <span class="string">Kay:</span> <span class="cmd">kay-delegate -&gt; code exec --full-auto "implement X"</span>
         </div>
       </div>
     </div>
@@ -1228,7 +1228,8 @@ updateToggleIcon();
 themeToggle.addEventListener('click', () => {
   const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   html.setAttribute('data-theme', next);
-  localStorage.setItem('sidekick-theme', next);
+  localStorage.setItem('sidekick-theme-v2', next);
+  localStorage.removeItem('sidekick-theme');
   updateToggleIcon();
 });
 

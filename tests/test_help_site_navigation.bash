@@ -42,6 +42,11 @@ echo "=== T2: Help center exposes task-first navigation ==="
 for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'code exec' 'codex' 'coder'; do
 expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
+for path in docs/help/index.html docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html; do
+  expect_contains "${path}" "sidekick-theme-v2" "${path} uses versioned theme storage"
+  expect_not_contains "${path}" "localStorage.getItem('sidekick-theme')" "${path} ignores legacy light theme preference on first load"
+  expect_contains "${path}" "localStorage.removeItem('sidekick-theme')" "${path} clears legacy theme storage after a new choice"
+done
 expect_not_contains "docs/help/index.html" "Claude Code users delegate to Forge" "help index removes stale host-specific Forge copy"
 expect_not_contains "docs/help/index.html" "Code and Codex workflows route to Kay" "help index removes stale host-specific Kay copy"
 expect_not_contains "docs/help/getting-started/index.html" "SessionStart hooks install missing Forge and Kay assets" "getting started removes SessionStart runtime sync copy"
