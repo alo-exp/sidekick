@@ -22,20 +22,31 @@ expect_contains() {
   fi
 }
 
+expect_not_contains() {
+  local path="$1" needle="$2" label="$3"
+  if grep -Fq -- "${needle}" "${ROOT}/${path}"; then
+    assert_fail "${label}" "unexpected '${needle}' in ${path}"
+  else
+    assert_pass "${label}"
+  fi
+}
+
 echo "=== T1: Main docs landing page exposes reader docs ==="
 for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'ADRs' 'Start with the right doc'; do
   expect_contains "docs/index.html" "${needle}" "docs landing contains ${needle}"
 done
 
 echo "=== T2: Help center exposes task-first navigation ==="
-for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick supports Claude and Codex' 'Claude users delegate to Forge' 'Codex users delegate to Kay' 'MiniMax.io' 'OpenCode Go'; do
+for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code users delegate to Forge' 'Code and Codex workflows route to Kay' 'code exec' 'codex' 'coder'; do
   expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
+expect_not_contains "docs/help/index.html" "OpenCode Go" "help index removes stale OpenCode Go copy"
 
 echo "=== T3: Help search indexes the new docs pages ==="
-for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick supports Claude and Codex' 'MiniMax.io' 'OpenCode Go' "anchor:'support'"; do
+for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'code exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
   expect_contains "docs/help/search.js" "${needle}" "help search contains ${needle}"
 done
+expect_not_contains "docs/help/search.js" "OpenCode Go" "help search removes stale OpenCode Go copy"
 
 echo "=== T4: Help pages link back to the docs layer ==="
 for path in docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html; do
@@ -45,7 +56,7 @@ for path in docs/help/getting-started/index.html docs/help/concepts/index.html d
 done
 
 echo "=== T5: Getting Started is host-aware ==="
-for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should follow the Codex install surface'; do
+for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'code exec --full-auto'; do
   expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
 done
 
