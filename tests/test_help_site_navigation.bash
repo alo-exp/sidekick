@@ -37,16 +37,18 @@ for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'ADRs' 'Start w
 done
 
 echo "=== T2: Help center exposes task-first navigation ==="
-for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code users delegate to Forge' 'Code and Codex workflows route to Kay' 'code exec' 'codex' 'coder'; do
+for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'code exec' 'codex' 'coder'; do
   expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
-expect_not_contains "docs/help/index.html" "OpenCode Go" "help index removes stale OpenCode Go copy"
+expect_not_contains "docs/help/index.html" "Claude Code users delegate to Forge" "help index removes stale host-specific Forge copy"
+expect_not_contains "docs/help/index.html" "Code and Codex workflows route to Kay" "help index removes stale host-specific Kay copy"
 
 echo "=== T3: Help search indexes the new docs pages ==="
-for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'code exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
+for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' 'code exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
   expect_contains "docs/help/search.js" "${needle}" "help search contains ${needle}"
 done
-expect_not_contains "docs/help/search.js" "OpenCode Go" "help search removes stale OpenCode Go copy"
+expect_not_contains "docs/help/search.js" "Claude Code users delegate to Forge" "help search removes stale host-specific Forge copy"
+expect_not_contains "docs/help/search.js" "Code and Codex workflows route to Kay" "help search removes stale host-specific Kay copy"
 
 echo "=== T4: Help pages link back to the docs layer ==="
 for path in docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html; do
