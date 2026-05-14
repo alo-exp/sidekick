@@ -22,23 +22,48 @@ expect_contains() {
   fi
 }
 
-echo "=== T1: Social preview highlights current shared-agent support ==="
-expect_contains "docs/og-image.html" "Reduce Claude Code and Codex costs by up to" "og image keeps the cost-focused headline"
-expect_contains "docs/og-image.html" "Forge and Kay route implementation through lower-cost AI APIs" "og image explains low-cost API routing"
-expect_contains "docs/og-image.html" "stays as the advisor that reviews and mentors the agents" "og image describes host advisor mentoring"
-expect_contains "docs/og-image.html" "MiniMax.io and OpenCode Go" "og image highlights MiniMax.io and OpenCode Go"
-expect_contains "docs/og-image.html" "Available · Kay Agent" "og image badge names Kay as an agent"
-expect_contains "docs/og-image.html" "<div class=\"card-name\">Kay</div>" "og image card names Kay"
-expect_contains "docs/og-image.html" "Every Code Agent" "og image role describes Kay"
-expect_contains "docs/og-image.html" "Code exec path" "og image describes Kay execution path"
+expect_not_contains() {
+  local path="$1" needle="$2" label="$3"
+  if grep -Fq -- "${needle}" "${ROOT}/${path}"; then
+    fail "${label}" "unexpected '${needle}' in ${path}"
+  else
+    pass "${label}"
+  fi
+}
 
-echo "=== T2: Kay is surfaced before Forge in the preview pills ==="
-kay_line="$(grep -n '<span class="pill">🧠 Kay</span>' "${ROOT}/docs/og-image.html" | head -n1 | cut -d: -f1 || true)"
-forge_line="$(grep -n '<span class="pill">🦀 ForgeCode</span>' "${ROOT}/docs/og-image.html" | head -n1 | cut -d: -f1 || true)"
+echo "=== T1: Social preview highlights current host and agent support ==="
+expect_contains "docs/og-image.html" "Claude Code + Codex" "og image names both supported hosts"
+expect_contains "docs/og-image.html" "Terminal-Bench 2.0" "og image anchors benchmark claim"
+expect_contains "docs/og-image.html" "Kay (OSS Codex)" "og image names Kay with OSS Codex identity"
+expect_contains "docs/og-image.html" "Forge" "og image names Forge"
+expect_contains "docs/og-image.html" "coding agents, as Sidekicks" "og image uses concise capital-S Sidekicks headline"
+expect_not_contains "docs/og-image.html" "coding agents as your sidekicks" "og image avoids lowercase sidekicks headline"
+expect_contains "docs/og-image.html" "#1 Codex CLI lineage" "og image highlights Kay upstream #1 result"
+expect_contains "docs/og-image.html" "#2 ForgeCode" "og image highlights ForgeCode #2 result"
+expect_contains "docs/og-image.html" "82.0%" "og image includes Codex CLI score"
+expect_contains "docs/og-image.html" "81.8%" "og image includes ForgeCode score"
+expect_contains "docs/og-image.html" "Claude Code and Codex can delegate to Kay (OSS Codex) or Forge" "og image states shared host-to-agent support concisely"
+expect_not_contains "docs/og-image.html" "Both hosts can delegate to both execution agents" "og image removes verbose host-to-agent sentence"
+expect_not_contains "docs/og-image.html" "2026-04-23" "og image omits rank dates to reduce clutter"
+expect_not_contains "docs/og-image.html" "2026-03-12" "og image omits rank dates to reduce clutter"
+expect_not_contains "docs/og-image.html" "Kay follows the Codex agent line" "og image removes paragraph copy inside Kay card"
+expect_not_contains "docs/og-image.html" "Reduce Claude Code and Codex costs by up to" "og image removes old cost-first headline"
+expect_not_contains "docs/og-image.html" "Available · Kay Agent" "og image removes old single-agent Kay badge"
+
+echo "=== T2: Kay and Forge benchmark cards are ordered #1 then #2 ==="
+kay_line="$(grep -n '<div class="rank">#1</div>' "${ROOT}/docs/og-image.html" | head -n1 | cut -d: -f1 || true)"
+forge_line="$(grep -n '<div class="rank">#2</div>' "${ROOT}/docs/og-image.html" | head -n1 | cut -d: -f1 || true)"
 if [ -n "${kay_line}" ] && [ -n "${forge_line}" ] && [ "${kay_line}" -lt "${forge_line}" ]; then
-  pass "preview pills order is Kay → ForgeCode"
+  pass "preview cards order is Kay/Codex #1 before Forge #2"
 else
-  fail "preview pills order is Kay → ForgeCode" "lines: Kay='${kay_line}', ForgeCode='${forge_line}'"
+  fail "preview cards order is Kay/Codex #1 before Forge #2" "lines: #1='${kay_line}', #2='${forge_line}'"
+fi
+
+echo "=== T3: Generated PNG keeps OpenGraph dimensions ==="
+if file "${ROOT}/docs/og-image.png" | grep -Fq "1200 x 630"; then
+  pass "og image PNG is 1200x630"
+else
+  fail "og image PNG is 1200x630" "$(file "${ROOT}/docs/og-image.png" 2>/dev/null || echo missing)"
 fi
 
 echo ""

@@ -3,206 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=1200">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800;900&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800;900&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:1200px;height:630px;overflow:hidden}
 body{
   font-family:'Space Grotesk',system-ui,sans-serif;
-  background:#0a0a0f;
-  color:#e2e8f0;
+  background:#07080d;
+  color:#e5ecf6;
   position:relative;
 }
-/* Background blobs */
-.blob-1{
-  position:absolute;top:-120px;right:-80px;
-  width:600px;height:600px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(79,70,229,.18) 0%,transparent 65%);
+body::before{
+  content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(115deg,rgba(99,102,241,.15) 0%,rgba(124,58,237,.07) 33%,rgba(7,8,13,0) 68%),
+    linear-gradient(180deg,#0b1020 0%,#07080d 55%,#090a12 100%);
 }
-.blob-2{
-  position:absolute;bottom:-80px;left:40px;
-  width:500px;height:500px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(124,58,237,.12) 0%,transparent 65%);
-}
-.blob-3{
-  position:absolute;top:200px;right:320px;
-  width:300px;height:300px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(219,39,119,.07) 0%,transparent 65%);
-}
-/* Grid lines */
-.grid-lines{
-  position:absolute;inset:0;
+body::after{
+  content:'';position:absolute;inset:0;
   background-image:
-    linear-gradient(rgba(99,102,241,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99,102,241,.04) 1px, transparent 1px);
-  background-size:60px 60px;
+    linear-gradient(rgba(129,140,248,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(129,140,248,.05) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(90deg,rgba(0,0,0,.8),rgba(0,0,0,.2));
 }
 .content{
   position:relative;z-index:1;
-  display:flex;align-items:stretch;
   width:1200px;height:630px;
-}
-/* Left panel */
-.left{
-  flex:1;
+  display:grid;grid-template-columns:1fr 390px;gap:50px;
   padding:56px 64px;
-  display:flex;flex-direction:column;justify-content:space-between;
+}
+.left{
+  display:flex;flex-direction:column;justify-content:space-between;min-width:0;
 }
 .logo{
-  display:flex;align-items:center;gap:12px;
+  display:flex;align-items:center;gap:14px;
 }
-.logo-icon{
-  width:40px;height:40px;border-radius:10px;
-  background:linear-gradient(135deg,#4f46e5,#7c3aed,#db2777);
+.logo-mark{
+  width:44px;height:44px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;
-  font-size:1.2rem;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed 48%,#db2777);
+  color:#fff;font-size:1.3rem;font-weight:900;
+  box-shadow:0 16px 40px rgba(99,102,241,.26);
 }
 .logo-text{
-  font-size:1.15rem;font-weight:800;letter-spacing:-.02em;
-  color:#e2e8f0;
+  display:flex;flex-direction:column;gap:2px;
+}
+.logo-name{
+  font-size:1.18rem;font-weight:900;letter-spacing:-.02em;
 }
 .logo-domain{
-  font-size:.8rem;color:#475569;margin-left:4px;font-weight:400;
+  font-family:'Fira Code',monospace;font-size:.72rem;color:#7c8aa1;
 }
 .headline{
-  flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:0 0 8px;
+  max-width:680px;margin-top:18px;
 }
 .eyebrow{
-  font-size:.78rem;font-weight:700;letter-spacing:.14em;
-  text-transform:uppercase;color:#6366f1;margin-bottom:18px;
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:.76rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:#a5b4fc;margin-bottom:18px;
+}
+.eyebrow::before{
+  content:'';width:34px;height:2px;border-radius:999px;background:#818cf8;
 }
 h1{
-  font-size:3.4rem;font-weight:900;line-height:1.05;
-  letter-spacing:-.04em;margin-bottom:20px;
+  font-size:3.62rem;font-weight:900;line-height:1.02;
+  letter-spacing:-.055em;margin-bottom:22px;color:#f8fbff;
+  max-width:720px;
 }
 h1 .gradient{
-  background:linear-gradient(135deg,#6366f1 0%,#a855f7 50%,#ec4899 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;
+  background:linear-gradient(135deg,#93c5fd 0%,#a78bfa 44%,#f0abfc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
 .subtitle{
-  font-size:1.05rem;color:#94a3b8;line-height:1.6;
-  max-width:480px;
+  font-size:1.2rem;line-height:1.48;color:#b7c4d6;max-width:610px;
 }
-.bottom-row{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-}
-.pill{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:7px 16px;border-radius:999px;
-  background:rgba(99,102,241,.1);
-  border:1px solid rgba(99,102,241,.2);
-  font-size:.78rem;font-weight:700;color:#818cf8;
-  font-family:'Fira Code',monospace;letter-spacing:.02em;
-}
-/* Right panel */
+.subtitle strong{color:#f8fbff}
 .right{
-  width:400px;flex-shrink:0;
-  padding:48px 48px 48px 32px;
-  display:flex;flex-direction:column;gap:16px;justify-content:center;
+  display:flex;flex-direction:column;justify-content:center;gap:18px;
 }
-.card{
-  background:#12121a;
-  border:1px solid rgba(99,102,241,.25);
-  border-radius:20px;padding:28px;
+.agent-card{
   position:relative;overflow:hidden;
+  height:214px;padding:22px 24px;
+  background:rgba(13,18,32,.88);
+  border:1px solid rgba(129,140,248,.3);
+  border-radius:18px;
+  box-shadow:0 24px 60px rgba(0,0,0,.38);
 }
-.card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,#4f46e5,#7c3aed,#db2777);
+.agent-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#60a5fa,#818cf8,#c084fc);
 }
-.card-badge{
+.agent-card.forge::before{
+  background:linear-gradient(90deg,#34d399,#60a5fa,#818cf8);
+}
+.card-top{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;
+}
+.badge{
   display:inline-flex;align-items:center;gap:6px;
-  background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.22);
-  border-radius:999px;padding:3px 10px;font-size:.68rem;font-weight:700;
-  color:#818cf8;letter-spacing:.04em;margin-bottom:12px;
+  padding:5px 11px;border-radius:999px;
+  background:rgba(99,102,241,.14);
+  border:1px solid rgba(129,140,248,.28);
+  color:#c7d2fe;font-size:.68rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
 }
-.card-logo{font-size:1.6rem;margin-bottom:8px}
-.card-name{font-size:1rem;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.rank{
+  width:54px;height:54px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#2563eb,#7c3aed);
+  color:#fff;font-family:'Fira Code',monospace;font-size:1.18rem;font-weight:900;
+  box-shadow:0 12px 30px rgba(99,102,241,.28);
+}
+.forge .rank{background:linear-gradient(135deg,#059669,#2563eb)}
+.card-name{
+  font-size:1.5rem;font-weight:900;letter-spacing:-.04em;margin-bottom:2px;color:#f8fbff;
+}
 .card-role{
-  font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
-  color:#6366f1;margin-bottom:14px;
+  font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin-bottom:16px;
 }
-.benchmark{
-  display:flex;align-items:center;gap:10px;
-  background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(124,58,237,.07));
-  border:1px solid rgba(99,102,241,.18);
-  border-radius:10px;padding:10px 14px;
-  font-family:'Fira Code',monospace;font-size:.78rem;color:#818cf8;font-weight:500;
+.score-row{
+  display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;
+  background:rgba(15,23,42,.72);
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:13px;padding:12px 16px;
 }
-.benchmark .score{
-  font-size:1.5rem;font-weight:900;
-  background:linear-gradient(135deg,#6366f1,#a855f7);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;
-  font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em;
+.score{
+  font-size:1.8rem;font-weight:900;letter-spacing:-.04em;
+  background:linear-gradient(135deg,#93c5fd,#c4b5fd);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
-.stat-row{
-  display:flex;gap:10px;margin-top:12px;
-}
-.stat{
-  flex:1;background:rgba(30,41,59,.6);border:1px solid #1e293b;
-  border-radius:8px;padding:10px 12px;text-align:center;
-}
-.stat .val{font-size:.95rem;font-weight:800;color:#e2e8f0;margin-bottom:2px}
-.stat .lbl{font-size:.62rem;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.score-copy{font-size:.92rem;color:#f8fbff;font-weight:800;line-height:1.25}
 </style>
 </head>
 <body>
-<div class="blob-1"></div>
-<div class="blob-2"></div>
-<div class="blob-3"></div>
-<div class="grid-lines"></div>
 <div class="content">
   <div class="left">
     <div class="logo">
-      <div class="logo-icon">⚡</div>
-      <span class="logo-text">Sidekick<span class="logo-domain"> · sidekick.alolabs.dev</span></span>
+      <div class="logo-mark">S</div>
+      <div class="logo-text">
+        <div class="logo-name">Sidekick</div>
+        <div class="logo-domain">sidekick.alolabs.dev</div>
+      </div>
     </div>
     <div class="headline">
-      <div class="eyebrow">Claude Code + Codex Plugin · Ālo Labs</div>
-      <h1>Reduce Claude Code and Codex costs by up to <span class="gradient">70%</span></h1>
-      <p class="subtitle">Forge and Kay route implementation through lower-cost AI APIs such as MiniMax.io and OpenCode Go. Claude Code or Codex stays as the advisor that reviews and mentors the agents.</p>
-    </div>
-    <div class="bottom-row">
-      <span class="pill">⚡ Claude Code Plugin</span>
-      <span class="pill">⌘ Codex Plugin</span>
-      <span class="pill">🧠 Kay</span>
-      <span class="pill">🦀 ForgeCode</span>
-      <span class="pill">MiniMax.io</span>
-      <span class="pill">OpenCode Go</span>
+      <div class="eyebrow">Claude Code + Codex</div>
+      <h1>The <span class="gradient">#1 and #2</span> coding agents, as Sidekicks</h1>
+      <p class="subtitle">Claude Code and Codex can delegate to Kay (OSS Codex) or Forge. Ranked by Terminal-Bench 2.0.</p>
     </div>
   </div>
   <div class="right">
-    <div class="card">
-      <div class="card-badge">✅ Available · Kay Agent</div>
-      <div class="card-logo">🧠</div>
-      <div class="card-name">Kay</div>
-      <div class="card-role">Every Code Agent</div>
-      <div class="benchmark">
-        <div>
-          <div class="score">M2.7</div>
-        </div>
-        <div>
-          <div style="font-weight:700;color:#e2e8f0;margin-bottom:2px">Code exec path</div>
-          <div style="color:#475569;font-size:.7rem">MiniMax.io · OpenCode Go</div>
-        </div>
-        <div style="margin-left:auto;font-size:1.1rem;font-weight:800;color:#818cf8">Open</div>
+    <div class="agent-card kay">
+      <div class="card-top">
+        <div class="badge">#1 Codex CLI lineage</div>
+        <div class="rank">#1</div>
       </div>
-      <div class="stat-row">
-        <div class="stat">
-          <div class="val">code</div>
-          <div class="lbl">Binary</div>
-        </div>
-        <div class="stat">
-          <div class="val">codex</div>
-          <div class="lbl">Alias</div>
-        </div>
-        <div class="stat">
-          <div class="val">multi</div>
-          <div class="lbl">Fallback</div>
-        </div>
+      <div class="card-name">Kay (OSS Codex)</div>
+      <div class="card-role">Every Code execution agent</div>
+      <div class="score-row">
+        <div class="score">82.0%</div>
+        <div class="score-copy">Codex CLI · GPT-5.5</div>
+      </div>
+    </div>
+    <div class="agent-card forge">
+      <div class="card-top">
+        <div class="badge">#2 ForgeCode</div>
+        <div class="rank">#2</div>
+      </div>
+      <div class="card-name">Forge</div>
+      <div class="card-role">ForgeCode execution agent</div>
+      <div class="score-row">
+        <div class="score">81.8%</div>
+        <div class="score-copy">ForgeCode · GPT-5.4</div>
       </div>
     </div>
   </div>
