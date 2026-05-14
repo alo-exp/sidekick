@@ -39,7 +39,7 @@ expect_not_contains "docs/index.html" "Start with the right doc" "homepage remov
 expect_not_contains "docs/index.html" "id=\"docs-map\"" "homepage removes the docs-map section"
 
 echo "=== T2: Help center exposes task-first navigation ==="
-for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'code exec' 'codex' 'coder'; do
+for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'kay exec' 'legacy code alias'; do
 expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
 for path in docs/help/index.html docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html; do
@@ -57,9 +57,12 @@ expect_not_contains "docs/help/getting-started/index.html" "~/.claude/settings.j
 expect_not_contains "docs/help/concepts/index.html" "OpenRouter (recommended)" "concepts does not label OpenRouter as the recommended provider"
 expect_not_contains "docs/help/workflows/index.html" "AGENTS_UPDATE field is applied directly" "workflow does not claim L3 AGENTS_UPDATE is applied without confirmation"
 expect_not_contains "docs/help/troubleshooting/index.html" "curl -fsSL https://forgecode.dev/cli | sh" "troubleshooting avoids unsafe curl-pipe install"
+for path in docs/help/index.html docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html docs/help/search.js; do
+  expect_not_contains "${path}" "code exec" "${path} removes deprecated code exec copy"
+done
 
 echo "=== T3: Help search indexes the new docs pages ==="
-for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' 'code exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
+for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' 'kay exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
   expect_contains "docs/help/search.js" "${needle}" "help search contains ${needle}"
 done
 expect_not_contains "docs/help/search.js" "Claude Code users delegate to Forge" "help search removes stale host-specific Forge copy"
@@ -75,7 +78,7 @@ for path in docs/help/getting-started/index.html docs/help/concepts/index.html d
 done
 
 echo "=== T5: Getting Started is host-aware ==="
-for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'code exec --full-auto'; do
+for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay exec --full-auto'; do
   expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
 done
 for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-labs/sidekick' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
@@ -86,7 +89,7 @@ echo "=== T6: Reference page exposes glossary and compatibility ==="
 for needle in 'Glossary Matrix' 'Compatibility Matrix' '../../GLOSSARY.md' '../../COMPATIBILITY.md'; do
   expect_contains "docs/help/reference/index.html" "${needle}" "reference contains ${needle}"
 done
-for needle in 'SessionStart no longer updates or repairs Forge/Kay runtimes after install' 'rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>' 'rewrites <code>code</code> / <code>codex</code> / <code>coder exec</code> calls to include <code>--full-auto</code>' 'host session marker' '~/.kay/sessions/&lt;session&gt;/.kay-delegation-active'; do
+for needle in 'SessionStart no longer updates or repairs Forge/Kay runtimes after install' 'rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>' 'rewrites Kay runtime calls to include <code>--full-auto</code>' 'host session marker' '~/.kay/sessions/&lt;session&gt;/.kay-delegation-active'; do
   expect_contains "docs/help/reference/index.html" "${needle}" "reference current hooks contain ${needle}"
 done
 

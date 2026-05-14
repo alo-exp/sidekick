@@ -145,8 +145,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="what-is-sidekick">What is Sidekick?</h2>
-      <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. <strong>Forge</strong> packages ForgeCode for delegated terminal work. <strong>Kay</strong> packages the Every Code agent line with MiniMax M2.7 defaults, <code>code</code> / <code>codex</code> / <code>coder</code> compatibility, and the OpenCode Go multi-AI path. Claude Code and Codex can both route work to Forge or Kay.</p>
-      <p>When you activate Forge delegation mode, the host stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures through the fallback ladder. Kay uses Code's native execution workflow for implementation while Sidekick keeps packaging, hook enforcement, summaries, and task lookup metadata aligned.</p>
+      <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. <strong>Forge</strong> packages ForgeCode for delegated terminal work. <strong>Kay</strong> packages the Every Code agent line with MiniMax M2.7 defaults, the primary <code>kay</code> binary, legacy <code>code</code> / <code>codex</code> / <code>coder</code> compatibility aliases, and the OpenCode Go multi-AI path. Claude Code and Codex can both route work to Forge or Kay.</p>
+      <p>When you activate Forge delegation mode, the host stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures through the fallback ladder. Kay uses its native execution workflow for implementation while Sidekick keeps packaging, hook enforcement, summaries, and task lookup metadata aligned.</p>
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="zap"></i></span>
         <div class="callout-body"><strong>Why use a sidekick?</strong> Forge and Kay keep implementation work in a purpose-built agent while the host stays focused on task composition, quality review, and communication.</div>
@@ -194,11 +194,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h3>Kay health check</h3>
-      <p>For the Kay path, verify that the Every Code runtime is reachable and has a MiniMax-backed config. In Claude Code, Kay delegation launches a child Code runtime. In Code/Codex itself, the Kay skill is packaging and runtime guidance because the host already is the execution runtime.</p>
-      <div class="code-label">Code / Codex host</div>
-      <div class="code-block"><span class="cmd">code --version</span> <span class="comment"># or codex --version / coder --version</span>
-<span class="cmd">code exec --help</span> <span class="comment"># or codex exec --help / coder exec --help</span>
-<span class="cmd">code login --provider minimax --with-api-key</span> <span class="comment"># if login is missing</span></div>
+      <p>For the Kay path, verify that the Kay runtime is reachable and has a MiniMax-backed config. In Claude Code, Kay delegation launches a child Kay runtime. In Codex itself, the Kay skill is packaging and runtime guidance because the host already is the execution runtime.</p>
+      <div class="code-label">Kay runtime</div>
+      <div class="code-block"><span class="cmd">kay --version</span> <span class="comment"># legacy aliases may also exist</span>
+<span class="cmd">kay exec --help</span>
+<span class="cmd">kay login --provider minimax --with-api-key</span> <span class="comment"># if login is missing</span></div>
 
       <h2 id="first-forge">Your First /forge Task</h2>
       <p>Once the health check passes, the host is in Forge delegation mode. Every implementation task you give the host is delegated to Forge via a structured 5-field task prompt.</p>
@@ -238,13 +238,10 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-path">Your First Kay Task</h2>
-      <p>Kay uses Code's native non-interactive execution path. Use <code>code exec --full-auto</code> first, then fall back to <code>codex exec --full-auto</code> or <code>coder exec --full-auto</code> when the primary binary is unavailable or conflicts with another app.</p>
+      <p>Kay uses its native non-interactive execution path. Use <code>kay exec --full-auto</code> as the primary command; legacy <code>code</code>, <code>codex</code>, and <code>coder</code> binary names are compatibility-only.</p>
       <div class="code-label">Kay delegation path</div>
-      <div class="code-block"><span class="cmd">code exec --full-auto "implement the focused task, run tests, summarize changes"</span>
-<span class="comment"># fallback aliases</span>
-<span class="cmd">codex exec --full-auto "implement the focused task, run tests, summarize changes"</span>
-<span class="cmd">coder exec --full-auto "implement the focused task, run tests, summarize changes"</span></div>
-      <p>Kay keeps native Code agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, compatibility aliases, session-scoped marker, hook summaries, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
+      <div class="code-block"><span class="cmd">kay exec --full-auto "implement the focused task, run tests, summarize changes"</span></div>
+      <p>Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, compatibility aliases, session-scoped marker, hook summaries, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
 
       <h2 id="agents-md-bootstrap">AGENTS.md Bootstrap</h2>
       <p>On your first <code>/forge</code> invocation, if no non-empty <code>AGENTS.md</code> exists in the project root, Sidekick creates one. This file accumulates standing instructions for Forge — project conventions, preferences, and patterns the host AI discovers over time.</p>
