@@ -130,6 +130,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <ul class="sidebar-nav">
         <li class="sidebar-section">Installation</li>
         <li><a href="#forge-not-found">forge not found</a></li>
+        <li><a href="#kay-runtime">Kay runtime</a></li>
         <li class="sidebar-section">Health &amp; Config</li>
         <li><a href="#health-check">Health Check Failures</a></li>
         <li><a href="#openrouter">OpenRouter Config</a></li>
@@ -151,30 +152,49 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <h2 id="forge-not-found"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> "forge not found" After Install</h2>
 
       <h3>forge binary not on PATH</h3>
-      <p><strong>Cause:</strong> The Forge binary was installed but your shell's <code>PATH</code> doesn't include the install directory. This is the most common post-install issue.</p>
+      <p><strong>Cause:</strong> The Forge binary was installed but your shell's <code>PATH</code> doesn't include the install directory. Sidekick expects <code>~/.local/bin/forge</code> or another <code>which forge</code> match.</p>
       <p><strong>Fix:</strong></p>
       <ul>
-        <li>Check where Forge was installed: <code>which forge</code> or <code>ls ~/.forge/bin/forge</code></li>
+        <li>Check where Forge was installed: <code>which forge</code> or <code>ls ~/.local/bin/forge</code></li>
         <li>If found, add the install directory to your PATH in <code>~/.zshrc</code> or <code>~/.bashrc</code>:</li>
       </ul>
       <div class="code-label">~/.zshrc — add Forge to PATH</div>
       <div class="code-block"><span class="comment"># Add Forge binary to PATH</span>
-<span class="cmd">export PATH="$HOME/.forge/bin:$PATH"</span>
+<span class="cmd">export PATH="$HOME/.local/bin:$PATH"</span>
 <span class="comment"># Then reload your shell</span>
 <span class="cmd">source ~/.zshrc</span></div>
       <ul>
         <li>If Forge is not found at all, re-run the install script:</li>
       </ul>
-      <div class="code-block"><span class="cmd">curl -fsSL https://forgecode.dev/install.sh | bash</span></div>
+      <div class="code-block"><span class="cmd">curl -fsSL https://forgecode.dev/cli | sh</span></div>
 
       <h3>Sidekick installed but forge binary was not</h3>
-      <p><strong>Cause:</strong> The Sidekick plugin was installed in Claude Code but the Forge binary itself was never installed on your machine. Sidekick needs both the plugin <em>and</em> the Forge binary.</p>
-      <p><strong>Fix:</strong> Follow the full install sequence in <a href="../getting-started/#install">Getting Started → Installation</a>. Install the Forge binary first, then install the Sidekick plugin.</p>
+      <p><strong>Cause:</strong> The SessionStart install hook did not complete, or the runtime cache could not be repaired from the local snapshot.</p>
+      <p><strong>Fix:</strong> Restart the host app to let SessionStart run again, then check <code>~/.local/bin/forge</code>. If it still fails, reinstall Sidekick from the host plugin surface.</p>
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
         <div class="callout-body"><strong>After installing, always run <code>/forge</code> health check.</strong> This verifies the binary is reachable, credentials are configured, and OpenRouter is responding before you delegate any task.</div>
       </div>
+
+      <h2 id="kay-runtime"><span class="issue-badge badge-config"><i data-lucide="terminal"></i> Config</span> Kay Runtime Issues</h2>
+
+      <h3>code exec is unavailable</h3>
+      <p><strong>Cause:</strong> The Kay / Every Code runtime is not installed, not on PATH, or the <code>code</code> binary name conflicts with another application.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Run <code>code --version</code>, then <code>codex --version</code>, then <code>coder --version</code> to find the available alias.</li>
+        <li>Run the matching <code>exec --help</code> command to verify non-interactive execution is available.</li>
+        <li>Restart the host app so Sidekick's runtime sync hook can repair a missing or stale Kay install.</li>
+      </ul>
+      <div class="code-block"><span class="cmd">code exec --help</span>
+<span class="cmd">codex exec --help</span>
+<span class="cmd">coder exec --help</span></div>
+
+      <h3>MiniMax login missing</h3>
+      <p><strong>Cause:</strong> Kay defaults to MiniMax M2.7, but the Code runtime has no MiniMax credentials.</p>
+      <p><strong>Fix:</strong> Use Code's native login flow:</p>
+      <div class="code-block"><span class="cmd">code login --provider minimax --with-api-key</span></div>
 
       <h2 id="health-check"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> Health Check Failures</h2>
 

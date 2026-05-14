@@ -130,6 +130,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <ul class="sidebar-nav">
         <li class="sidebar-section">Commands</li>
         <li><a href="#forge-commands">/forge Commands</a></li>
+        <li><a href="#kay-commands">Kay Runtime Commands</a></li>
         <li><a href="#task-prompt">Task Prompt Fields</a></li>
         <li class="sidebar-section">Configuration</li>
         <li><a href="#forge-toml">.forge.toml Config</a></li>
@@ -153,19 +154,36 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <tbody>
           <tr><td>/forge</td><td>Activate Forge delegation mode. Runs health check, bootstraps AGENTS.md if absent, loads SKILL.md.</td></tr>
           <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct Claude implementation.</td></tr>
-          <tr><td>sidekick:kay-delegate</td><td>Activate Kay delegation mode for `code` / `codex` / `coder` runtime workflows.</td></tr>
+          <tr><td>sidekick:kay-delegate</td><td>Use the Kay delegate workflow for <code>code</code> / <code>codex</code> / <code>coder</code> runtime tasks.</td></tr>
           <tr><td>/kay-stop</td><td>Deactivate Kay delegation mode and return to direct Claude implementation.</td></tr>
         </tbody>
       </table>
 
       <h2 id="forge-hooks">Plugin Hooks</h2>
-      <p>Three hooks ship in <code>plugin.json</code> and run automatically under the forge-delegate skill:</p>
+      <p>Sidekick ships SessionStart hooks for install/sync plus PreToolUse and PostToolUse hooks for active sidekick sessions:</p>
       <table class="ref-table">
         <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
         <tbody>
+          <tr><td><code>install.sh</code></td><td>SessionStart</td><td>Bootstraps missing Sidekick runtime assets on first session start.</td></tr>
+          <tr><td><code>runtime-sync.sh</code></td><td>SessionStart</td><td>Keeps Forge and Kay current, preferring native runtime update commands before selective repair.</td></tr>
+          <tr><td><code>scrub-legacy-user-hooks.py</code></td><td>SessionStart</td><td>Removes stale Sidekick-owned hook blocks from legacy user config while preserving unrelated hooks.</td></tr>
           <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When delegation mode is active, rewrites <code>forge -p</code> calls to inject a UUID conversation ID and appends an entry to the idx file so each task is durably trackable.</td></tr>
+          <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, protects the mutating-tool boundary and routes allowed work through the configured Code/Kay runtime path.</td></tr>
           <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output and surfaces a compact STATUS block into the transcript so long-running delegations stream visible progress.</td></tr>
+          <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay / Code subprocess output and emits a compact <code>[KAY-SUMMARY]</code> progress surface.</td></tr>
           <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code> and the full live Forge/Kay release pyramid has passed twice.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="kay-commands">Kay Runtime Commands</h2>
+      <p>Kay uses Code's native CLI automation surface:</p>
+      <table class="ref-table">
+        <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>code exec --full-auto "&lt;task&gt;"</td><td>Primary non-interactive Kay execution path.</td></tr>
+          <tr><td>codex exec --full-auto "&lt;task&gt;"</td><td>Compatibility fallback when <code>code</code> is unavailable.</td></tr>
+          <tr><td>coder exec --full-auto "&lt;task&gt;"</td><td>Compatibility fallback when <code>code</code> conflicts with another app.</td></tr>
+          <tr><td>code login --provider minimax --with-api-key</td><td>Configure MiniMax credentials for the Kay default provider path.</td></tr>
         </tbody>
       </table>
 
@@ -298,8 +316,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td>skills/forge/SKILL.md</td><td>Forge delegation instruction set</td></tr>
+          <tr><td>skills/codex-delegate/SKILL.md</td><td>Kay delegate workflow and Code/Codex runtime guidance</td></tr>
           <tr><td>.forge.toml</td><td>Project root compaction config (gitignored); credentials live in <code>~/forge/.credentials.json</code></td></tr>
           <tr><td>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</td><td>Active session state marker for the current thread (zero-byte)</td></tr>
+          <tr><td>.kay/conversations.idx</td><td>Project-local Kay task lookup ledger</td></tr>
+          <tr><td>~/.code/config.toml</td><td>Kay / Code runtime config; legacy <code>~/.codex/config.toml</code> remains compatibility-only</td></tr>
           <tr><td>.forge/skills/*/SKILL.md</td><td>4 bootstrap skills for injection</td></tr>
           <tr><td>AGENTS.md</td><td>Project-level Forge standing instructions</td></tr>
           <tr><td>~/forge/AGENTS.md</td><td>Global cross-project Forge instructions</td></tr>
