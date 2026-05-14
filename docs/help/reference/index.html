@@ -160,12 +160,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </table>
 
       <h2 id="forge-hooks">Plugin Hooks</h2>
-      <p>Sidekick ships SessionStart hooks for install/sync plus PreToolUse and PostToolUse hooks for active sidekick sessions:</p>
+      <p>Sidekick ships a small SessionStart surface for first-run bootstrap and legacy cleanup, plus PreToolUse and PostToolUse hooks that stay dormant until a sidekick session marker exists:</p>
       <table class="ref-table">
         <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>install.sh</code></td><td>SessionStart</td><td>Bootstraps missing Sidekick runtime assets on first session start.</td></tr>
-          <tr><td><code>runtime-sync.sh</code></td><td>SessionStart</td><td>Keeps Forge and Kay current, preferring native runtime update commands before selective repair.</td></tr>
+          <tr><td><code>install.sh</code></td><td>SessionStart</td><td>Runs the guarded first-run plugin bootstrap when the package-local <code>.installed</code> sentinel is absent.</td></tr>
           <tr><td><code>scrub-legacy-user-hooks.py</code></td><td>SessionStart</td><td>Removes stale Sidekick-owned hook blocks from legacy user config while preserving unrelated hooks.</td></tr>
           <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When delegation mode is active, rewrites <code>forge -p</code> calls to inject a UUID conversation ID and appends an entry to the idx file so each task is durably trackable.</td></tr>
           <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, protects the mutating-tool boundary and routes allowed work through the configured Code/Kay runtime path.</td></tr>

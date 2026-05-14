@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Session-scoped delegation cleanup
+
+**Changed:**
+
+- **`hooks/hooks.json`**, **`hooks/runtime-sync.sh`**, **`tests/test_runtime_sync.bash`**: removed SessionStart runtime asset sync. Forge and Kay readiness is now checked when delegation starts for the current session instead of updating or repairing agent runtimes at every host session start.
+- **`hooks/scrub-legacy-user-hooks.py`**: legacy hook cleanup now recognizes stale runtime-sync hook blocks and removes them from user hook files.
+- **`docs/*`**, **`skills/forge/SKILL.md`**, **`skills/codex-delegate/SKILL.md`**: docs and skill copy now describe session-scoped readiness checks instead of SessionStart runtime sync.
+
 ## v0.5.5 — 2026-05-13
 
 ### Lowercase Codex install roots and source-specific trust seeding

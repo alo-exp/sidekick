@@ -16,13 +16,9 @@ The stop workflow lives canonically in `skills/forge-stop/SKILL.md`.
 
 ---
 
-## Runtime Sync
+## Runtime Readiness
 
-Sidekick's SessionStart hook keeps Forge current before delegation begins:
-
-- If Forge is missing, the hook installs it.
-- If Forge is already installed and exposes a native `update` command, the hook uses that instead of reinstalling.
-- If the native update path is unavailable or fails, the hook falls back to a selective repair install.
+Forge readiness is checked when `/forge` is invoked for the current session. SessionStart does not update or repair Forge; if the health check fails, direct the user to `skills/forge.md` STEP 0A for setup or repair.
 
 ---
 

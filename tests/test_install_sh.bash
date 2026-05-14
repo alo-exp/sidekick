@@ -190,41 +190,46 @@ fi
 echo "=== T15: Non-interactive gate execution ==="
 skip "Non-interactive gate" "forge already installed on this machine — download path not reached in sandbox"
 
-echo "=== T16: hooks.json bootstrap and runtime sync ==="
+echo "=== T16: hooks.json bootstrap and SessionStart scope ==="
 HOOKS="${PLUGIN_DIR}/hooks/hooks.json"
+SESSION_COUNT=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(len(d['hooks']['SessionStart']))")
 SESSION0_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
 SESSION1_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][1]['hooks'][0]['command'])")
-SESSION2_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][2]['hooks'][0]['command'])")
-if echo "${SESSION0_CMD}" | grep -q 'runtime-sync.sh' \
-  && echo "${SESSION0_CMD}" | grep -q '.installed' \
-  && echo "${SESSION0_CMD}" | grep -q 'if \[ -f'; then
-  assert_pass "runtime sync hook is ordered before bootstrap install"
+if [ "${SESSION_COUNT}" = "2" ] && ! grep -q 'runtime-sync.sh' "${HOOKS}"; then
+  assert_pass "SessionStart surface excludes runtime asset sync"
 else
-  assert_fail "runtime sync hook order" "missing bootstrap-before-sync ordering"
+  assert_fail "SessionStart runtime sync removal" "unexpected SessionStart count or runtime-sync hook remains"
 fi
 
-if echo "${SESSION1_CMD}" | grep -q 'scrub-legacy-user-hooks.py' \
-  && echo "${SESSION1_CMD}" | grep -q 'python3'; then
-  assert_pass "legacy scrub hook runs immediately after runtime sync"
+if grep -q 'CLAUDE_PLUGIN_ROOT' "${HOOKS}" \
+  && ! grep -Fq '${CODEX_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT' "${HOOKS}"; then
+  assert_pass "shared hook root fallback supports Claude and Codex"
 else
-  assert_fail "legacy scrub hook order" "missing scrub-legacy-user-hooks.py entry"
+  assert_fail "shared hook root fallback" "missing CLAUDE fallback or duplicated CODEX fallback remains"
 fi
 
-if echo "${SESSION2_CMD}" | grep -q 'test -f' \
-  && echo "${SESSION2_CMD}" | grep -q '.installed' \
-  && echo "${SESSION2_CMD}" | grep -q 'install.sh' \
-  && echo "${SESSION2_CMD}" | grep -q '&&' \
-  && echo "${SESSION2_CMD}" | grep -q 'touch'; then
+if echo "${SESSION0_CMD}" | grep -q 'scrub-legacy-user-hooks.py' \
+  && echo "${SESSION0_CMD}" | grep -q 'python3'; then
+  assert_pass "legacy scrub hook remains first SessionStart entry"
+else
+  assert_fail "legacy scrub hook order" "missing scrub-legacy-user-hooks.py first entry"
+fi
+
+if echo "${SESSION1_CMD}" | grep -q 'test -f' \
+  && echo "${SESSION1_CMD}" | grep -q '.installed' \
+  && echo "${SESSION1_CMD}" | grep -q 'install.sh' \
+  && echo "${SESSION1_CMD}" | grep -q '&&' \
+  && echo "${SESSION1_CMD}" | grep -q 'touch'; then
   assert_pass "bootstrap hook preserves the .installed sentinel guard"
 else
   assert_fail "bootstrap hook" "missing .installed guard or touch sentinel"
 fi
 
-echo "=== T17: selective repair env flags ==="
+echo "=== T17: selective install env flags ==="
 if grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_CODE' "${INSTALL_SH}"; then
-  assert_pass "selective repair env flags present"
+  assert_pass "selective install env flags present"
 else
-  assert_fail "selective repair env flags" "missing SIDEKICK_INSTALL_FORGE or SIDEKICK_INSTALL_CODE"
+  assert_fail "selective install env flags" "missing SIDEKICK_INSTALL_FORGE or SIDEKICK_INSTALL_CODE"
 fi
 
 echo "=== T18: missing hash tools fail closed at runtime ==="
