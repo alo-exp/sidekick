@@ -521,7 +521,7 @@ section:nth-child(even){background:var(--section-alt)}
   background:var(--gradient-btn);
   color:#fff;font-weight:800;font-size:.9rem;
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-mono);margin-bottom:16px;
+  font-family:var(--font-mono);margin:0 auto 16px;
   box-shadow:var(--shadow-btn);
 }
 .setup-step h3{font-size:1rem;font-weight:700;margin-bottom:8px}
@@ -532,6 +532,8 @@ section:nth-child(even){background:var(--section-alt)}
   font-family:var(--font-mono);font-size:1rem;color:var(--text-secondary);line-height:1.7;
 }
 .step-code .cmd{color:var(--code-command);font-weight:600}
+.step-code a.cmd{display:inline;overflow-wrap:anywhere;word-break:break-word;text-decoration:none}
+.step-code a.cmd:hover{text-decoration:underline}
 .step-code .comment{color:var(--text-dim)}
 .step-code .string{color:var(--code-value);font-weight:600}
 
@@ -1158,8 +1160,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <h3>Get API Access</h3>
         <p>Prepare the backend path you want Kay or Forge to use. MiniMax.io covers MiniMax M2.7 access, and OpenCode Go remains available for multi-AI compatibility.</p>
         <div class="step-code">
-          <span class="string">MiniMax.io:</span> <span class="cmd">https://platform.minimax.io/subscribe/token-plan</span><br>
-          <span class="string">OpenCode Go:</span> <span class="cmd">https://opencode.ai/docs/go/</span>
+          <span class="string">MiniMax.io:</span> <a class="cmd" href="https://platform.minimax.io/subscribe/token-plan" target="_blank" rel="noopener">https://platform.minimax.io/subscribe/token-plan</a><br>
+          <span class="string">OpenCode Go:</span> <a class="cmd" href="https://opencode.ai/go" target="_blank" rel="noopener">https://opencode.ai/go</a>
         </div>
       </div>
       <div class="setup-step">
@@ -1176,8 +1178,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <h3>Delegate Per Session</h3>
         <p>Start the agent workflow for the current session. The host stays in the advisor and mentoring role while Forge or Kay performs implementation work.</p>
         <div class="step-code">
-          <span class="string">Forge:</span> <span class="cmd">/forge</span><br>
-          <span class="string">Kay:</span> <span class="cmd">kay exec --full-auto "implement X"</span>
+          <span class="string">Forge:</span> <span class="cmd">/forge-delegate</span><br>
+          <span class="string">Kay:</span> <span class="cmd">kay-delegate</span>
         </div>
       </div>
     </div>
