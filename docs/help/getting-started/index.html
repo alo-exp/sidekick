@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Getting Started — Sidekick Help</title>
-<meta name="description" content="Get started with Sidekick. Use Start Here for the reader map, then install the plugin, configure the active sidekick, run your first health check, and delegate your first coding task.">
+<meta name="description" content="Get started with Sidekick for Claude Code or Codex. Use Start Here for the reader map, then install the plugin, configure the active sidekick, run your first health check, and delegate your first coding task.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -116,14 +116,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Getting Started</span>
     </div>
     <h1>Getting Started</h1>
-    <p>Install Sidekick, connect the active sidekick, and delegate your first coding task — all in under 10 minutes. If you're not sure where to begin, read <a href="../../START-HERE.md">Start Here</a> first.</p>
+    <p>Install Sidekick, connect the active sidekick for Claude Code or Codex, and delegate your first coding task — all in under 10 minutes. If you're not sure where to begin, read <a href="../../START-HERE.md">Start Here</a> first.</p>
   </div>
 </div>
 
 <div class="container">
   <div class="callout callout-info">
     <span class="callout-icon"><i data-lucide="info"></i></span>
-    <div class="callout-body"><strong>Need the reader map?</strong> See <a href="../../AUDIENCE.md">Audience</a>, <a href="../../GLOSSARY.md">Glossary</a>, and <a href="../../COMPATIBILITY.md">Compatibility</a>.</div>
+    <div class="callout-body"><strong>Need the reader map?</strong> See <a href="../../AUDIENCE.md">Audience</a>, <a href="../../GLOSSARY.md">Glossary</a>, and <a href="../../COMPATIBILITY.md">Compatibility</a>. Codex users should start with Compatibility to follow the Kay path.</div>
   </div>
 </div>
 
@@ -144,7 +144,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="what-is-sidekick">What is Sidekick?</h2>
-      <p>Sidekick is a Claude Code plugin that gives Claude a team of specialized AI coding agents. <strong>Forge</strong> is the first sidekick — it's ForgeCode, the #2 ranked model on Terminal-Bench 2.0 (81.8% score), configured as a Claude Code sub-agent that Claude can delegate entire coding tasks to.</p>
+      <p>Sidekick is a Claude Code and Codex plugin that gives the active host a team of specialized AI coding agents. <strong>Forge</strong> is the Claude sidekick — it's ForgeCode, the #2 ranked model on Terminal-Bench 2.0 (81.8% score), configured as a Claude Code sub-agent that Claude can delegate entire coding tasks to. Codex users follow the Kay path described in <a href="../../COMPATIBILITY.md">Compatibility</a>.</p>
       <p>When you activate Forge delegation mode, Claude stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures automatically using a three-level fallback ladder.</p>
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="zap"></i></span>
@@ -164,7 +164,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="install">Installation</h2>
-      <p>Add the following to <code>~/.claude/settings.json</code>:</p>
+      <p>Claude Code users add the following to <code>~/.claude/settings.json</code>:</p>
       <div class="code-label">~/.claude/settings.json</div>
       <div class="code-block"><span class="comment">{
   "extraKnownMarketplaces": {
@@ -181,6 +181,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   }
 }</span></div>
       <p>On the next Claude Code session, Sidekick installs automatically and makes the <code>/forge</code> skill available in all future sessions. No project-specific setup is required — Sidekick works in any git repository.</p>
+      <p>Codex users should follow the Codex install surface in <a href="../../COMPATIBILITY.md">Compatibility</a> so Kay is installed and trusted on the Codex side instead of the Claude side.</p>
 
       <h2 id="health-check">Health Check</h2>
       <p>After installing, verify Forge is ready by running the health check:</p>

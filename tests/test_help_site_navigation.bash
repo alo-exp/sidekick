@@ -28,12 +28,12 @@ for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'ADRs' 'Start w
 done
 
 echo "=== T2: Help center exposes task-first navigation ==="
-for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task'; do
+for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick supports Claude and Codex' 'Claude users delegate to Forge' 'Codex users delegate to Kay' 'MiniMax.io' 'OpenCode Go'; do
   expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
 
 echo "=== T3: Help search indexes the new docs pages ==="
-for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay'; do
+for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick supports Claude and Codex' 'MiniMax.io' 'OpenCode Go' "anchor:'support'"; do
   expect_contains "docs/help/search.js" "${needle}" "help search contains ${needle}"
 done
 
@@ -44,7 +44,12 @@ for path in docs/help/getting-started/index.html docs/help/concepts/index.html d
   expect_contains "${path}" '../../COMPATIBILITY.md' "${path} links to Compatibility"
 done
 
-echo "=== T5: Reference page exposes glossary and compatibility ==="
+echo "=== T5: Getting Started is host-aware ==="
+for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should follow the Codex install surface'; do
+  expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
+done
+
+echo "=== T6: Reference page exposes glossary and compatibility ==="
 for needle in 'Glossary Matrix' 'Compatibility Matrix' '../../GLOSSARY.md' '../../COMPATIBILITY.md'; do
   expect_contains "docs/help/reference/index.html" "${needle}" "reference contains ${needle}"
 done
