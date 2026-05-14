@@ -32,6 +32,12 @@ extract_sidekick_section() {
 
 echo "=== T1: Homepage copy highlights Claude and Codex support ==="
 expect_contains "docs/index.html" "Reduce Claude Code and Codex Costs" "homepage hero headline mentions both hosts"
+expect_contains "docs/index.html" "<p class=\"subtitle\"><strong>Give Both Hosts the Sidekick They're Missing.</strong>" "homepage subtitle leads with the sidekick claim"
+if grep -F '<h1>' "${ROOT}/docs/index.html" | grep -Fq "Give Both Hosts the Sidekick They're Missing"; then
+  fail "homepage hero headline excludes the sidekick claim" "subtitle text still appears in the h1"
+else
+  pass "homepage hero headline excludes the sidekick claim"
+fi
 expect_contains "docs/index.html" "Sidekick now supports both Claude and Codex" "homepage highlights Claude and Codex support"
 expect_contains "docs/index.html" "Claude delegates to Forge, Codex delegates to Kay" "homepage describes host-specific delegation"
 expect_contains "docs/index.html" "Forge and Kay both support MiniMax.io" "homepage highlights MiniMax.io support"
