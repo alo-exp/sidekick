@@ -49,9 +49,9 @@ if grep -F '<h1>' "${ROOT}/docs/index.html" | grep -Fq "Give Claude Code and Cod
 else
   pass "homepage hero headline excludes the sidekick claim"
 fi
-expect_contains "docs/index.html" "Advisor Pattern for coding agents" "homepage highlights the advisor pattern"
-expect_contains "docs/index.html" "delegated AIs such as Forge and Kay handle implementation" "homepage describes Forge and Kay as delegated AIs"
-expect_contains "docs/index.html" "Hosts advise. Agents execute." "homepage explains host advisor role"
+expect_contains "docs/index.html" "Advisor Pattern for Coding Agents" "homepage highlights the advisor pattern with title case"
+expect_contains "docs/index.html" "delegated AI agents such as Forge and Kay" "homepage describes Forge and Kay as delegated AIs"
+expect_contains "docs/index.html" "Host AI Agents Advise and Mentor. Delegated AI Agents Execute." "homepage explains host advisor and mentoring role"
 expect_contains "docs/index.html" "Claude Code and Codex can both route work to Forge or Kay" "homepage avoids host-specific agent mapping"
 expect_contains "docs/index.html" "Every Code Agent · MiniMax.io + OpenCode Go" "homepage describes Kay as the Every Code agent"
 expect_contains "docs/index.html" "Codex lineage: #1 on" "homepage highlights Kay's Codex lineage"
@@ -63,6 +63,8 @@ expect_not_contains "docs/index.html" "Start with the right doc" "homepage remov
 expect_not_contains "docs/index.html" "id=\"docs-map\"" "homepage removes the docs-map section"
 expect_not_contains "docs/index.html" "extraKnownMarketplaces" "homepage removes settings.json installation instructions"
 expect_not_contains "docs/index.html" "enabledPlugins" "homepage removes settings.json enablement instructions"
+expect_not_contains "docs/index.html" "Auto-Install" "homepage removes the Auto-Install hero pill"
+expect_not_contains "docs/index.html" "Config path" "homepage backend table removes config path column"
 expect_not_contains "docs/index.html" "Forge for Claude Code. Kay for Code/Codex" "homepage removes stale host-specific mapping"
 expect_not_contains "docs/index.html" "Sidekick installs and orchestrates Forge for Claude Code and Kay for Code/Codex workflows" "homepage removes stale runtime-specific copy"
 expect_not_contains "docs/index.html" "<div class=\"sk-name\">OpenCode</div>" "homepage removes OpenCode sidekick card"
@@ -74,20 +76,22 @@ forge_line="$(printf '%s\n' "${section}" | grep -n '<div class="sk-name">Forge</
 pilot_line="$(printf '%s\n' "${section}" | grep -n '<div class="sk-name">Pilot</div>' | head -n1 | cut -d: -f1 || true)"
 
 if [ -n "${kay_line}" ] && [ -n "${forge_line}" ] && [ -n "${pilot_line}" ] && [ "${kay_line}" -lt "${forge_line}" ] && [ "${forge_line}" -lt "${pilot_line}" ]; then
-  pass "homepage card order is Kay → Forge → Pilot"
+  pass "homepage card order is Kay -> Forge -> Pilot"
 else
-  fail "homepage card order is Kay → Forge → Pilot" "lines: Kay='${kay_line}', Forge='${forge_line}', Pilot='${pilot_line}'"
+  fail "homepage card order is Kay -> Forge -> Pilot" "lines: Kay='${kay_line}', Forge='${forge_line}', Pilot='${pilot_line}'"
 fi
 expect_contains "docs/index.html" "<div class=\"sk-name\">Pilot</div>" "homepage restores the Pilot card"
 
 echo "=== T3: Terminal-Bench 2.0 rows are current ==="
 expect_contains "docs/index.html" "Kay (Codex) and Forge on" "homepage benchmark heading includes Kay and Forge"
-expect_contains "docs/index.html" "Codex CLI currently ranks #1, and ForgeCode holds #2, #4, and #6" "homepage benchmark summary uses current Kay/Codex and Forge ranks"
+expect_contains "docs/index.html" "Codex CLI currently ranks #1, Simple Codex ranks #9, and ForgeCode holds #2, #4, and #6" "homepage benchmark summary uses current Kay/Codex and Forge ranks"
 expect_contains "docs/index.html" "GPT-5.5" "homepage benchmark includes current Codex CLI leader"
-expect_contains "docs/index.html" "Codex CLI → Kay basis" "homepage highlights Codex rows as Kay basis"
+expect_contains "docs/index.html" "Codex CLI → Kay basis" "homepage highlights Codex CLI as Kay basis"
+expect_contains "docs/index.html" "Simple Codex → Kay basis" "homepage highlights stronger Codex-family row"
 expect_contains "docs/index.html" "TongAgents" "homepage benchmark includes current #3 entry"
 expect_contains "docs/index.html" "<span class=\"rank-badge\">#4</span>" "homepage benchmark marks ForgeCode at #4"
-expect_contains "docs/index.html" "<span class=\"rank-badge\">#29</span>" "homepage benchmark includes another Codex CLI row"
+expect_contains "docs/index.html" "<span class=\"rank-badge\">#9</span>" "homepage benchmark includes the stronger Codex-family row"
+expect_not_contains "docs/index.html" "<span class=\"rank-badge\">#29</span>" "homepage does not highlight weak #29 Codex row"
 expect_contains "docs/index.html" "<span style=\"color:var(--text-dim);font-family:var(--font-mono)\">#53</span>" "homepage benchmark updates OpenCode rank"
 expect_not_contains "docs/index.html" "82.9%" "homepage removes stale Pilot benchmark score"
 
@@ -95,6 +99,7 @@ echo "=== T4: Installation and delegation examples are plugin-first ==="
 expect_contains "docs/index.html" "/plugin install" "homepage gives Claude Code plugin install instruction"
 expect_contains "docs/index.html" "alo-labs/sidekick" "homepage names Claude Sidekick plugin"
 expect_contains "docs/index.html" "codex plugin marketplace add" "homepage gives Codex plugin marketplace instruction"
+expect_not_contains "docs/index.html" "codex plugin marketplace add</span> <span class=\"val\">alo-exp/sidekick" "homepage uses alo-labs for both install examples"
 expect_contains "docs/index.html" "Forge:</span> <span class=\"cmd\">/forge implement X" "homepage shows Forge delegation example"
 expect_contains "docs/index.html" "Kay:</span> <span class=\"cmd\">code exec --full-auto" "homepage shows Kay delegation example"
 
