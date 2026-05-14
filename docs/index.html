@@ -6,9 +6,9 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Sidekick — AI Coding Agents for Claude Code and Codex</title>
-<meta name="description" content="Sidekick gives Claude Code and Codex two implementation agents: Forge and Kay. Both hosts can route work to both agents, with MiniMax.io and OpenCode Go highlighted as the agent backend paths.">
+<meta name="description" content="Sidekick lets Claude Code and Codex route implementation to Forge and Kay over lower-cost AI API backends like MiniMax.io and OpenCode Go while the host AI advises and mentors the agents.">
 <meta property="og:title" content="Sidekick — AI Coding Agents for Claude Code and Codex">
-<meta property="og:description" content="Sidekick gives Claude Code and Codex two implementation agents: Forge and Kay. Both hosts can route work to both agents, with MiniMax.io and OpenCode Go highlighted as the agent backend paths.">
+<meta property="og:description" content="Sidekick lets Claude Code and Codex route implementation to Forge and Kay over lower-cost AI API backends like MiniMax.io and OpenCode Go while the host AI advises and mentors the agents.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sidekick.alolabs.dev">
 <meta property="og:image" content="https://sidekick.alolabs.dev/og-image.png">
@@ -16,7 +16,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Sidekick — AI Coding Agents for Claude Code and Codex">
-<meta name="twitter:description" content="Sidekick gives Claude Code and Codex two implementation agents: Forge and Kay. Both hosts can route work to both agents, with MiniMax.io and OpenCode Go highlighted as the agent backend paths.">
+<meta name="twitter:description" content="Sidekick lets Claude Code and Codex route implementation to Forge and Kay over lower-cost AI API backends like MiniMax.io and OpenCode Go while the host AI advises and mentors the agents.">
 <meta name="twitter:image" content="https://sidekick.alolabs.dev/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -788,7 +788,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <section class="hero" id="top">
   <div class="container">
     <h1>Reduce Claude Code and Codex Costs by up to <span class="kpi-inline"><span class="kpi-arrow">↓</span><span class="kpi-num">70%</span></span></h1>
-    <p class="subtitle"><strong>Give Both Hosts the Sidekick They're Missing.</strong> Sidekick gives Claude Code and Codex the same two implementation agents: Forge and Kay. Pick the agent for the job while the host plans, reviews, and keeps the conversation clear.</p>
+    <p class="subtitle"><strong>Give Both Hosts the Sidekick They're Missing.</strong> Forge and Kay route implementation through multiple lower-cost AI API backends like MiniMax.io and OpenCode Go. Claude Code or Codex stays focused on planning, review, and agent mentoring.</p>
     <div class="cta-group">
       <a href="#install" class="btn btn-primary">Install Sidekick</a>
       <a href="https://github.com/alo-exp/sidekick" class="btn btn-outline" target="_blank" rel="noopener">View on GitHub</a>
@@ -809,8 +809,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <section>
   <div class="container">
     <div class="callout reveal" id="support">
-      <h3>Two agents, both hosts</h3>
-      <p>Claude Code and Codex can both work with Forge and Kay. Sidekick keeps the agents installed, current, session-scoped, and visible through progress summaries.</p>
+      <h3>Advisor Pattern for coding agents</h3>
+      <p>Sidekick applies Anthropic's advisor-style pattern to coding work: the host AI advises, reviews, and corrects while delegated AIs such as Forge and Kay handle implementation. The same loop mentors the agents over time through durable instructions and progress feedback.</p>
       <div class="cta-group">
         <a href="/help/" class="btn btn-primary">Open Help Center</a>
         <a href="#sidekicks" class="btn btn-outline">See Sidekicks</a>
@@ -819,29 +819,12 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   </div>
 </section>
 
-<!-- ───── DOCS MAP ───── -->
-<section id="docs-map">
-  <div class="container text-center">
-    <div class="section-label">Documentation</div>
-    <h2 class="section-title">Start with the right doc</h2>
-    <p class="section-desc centered">Pick the page that matches your role or your task. The docs are organized by reader, not just by folder.</p>
-    <div class="cta-group" style="justify-content:center;flex-wrap:wrap">
-      <a href="START-HERE.md" class="btn btn-primary">Start Here</a>
-      <a href="AUDIENCE.md" class="btn btn-outline">Audience</a>
-      <a href="GLOSSARY.md" class="btn btn-outline">Glossary</a>
-      <a href="COMPATIBILITY.md" class="btn btn-outline">Compatibility</a>
-      <a href="ADR/README.md" class="btn btn-outline">ADRs</a>
-      <a href="/help/" class="btn btn-outline">Help Center</a>
-    </div>
-  </div>
-</section>
-
 <!-- ───── HOW IT WORKS ───── -->
 <section id="how-it-works">
   <div class="container">
     <div class="section-label">How It Works</div>
-    <h2 class="section-title">Hosts plan. Agents execute.</h2>
-    <p class="section-desc">You stay in Claude Code or Codex. The host shapes the task, Sidekick routes execution to Forge or Kay, and the host reviews the result before reporting back.</p>
+    <h2 class="section-title">Hosts advise. Agents execute.</h2>
+    <p class="section-desc">You stay in Claude Code or Codex. The host shapes the task, Sidekick routes execution to Forge or Kay, and the host reviews, corrects, and mentors the delegated agent before reporting back.</p>
     <div class="flow-diagram">
       <div class="flow-step user-step">
         <div class="step-num">01 · You</div>
@@ -859,8 +842,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <div class="step-role">Orchestrator</div>
         <ul class="step-items">
           <li>Architecture decisions</li>
-          <li>Prompt crafting</li>
-          <li>Review &amp; report</li>
+          <li>Advisor guidance</li>
+          <li>Review, mentor &amp; report</li>
         </ul>
       </div>
       <div class="flow-step forge-step">
@@ -877,8 +860,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
     <div class="grid grid-4 reveal">
       <div class="feature-card">
         <div class="feature-icon" style="background:var(--accent-subtle);color:#818cf8"><i data-lucide="target"></i></div>
-        <h3>Harness-Enforced Delegation</h3>
-        <p>When an agent mode is active, PreToolUse hooks block direct mutating tools and route implementation work through the selected agent.</p>
+        <h3>Advisor-Style Delegation</h3>
+        <p>The host AI stays in the advisor role: it breaks down work, delegates to Forge or Kay, then synthesizes and reviews the result.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background:var(--violet-subtle);color:#a78bfa"><i data-lucide="plug"></i></div>
@@ -892,8 +875,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background:var(--cyan-subtle);color:#22d3ee"><i data-lucide="refresh-cw"></i></div>
-        <h3>Recovery + Learning</h3>
-        <p>Forge delegation includes the L1/L2/L3 fallback ladder and AGENTS.md mentoring loop so repeat mistakes become standing instructions.</p>
+        <h3>Mentoring Loop</h3>
+        <p>Host review turns repeated mistakes, project patterns, and task feedback into standing agent guidance so Forge and Kay improve over time.</p>
       </div>
     </div>
   </div>
@@ -913,10 +896,12 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <div class="sk-logo"><i data-lucide="layers-3"></i></div>
         <div class="sk-name">Kay</div>
         <div class="sk-role">Every Code Agent · MiniMax.io + OpenCode Go</div>
+        <div class="benchmark-badge">Codex lineage: #1 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--accent-light-border-sm)">Terminal-Bench 2.0</a></div>
         <p class="sk-desc">Kay is Sidekick's Every Code agent line. It highlights MiniMax.io by default, keeps OpenCode Go multi-AI compatibility, and works through the familiar <code>code</code>, <code>codex</code>, and <code>coder</code> flow.</p>
         <ul class="sk-features">
           <li>Primary path: code exec --full-auto</li>
           <li>codex and coder compatibility fallbacks</li>
+          <li>Codex CLI lineage highlighted by Terminal-Bench #1</li>
           <li>MiniMax.io / MiniMax M2.7 defaults</li>
           <li>OpenCode Go multi-AI compatibility</li>
           <li>Native Code agents, skills, subagents, and AGENTS.md</li>
@@ -924,6 +909,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         </ul>
         <div class="sk-tags">
           <span class="tag tag-cyan">kay</span>
+          <span class="tag tag-purple">Codex lineage</span>
           <span class="tag tag-indigo">code exec</span>
           <span class="tag tag-green">MiniMax.io</span>
           <span class="tag tag-amber">OpenCode Go</span>
@@ -982,8 +968,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <section id="benchmark">
   <div class="container">
     <div class="section-label">Performance</div>
-    <h2 class="section-title">Forge on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid var(--accent-border-lg)">Terminal-Bench 2.0</a></h2>
-    <p class="section-desc"><a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light-border)">Terminal-Bench 2.0</a> is ICLR 2026's benchmark for terminal AI agents — 89 Docker-containerized real-world tasks. ForgeCode currently holds #2, #4, and #6.</p>
+    <h2 class="section-title">Kay (Codex) and Forge on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid var(--accent-border-lg)">Terminal-Bench 2.0</a></h2>
+    <p class="section-desc"><a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light-border)">Terminal-Bench 2.0</a> is ICLR 2026's benchmark for terminal AI agents — 89 Docker-containerized real-world tasks. Codex CLI currently ranks #1, and ForgeCode holds #2, #4, and #6. Kay is shown through its Codex lineage.</p>
     <div class="reveal table-scroll">
       <table class="comparison-table">
         <thead>
@@ -996,11 +982,11 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#1</span></td>
-            <td>Codex CLI</td>
+          <tr class="winner">
+            <td><span class="rank-badge">#1</span></td>
+            <td><strong>Codex CLI → Kay basis</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.5</td>
-            <td><strong>82.0%</strong></td>
+            <td><strong style="color:var(--accent-light)">82.0%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.2</td>
           </tr>
           <tr class="winner">
@@ -1039,7 +1025,17 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 1.8</td>
           </tr>
           <tr>
-            <td colspan="5" style="text-align:center;padding:6px 16px;font-size:.75rem;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.08em;border-bottom:none">· · · ranks 7 – 39 · · ·</td>
+            <td colspan="5" style="text-align:center;padding:6px 16px;font-size:.75rem;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.08em;border-bottom:none">· · · ranks 7 – 28 · · ·</td>
+          </tr>
+          <tr class="winner">
+            <td><span class="rank-badge">#29</span></td>
+            <td><strong>Codex CLI → Kay basis</strong></td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.2</td>
+            <td><strong style="color:var(--accent-light)">62.9%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 3.0</td>
+          </tr>
+          <tr>
+            <td colspan="5" style="text-align:center;padding:6px 16px;font-size:.75rem;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.08em;border-bottom:none">· · · ranks 30 – 39 · · ·</td>
           </tr>
           <tr>
             <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#40</span></td>
@@ -1124,10 +1120,10 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container text-center">
     <div class="section-label">Installation</div>
     <h2 class="section-title">Install once, sync every session</h2>
-    <p class="section-desc centered">Enable the Sidekick plugin in Claude Code, or install the Codex-facing package through the Codex plugin surface. The same Sidekick package identity provides the shared skills, hooks, and agent wiring.</p>
+    <p class="section-desc centered">Install the Sidekick plugin in your host. The plugin handles the shared skills, hooks, agent sync, and backend wiring after the next session start.</p>
     <div class="install-block">
       <div class="install-header">
-        <span class="block-title">~/.claude/settings.json</span>
+        <span class="block-title">Plugin install</span>
         <div class="block-dots">
           <span style="background:#ff5f57"></span>
           <span style="background:#febc2e"></span>
@@ -1135,11 +1131,11 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         </div>
       </div>
       <div class="install-code">
-        <span class="comment">// Add to your existing settings.json</span><br>
-        <span class="key">"extraKnownMarketplaces"</span><span class="punc">:</span> <span class="punc">{</span><br>
-        &nbsp;&nbsp;<span class="key">"alo-labs"</span><span class="punc">:</span> <span class="punc">{</span> <span class="key">"source"</span><span class="punc">:</span> <span class="punc">{</span> <span class="key">"source"</span><span class="punc">:</span> <span class="val">"github"</span><span class="punc">,</span> <span class="key">"repo"</span><span class="punc">:</span> <span class="val">"alo-exp/sidekick"</span> <span class="punc">}</span> <span class="punc">}</span><br>
-        <span class="punc">},</span><br>
-        <span class="key">"enabledPlugins"</span><span class="punc">:</span> <span class="punc">{</span> <span class="key">"sidekick@alo-labs"</span><span class="punc">:</span> <span class="val-bool">true</span> <span class="punc">}</span>
+        <span class="comment"># Claude Code</span><br>
+        <span class="key">/plugin install</span> <span class="val">alo-labs/sidekick</span><br><br>
+        <span class="comment"># Codex / Kay</span><br>
+        <span class="key">codex plugin marketplace add</span> <span class="val">alo-exp/sidekick</span><br>
+        <span class="comment"># Then enable Sidekick from the Codex plugin surface</span>
       </div>
     </div>
     <p class="mt-4" style="font-size:.85rem;color:var(--text-dim)">Restart your host app — Sidekick installs missing agent assets and syncs existing ones on the next session start.</p>
@@ -1174,10 +1170,10 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
       <div class="setup-step">
         <div class="step-num">3</div>
         <h3>Delegate Through the Host</h3>
-        <p>Claude Code and Codex can both route work to Forge or Kay. Use /forge for Forge mode, or Kay's code exec flow when you want the Every Code path.</p>
+        <p>Claude Code and Codex can both route work to Forge or Kay. Use Forge for terminal-agent delegation or Kay for the Every Code path.</p>
         <div class="step-code">
-          <span class="cmd">/forge</span><br>
-          <span class="cmd">code exec --full-auto "implement X"</span>
+          <span class="string">Forge:</span> <span class="cmd">/forge implement X</span><br>
+          <span class="string">Kay:</span> <span class="cmd">code exec --full-auto "implement X"</span>
         </div>
       </div>
     </div>
