@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
-<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
+<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
 <title>Delegation Workflow — Sidekick Help</title>
 <meta name="description" content="The current end-to-end Sidekick workflow for Forge and Kay — from per-session readiness to delegated execution, hook summaries, task history, and AGENTS.md mentoring where applicable.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -333,10 +333,11 @@ function applyTheme(dark){
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   document.getElementById('icon-sun').style.display=dark?'none':'';
   document.getElementById('icon-moon').style.display=dark?'':'none';
-  localStorage.setItem('sidekick-theme',dark?'dark':'light');
+  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
+  localStorage.removeItem('sidekick-theme');
 }
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
-(function(){const s=localStorage.getItem('sidekick-theme');applyTheme(s==='light'?false:true)})();
+(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
 lucide.createIcons();
 </script>
 </body>
