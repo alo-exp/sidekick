@@ -36,6 +36,12 @@ BLOCK_SIGNATURES = (
         "kind": "install",
     },
     {
+        "event": "SessionStart",
+        "matcher": None,
+        "commands": ("runtime-sync.sh",),
+        "kind": "runtime-sync",
+    },
+    {
         "event": "PreToolUse",
         "matcher": "Write|Edit|NotebookEdit|Bash|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__filesystem__move_file|mcp__filesystem__create_directory",
         "commands": ("forge-delegation-enforcer.sh", "codex-delegation-enforcer.sh"),

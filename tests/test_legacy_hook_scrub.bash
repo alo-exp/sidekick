@@ -41,6 +41,14 @@ seed_fixture() {
       "hooks": [
         {
           "type": "command",
+          "command": "ROOT=\"${REPO_ROOT}\"; if [ -f \"\${ROOT}/.installed\" ]; then bash \"\${ROOT}/hooks/runtime-sync.sh\"; fi"
+        }
+      ]
+    },
+    {
+      "hooks": [
+        {
+          "type": "command",
           "command": "${session_keep}"
         }
       ]

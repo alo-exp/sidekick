@@ -40,10 +40,14 @@ expect_not_contains "docs/index.html" "id=\"docs-map\"" "homepage removes the do
 
 echo "=== T2: Help center exposes task-first navigation ==="
 for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'code exec' 'codex' 'coder'; do
-  expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
+expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
 expect_not_contains "docs/help/index.html" "Claude Code users delegate to Forge" "help index removes stale host-specific Forge copy"
 expect_not_contains "docs/help/index.html" "Code and Codex workflows route to Kay" "help index removes stale host-specific Kay copy"
+expect_not_contains "docs/help/getting-started/index.html" "SessionStart hooks install missing Forge and Kay assets" "getting started removes SessionStart runtime sync copy"
+expect_not_contains "docs/help/concepts/index.html" "SessionStart runtime sync" "concepts removes SessionStart runtime sync copy"
+expect_not_contains "docs/help/reference/index.html" "runtime-sync.sh" "reference removes runtime-sync hook row"
+expect_not_contains "docs/help/troubleshooting/index.html" "runtime sync hook" "troubleshooting removes runtime sync repair guidance"
 
 echo "=== T3: Help search indexes the new docs pages ==="
 for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' 'code exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
@@ -51,6 +55,8 @@ for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBI
 done
 expect_not_contains "docs/help/search.js" "Claude Code users delegate to Forge" "help search removes stale host-specific Forge copy"
 expect_not_contains "docs/help/search.js" "Code and Codex workflows route to Kay" "help search removes stale host-specific Kay copy"
+expect_not_contains "docs/help/search.js" "SessionStart sync" "help search removes SessionStart sync copy"
+expect_not_contains "docs/help/search.js" "runtime sync repair" "help search removes runtime sync repair copy"
 
 echo "=== T4: Help pages link back to the docs layer ==="
 for path in docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html; do

@@ -162,7 +162,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </ul>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>No separate agent install needed.</strong> Sidekick's SessionStart hooks install missing Forge and Kay assets, then use native update commands or selective repair on later sessions.</div>
+        <div class="callout-body"><strong>Readiness is per session.</strong> Sidekick loads the hook surface with the plugin, then checks Forge or Kay readiness when you start delegation for the current session.</div>
       </div>
 
       <h2 id="install">Installation</h2>
@@ -256,7 +256,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="comment"># fallback aliases</span>
 <span class="cmd">codex exec --full-auto "implement the focused task, run tests, summarize changes"</span>
 <span class="cmd">coder exec --full-auto "implement the focused task, run tests, summarize changes"</span></div>
-      <p>Kay keeps native Code agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, runtime sync, compatibility aliases, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
+      <p>Kay keeps native Code agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, compatibility aliases, session-scoped marker, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
 
       <h2 id="agents-md-bootstrap">AGENTS.md Bootstrap</h2>
       <p>On your first <code>/forge</code> invocation, if no <code>AGENTS.md</code> exists in the project root, Sidekick creates one. This file accumulates standing instructions for Forge — project conventions, preferences, and patterns Claude discovers over time.</p>

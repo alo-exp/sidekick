@@ -172,7 +172,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="kay-delegation">Kay Delegation Model</h2>
       <p>Kay is the Sidekick identity for the Every Code runtime. It uses Code's native automation surface instead of recreating Forge's prompt-injection loop: <code>code exec --full-auto</code> is the primary path, with <code>codex exec --full-auto</code> and <code>coder exec --full-auto</code> kept as compatibility fallbacks.</p>
-      <p>Kay keeps Code-native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, SessionStart runtime sync, a session-scoped <code>.kay</code> marker, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
+      <p>Kay keeps Code-native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, compatibility aliases, a session-scoped <code>.kay</code> marker, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
         <div class="callout-body"><strong>Forge and Kay are intentionally different.</strong> Forge uses a Claude-led fallback ladder and mentoring loop. Kay uses Code's native execution model with Sidekick packaging and compatibility around it.</div>

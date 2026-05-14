@@ -179,11 +179,11 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 
 ## Security Audit — 2026-05-12
 
-**Scope:** `hooks/codex-delegation-enforcer.sh`, `hooks/codex-progress-surface.sh`, `hooks/runtime-sync.sh`, `hooks/scrub-legacy-user-hooks.py`, `install.sh`, `skills/codex-stop/SKILL.md`, `sidekicks/registry.json`, `docs/help/**/*.html`, `docs/internal/pre-release-quality-gate.md`
+**Scope:** `hooks/codex-delegation-enforcer.sh`, `hooks/codex-progress-surface.sh`, `hooks/scrub-legacy-user-hooks.py`, `install.sh`, `skills/codex-stop/SKILL.md`, `sidekicks/registry.json`, `docs/help/**/*.html`, `docs/internal/pre-release-quality-gate.md`
 
 | Finding | Severity | Evidence | Status |
 |---------|----------|----------|--------|
-| Bootstrap / repair installer executes unverified remote Kay installer when verification cannot complete | BLOCKER | `hooks/hooks.json:3-17` auto-runs `install.sh` on SessionStart; `hooks/runtime-sync.sh:98-113` can also re-enter the install path; `install.sh:67-74` and `install.sh:198-222` continue when hashes are `UNAVAILABLE` or `CODEX_INSTALL_SHA` is blank; `sidekicks/registry.json:26-30` ships `sha256: ""` for the Kay installer | OPEN |
+| Bootstrap / repair installer executes unverified remote Kay installer when verification cannot complete | BLOCKER | Historical finding. The runtime-sync repair path was removed from SessionStart on 2026-05-14, and the Kay installer path now requires a non-empty registry SHA plus a local hash utility before execution. | CLOSED |
 
 **Notes:** The other audited surfaces in this release candidate did not show blocking/high-confidence issues beyond the bootstrap supply-chain gap above.
 
