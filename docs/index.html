@@ -8,7 +8,7 @@
 <title>Sidekick — AI Coding Agents for Claude Code</title>
 <meta name="description" content="Sidekick gives Claude a team of specialized AI coding agents. Each sidekick auto-installs, configures itself, and lets Claude delegate implementation work while you stay focused on what matters.">
 <meta property="og:title" content="Sidekick — AI Coding Agents for Claude Code">
-<meta property="og:description" content="AI coding agents as Claude sidekicks. Forge (ForgeCode) is the first — #2 Terminal-Bench 2.0 (81.8%). Auto-installs, configures via OpenRouter, and lets Claude delegate all coding work.">
+<meta property="og:description" content="AI coding agents as Claude sidekicks. Sidekick now supports Kay, the multi-AI fork of OSS Codex, plus Forge (ForgeCode) — #2 Terminal-Bench 2.0 (81.8%). Auto-installs, configures via OpenRouter, and lets Claude delegate all coding work.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sidekick.alolabs.dev">
 <meta property="og:image" content="https://sidekick.alolabs.dev/og-image.png">
@@ -16,7 +16,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Sidekick — AI Coding Agents for Claude Code">
-<meta name="twitter:description" content="AI coding agents as Claude sidekicks. Forge (ForgeCode) is the first — #2 Terminal-Bench 2.0 (81.8%).">
+<meta name="twitter:description" content="AI coding agents as Claude sidekicks. Sidekick now supports Kay, the multi-AI fork of OSS Codex, plus Forge (ForgeCode) — #2 Terminal-Bench 2.0 (81.8%).">
 <meta name="twitter:image" content="https://sidekick.alolabs.dev/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -787,12 +787,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 <!-- ───── HERO ───── -->
 <section class="hero" id="top">
   <div class="container">
-    <div class="version-badge">
-      <span class="dot"></span>
-      v0.5.5 · First Sidekick: Forge
-    </div>
     <h1>Reduce Claude Code Costs by up to <span class="kpi-inline"><span class="kpi-arrow">↓</span><span class="kpi-num">70%</span></span><br><span class="gradient">Give Claude the Sidekick it's Missing</span></h1>
-    <p class="subtitle">Offload Claude by giving it top coding agent Sidekicks like ForgeCode (#2, #3 and #6 in <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light-border)">Terminal Bench 2.0</a>) and super cost-effective models like Qwen3 Coder Plus. Let Claude delegate all implementation work — while you interact only with Claude.</p>
+    <p class="subtitle">Offload Claude by giving it top coding agent Sidekicks like Kay, the multi-AI fork of OSS Codex, and ForgeCode (#2, #3 and #6 in <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light-border)">Terminal Bench 2.0</a>), plus super cost-effective models like Qwen3 Coder Plus. Let Claude delegate all implementation work — while you interact only with Claude.</p>
     <div class="cta-group">
       <a href="#install" class="btn btn-primary">Install Sidekick</a>
       <a href="https://github.com/alo-exp/sidekick" class="btn btn-outline" target="_blank" rel="noopener">View on GitHub</a>
@@ -891,11 +887,33 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container">
     <div class="section-label">Sidekicks</div>
     <h2 class="section-title">Your Sidekicks</h2>
-    <p class="section-desc centered text-center">Each Sidekick is a specialized AI coding agent. More are coming.</p>
+    <p class="section-desc centered text-center">Kay, the multi-AI fork of OSS Codex, is now supported alongside Forge. More are coming.</p>
     <div class="sidekick-grid">
 
-      <!-- Forge -->
+      <!-- Kay -->
       <div class="sidekick-card primary">
+        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · Kay</div>
+        <div class="sk-logo"><i data-lucide="layers-3"></i></div>
+        <div class="sk-name">Kay</div>
+        <div class="sk-role">Multi-AI Fork of OSS Codex</div>
+        <p class="sk-desc">Sidekick's Codex-side runtime. A multi-AI fork of OSS Codex that keeps the familiar delegate workflow while widening model choice.</p>
+        <ul class="sk-features">
+          <li>Codex-side delegate target</li>
+          <li>Multi-AI fork of OSS Codex</li>
+          <li>Keeps the familiar code / codex / coder workflow</li>
+          <li>Session-scoped and plugin-managed</li>
+          <li>Pairs with Sidekick hooks and trust state</li>
+        </ul>
+        <div class="sk-tags">
+          <span class="tag tag-cyan">kay</span>
+          <span class="tag tag-indigo">codex</span>
+          <span class="tag tag-green">multi-ai</span>
+        </div>
+        <a href="https://github.com/alo-labs/kay" class="sk-learn-more" target="_blank" rel="noopener">Learn More <i data-lucide="arrow-right"></i></a>
+      </div>
+
+      <!-- Forge -->
+      <div class="sidekick-card">
         <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.5.5</div>
         <div class="sk-logo"><i data-lucide="terminal"></i></div>
         <div class="sk-name">Forge</div>
