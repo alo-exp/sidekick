@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('sidekick-theme')==='light'?'light':'dark');</script>
 <title>Command Reference — Sidekick Help</title>
-<meta name="description" content="Complete reference for Sidekick: commands, SKILL.md sections, config options, bootstrap skills, glossary terms, and runtime compatibility.">
+<meta name="description" content="Current reference for Sidekick: delegation skills, hook behavior, runtime commands, config files, bootstrap skills, glossary terms, and runtime compatibility.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <span>Command Reference</span>
     </div>
     <h1>Command Reference</h1>
-    <p>Every command, SKILL.md section, config option, bootstrap skill, and canonical term — all in one place. If you need the vocabulary first, read <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a>.</p>
+    <p>Every current delegation skill, hook, runtime command, config file, bootstrap skill, and canonical term — all in one place. If you need the vocabulary first, read <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a>.</p>
   </div>
 </div>
 
@@ -152,30 +152,30 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <table class="ref-table">
         <thead><tr><th>Command</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td>/forge</td><td>Activate Forge delegation mode. Runs health check, bootstraps AGENTS.md if absent, loads SKILL.md.</td></tr>
-          <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct Claude implementation.</td></tr>
-          <tr><td>sidekick:kay-delegate</td><td>Use the Kay delegate workflow for <code>code</code> / <code>codex</code> / <code>coder</code> runtime tasks.</td></tr>
-          <tr><td>/kay-stop</td><td>Deactivate Kay delegation mode and return to direct Claude implementation.</td></tr>
+          <tr><td>/forge</td><td>Activate Forge delegation mode for the current session. Runs the four-part health check, bootstraps missing Sidekick-owned project files, loads SKILL.md, and arms hook enforcement through the session marker.</td></tr>
+          <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct host implementation.</td></tr>
+          <tr><td>kay-delegate</td><td>Use the Kay delegate workflow for <code>code</code> / <code>codex</code> / <code>coder</code> runtime tasks. Some hosts display the plugin-prefixed name <code>sidekick:kay-delegate</code>.</td></tr>
+          <tr><td>/kay-stop</td><td>Deactivate Kay delegation mode and return to direct host implementation.</td></tr>
         </tbody>
       </table>
 
       <h2 id="forge-hooks">Plugin Hooks</h2>
-      <p>Sidekick ships a small SessionStart surface for first-run bootstrap and legacy cleanup, plus PreToolUse and PostToolUse hooks that stay dormant until a sidekick session marker exists:</p>
+      <p>Sidekick ships a small SessionStart surface for first-run bootstrap and legacy cleanup, plus PreToolUse and PostToolUse hooks that stay dormant until a sidekick session marker exists. SessionStart no longer updates or repairs Forge/Kay runtimes after install.</p>
       <table class="ref-table">
         <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>install.sh</code></td><td>SessionStart</td><td>Runs the guarded first-run plugin bootstrap when the package-local <code>.installed</code> sentinel is absent.</td></tr>
           <tr><td><code>scrub-legacy-user-hooks.py</code></td><td>SessionStart</td><td>Removes stale Sidekick-owned hook blocks from legacy user config while preserving unrelated hooks.</td></tr>
-          <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When delegation mode is active, rewrites <code>forge -p</code> calls to inject a UUID conversation ID and appends an entry to the idx file so each task is durably trackable.</td></tr>
-          <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, protects the mutating-tool boundary and routes allowed work through the configured Code/Kay runtime path.</td></tr>
-          <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output and surfaces a compact STATUS block into the transcript so long-running delegations stream visible progress.</td></tr>
-          <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay / Code subprocess output and emits a compact <code>[KAY-SUMMARY]</code> progress surface.</td></tr>
+          <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Forge mode is active, denies direct implementation edits, rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>, and output prefixing, and appends an entry to <code>.forge/conversations.idx</code>.</td></tr>
+          <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, denies direct implementation edits, rewrites <code>code</code> / <code>codex</code> / <code>coder exec</code> calls to include <code>--full-auto</code> and output prefixing, and appends an entry to <code>.kay/conversations.idx</code>.</td></tr>
+          <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output, strips terminal controls, redacts obvious secrets, and surfaces a compact untrusted <code>[FORGE-SUMMARY]</code> STATUS block when one is present.</td></tr>
+          <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay / Code subprocess output, strips terminal controls, redacts obvious secrets, and emits a compact untrusted <code>[KAY-SUMMARY]</code> progress surface when a STATUS block is present.</td></tr>
           <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code> and the full live Forge/Kay release pyramid has passed twice.</td></tr>
         </tbody>
       </table>
 
       <h2 id="kay-commands">Kay Runtime Commands</h2>
-      <p>Kay uses Code's native CLI automation surface:</p>
+      <p>Kay uses Code's native CLI automation surface. When Kay mode is active, the hook accepts all three binary names and rewrites to the available local runtime:</p>
       <table class="ref-table">
         <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
         <tbody>
@@ -194,41 +194,43 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td>OBJECTIVE</td><td>One-sentence statement of what Forge must accomplish. No ambiguity.</td><td>1 sentence</td></tr>
           <tr><td>CONTEXT</td><td>Only files directly relevant to the task. No conversation history, no unrelated files.</td><td>~600 tokens</td></tr>
           <tr><td>DESIRED STATE</td><td>Specific, verifiable outcome. What the code/system looks like when done.</td><td>~300 tokens</td></tr>
-          <tr><td>SUCCESS CRITERIA</td><td>Checklist Claude uses to verify Forge succeeded. Each item must be checkable.</td><td>3–6 items</td></tr>
+          <tr><td>SUCCESS CRITERIA</td><td>Checklist the host uses to verify Forge succeeded. Each item must be checkable.</td><td>3–6 items</td></tr>
           <tr><td>INJECTED SKILLS</td><td>≤2 bootstrap skills relevant to the task type.</td><td>1–2 skills</td></tr>
         </tbody>
       </table>
       <p>Total prompt budget: <strong>2,000 tokens max</strong>.</p>
 
       <h2 id="forge-toml">.forge.toml Config</h2>
-      <p>Created in the project root on first <code>/forge</code> invocation. Contains compaction settings only — Forge API credentials live in <code>~/forge/.credentials.json</code>, while provider and model config live in <code>~/forge/.forge.toml</code>.</p>
+      <p>Created in the project root on first <code>/forge</code> invocation if absent. Contains compaction settings only — Forge API credentials live in <code>~/forge/.credentials.json</code>, while provider and model config live in <code>~/forge/.forge.toml</code>.</p>
       <div class="code-label">.forge.toml (project root — compaction only)</div>
       <div class="code-block"><span class="comment"># API credentials: ~/forge/.credentials.json</span>
 
 <span class="comment"># Context compaction — validated defaults</span>
+<span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per call</span>
+
+[<span class="key">compact</span>]
 <span class="key">token_threshold</span> = <span class="val">80000</span>   <span class="comment"># trigger at 80k tokens</span>
 <span class="key">eviction_window</span> = <span class="val">0.20</span>   <span class="comment"># evict oldest 20%</span>
-<span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># always keep last 6 exchanges</span>
-<span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per call</span></div>
+<span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># always keep last 6 exchanges</span></div>
       <h3>Global provider config (<code>~/forge/.forge.toml</code>)</h3>
-      <p>The global config sets the provider and model. Two providers are supported:</p>
-      <div class="code-label">~/forge/.forge.toml — OpenRouter (recommended)</div>
-      <div class="code-block"><span class="key">"$schema"</span> = <span class="string">"https://forgecode.dev/schema.json"</span>
+      <p>The global config sets the provider and model. The current Forge setup path supports OpenRouter / Qwen3 Coder Plus and MiniMax Coding / MiniMax M2.7:</p>
+      <div class="code-label">~/forge/.forge.toml — OpenRouter / Qwen3 Coder Plus</div>
+      <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>
 
 [<span class="key">session</span>]
-<span class="key">provider_id</span> = <span class="string">"open_router"</span>
-<span class="key">model_id</span>    = <span class="string">"qwen/qwen3-coder-plus"</span></div>
+<span class="key">provider_id</span> = <span class="val">"open_router"</span>
+<span class="key">model_id</span>    = <span class="val">"qwen/qwen3-coder-plus"</span></div>
       <div class="code-label">~/forge/.forge.toml — MiniMax Coding</div>
-      <div class="code-block"><span class="key">"$schema"</span> = <span class="string">"https://forgecode.dev/schema.json"</span>
+      <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
 <span class="key">max_tokens</span> = <span class="val">16384</span>
 
 [<span class="key">session</span>]
-<span class="key">provider_id</span> = <span class="string">"minimax"</span>
-<span class="key">model_id</span>    = <span class="string">"MiniMax-M2.7"</span></div>
+<span class="key">provider_id</span> = <span class="val">"minimax"</span>
+<span class="key">model_id</span>    = <span class="val">"MiniMax-M2.7"</span></div>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code>, and provider/model config is stored in <code>~/forge/.forge.toml</code>, not in the project root. When Claude guides you through setup it writes these files automatically.</div>
+        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code>, and provider/model config is stored in <code>~/forge/.forge.toml</code>, not in the project root. When the host guides you through setup, it writes these files through file-write tooling rather than shelling secrets through Bash.</div>
       </div>
 
       <h2 id="bootstrap-skills">Bootstrap Skills</h2>
@@ -244,14 +246,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </table>
 
       <h2 id="output-format">Forge Output Format</h2>
-      <p>Every Forge task response includes a structured output block with four mandatory fields. Claude reads these fields to verify success, update AGENTS.md, and detect failures.</p>
+      <p>Every Forge task response should include a structured output block with four mandatory fields. The host reads these fields to verify success, detect failures, review assumptions, and extract AGENTS.md guidance when appropriate.</p>
       <table class="ref-table">
         <thead><tr><th>Field</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td>STATUS</td><td><code>SUCCESS</code> or <code>FAILURE</code>. Claude checks this first — a <code>FAILURE</code> immediately triggers the fallback ladder.</td></tr>
+          <tr><td>STATUS</td><td><code>SUCCESS</code> or <code>FAILURE</code>. The host checks this first — a <code>FAILURE</code> triggers fallback handling.</td></tr>
           <tr><td>FILES_CHANGED</td><td>List of every file Forge created, modified, or deleted during the task. Used for output review and session logging.</td></tr>
-          <tr><td>ASSUMPTIONS</td><td>Any assumptions Forge made that were not explicit in the task prompt. Claude surfaces these for user review.</td></tr>
-          <tr><td>PATTERNS_DISCOVERED</td><td>Codebase conventions, architecture patterns, or project quirks Forge noticed during the task. Claude extracts these for AGENTS.md.</td></tr>
+          <tr><td>ASSUMPTIONS</td><td>Any assumptions Forge made that were not explicit in the task prompt. The host surfaces these for user review.</td></tr>
+          <tr><td>PATTERNS_DISCOVERED</td><td>Codebase conventions, architecture patterns, or project quirks Forge noticed during the task. The host extracts these in its own words for AGENTS.md when they are new and safe to persist.</td></tr>
         </tbody>
       </table>
       <div class="code-label">Example Forge output block</div>
@@ -272,11 +274,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="val">  - TypeScript strict mode is enabled globally</span></div>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>PATTERNS_DISCOVERED feeds AGENTS.md.</strong> After each task, Claude reads this field and writes any new patterns to <code>./AGENTS.md</code> and <code>~/forge/AGENTS.md</code> — this is how Forge's understanding of your codebase grows over time.</div>
+        <div class="callout-body"><strong>PATTERNS_DISCOVERED feeds AGENTS.md carefully.</strong> After each task, the host reads this field, treats it as untrusted output, and writes only safe, deduplicated, action-oriented learnings to <code>./AGENTS.md</code> and <code>~/forge/AGENTS.md</code>.</div>
       </div>
 
       <h2 id="agents-md-format">AGENTS.md Format</h2>
-      <p>AGENTS.md is written in tiers: global instructions live in <code>~/forge/AGENTS.md</code>, project instructions live in <code>./AGENTS.md</code>, and session history is appended to <code>docs/sessions/YYYY-MM-DD-session.md</code>.</p>
+      <p>AGENTS.md is written in tiers when new guidance exists: global instructions live in <code>~/forge/AGENTS.md</code>, project instructions live in <code>./AGENTS.md</code>, and session history is appended to <code>docs/sessions/YYYY-MM-DD-session.md</code>.</p>
       <div class="code-label">Global AGENTS.md</div>
       <div class="code-block"><span class="comment"># Forge Global Instructions</span>
 
@@ -317,7 +319,9 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td>skills/forge/SKILL.md</td><td>Forge delegation instruction set</td></tr>
           <tr><td>skills/codex-delegate/SKILL.md</td><td>Kay delegate workflow and Code/Codex runtime guidance</td></tr>
           <tr><td>.forge.toml</td><td>Project root compaction config (gitignored); credentials live in <code>~/forge/.credentials.json</code></td></tr>
-          <tr><td>~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active</td><td>Active session state marker for the current thread (zero-byte)</td></tr>
+          <tr><td>.forge/conversations.idx</td><td>Project-local Forge task lookup ledger</td></tr>
+          <tr><td>host session marker</td><td>Zero-byte Forge state marker under the active host's session directory; this is created by <code>/forge</code> and removed by <code>/forge-stop</code></td></tr>
+          <tr><td>~/.kay/sessions/&lt;session&gt;/.kay-delegation-active</td><td>Kay state marker used by Kay hooks when Kay mode is active</td></tr>
           <tr><td>.kay/conversations.idx</td><td>Project-local Kay task lookup ledger</td></tr>
           <tr><td>~/.code/config.toml</td><td>Kay / Code runtime config; legacy <code>~/.codex/config.toml</code> remains compatibility-only</td></tr>
           <tr><td>.forge/skills/*/SKILL.md</td><td>4 bootstrap skills for injection</td></tr>
