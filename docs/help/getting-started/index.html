@@ -145,24 +145,24 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="what-is-sidekick">What is Sidekick?</h2>
-      <p>Sidekick is a Claude Code and Codex plugin that gives the active host a specialized execution runtime. <strong>Forge</strong> is the Claude Code sidekick: Claude delegates implementation tasks to ForgeCode while it plans, reviews, and reports. <strong>Kay</strong> is the Code/Codex path: Sidekick packages the Every Code runtime with MiniMax M2.7 defaults and <code>code</code> / <code>codex</code> / <code>coder</code> compatibility.</p>
-      <p>When you activate Forge delegation mode, Claude stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures automatically using a three-level fallback ladder. Kay uses Code's native execution workflow for implementation while keeping Sidekick's packaging, session, and runtime guidance aligned.</p>
+      <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. <strong>Forge</strong> packages ForgeCode for delegated terminal work. <strong>Kay</strong> packages the Every Code agent line with MiniMax M2.7 defaults, <code>code</code> / <code>codex</code> / <code>coder</code> compatibility, and the OpenCode Go multi-AI path. Claude Code and Codex can both route work to Forge or Kay.</p>
+      <p>When you activate Forge delegation mode, the host stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures automatically using a three-level fallback ladder. Kay uses Code's native execution workflow for implementation while keeping Sidekick's packaging, session, and agent guidance aligned.</p>
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="zap"></i></span>
-        <div class="callout-body"><strong>Why use a sidekick?</strong> Forge and Kay keep implementation work in a purpose-built runtime while the host stays focused on task composition, quality review, and communication.</div>
+        <div class="callout-body"><strong>Why use a sidekick?</strong> Forge and Kay keep implementation work in a purpose-built agent while the host stays focused on task composition, quality review, and communication.</div>
       </div>
 
       <h2 id="prerequisites">Prerequisites</h2>
       <p>You need the following before installing Sidekick:</p>
       <ul>
-        <li><strong>Claude Code</strong> — required for the Forge path.</li>
-        <li><strong>Code / Codex host</strong> — required for the Kay path.</li>
+        <li><strong>Claude Code or Codex host</strong> — required to run the Sidekick plugin surface.</li>
+        <li><strong>Forge or Kay agent path</strong> — choose the agent that fits the task.</li>
         <li><strong>Provider key</strong> — Forge uses OpenRouter with Qwen3 Coder Plus by default, or MiniMax Coding. Kay uses MiniMax M2.7 through <code>~/.code/config.toml</code>, with legacy <code>~/.codex/config.toml</code> compatibility.</li>
         <li><strong>Node.js 18+</strong> — required by Claude Code.</li>
       </ul>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>No separate runtime install needed.</strong> Sidekick's SessionStart hooks install missing Forge and Kay assets, then use native update commands or selective repair on later sessions.</div>
+        <div class="callout-body"><strong>No separate agent install needed.</strong> Sidekick's SessionStart hooks install missing Forge and Kay assets, then use native update commands or selective repair on later sessions.</div>
       </div>
 
       <h2 id="install">Installation</h2>
