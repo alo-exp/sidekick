@@ -122,9 +122,9 @@ expect_not_contains "docs/index.html" "Kay login:" "homepage first card removes 
 expect_contains "docs/index.html" "Install Sidekick" "homepage second setup step is plugin install"
 expect_contains "docs/index.html" "Delegate Per Session" "homepage third setup step is per-session delegation"
 expect_not_contains "docs/index.html" "SessionStart Syncs Agents" "homepage setup steps do not expose internal SessionStart sync"
-expect_contains "docs/index.html" "Forge:</span> <span class=\"cmd\">/forge-delegate</span>" "homepage shows Forge delegate skill"
+expect_contains "docs/index.html" "Forge:</span> <span class=\"cmd\">/forge:delegate</span>" "homepage shows Forge delegate skill"
 expect_not_contains "docs/index.html" "/forge implement X" "homepage does not treat /forge as a task command"
-expect_contains "docs/index.html" "Kay:</span> <span class=\"cmd\">kay-delegate</span>" "homepage shows Kay delegate skill"
+expect_contains "docs/index.html" "Kay:</span> <span class=\"cmd\">/kay:delegate</span>" "homepage shows Kay delegate skill"
 
 echo ""
 echo "======================================="
