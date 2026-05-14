@@ -154,7 +154,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <tbody>
           <tr><td>/forge</td><td>Activate Forge delegation mode for the current session. Runs the four-part health check, bootstraps missing Sidekick-owned project files, loads SKILL.md, and arms hook enforcement through the session marker.</td></tr>
           <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct host implementation.</td></tr>
-          <tr><td>kay-delegate</td><td>Use the Kay delegate workflow for <code>code</code> / <code>codex</code> / <code>coder</code> runtime tasks. Some hosts display the plugin-prefixed name <code>sidekick:kay-delegate</code>.</td></tr>
+          <tr><td>kay-delegate</td><td>Use the Kay delegate workflow for <code>kay</code> runtime tasks. Some hosts display the plugin-prefixed name <code>sidekick:kay-delegate</code>. Older binary names remain compatibility-only.</td></tr>
           <tr><td>/kay-stop</td><td>Deactivate Kay delegation mode and return to direct host implementation.</td></tr>
         </tbody>
       </table>
@@ -167,22 +167,21 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td><code>install.sh</code></td><td>SessionStart</td><td>Runs the guarded first-run plugin bootstrap when the package-local <code>.installed</code> sentinel is absent.</td></tr>
           <tr><td><code>scrub-legacy-user-hooks.py</code></td><td>SessionStart</td><td>Removes stale Sidekick-owned hook blocks from legacy user config while preserving unrelated hooks.</td></tr>
           <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Forge mode is active, denies direct implementation edits, rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>, and output prefixing, and appends an entry to <code>.forge/conversations.idx</code>.</td></tr>
-          <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, denies direct implementation edits, rewrites <code>code</code> / <code>codex</code> / <code>coder exec</code> calls to include <code>--full-auto</code> and output prefixing, and appends an entry to <code>.kay/conversations.idx</code>.</td></tr>
+          <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, denies direct implementation edits, rewrites Kay runtime calls to include <code>--full-auto</code> and output prefixing, and appends an entry to <code>.kay/conversations.idx</code>.</td></tr>
           <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output, strips terminal controls, redacts obvious secrets, and surfaces a compact untrusted <code>[FORGE-SUMMARY]</code> STATUS block when one is present.</td></tr>
-          <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay / Code subprocess output, strips terminal controls, redacts obvious secrets, and emits a compact untrusted <code>[KAY-SUMMARY]</code> progress surface when a STATUS block is present.</td></tr>
+          <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay subprocess output, strips terminal controls, redacts obvious secrets, and emits a compact untrusted <code>[KAY-SUMMARY]</code> progress surface when a STATUS block is present.</td></tr>
           <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four <code>quality-gate-stage-N</code> markers are present in <code>~/.claude/.sidekick/quality-gate-state</code> and the full live Forge/Kay release pyramid has passed twice.</td></tr>
         </tbody>
       </table>
 
       <h2 id="kay-commands">Kay Runtime Commands</h2>
-      <p>Kay uses Code's native CLI automation surface. When Kay mode is active, the hook accepts all three binary names and rewrites to the available local runtime:</p>
+      <p>Kay uses its native CLI automation surface. When Kay mode is active, the hook treats <code>kay</code> as primary and keeps older binary names compatibility-only:</p>
       <table class="ref-table">
         <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td>code exec --full-auto "&lt;task&gt;"</td><td>Primary non-interactive Kay execution path.</td></tr>
-          <tr><td>codex exec --full-auto "&lt;task&gt;"</td><td>Compatibility fallback when <code>code</code> is unavailable.</td></tr>
-          <tr><td>coder exec --full-auto "&lt;task&gt;"</td><td>Compatibility fallback when <code>code</code> conflicts with another app.</td></tr>
-          <tr><td>code login --provider minimax --with-api-key</td><td>Configure MiniMax credentials for the Kay default provider path.</td></tr>
+          <tr><td>kay exec --full-auto "&lt;task&gt;"</td><td>Primary non-interactive Kay execution path.</td></tr>
+          <tr><td>kay login --provider minimax --with-api-key</td><td>Configure MiniMax credentials for the Kay default provider path.</td></tr>
+          <tr><td>legacy aliases</td><td>The old <code>code</code>, <code>codex</code>, and <code>coder</code> binary names are retained for compatibility, not for new user-facing setup.</td></tr>
         </tbody>
       </table>
 
@@ -317,13 +316,13 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td>skills/forge/SKILL.md</td><td>Forge delegation instruction set</td></tr>
-          <tr><td>skills/codex-delegate/SKILL.md</td><td>Kay delegate workflow and Code/Codex runtime guidance</td></tr>
+          <tr><td>skills/codex-delegate/SKILL.md</td><td>Kay delegate workflow and runtime guidance</td></tr>
           <tr><td>.forge.toml</td><td>Project root compaction config (gitignored); credentials live in <code>~/forge/.credentials.json</code></td></tr>
           <tr><td>.forge/conversations.idx</td><td>Project-local Forge task lookup ledger</td></tr>
           <tr><td>host session marker</td><td>Zero-byte Forge state marker under the active host's session directory; this is created by <code>/forge</code> and removed by <code>/forge-stop</code></td></tr>
           <tr><td>~/.kay/sessions/&lt;session&gt;/.kay-delegation-active</td><td>Kay state marker used by Kay hooks when Kay mode is active</td></tr>
           <tr><td>.kay/conversations.idx</td><td>Project-local Kay task lookup ledger</td></tr>
-          <tr><td>~/.code/config.toml</td><td>Kay / Code runtime config; legacy <code>~/.codex/config.toml</code> remains compatibility-only</td></tr>
+          <tr><td>~/.code/config.toml</td><td>Kay runtime config; legacy <code>~/.codex/config.toml</code> remains compatibility-only</td></tr>
           <tr><td>.forge/skills/*/SKILL.md</td><td>4 bootstrap skills for injection</td></tr>
           <tr><td>AGENTS.md</td><td>Project-level Forge standing instructions</td></tr>
           <tr><td>~/forge/AGENTS.md</td><td>Global cross-project Forge instructions</td></tr>

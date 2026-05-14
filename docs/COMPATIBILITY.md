@@ -12,7 +12,7 @@
 | Provider precedence | OpenRouter / Forge defaults | MiniMax-backed `code` defaults | Provider choice is runtime-owned and should stay explicit. |
 | Run history | Forge-owned audit/index state | Kay-owned audit/index state | History is intentionally separate. |
 | Shared environment | Project docs, tasks, help, and agent conventions | Host Codex tools, skills, hooks, MCPs, and agents by reference | The user should feel continuity without duplicated writable state. |
-| Runtime differences | Forge-specific fallback ladder and mentoring loop | Kay-specific `code exec` flow and native extension line | Do not assume one runtime automatically supports the other's UX surface. |
+| Runtime differences | Forge-specific fallback ladder and mentoring loop | Kay-specific `kay exec` flow and native extension line | Do not assume one runtime automatically supports the other's UX surface. |
 
 ## Reading the Matrix
 

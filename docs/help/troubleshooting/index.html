@@ -181,22 +181,20 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="kay-runtime"><span class="issue-badge badge-config"><i data-lucide="terminal"></i> Config</span> Kay Runtime Issues</h2>
 
-      <h3>code exec is unavailable</h3>
-      <p><strong>Cause:</strong> The Kay / Every Code runtime is not installed, not on PATH, or the <code>code</code> binary name conflicts with another application.</p>
+      <h3>kay exec is unavailable</h3>
+      <p><strong>Cause:</strong> The Kay runtime is not installed, not on PATH, or the installed runtime predates the <code>kay</code> binary name.</p>
       <p><strong>Fix:</strong></p>
       <ul>
-        <li>Run <code>code --version</code>, then <code>codex --version</code>, then <code>coder --version</code> to find the available alias.</li>
-        <li>Run the matching <code>exec --help</code> command to verify non-interactive execution is available.</li>
-        <li>If no alias is available, reinstall Sidekick or install the Kay runtime path again before starting delegation.</li>
+        <li>Run <code>kay --version</code> to verify the primary binary is available.</li>
+        <li>Run <code>kay exec --help</code> to verify non-interactive execution is available.</li>
+        <li>If only an old alias is available, reinstall Sidekick or install the Kay runtime path again before starting delegation.</li>
       </ul>
-      <div class="code-block"><span class="cmd">code exec --help</span>
-<span class="cmd">codex exec --help</span>
-<span class="cmd">coder exec --help</span></div>
+      <div class="code-block"><span class="cmd">kay exec --help</span></div>
 
       <h3>MiniMax login missing</h3>
-      <p><strong>Cause:</strong> Kay defaults to MiniMax M2.7, but the Code runtime has no MiniMax credentials.</p>
-      <p><strong>Fix:</strong> Use Code's native login flow:</p>
-      <div class="code-block"><span class="cmd">code login --provider minimax --with-api-key</span></div>
+      <p><strong>Cause:</strong> Kay defaults to MiniMax M2.7, but the Kay runtime has no MiniMax credentials.</p>
+      <p><strong>Fix:</strong> Use Kay's native login flow:</p>
+      <div class="code-block"><span class="cmd">kay login --provider minimax --with-api-key</span></div>
 
       <h2 id="health-check"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> Health Check Failures</h2>
 
@@ -273,7 +271,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h3>Direct edits are denied after /forge or Kay mode starts</h3>
       <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. It blocks direct implementation writes and asks the host to route work through Forge or Kay.</p>
-      <p><strong>Fix:</strong> Delegate the task through <code>forge -p "&lt;task&gt;"</code> for Forge or <code>code exec --full-auto "&lt;task&gt;"</code> for Kay. For Forge L3 takeover only, the host can temporarily use the documented <code>FORGE_LEVEL_3=1</code> bypass inside the project boundary.</p>
+      <p><strong>Fix:</strong> Delegate the task through <code>forge -p "&lt;task&gt;"</code> for Forge or <code>kay exec --full-auto "&lt;task&gt;"</code> for Kay. For Forge L3 takeover only, the host can temporarily use the documented <code>FORGE_LEVEL_3=1</code> bypass inside the project boundary.</p>
 
       <h3>Forge says the conversation database is not writable</h3>
       <p><strong>Cause:</strong> The Forge enforcer runs <code>forge conversation list</code> before injecting a conversation ID. If that database check fails, the hook refuses the delegation so it does not create untrackable work.</p>

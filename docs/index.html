@@ -905,20 +905,20 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <div class="sk-name">Kay</div>
         <div class="sk-role">Every Code Agent · MiniMax.io + OpenCode Go</div>
         <div class="benchmark-badge">Codex lineage: #1 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--accent-light-border-sm)">Terminal-Bench 2.0</a></div>
-        <p class="sk-desc">Kay is Sidekick's Every Code agent line. It highlights MiniMax.io by default, keeps OpenCode Go multi-AI compatibility, and works through the familiar <code>code</code>, <code>codex</code>, and <code>coder</code> flow.</p>
+        <p class="sk-desc">Kay is Sidekick's Every Code agent line. It highlights MiniMax.io by default, keeps OpenCode Go multi-AI compatibility, and uses <code>kay</code> as the primary binary. The old <code>code</code>, <code>codex</code>, and <code>coder</code> names are compatibility aliases only.</p>
         <ul class="sk-features">
-          <li>Primary path: code exec --full-auto</li>
-          <li>codex and coder compatibility fallbacks</li>
+          <li>Primary path: kay exec --full-auto</li>
+          <li>Legacy code, codex, and coder compatibility aliases</li>
           <li>Codex CLI lineage highlighted by Terminal-Bench #1</li>
           <li>MiniMax.io / MiniMax M2.7 defaults</li>
           <li>OpenCode Go multi-AI compatibility</li>
-          <li>Native Code agents, skills, subagents, and AGENTS.md</li>
+          <li>Native Kay agents, skills, subagents, and AGENTS.md</li>
           <li>Session-scoped .kay marker and audit index</li>
         </ul>
         <div class="sk-tags">
           <span class="tag tag-cyan">kay</span>
           <span class="tag tag-purple">Codex lineage</span>
-          <span class="tag tag-indigo">code exec</span>
+          <span class="tag tag-indigo">kay exec</span>
           <span class="tag tag-green">MiniMax.io</span>
           <span class="tag tag-amber">OpenCode Go</span>
         </div>
@@ -1090,7 +1090,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
             </td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">MiniMax.io</td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">MiniMax-M2.7</td>
-            <td>Packaged Kay default for the code, codex, and coder execution flow.</td>
+            <td>Packaged Kay default for the <code>kay</code> execution flow, with old binary names retained only as compatibility aliases.</td>
           </tr>
           <tr class="model-highlight winner">
             <td>
@@ -1151,15 +1151,15 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container text-center">
     <div class="section-label">Setup</div>
     <h2 class="section-title">Three Steps, Then Delegate</h2>
-    <p class="section-desc centered">For the user, setup is MiniMax access, plugin install, then per-session delegation. Sidekick checks runtime readiness when delegation starts.</p>
+    <p class="section-desc centered">For the user, setup is API access, plugin install, then per-session delegation. Sidekick checks runtime readiness when delegation starts.</p>
     <div class="setup-steps reveal">
       <div class="setup-step">
         <div class="step-num">1</div>
-        <h3>Get MiniMax.io API Access</h3>
-        <p>Create a MiniMax.io API key for the default MiniMax M2.7 path. OpenCode Go stays in Kay's compatibility path, not as a separate setup step.</p>
+        <h3>Get API Access</h3>
+        <p>Prepare the backend path you want Kay or Forge to use. MiniMax.io covers MiniMax M2.7 access, and OpenCode Go remains available for multi-AI compatibility.</p>
         <div class="step-code">
-          <span class="string">MiniMax.io:</span> <span class="cmd">platform.minimaxi.com</span><br>
-          <span class="string">Kay login:</span> <span class="cmd">code login --provider minimax --with-api-key</span>
+          <span class="string">MiniMax.io:</span> <span class="cmd">https://platform.minimax.io/subscribe/token-plan</span><br>
+          <span class="string">OpenCode Go:</span> <span class="cmd">https://opencode.ai/docs/go/</span>
         </div>
       </div>
       <div class="setup-step">
@@ -1177,7 +1177,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <p>Start the agent workflow for the current session. The host stays in the advisor and mentoring role while Forge or Kay performs implementation work.</p>
         <div class="step-code">
           <span class="string">Forge:</span> <span class="cmd">/forge</span><br>
-          <span class="string">Kay:</span> <span class="cmd">kay-delegate -&gt; code exec --full-auto "implement X"</span>
+          <span class="string">Kay:</span> <span class="cmd">kay exec --full-auto "implement X"</span>
         </div>
       </div>
     </div>

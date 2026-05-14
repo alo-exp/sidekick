@@ -184,20 +184,20 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-workflow">Kay Workflow</h2>
-      <p>Kay uses Code's native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. In Claude Code, the Kay workflow can launch a child Code runtime; in Code/Codex, the same skill is runtime guidance because the host already is the execution runtime.</p>
+      <p>Kay uses its native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. In Claude Code, the Kay workflow can launch a child Kay runtime; in Codex, the same skill is runtime guidance because the host already is the execution runtime.</p>
       <div class="flow">
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
           <div class="flow-body">
-            <h4>Verify Code runtime</h4>
-            <p>Run <code>code --version</code> and <code>code exec --help</code>. If the primary binary is unavailable, use <code>codex</code> or <code>coder</code>. If MiniMax login is missing, run <code>code login --provider minimax --with-api-key</code>.</p>
+            <h4>Verify Kay runtime</h4>
+            <p>Run <code>kay --version</code> and <code>kay exec --help</code>. If MiniMax login is missing, run <code>kay login --provider minimax --with-api-key</code>. Older binary names are compatibility-only.</p>
           </div>
         </div>
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Run the delegated task</h4>
-            <p>Use <code>code exec --full-auto "&lt;task&gt;"</code> when launching a child Kay runtime. Sidekick accepts <code>code</code>, <code>codex</code>, or <code>coder</code>; when Kay mode is active, the hook adds <code>--full-auto</code> if it is missing and prefixes output with <code>[KAY]</code> / <code>[KAY-LOG]</code>.</p>
+            <p>Use <code>kay exec --full-auto "&lt;task&gt;"</code> when launching a child Kay runtime. When Kay mode is active, the hook adds <code>--full-auto</code> if it is missing and prefixes output with <code>[KAY]</code> / <code>[KAY-LOG]</code>.</p>
           </div>
         </div>
         <div class="flow-step">
