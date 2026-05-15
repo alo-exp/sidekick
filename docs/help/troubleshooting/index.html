@@ -210,12 +210,12 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </ul>
       <div class="code-label">credential schema: ~/forge/.credentials.json</div>
       <div class="code-block">[
-  { "id": <span style="color:var(--amber)">"open_router"</span>, "auth_details": { "api_key": <span style="color:var(--amber)">"sk-or-your-key-here"</span> } }
+  { "id": <span style="color:var(--amber)">"minimax"</span>, "auth_details": { "api_key": <span style="color:var(--amber)">"your-minimax-key"</span> } }
 ]</div>
 
       <h3>✗ Model not available</h3>
       <p><strong>Cause:</strong> The model configured in <code>~/forge/.forge.toml</code> is unavailable for your provider account or temporarily unavailable provider-side.</p>
-      <p><strong>Fix:</strong> Verify the provider/model pair in <code>~/forge/.forge.toml</code>. For OpenRouter, the current Qwen path is <code>provider_id = "open_router"</code> with <code>model_id = "qwen/qwen3-coder-plus"</code>. For MiniMax Coding, use <code>provider_id = "minimax"</code> with <code>model_id = "MiniMax-M2.7"</code>.</p>
+      <p><strong>Fix:</strong> Verify the provider/model pair in <code>~/forge/.forge.toml</code>. For MiniMax Coding, use <code>provider_id = "minimax"</code> with <code>model_id = "MiniMax-M2.7"</code>.</p>
 
       <h3>✗ Bootstrap skills not loaded</h3>
       <p><strong>Cause:</strong> <code>.forge/skills/</code> directory is missing or corrupted.</p>
@@ -226,10 +226,10 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h3>API key set but not persisting</h3>
       <p><strong>Cause:</strong> <code>~/forge/.credentials.json</code> may not have been written correctly.</p>
-      <p><strong>Fix:</strong> Check if <code>~/forge/.credentials.json</code> exists and contains at least one credential entry with <code>auth_details.api_key</code>. If not, follow the STEP 0A setup in <code>skills/forge/SKILL.md</code> to recreate it.</p>
+      <p><strong>Fix:</strong> Check if <code>~/forge/.credentials.json</code> exists and contains at least one credential entry with <code>auth_details.api_key</code>. If not, follow the STEP 0A setup in <code>skills/forge.md</code> to recreate it.</p>
 
       <h3>Wrong model being used</h3>
-      <p><strong>Fix:</strong> Edit <code>~/forge/.forge.toml</code> and set an explicit provider/model pair. Use <code>open_router</code> with <code>qwen/qwen3-coder-plus</code>, or <code>minimax</code> with <code>MiniMax-M2.7</code>, depending on the provider access you want Forge to use.</p>
+      <p><strong>Fix:</strong> Edit <code>~/forge/.forge.toml</code> and set an explicit provider/model pair. Use <code>minimax</code> with <code>MiniMax-M2.7</code>.</p>
 
       <div class="callout callout-warn">
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
@@ -271,7 +271,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h3>Direct edits are denied after /forge or Kay mode starts</h3>
       <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. It blocks direct implementation writes and asks the host to route work through Forge or Kay.</p>
-      <p><strong>Fix:</strong> Delegate the task through <code>forge -p "&lt;task&gt;"</code> for Forge or <code>kay exec --full-auto "&lt;task&gt;"</code> for Kay. For Forge L3 takeover only, the host can temporarily use the documented <code>FORGE_LEVEL_3=1</code> bypass inside the project boundary.</p>
+      <p><strong>Fix:</strong> Delegate the task through Forge mode for Forge, or <code>kay-delegate</code> / <code>sidekick:kay-delegate</code> for Kay. Inside active Kay mode, the child runtime command is <code>kay exec --full-auto "&lt;task&gt;"</code>. For Forge L3 takeover only, the host runs <code>sidekick forge-level3 start</code>, completes the failing subtask inside the project boundary, then runs <code>sidekick forge-level3 stop</code>.</p>
 
       <h3>Forge says the conversation database is not writable</h3>
       <p><strong>Cause:</strong> The Forge enforcer runs <code>forge conversation list</code> before injecting a conversation ID. If that database check fails, the hook refuses the delegation so it does not create untrackable work.</p>

@@ -154,26 +154,39 @@ try:
     resp = recv_id(2)
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
-    expected_order = [
+    expected_names = [
+        "sidekick:forge-delegate",
+        "sidekick:forge-stop",
+        "sidekick:forge:delegate",
+        "sidekick:kay-delegate",
+        "sidekick:kay-stop",
+        "sidekick:kay:delegate",
+    ]
+    canonical_order = [
         "sidekick:forge-delegate",
         "sidekick:forge-stop",
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
     ]
-    missing = sorted(set(expected_order).difference(names))
-    extras = sorted(set(names).difference(expected_order))
+    missing = sorted(set(expected_names).difference(names))
+    extras = sorted(set(names).difference(expected_names))
     print("skill_names:", ", ".join(names))
     if missing:
         raise SystemExit(f"missing required skills: {', '.join(missing)}")
     if extras:
         raise SystemExit(f"unexpected extra skills: {', '.join(extras)}")
-    if names != expected_order:
-        raise SystemExit(
-            "skill order mismatch: expected "
-            + ", ".join(expected_order)
-            + " got "
-            + ", ".join(names)
-        )
+    canonical_positions = [names.index(name) for name in canonical_order]
+    if canonical_positions != sorted(canonical_positions):
+        raise SystemExit("canonical skill order mismatch: " + ", ".join(names))
+    alias_expectations = {
+        "skills/forge:delegate/SKILL.md": ["name: forge:delegate", "canonical `/forge` workflow"],
+        "skills/kay:delegate/SKILL.md": ["name: kay:delegate", "canonical `kay-delegate` workflow"],
+    }
+    for rel, needles in alias_expectations.items():
+        text = (sidekick_dir / rel).read_text()
+        for needle in needles:
+            if needle not in text:
+                raise SystemExit(f"{rel} does not point to its canonical workflow")
 finally:
     proc.terminate()
     try:
@@ -182,9 +195,9 @@ finally:
         proc.kill()
 PY
 then
-  pass "Kay plugin/read surfaces only the 4 canonical Sidekick skills in the expected order"
+  pass "Kay plugin/read surfaces canonical skills plus delegate aliases"
 else
-  fail "plugin_read" "Kay plugin/read did not match the expected 4-skill surface"
+  fail "plugin_read" "Kay plugin/read did not match the expected Sidekick skill surface"
 fi
 
 echo ""

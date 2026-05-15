@@ -21,7 +21,7 @@ We will keep `docs/doc-scheme.md` as the placement contract, then add a reader-f
 - `docs/START-HERE.md` for task-first navigation
 - `docs/AUDIENCE.md` for reader roles and entry points
 - `docs/GLOSSARY.md` for canonical terms
-- `docs/COMPATIBILITY.md` for Claude / Codex / Kay runtime differences
+- `docs/COMPATIBILITY.md` for Claude Code / Codex host surfaces and Forge / Kay execution-agent differences
 - `docs/ADR/` for durable docs-system decisions
 
 We will also treat the public help site as the task map and wire it back to the new docs pages.

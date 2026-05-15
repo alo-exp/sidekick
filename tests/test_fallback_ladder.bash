@@ -56,7 +56,15 @@ else
   assert_fail "Level 3 DEBRIEF" "not found"
 fi
 
-echo "=== T6: Failure Detection covers signal types ==="
+echo "=== T6: Level 3 contains session marker controls ==="
+if echo "${LEVEL3}" | grep -q 'sidekick forge-level3 start' \
+  && echo "${LEVEL3}" | grep -q 'sidekick forge-level3 stop'; then
+  assert_pass "Level 3 contains start/stop marker controls"
+else
+  assert_fail "Level 3 marker controls" "start/stop commands not found"
+fi
+
+echo "=== T7: Failure Detection covers signal types ==="
 if echo "${FAILURE_DETECT}" | grep -qiE "error|stall|wrong.output|exit.code"; then
   assert_pass "Failure Detection section covers signal types"
 else

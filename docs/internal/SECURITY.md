@@ -13,7 +13,7 @@
 | Check | Severity | Status | Evidence |
 |-------|----------|--------|----------|
 | No hardcoded API keys, secrets, or credentials | CRITICAL | PASS | File contains no API keys, tokens, passwords, or credential values. References `~/forge/.credentials.json` and `~/forge/.forge.toml` by path only. |
-| Credential existence check only — never reads/logs key value | HIGH | PASS | Line 25: `"~/forge/.credentials.json exists and contains a non-empty api_key field (never read or log the actual key value -- existence check only)"` — instruction is present and explicit. |
+| Credential existence check only — never reads/logs key value | HIGH | PASS | Current `skills/forge/SKILL.md` uses a shell-only `jq -e` array-schema existence check and explicitly says never to read, display, or include credential values in output or context. |
 | No echo/log of credential values anywhere in file | HIGH | PASS | Grep of entire file shows zero instances of printing, logging, or reading API key values. All references are to file existence or field existence only. |
 
 **Findings:** 0
@@ -80,12 +80,13 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 
 ### HIGH
 
-#### H-1: Credential field check requires parsing file contents (SKILL.md:25)
+#### H-1: Credential field check requires parsing file contents (SKILL.md:25) — CLOSED
 - **Severity:** HIGH
 - **File:** `skills/forge/SKILL.md:25`
 - **Category:** Credential Leakage
-- **Description:** The health check instructs Claude to verify `~/forge/.credentials.json` "contains a non-empty `api_key` field". Despite the parenthetical "(never read or log the actual key value -- existence check only)", confirming a field is non-empty requires parsing the JSON. An LLM executing this instruction will read the file contents into its context window, where the API key value may persist in memory, appear in error output, or leak into the AGENTS.md mentoring loop (lines 176-229) or session logs (line 226).
-- **Recommendation:** Replace with a shell-only check that never surfaces the value: `jq -e '.api_key | length > 0' ~/forge/.credentials.json >/dev/null 2>&1`. Update the instruction to explicitly say "use a shell command; do not read the file with the Read tool."
+- **Status:** Closed in the current worktree.
+- **Description:** Historical finding. The current health check no longer asks the host AI to inspect a flat `api_key` field. It runs a shell-only `jq -e` check against Forge's current array-of-`{id, auth_details}` schema, redirects output to `/dev/null`, and explicitly forbids reading, displaying, or including credential values in output or context.
+- **Recommendation:** No current action. Keep future credential checks shell-only and output-suppressed.
 
 ---
 
@@ -127,8 +128,8 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 - **Severity:** LOW
 - **File:** `skills/forge/SKILL.md:40-41, 52`
 - **Category:** Over-permissive Instructions
-- **Description:** The skill uses `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` as a marker file. This is better than a single global home-directory toggle, but it still assumes the current session id is available and stable.
-- **Recommendation:** Use a session-scoped path derived from `CODEX_THREAD_ID` or a helper in the plugin runtime so the marker remains isolated to the current thread.
+- **Description:** The source skill uses `~/.claude/sessions/${CLAUDE_SESSION_ID}/.forge-delegation-active`; Codex-installed files rewrite the marker root to `~/.codex/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`. This is better than a single global home-directory toggle, but it still assumes the current host session id is available and stable.
+- **Recommendation:** Keep using the shared session-marker helper so Claude and Codex installs derive the marker from the active host session and keep it isolated to the current thread.
 
 #### L-2: hooks.json lacks integrity hash in plugin.json (hooks/hooks.json)
 - **Severity:** LOW
@@ -167,13 +168,13 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 
 | Area | Verdict | Critical | High | Medium | Low |
 |------|---------|----------|------|--------|-----|
-| skills/forge/SKILL.md | PASS (with findings) | 0 | 1 | 0 | 2 |
+| skills/forge/SKILL.md | PASS (historical findings closed or informational) | 0 | 0 | 0 | 2 |
 | install.sh | PASS (with findings) | 0 | 0 | 3 | 0 |
 | hooks/hooks.json | PASS | 0 | 0 | 0 | 0 |
 | .claude-plugin/plugin.json | PASS (with findings) | 0 | 0 | 1 | 0 |
-| **Total** | **PASS** | **0** | **1** | **4** | **2** |
+| **Total** | **PASS** | **0** | **0** | **4** | **2** |
 
-**Overall Verdict: CONDITIONAL PASS** — No critical or blocking findings. 1 HIGH finding (H-1) should be addressed before release. 4 MEDIUM findings are recommended for v1.1.0 but not blocking. 2 LOW findings are informational.
+**Overall Verdict: PASS** — No current critical, blocking, or high findings remain in this historical section. H-1 is closed by the current shell-only credential existence check. 4 MEDIUM historical findings remain as non-blocking hardening notes, and 2 LOW findings are informational.
 
 ---
 
@@ -193,19 +194,19 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 
 **Scope:** `skills/forge/SKILL.md`, `hooks/forge-delegation-enforcer.sh`, `hooks/forge-progress-surface.sh`, and shared helpers in `hooks/lib/`
 
-### Current Blocking Findings
+### Resolved Blocking Findings
 
 | ID | Severity | File(s) | Finding | Evidence |
 |----|----------|---------|---------|----------|
-| BC-1 | BLOCKER | `hooks/lib/enforcer-utils.sh:156-163`, `hooks/forge-delegation-enforcer.sh:67-77`, `hooks/forge-delegation-enforcer.sh:91-101` | The `docs/` and `.planning/` allowlist is lexical only. Paths like `docs/../hooks/...` or a symlink pivot under an allowed prefix are accepted for `Write`, `Edit`, and the MCP filesystem write tools. | Local repro: `is_allowed_doc_path "docs/../hooks/forge-delegation-enforcer.sh"` returns `allowed`, and both `decide_write_edit` and `decide_mcp_write` allow traversal paths instead of canonicalized doc-only paths. |
-| BC-2 | BLOCKER | `hooks/lib/enforcer-utils.sh:44-60`, `hooks/forge-delegation-enforcer.sh:213-246`, `hooks/forge-delegation-enforcer.sh:287-289` | Arbitrary leading env assignments are exported into the hook process before helper subprocesses run, so a user can poison `PATH` or other loader variables and hijack later `jq`, `python3`, `forge`, `realpath`, or `date` invocations. | Local repro: `PATH=/tmp/evil FORGE_LEVEL_3=1 forge -p hi` makes the hook process inherit `PATH=/tmp/evil`; the hook then continues to call PATH-resolved subprocesses after the export. |
-| BC-3 | BLOCKER | `hooks/forge-delegation-enforcer.sh:217-244` | The Forge fast-path rewrites `forge -p` by concatenating the original tail verbatim into `updatedInput.command`, so shell metacharacters survive the rewrite. | Local repro: `forge -p "hi"; touch /tmp/pwned` is emitted as a rewritten command that still contains `; touch /tmp/pwned`, which would execute after the Forge call. |
+| BC-1 | BLOCKER | `hooks/lib/enforcer-utils.sh`, `hooks/forge-delegation-enforcer.sh` | The `docs/` and `.planning/` allowlist was lexical only. | CLOSED: allowed paths are canonicalized against the project root before pass-through. |
+| BC-2 | BLOCKER | `hooks/lib/enforcer-utils.sh`, `hooks/forge-delegation-enforcer.sh` | Arbitrary leading env assignments were exported into the hook process before helper subprocesses ran. | CLOSED: command-text env prefixes are consumed but not imported into the hook process, and delegated sidekick subprocesses now run under a sanitized environment. |
+| BC-3 | BLOCKER | `hooks/forge-delegation-enforcer.sh` | The Forge fast-path previously concatenated shell tails into `updatedInput.command`. | CLOSED: Forge rewrites are parsed token-by-token, unsafe shell tails are denied, allowed `tee` tails are path-checked, and execution goes through the safe runner. |
 
 ### Stale Or Obsolete
 
 | Concern | Status | Why it is stale |
 |---------|--------|-----------------|
-| Global marker file in `~/.claude/.forge-delegation-active` | Obsolete | The current code now uses the session-scoped marker path `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` in both the skill and hooks, so the old single-global-toggle concern no longer matches the worktree. |
+| Global marker file in `~/.claude/.forge-delegation-active` | Obsolete | The current source install uses the session-scoped marker path `~/.claude/sessions/${CLAUDE_SESSION_ID}/.forge-delegation-active`; Codex-installed files rewrite that to `~/.codex/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`. The old single-global-toggle concern no longer matches the worktree. |
 | Legacy flat `{api_key}` credential schema | Obsolete | `skills/forge/SKILL.md:37` now checks only the current array-of-`{id, auth_details}` Forge credential schema and explicitly says not to read or log credential values. |
 | Existing `.forge/conversations.idx` leak artifact | Not current | The current worktree does not contain a live `repo/.forge/conversations.idx` file. The risk is in the write path above, not in an already-present malicious artifact. |
 
@@ -224,5 +225,5 @@ This is a supplementary deep audit covering areas not examined in the initial pa
 
 | Finding | Severity | Evidence | Status |
 |---------|----------|----------|--------|
-| Command-text env prefixes still survive the `forge -p` rewrite, so `FORGE_LEVEL_3=1` and other attacker-supplied env vars are executed by the delegated shell instead of being stripped. This defeats the new "must come from the real process environment" guard and lets the command text smuggle L3 / root-rebinding env into downstream hooks. | HIGH | `hooks/forge-delegation-enforcer.sh:213-217, 250-304`; live repro: `FORGE_LEVEL_3=1 forge -p \"task\"` is allowed and returns `updatedInput.command` beginning with `FORGE_LEVEL_3=1 ...`; `CLAUDE_PROJECT_DIR=/ FORGE_LEVEL_3=1 ...` is preserved the same way. | OPEN |
-| The new `forge -p` pipeline-tail path explicitly allows `| tee <path>` and does not apply the docs/.planning/project allowlists to the tee destination, so the rewrite can write to arbitrary files through shell I/O. That is a mutating-command smuggling path, not just a logging convenience. | HIGH | `hooks/forge-delegation-enforcer.sh:228-304`; `hooks/lib/enforcer-utils.sh:308-317`; live repro: `forge -p \"task\" | tee hooks/forge-delegation-enforcer.sh` is allowed and preserves the `tee` write target. | OPEN |
+| Command-text env prefixes survived the `forge -p` rewrite, so `FORGE_LEVEL_3=1` and other attacker-supplied env vars could be executed by the delegated shell. | HIGH | Current tests cover env-prefix stripping and sanitized sidekick child environments. | CLOSED |
+| The `forge -p` pipeline-tail path allowed `| tee <path>` without applying the docs/.planning project allowlists to the destination. | HIGH | Current rewrite validation only preserves `tee` tails whose file arguments resolve inside `.planning/` or `docs/`; unsafe tails are denied. | CLOSED |

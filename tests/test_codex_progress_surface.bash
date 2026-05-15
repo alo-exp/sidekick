@@ -78,6 +78,52 @@ else
   assert_fail "test_emits_summary_when_status_block_present" "ctx='${_ctx}'"
 fi
 
+echo "=== test_accepts_codex_status_prefix ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[CODEX] STATUS: SUCCESS\n[CODEX] FILES_CHANGED: [utils.py]\n[CODEX] ASSUMPTIONS: []\n[CODEX] PATTERNS_DISCOVERED: []"}}')"
+_ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
+if echo "${_ctx}" | grep -q '\[CODEX\] STATUS: SUCCESS' \
+    && echo "${_ctx}" | grep -q '\[KAY-SUMMARY\]'; then
+  assert_pass "test_accepts_codex_status_prefix"
+else
+  assert_fail "test_accepts_codex_status_prefix" "ctx='${_ctx}'"
+fi
+
+echo "=== test_surface_caps_status_block_at_20_lines ==="
+_big="[KAY] STATUS: SUCCESS"
+for i in $(seq 1 30); do _big="${_big}"$'\n'"[KAY] extra line ${i}"; done
+_big="${_big}"$'\n'"[KAY] PATTERNS_DISCOVERED: []"
+_json_big="$(jq -cn --arg o "$_big" '{tool_name:"Bash",tool_input:{command:"kay exec \"x\""},tool_response:{output:$o}}')"
+_out="$(run_hook "$_json_big")"
+_ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
+_body_lines="$(printf '%s\n' "$_ctx" | grep -c '^\[KAY-SUMMARY\] \[UNTRUSTED\] \[KAY\]' || true)"
+if [ "$_body_lines" -eq 20 ]; then
+  assert_pass "test_surface_caps_status_block_at_20_lines"
+else
+  assert_fail "test_surface_caps_status_block_at_20_lines" "body_lines=${_body_lines} ctx='${_ctx}'"
+fi
+
+echo "=== test_surface_uses_stdout_fallback_when_output_absent ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"x\""},"tool_response":{"stdout":"STATUS: SUCCESS\nFILES_CHANGED: []\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []"}}')"
+_ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
+if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
+    && echo "${_ctx}" | grep -q '\[KAY-SUMMARY\]'; then
+  assert_pass "test_surface_uses_stdout_fallback_when_output_absent"
+else
+  assert_fail "test_surface_uses_stdout_fallback_when_output_absent" "ctx='${_ctx}'"
+fi
+
+echo "=== test_accepts_safe_runner_command_shape ==="
+_cmd="bash /tmp/hooks/lib/sidekick-safe-runner.sh kay kay exec --full-auto 'Refactor utils'"
+_json_safe="$(jq -cn --arg c "$_cmd" '{tool_name:"Bash",tool_input:{command:$c},tool_response:{output:"[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: []\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}')"
+_out="$(run_hook "$_json_safe")"
+_ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
+if echo "${_ctx}" | grep -q 'STATUS: SUCCESS' \
+    && echo "${_ctx}" | grep -q '\[KAY-SUMMARY\]'; then
+  assert_pass "test_accepts_safe_runner_command_shape"
+else
+  assert_fail "test_accepts_safe_runner_command_shape" "ctx='${_ctx}'"
+fi
+
 echo "=== test_env_prefix_before_exec_is_handled ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"FOO=bar kay exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: [utils.py]\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}')"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
@@ -101,12 +147,13 @@ else
 fi
 
 echo "=== test_redacts_secrets ==="
-_secret_output=$'STATUS: SUCCESS\nAuthorization: Bearer super-secret-token\napi_key=abc1234567890\nFILES_CHANGED: []\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []'
+_secret_output=$'STATUS: SUCCESS\nAuthorization: Bearer super-secret-token\napi_key=abc1234567890\nOPENAI_API_KEY=access123\nGITHUB_TOKEN: refresh456\nANTHROPIC_API_KEY="client789"\nMY_PASSWORD=hunter2\nsecret: hidden\nFILES_CHANGED: []\nASSUMPTIONS: []\nPATTERNS_DISCOVERED: []'
 _json_secret="$(jq -cn --arg o "$_secret_output" '{tool_name:"Bash",tool_input:{command:"kay exec \"x\""},tool_response:{output:$o}}')"
 _out="$(run_hook "$_json_secret")"
 _ctx="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)"
 if ! printf '%s' "${_ctx}" | grep -qi 'super-secret-token' \
-    && ! printf '%s' "${_ctx}" | grep -qi 'abc1234567890'; then
+    && ! printf '%s' "${_ctx}" | grep -qi 'abc1234567890' \
+    && ! printf '%s' "${_ctx}" | grep -Eq 'access123|refresh456|client789|hunter2|hidden'; then
   assert_pass "test_redacts_secrets"
 else
   assert_fail "test_redacts_secrets" "ctx='${_ctx}'"

@@ -8,7 +8,10 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 
 ## Enforcement
 
-**State file**: `~/.claude/.sidekick/quality-gate-state`
+**State file**: host-specific Sidekick state.
+- Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
+- Codex installs: `~/.codex/.sidekick/quality-gate-state`
+**Marker format**: `quality-gate-stage-N session=<current-host-session-id>`
 
 **Required markers** (must all be present before release):
 - `quality-gate-stage-1`
@@ -16,12 +19,22 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 - `quality-gate-stage-3`
 - `quality-gate-stage-4`
 
-**Session reset**: All four markers are cleared at the start of each new Claude Code session. The gate must be completed in full during the session in which the release is being cut — markers from a previous session do not carry over.
+**Session reset**: All four markers are scoped to the current host session id. The gate must be completed in full during the session in which the release is being cut — markers from a previous session do not satisfy the release hook.
 
 Each stage is complete only when:
 1. The work is done and verified
 2. The `/superpowers:verification-before-completion` skill has been invoked (not just run manually)
-3. The marker is written: `echo "quality-gate-stage-N" >> ~/.claude/.sidekick/quality-gate-state`
+3. The marker is written with the current host session id: `printf 'quality-gate-stage-N session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"`
+
+Resolve the state file once in the release shell before writing any marker:
+
+```bash
+SIDEKICK_QG_DIR="${HOME}/.claude/.sidekick"
+if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ]; then
+  SIDEKICK_QG_DIR="${HOME}/.codex/.sidekick"
+fi
+SIDEKICK_QG_STATE="${SIDEKICK_QG_DIR}/quality-gate-state"
+```
 
 **Violating the verification rule is equivalent to skipping the stage.**
 
@@ -31,91 +44,32 @@ Each stage is complete only when:
 
 **Goal**: Zero accepted issues across all source files changed in this release.
 
-The triad is three sequential passes: functionality, structure, and security. Each pass must be completed before moving to the next.
+The canonical Stage 1 procedure is the parallel review triad in
+[`docs/pre-release-quality-gate.md`](../pre-release-quality-gate.md#stage-1--code-review-triad).
+Do not use the older sequential-only review flow.
 
-### Pass 1 — Functionality Review
-
-Run `/engineering:code-review` on each of the following files. For each file, record findings, fix all accepted issues, and re-run until clean before moving to the next file.
-
-**`skills/forge/SKILL.md`**
-- Verify every step in the SKILL.md activation sequence is executable as written with no ambiguity
-- Confirm the 5-field task prompt structure (OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS) is complete and correctly described
-- Confirm the fallback ladder L1/L2/L3 escalation conditions, retry counts, and exit criteria are unambiguous
-- Verify the AGENTS.md three-tier write targets (`./AGENTS.md`, `~/forge/AGENTS.md`, `docs/sessions/YYYY-MM-DD-session.md`) are all present and correctly pathed
-- Verify the token optimization section enforces the 2,000-token task prompt cap
-- Verify the skill injection mapping table lists all 4 bootstrap skills with correct task-type mappings
-
-**`tests/`**
-- Run the full test suite: `bash tests/run_all.bash` (or project equivalent)
-- Every test must pass — no failures, no skipped tests without documented reason
-- If any test is marked pending or skipped, document the reason and track it as a known issue
-- Verify test output matches expected output as described in each test's comments
-
-**`hooks/`** (if present)
-- Manually trigger each pre-commit and post-commit hook
-- Verify each hook completes without error on a clean repo state
-- Verify hook output and side effects match documented behavior
-
-**`install.sh`**
-- Trace through the install script step by step
-- Verify the Forge binary download URL is current, uses HTTPS, and resolves to the canonical `forgecode.dev` domain
-- Verify the script handles both macOS and Linux correctly (check any `uname` branches)
-- Verify STEP 0A (credentials setup) creates `~/forge/.credentials.json` with `{ "api_key": "..." }` structure and `~/forge/.forge.toml` with correct `provider_id`/`model_id` structure
-- Verify the install directory is correctly communicated to the user for PATH setup
-- Verify the script uses `set -e` so it exits on first error
-
-**`README.md`**
-- Verify install commands are copy-pasteable and tested
-- Verify `/forge` invocation examples match actual SKILL.md behavior
-- Verify feature descriptions are accurate and complete
-- Verify the prerequisites section lists the correct Forge binary version requirement
-
-**`CHANGELOG.md`**
-- Verify the new release entry is present, dated correctly, and uses the correct version
-- Verify it accurately lists all Added, Changed, and Fixed items for this release
-- Verify no placeholder text (no "TODO", "TBD", or template stubs) remains
-
-**Final diff review**
-- Read the full diff between this release and the previous tag: `git diff <prev-tag>...HEAD`
-- Confirm no unintended changes are included
-- Confirm all intended changes are present
-- Confirm no debug code, commented-out experiments, or temporary workarounds were left in
-
-### Pass 2 — Structure Review
-
-1. **SKILL.md section order**: Confirm the 8 canonical sections are present in order: (1) Activation, (2) Delegation Protocol, (3) Deactivation, (4) Failure Detection, (5) Fallback Ladder, (6) Skill Injection, (7) AGENTS.md Mentoring Loop, (8) Token Optimization.
-
-2. **Bootstrap skills**: Confirm all 4 are present at `.forge/skills/`: `testing-strategy/SKILL.md`, `code-review/SKILL.md`, `security/SKILL.md`, `quality-gates/SKILL.md`. Verify each file is non-empty and has correct frontmatter/structure.
-
-3. **Docs directory structure**: Verify `docs/help/` contains all 5 subdirectories: `getting-started/`, `concepts/`, `workflows/`, `reference/`, `troubleshooting/`. Verify `docs/internal/`, `docs/sessions/`, `docs/specs/`, and `docs/design/` exist.
-
-4. **Naming consistency**: Verify all internal references use consistent spelling and casing across `skills/forge/SKILL.md`, `README.md`, `docs/help/`, and `CHANGELOG.md`. Check: skill names, command names (`/forge`, `/forge-stop`), config key names (`provider_id`, `model_id`, `max_tokens`), and file paths.
-
-5. **No orphaned files**: Check for files with no inbound references and no clear documented purpose. Flag each for removal or documentation.
-
-### Pass 3 — Security Review (preliminary)
-
-This is a quick pass — Stage 4 does the deep security audit. Here, check only the obvious issues:
-
-1. **No hardcoded credentials**: Search all changed files for patterns matching API keys, tokens, or passwords: `grep -r "sk-or-" .`, `grep -r "api_key.*=.*[a-zA-Z0-9]" .` (excluding `.credentials.json` documentation examples).
-
-2. **Gitignore correctness**: Verify `.gitignore` includes `.forge.toml` (project root) and that `docs/sessions/` is gitignored if session logs contain sensitive content.
-
-3. **Credential file permissions**: Verify `install.sh` sets `chmod 600 ~/forge/.credentials.json` after writing it.
-
-4. **SKILL.md credential scope**: Verify SKILL.md never instructs Claude to read or display the API key value from `~/forge/.credentials.json` — only to verify the file exists.
+Required loop:
+1. Dispatch `/engineering:code-review`, `/gsd-code-review`, and `/superpowers:requesting-code-review` simultaneously.
+2. Collect all findings.
+3. Invoke `/superpowers:receiving-code-review` to triage the combined findings.
+4. Fix every accepted issue.
+5. Repeat until the triage produces zero accepted items on two consecutive loop passes.
+6. Run the structure and security checks from the canonical public gate.
 
 ### Completion
 
-After all three passes complete with no blocking issues:
+After the canonical triad loop and structure/security checks are clean:
 
-1. Invoke `/superpowers:verification-before-completion` — evidence of a clean pass required before marking complete
+1. Invoke `/superpowers:verification-before-completion`.
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-1" >> ~/.claude/.sidekick/quality-gate-state
+   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
+   SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+   test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf 'quality-gate-stage-1 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
    ```
 
-**Exit criteria**: Zero accepted code review findings across all three passes, fresh verification confirms clean, marker written.
+**Exit criteria**: Zero accepted code review findings across the canonical triad loop, fresh verification confirms clean, marker written.
 
 ---
 
@@ -162,7 +116,7 @@ Audit all `docs/help/*/index.html` pages:
 
 - **Step counts**: The numbered steps in `docs/help/workflows/index.html` match the actual steps in SKILL.md's delegation protocol. No steps added or removed without being reflected in the workflow page.
 - **Skill names**: The 4 bootstrap skill names (`testing-strategy`, `code-review`, `security`, `quality-gates`) are spelled identically on every help page where they appear.
-- **Config paths**: Every file path mentioned in help pages exists or is correctly described: `~/forge/.credentials.json`, `~/forge/.forge.toml`, `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active`, `.forge/skills/*/SKILL.md`, `docs/sessions/`
+- **Config paths**: Every file path mentioned in help pages exists or is correctly described: `~/forge/.credentials.json`, `~/forge/.forge.toml`, the active host session marker under the resolved host session id (`SIDEKICK_SESSION_ID`, then host-specific session id, then `SESSION_ID`), `.forge/skills/*/SKILL.md`, `docs/sessions/`
 - **Command syntax**: `/forge`, `/forge-stop`, `/forge status` syntax is consistent across getting-started, workflows, reference, and troubleshooting pages
 - **Troubleshooting coverage**: Every error condition mentioned in SKILL.md's failure detection section has a corresponding troubleshooting entry
 - **Sidebar nav anchors**: Every anchor link in every sidebar nav (`sidebar-nav` elements) resolves to an actual `id` attribute on the same page — no dead links
@@ -186,7 +140,10 @@ After two consecutive clean passes across all 5 dimensions:
 1. Invoke `/superpowers:verification-before-completion` — two-pass clean evidence required
 2. Write the marker:
    ```bash
-   echo "quality-gate-stage-2" >> ~/.claude/.sidekick/quality-gate-state
+   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
+   SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+   test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf 'quality-gate-stage-2 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: Two consecutive clean passes from all 5 dimensions, no consistency gaps remain, marker written.
@@ -200,7 +157,7 @@ After two consecutive clean passes across all 5 dimensions:
 ### Step 1 — GitHub Repository Metadata
 
 - **Description**: Read the current GitHub repo description. Verify it accurately describes the current version of Sidekick (Forge delegation, fallback ladder, AGENTS.md mentoring). Update if stale.
-- **Topics/tags**: Verify relevant topics are set. Recommended: `claude-code`, `ai-coding`, `forge`, `delegation`, `agents`, `sidekick`. Add any that are missing, remove any that are no longer accurate.
+- **Topics/tags**: Verify current topics are set. Recommended: `claude-code`, `codex`, `forge`, `forgecode`, `kay`, `terminal-agent`, `coding-agent`, `orchestration`, `sidekick`. Remove stale provider tags.
 - **Homepage URL**: Verify the repo homepage field points to the correct docs landing page URL.
 - **README preview**: Check how the README renders on the GitHub repo page — verify no images are broken, no badge URLs 404, no links are dead.
 
@@ -210,7 +167,7 @@ Read `README.md` in full and verify/update:
 
 - **Version badge**: The version badge at the top matches the release being cut. Update the badge URL and the badge text.
 - **Sidekick description**: The description accurately reflects the current feature set. No features that were removed. No existing features missing from the description.
-- **Provider options**: Both OpenRouter and MiniMax are listed. The model IDs shown (`qwen/qwen3-coder-plus` for OpenRouter, `MiniMax-M2.7` for MiniMax) are current.
+- **Provider options**: Current public guidance highlights MiniMax M2.7 for Forge and MiniMax.io/OpenCode Go access for Kay. Removed router-specific setup paths must not be reintroduced as current recommendations.
 - **Install command**: The install command is copy-pasteable, tested on a clean machine (or equivalent), and resolves to the correct URL.
 - **Prerequisites**: The Forge binary version requirement and the Claude Code version requirement are current.
 - **Benchmarks or metrics**: If any numbers are cited (task success rate, token savings, model performance, etc.), verify they reflect current observed behavior. Remove or update stale numbers.
@@ -227,7 +184,7 @@ Read `docs/index.html` in full and verify/update:
 - **Benchmarks**: Same as README.md — any cited numbers are current. Do not leave stale performance claims.
 - **Call-to-action links**: The primary CTA buttons (install, docs, GitHub) all resolve correctly.
 - **No broken images or assets**: All `<img>` tags and CSS `background-image` references resolve. No 404 assets.
-- **External links**: All external links (to forgecode.dev, openrouter.ai, GitHub) are current and resolve.
+- **External links**: All external links (to forgecode.dev, GitHub, MiniMax, OpenCode Go, and Terminal-Bench where referenced) are current and resolve.
 
 ### Step 4 — All docs/help/*.html Pages
 
@@ -237,7 +194,7 @@ For each of the 5 help section pages, read the page in full and verify:
 - Install command matches README.md and docs/index.html exactly
 - STEP 0A credentials setup commands are current and correct
 - Health check output example reflects current `/forge` activation behavior
-- Plugin install command (`/plugin install alo-exp/sidekick` or current equivalent) is correct
+- Plugin install commands are correct: Claude Code uses `/plugin install alo-labs/sidekick`; Codex uses `codex plugin marketplace add alo-exp/sidekick`.
 
 **`docs/help/concepts/index.html`**
 - Fallback ladder section (L1/L2/L3) matches SKILL.md exactly — same level names, same retry counts, same escalation conditions
@@ -262,13 +219,13 @@ For each of the 5 help section pages, read the page in full and verify:
 - File structure table lists all current Sidekick-managed files with correct paths
 
 **`docs/help/troubleshooting/index.html`**
-- All required issues are covered: forge not found, health check failures, OpenRouter config, 429 rate limit, 402 payment required, forge stuck in loop, fallback not triggering, AGENTS.md issues, session recovery, reinstall/reset
+- All required issues are covered: forge not found, health check failures, MiniMax provider config, 429 rate limit, 402 payment required, forge stuck in loop, fallback not triggering, AGENTS.md issues, session recovery, reinstall/reset
 - Fix steps are current and accurate for each issue
 - Code examples in fix steps use current command syntax
 
 **All 5 pages — common checks**:
 - Internal cross-links between help pages resolve correctly
-- External links (openrouter.ai, GitHub issues, forgecode.dev) are current and resolve
+- External links (GitHub issues, forgecode.dev, MiniMax, OpenCode Go, and Terminal-Bench where referenced) are current and resolve
 - The page-nav-bottom prev/next links form the correct sequence: getting-started → concepts → workflows → reference → troubleshooting
 - The footer "Innovated at Ālo Labs" text and link are present
 
@@ -276,7 +233,7 @@ For each of the 5 help section pages, read the page in full and verify:
 
 Verify the new release entry:
 
-- **Version**: Matches the tag being created (e.g., `## v1.2.0 — 2026-04-13`)
+- **Version**: Matches the tag being created (e.g., `## v0.5.6 — 2026-05-15`)
 - **Date**: Correct release date
 - **Added**: All new features listed with clear descriptions
 - **Changed**: All breaking changes and behavior changes listed, with migration notes if needed
@@ -296,7 +253,10 @@ After all five steps are complete and verified:
 2. Invoke `/superpowers:verification-before-completion` — evidence of clean content audit required
 3. Write the marker:
    ```bash
-   echo "quality-gate-stage-3" >> ~/.claude/.sidekick/quality-gate-state
+   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
+   SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+   test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf 'quality-gate-stage-3 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: All public-facing content is accurate and current, CHANGELOG.md has a finalized release entry, CI passes on main, marker written.
@@ -317,11 +277,11 @@ This file controls Claude's behavior during every delegation session. A malforme
 
 2. **AGENTS.md write scope**: Verify the AGENTS.md mentoring loop section in SKILL.md only writes to the three approved targets: `./AGENTS.md`, `~/forge/AGENTS.md`, `docs/sessions/YYYY-MM-DD-session.md`. There must be no code path that allows the mentoring loop to write to arbitrary paths based on content in Forge's output.
 
-3. **Credential handling**: Verify SKILL.md never instructs Claude to read, display, log, transmit, or include in any prompt the contents of `~/forge/.credentials.json`. The activation health check should verify the file exists and has an `api_key` field — it must not read the key value into context.
+3. **Credential handling**: Verify SKILL.md never instructs Claude to read, display, log, transmit, or include in any prompt the contents of `~/forge/.credentials.json`. The activation health check should verify the file exists and uses the list-format `[{id, auth_details}]` schema — it must not read credential values into context.
 
 4. **Delegation restriction bypass**: Verify the delegation restriction (Claude must not implement code directly while Forge delegation mode is active) can only be lifted by the L3 escalation path in the fallback ladder. There must be no instruction in SKILL.md that allows Forge's output content to trigger L3 directly, bypass L1/L2, or lift the restriction outside the defined escalation flow.
 
-5. **Deactivation completeness**: Verify the deactivation sequence (triggered by `/forge-stop`) clears `~/.claude/sessions/${CODEX_THREAD_ID}/.forge-delegation-active` for the current thread and fully restores Claude's normal behavior. No residual delegation state should remain after deactivation — verify this is explicit in the deactivation section of SKILL.md.
+5. **Deactivation completeness**: Verify the deactivation sequence (triggered by `/forge-stop`) clears the active host's Forge session marker under the same resolved session id used by the hook (`SIDEKICK_SESSION_ID`, then host-specific session id, then `SESSION_ID`) and fully restores direct host behavior. No residual delegation state should remain after deactivation — verify this is explicit in the deactivation section of SKILL.md.
 
 6. **Scope of PATTERNS_DISCOVERED**: Verify that the PATTERNS_DISCOVERED output field from Forge is treated as documentation/hints for AGENTS.md, not as executable instructions. Claude must not run commands or modify files based solely on PATTERNS_DISCOVERED content.
 
@@ -339,7 +299,7 @@ This script runs with user-level permissions, modifies the user's home directory
 
 3. **File permissions**: Verify the script sets `chmod 600 ~/forge/.credentials.json` after writing credentials. The credentials file must not be world-readable (`644`) or group-readable (`640`).
 
-4. **PATH modification safety**: Verify the PATH addition appended to `.zshrc`/`.bashrc` is scoped to `~/.forge/bin` only. The script must not prepend a broad directory, set `PATH` to a hardcoded value, or modify any system-level PATH configuration.
+4. **PATH modification safety**: Verify the PATH addition appended to `.zshrc`/`.bashrc` is scoped to `~/.local/bin` only. The script must not prepend a broad directory, set `PATH` to a hardcoded value, or modify any system-level PATH configuration.
 
 5. **Idempotency**: Verify the script can be run multiple times without:
    - Duplicating PATH entries in `.zshrc`/`.bashrc`
@@ -378,7 +338,10 @@ After all three targets are clean with no blocking issues:
 2. Invoke `/superpowers:verification-before-completion` — clean audit evidence required
 3. Write the marker:
    ```bash
-   echo "quality-gate-stage-4" >> ~/.claude/.sidekick/quality-gate-state
+   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
+   SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+   test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf 'quality-gate-stage-4 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: Zero blocking security findings, all three targets pass clean, marker written.
@@ -387,14 +350,16 @@ After all three targets are clean with no blocking issues:
 
 ## Release
 
-After all 4 markers are written to `~/.claude/.sidekick/quality-gate-state`,
+After all 4 markers are written to `$SIDEKICK_QG_STATE`,
 and after the full Forge/Kay live pyramid has been run twice, verify and
 create the release:
 
 ```bash
-# Verify all 4 markers are present
-grep -c "quality-gate-stage-" ~/.claude/.sidekick/quality-gate-state
-# Must output 4
+# Verify all 4 current-session markers are present
+SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+count=$(grep -oE "^quality-gate-stage-[1-4] session=${SIDEKICK_QG_SESSION}$" "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
+test "$count" = "4" || { echo "Expected 4 distinct current-session markers, found $count"; exit 1; }
 
 # Create the GitHub release
 gh release create v<version> \

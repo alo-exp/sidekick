@@ -1,9 +1,9 @@
 # Sidekick Plugin — Current Context
 
-**Date:** 2026-05-14
+**Date:** 2026-05-15
 **Repo:** https://github.com/alo-exp/sidekick
 **Local path:** `/Users/shafqat/projects/sidekick/repo`
-**Plugin version:** v0.5.5
+**Plugin version:** v0.5.6
 
 ---
 
@@ -28,10 +28,10 @@ Forge/Kay = Hands
 ## Current Runtime Contracts
 
 - Forge delegates through `forge -p`.
-- Kay delegates through `kay exec --full-auto`.
+- Kay activates through `kay-delegate` / `sidekick:kay-delegate`; active Kay mode routes child execution through `kay exec --full-auto`.
 - Kay keeps `code`, `codex`, and `coder` as compatibility aliases only.
 - SessionStart only runs first-run bootstrap and legacy hook cleanup; runtime readiness checks happen when a delegation workflow starts.
-- Active delegation markers live under `.claude/sessions/...` for Forge and `.kay/sessions/...` for Kay.
+- Active Forge delegation markers live under the active host session root (`.claude/sessions/...` for Claude Code, `.codex/sessions/...` for Codex). Kay markers live under `.kay/sessions/...`.
 - Trace indexes live in `.forge/conversations.idx` and `.kay/conversations.idx`.
 
 ---

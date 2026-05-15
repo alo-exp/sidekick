@@ -155,7 +155,9 @@ PY
 
 TMP_HOME="$(mktemp -d)"
 CLEAN_HOME="$(mktemp -d)"
-trap 'rm -rf "${TMP_HOME}" "${CLEAN_HOME}"' EXIT
+V1_HOME="$(mktemp -d)"
+COLLISION_HOME="$(mktemp -d)"
+trap 'rm -rf "${TMP_HOME}" "${CLEAN_HOME}" "${V1_HOME}" "${COLLISION_HOME}"' EXIT
 
 echo "=== lower_case_scrub ==="
 mkdir -p "${TMP_HOME}/.codex"
@@ -177,6 +179,133 @@ else
 fi
 
 assert_json "${TMP_HOME}" "${TMP_HOME}/.codex/hooks.json" "${TMP_HOME}/.codex/hooks.json.original" "echo keep-me" "echo unrelated" "clean"
+
+echo "=== preexisting_v1_state_reruns ==="
+mkdir -p "${V1_HOME}/.codex" "${V1_HOME}/.sidekick"
+seed_fixture "${V1_HOME}/.codex/hooks.json" "${V1_HOME}" "echo keep-v1" "echo unrelated-v1"
+cat > "${V1_HOME}/.sidekick/legacy-hooks-scrub-state.json" <<'EOF'
+{
+  "migration": "legacy-hooks-scrub-v1",
+  "status": "clean",
+  "checked_at": "2026-05-13T00:00:00Z",
+  "targets": []
+}
+EOF
+
+if HOME="${V1_HOME}" python3 "${SCRUBBER}" >/tmp/sidekick-scrub-v1.out 2>/tmp/sidekick-scrub-v1.err; then
+  assert_pass "v1 state does not suppress v2 runtime-sync scrub"
+else
+  assert_fail "v1 state rerun" "non-zero exit"
+fi
+
+if python3 - "${V1_HOME}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+home = Path(sys.argv[1])
+state = json.load(open(home / ".sidekick/legacy-hooks-scrub-state.json"))
+target = json.load(open(home / ".codex/hooks.json"))
+assert state["migration"] == "legacy-hooks-scrub-v2"
+assert state["status"] == "applied"
+serialized = json.dumps(target)
+assert "runtime-sync.sh" not in serialized
+assert "install.sh" not in serialized
+assert "keep-v1" in serialized
+assert "unrelated-v1" in serialized
+PY
+then
+  assert_pass "v2 scrub removes runtime-sync despite preexisting v1 clean state"
+else
+  assert_fail "v2 scrub result" "runtime-sync remained or unrelated hooks changed"
+fi
+
+echo "=== same_basename_unowned_hooks_preserved ==="
+mkdir -p "${COLLISION_HOME}/.codex"
+cat > "${COLLISION_HOME}/.codex/hooks.json" <<'EOF'
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "test -f \"/tmp/.installed\" || (bash \"/tmp/install.sh\" && touch \"/tmp/.installed\")"
+        }
+      ]
+    },
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "ROOT=\"/tmp\"; if [ -f \"${ROOT}/.installed\" ]; then bash \"${ROOT}/hooks/runtime-sync.sh\"; fi"
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Write|Edit|NotebookEdit|Bash|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__filesystem__move_file|mcp__filesystem__create_directory",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"/tmp/hooks/forge-delegation-enforcer.sh\""
+        },
+        {
+          "type": "command",
+          "command": "bash \"/tmp/hooks/codex-delegation-enforcer.sh\""
+        }
+      ]
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"/tmp/hooks/validate-release-gate.sh\""
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"/tmp/hooks/forge-progress-surface.sh\""
+        },
+        {
+          "type": "command",
+          "command": "bash \"/tmp/hooks/codex-progress-surface.sh\""
+        }
+      ]
+    }
+  ]
+}
+EOF
+cp "${COLLISION_HOME}/.codex/hooks.json" "${COLLISION_HOME}/.codex/hooks.json.original"
+
+if HOME="${COLLISION_HOME}" python3 "${SCRUBBER}" >/tmp/sidekick-scrub-collision.out 2>/tmp/sidekick-scrub-collision.err; then
+  assert_pass "same-basename unowned hook scrub exits successfully"
+else
+  assert_fail "same-basename unowned hook scrub" "non-zero exit"
+fi
+
+if python3 - "${COLLISION_HOME}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+home = Path(sys.argv[1])
+state = json.load(open(home / ".sidekick/legacy-hooks-scrub-state.json"))
+assert state["status"] == "clean"
+assert (home / ".codex/hooks.json").read_text() == (home / ".codex/hooks.json.original").read_text()
+PY
+then
+  assert_pass "same-basename unowned hooks are preserved"
+else
+  assert_fail "same-basename unowned hooks" "unowned hook block was modified or scrubbed"
+fi
 
 if HOME="${TMP_HOME}" python3 "${SCRUBBER}" --rollback >/tmp/sidekick-scrub-lower-rollback.out 2>/tmp/sidekick-scrub-lower-rollback.err; then
   assert_pass "lower-case rollback exits successfully"

@@ -18,6 +18,7 @@ CODEX_CODE_ALIAS="${SIDEKICK_BIN_DIR}/codex"
 CODEX_CODER_ALIAS="${SIDEKICK_BIN_DIR}/coder"
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_PLUGIN_ROOT="${PLUGIN_ROOT}"
+SIDEKICK_PLUGIN_ROOT_ENV="${SIDEKICK_PLUGIN_ROOT:-}"
 SIDEKICK_PLUGIN_ROOT="${SIDEKICK_PLUGIN_ROOT:-${SOURCE_PLUGIN_ROOT}}"
 export SIDEKICK_PLUGIN_ROOT
 FORGE_INSTALL_TMP=""
@@ -104,9 +105,11 @@ for rel in [
     "hooks/lib/sidekick-registry.sh",
     "sidekicks/registry.json",
     "skills/forge/SKILL.md",
+    "skills/forge-stop/SKILL.md",
     "skills/codex-stop/SKILL.md",
     "hooks/forge-delegation-enforcer.sh",
     "hooks/codex-delegation-enforcer.sh",
+    "hooks/validate-release-gate.sh",
 ]:
     path = root / rel
     if not path.exists():
@@ -115,8 +118,76 @@ for rel in [
     original = text
     for old, new in replacements[host]:
         text = text.replace(old, new)
+    if host == "codex":
+        text = text.replace(
+            "${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}}",
+            "${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}",
+        )
+        text = text.replace(
+            "Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, CODEX_THREAD_ID, or SESSION_ID",
+            "Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, or SESSION_ID",
+        )
+    elif host == "claude":
+        text = text.replace(
+            "${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}",
+            "${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}",
+        )
+        text = text.replace(
+            "Set SIDEKICK_SESSION_ID, CLAUDE_SESSION_ID, CLAUDE_SESSION_ID, or SESSION_ID",
+            "Set SIDEKICK_SESSION_ID, CLAUDE_SESSION_ID, or SESSION_ID",
+        )
     if text != original:
         path.write_text(text, encoding="utf-8")
+PY
+}
+
+refresh_installed_integrity_manifest() {
+  local manifest="${PLUGIN_ROOT}/.claude-plugin/plugin.json"
+
+  [ -f "${manifest}" ] || return 0
+
+  python3 - "${PLUGIN_ROOT}" "${manifest}" <<'PY'
+from pathlib import Path
+import hashlib
+import json
+import sys
+
+root = Path(sys.argv[1])
+manifest = Path(sys.argv[2])
+
+hash_targets = {
+    "install_sh_sha256": "install.sh",
+    "forge_md_sha256": "skills/forge.md",
+    "forge_skill_md_sha256": "skills/forge/SKILL.md",
+    "codex_delegate_skill_md_sha256": "skills/codex-delegate/SKILL.md",
+    "codex_delegate_md_sha256": "skills/codex-delegate.md",
+    "hooks_json_sha256": "hooks/hooks.json",
+    "forge_delegation_enforcer_sha256": "hooks/forge-delegation-enforcer.sh",
+    "codex_delegation_enforcer_sha256": "hooks/codex-delegation-enforcer.sh",
+    "enforcer_utils_sha256": "hooks/lib/enforcer-utils.sh",
+    "sidekick_registry_lib_sha256": "hooks/lib/sidekick-registry.sh",
+    "safe_runner_sha256": "hooks/lib/sidekick-safe-runner.sh",
+    "sidekick_registry_sha256": "sidekicks/registry.json",
+    "legacy_hooks_scrub_sha256": "hooks/scrub-legacy-user-hooks.py",
+    "forge_progress_surface_sha256": "hooks/forge-progress-surface.sh",
+    "codex_progress_surface_sha256": "hooks/codex-progress-surface.sh",
+    "validate_release_gate_sha256": "hooks/validate-release-gate.sh",
+    "output_style_forge_sha256": "output-styles/forge.md",
+    "output_style_codex_sha256": "output-styles/codex.md",
+    "forge_delegate_alias_skill_md_sha256": "skills/forge:delegate/SKILL.md",
+    "kay_delegate_alias_skill_md_sha256": "skills/kay:delegate/SKILL.md",
+    "forge_stop_skill_md_sha256": "skills/forge-stop/SKILL.md",
+    "codex_stop_skill_md_sha256": "skills/codex-stop/SKILL.md",
+}
+
+data = json.loads(manifest.read_text(encoding="utf-8"))
+integrity = data.setdefault("_integrity", {})
+for key, rel in hash_targets.items():
+    path = root / rel
+    if path.is_file():
+        integrity[key] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 PY
 }
 
@@ -520,6 +591,29 @@ bootstrap_sidekick_cache_tree() {
   PLUGIN_ROOT="${target_root}"
 }
 
+resolve_bootstrap_target_root() {
+  local host="${1:-}"
+  local target_root=""
+
+  case "${host}" in
+    codex)
+      target_root="${CODEX_PLUGIN_ROOT:-}"
+      ;;
+    claude)
+      target_root="${CLAUDE_PLUGIN_ROOT:-}"
+      ;;
+  esac
+
+  if [ -z "${target_root}" ] \
+    && [ -n "${SIDEKICK_PLUGIN_ROOT_ENV}" ] \
+    && [ "${SIDEKICK_PLUGIN_ROOT_ENV}" != "${SOURCE_PLUGIN_ROOT}" ]; then
+    target_root="${SIDEKICK_PLUGIN_ROOT_ENV}"
+  fi
+
+  [ -n "${target_root}" ] || return 1
+  printf '%s\n' "${target_root}"
+}
+
 cleanup_install_tmps() {
   rm -f "${FORGE_INSTALL_TMP:-}" "${CODEX_INSTALL_TMP:-}" 2>/dev/null || true
 }
@@ -533,12 +627,15 @@ trap cleanup_install_tmps EXIT
 # Verify the hash matches the official release at: https://forgecode.dev/releases
 # Leave blank ("") only if you intentionally want display-only verification.
 # (SENTINEL FINDING-R7-7/R8-3/R10-1: supply chain hardening)
-EXPECTED_FORGE_SHA="512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+EXPECTED_FORGE_SHA="e77cc415c254dede4553b87ba4a0361a44d41b59c576e34b44d81ea48b34ce62"
 CODEX_INSTALL_URL="$(sidekick_registry_get kay '.[$sidekick].install.url')"
 CODEX_INSTALL_SHA="$(sidekick_registry_get kay '.[$sidekick].install.sha256')"
+CODEX_INSTALL_VERSION="$(sidekick_registry_get kay '.[$sidekick].install.version')"
 
 if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
-  bootstrap_sidekick_cache_tree "${bootstrap_host}" "${SOURCE_PLUGIN_ROOT}" "${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}"
+  if bootstrap_target_root="$(resolve_bootstrap_target_root "${bootstrap_host}")"; then
+    bootstrap_sidekick_cache_tree "${bootstrap_host}" "${SOURCE_PLUGIN_ROOT}" "${bootstrap_target_root}"
+  fi
 fi
 
 if [ "${INSTALL_FORGE}" = "1" ]; then
@@ -674,7 +771,8 @@ resolve_codex_binary() {
 
   for candidate in "${KAY_BIN}" "${SIDEKICK_BIN_DIR}/code" "${SIDEKICK_BIN_DIR}/codex" "${SIDEKICK_BIN_DIR}/coder"; do
     if [ -x "${candidate}" ] \
-      && { "${candidate}" exec --help >/dev/null 2>&1 || "${candidate}" update --help >/dev/null 2>&1; }; then
+      && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
+      && "${candidate}" exec --help >/dev/null 2>&1; then
       printf '%s\n' "${candidate}"
       return 0
     fi
@@ -739,7 +837,7 @@ install_codex_runtime() {
 
   echo "[forge-plugin] Kay installer verified against pinned hash — OK."
 
-  bash "${CODEX_INSTALL_TMP}"
+  CODEX_INSTALL_DIR="${SIDEKICK_BIN_DIR}" bash "${CODEX_INSTALL_TMP}" --release "${CODEX_INSTALL_VERSION}"
 
   codex_source="$(resolve_codex_binary || true)"
   if [ -z "${codex_source}" ]; then
@@ -758,6 +856,7 @@ fi
 
 if install_host="$(detect_install_host 2>/dev/null)"; then
   rewrite_host_surface "${install_host}"
+  refresh_installed_integrity_manifest
   seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"
   retire_legacy_codex_uppercase_state "${install_host}" "${PLUGIN_ROOT}"
 fi

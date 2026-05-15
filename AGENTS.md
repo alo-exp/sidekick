@@ -3,8 +3,8 @@
 ## Project Conventions
 
 - Shell/Bash + Markdown stack -- no compiled languages
-- `skills/forge.md` is the core orchestration protocol (862 lines) -- NEVER modify
-- `skills/forge/SKILL.md` is the user-invoked mode switch -- extends forge.md
+- `skills/forge/SKILL.md` is the canonical Forge delegation workflow.
+- `skills/forge.md` is a hidden legacy compatibility wrapper; keep it aligned with the canonical skill, but do not treat it as the source of truth.
 - Tests live in `tests/` and run via `tests/run_all.bash`
 - Plugin manifest at `.claude-plugin/plugin.json` -- update hashes when skill files change
 
@@ -34,12 +34,11 @@ Verification: `forge list tool <agent>` must show all tools with `[✓]` markers
 
 Source: Phase 5 / Bug 1 (commit 354d001). See `.planning/phases/05-.../05-CONTEXT.md`.
 
-### OpenRouter model IDs must be verified before committing
+### Backend model paths must be verified before committing
 
-Any model ID written to README, skill docs, `.forge.toml`, or agent files MUST be verified against the live OpenRouter catalog via `forge list model --porcelain | grep <candidate-id>`. Do NOT accept a model name from LLM output or memory without verification — hallucinated IDs (e.g., `qwen/qwen3.6-plus`) are silently accepted by Forge's config command but cause the OpenRouter API to omit tool schemas from the request, producing text-only responses that compound the "tools missing" failure mode (see prior entry).
+Project `.forge.toml` stays compaction-only; global `~/forge/.forge.toml` owns the user's runtime provider/model selection. Any backend path written to README, skill docs, global setup instructions, or agent files MUST be verified against the current provider catalog before committing.
 
-
-Verified IDs as of v1.1.2: `qwen/qwen3-coder-plus` (1M ctx, tools), `qwen/qwen3-vl-235b-a22b-instruct` (262k ctx, tools + vision), `minimax/minimax-m2.7` (196k ctx, tools). Also verified: `google/gemma-4-31b-it` (128k ctx, free-tier, tools) — recommended budget/high-volume alternative in `skills/forge.md` and `README.md`.
+Current public website/docs positioning highlights MiniMax.io (`MiniMax-M2.7`) and OpenCode Go as the primary low-cost API access paths. Historical OpenRouter/Qwen notes in old planning logs are not current product guidance.
 
 
 Source: Phase 5 / Bug 2 (commit 354d001).

@@ -1,5 +1,7 @@
 # Help Site Pre-Release Code Review
 
+> Historical review note: this file preserves an April 2026 review snapshot. Several findings below reference pre-v0.5 help-site copy, OpenRouter-era setup text, and old marker paths that have since been replaced. Use current tests and `docs/pre-release-quality-gate.md` for release decisions.
+
 **Reviewed:** 2026-04-13  
 **Scope:** `docs/help/**/*.html`, `docs/help/search.js`, `docs/help/tokens.css`, `docs/internal/pre-release-quality-gate.md` cross-referenced against `skills/forge/SKILL.md`  
 **Reviewer:** Claude (gsd-code-reviewer)

@@ -49,7 +49,9 @@ delegate_command() {
 resolve_codex_binary_name() {
   local candidate
   for candidate in kay code codex coder; do
-    if command -v "$candidate" >/dev/null 2>&1; then
+    if command -v "$candidate" >/dev/null 2>&1 \
+      && "$candidate" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
+      && "$candidate" exec --help >/dev/null 2>&1; then
       printf '%s' "$candidate"
       return 0
     fi
@@ -106,11 +108,11 @@ rewrite_codex_exec() {
   original_binary="$(printf '%s' "$stripped" | awk '{print $1}')"
   binary_name="$(resolve_codex_binary_name || printf '%s' "$original_binary")"
 
-  python3 - "$binary_name" "$stripped" <<'PY'
+  python3 - "$binary_name" "$stripped" "${HOOK_DIR}/lib/sidekick-safe-runner.sh" <<'PY'
 import shlex
 import sys
 
-binary_name, cmd = sys.argv[1:3]
+binary_name, cmd, runner_path = sys.argv[1:4]
 
 try:
     lexer = shlex.shlex(cmd, posix=True, punctuation_chars='|;&()<>')
@@ -130,8 +132,7 @@ if "--full-auto" not in tokens[2:]:
     tokens.insert(2, "--full-auto")
 
 tokens[0] = binary_name
-rewritten = " ".join(shlex.quote(tok) for tok in tokens)
-rewritten += " 2> >(sed 's/^/[KAY-LOG] /' >&2) | sed 's/^/[KAY] /'"
+rewritten = " ".join(shlex.quote(tok) for tok in ["bash", runner_path, "kay"] + tokens)
 print(rewritten)
 PY
 }
@@ -147,33 +148,39 @@ decide_bash() {
   if has_codex_exec "$cmd"; then
     stripped="$(strip_env_prefix "$cmd")"
     if ! resolve_codex_binary_name >/dev/null 2>&1; then
-      emit_decision "deny" "Sidekick /kay mode: Kay runtime is not on PATH. Install the Kay sidekick package and re-run /kay." ""
+      emit_decision "deny" "Sidekick /kay mode: no Kay-compatible runtime is on PATH. Install the Kay sidekick package and re-run /kay." ""
       return 0
     fi
     uuid="$(gen_uuid)"
-    if ! validate_uuid "$uuid"; then
-      emit_decision "deny" "Sidekick /kay mode: refusing to record malformed audit UUID." ""
-      return 0
-    fi
-    hint="$(sidekick_extract_exec_prompt "$stripped")"
-    [[ -z "$hint" ]] && hint="(task hint unavailable)"
-    sidekick_ensure_idx "$SIDEKICK_NAME" || true
-    sidekick_append_idx_row "$SIDEKICK_NAME" "$uuid" "$hint"
-    if ! rewritten="$(rewrite_codex_exec "$cmd")"; then
-      emit_decision "deny" "Sidekick /kay mode: refusing to rewrite malformed Kay exec invocation." ""
-      return 0
-    fi
-    emit_decision "allow" "Sidekick: injected --full-auto and output prefixing." "$rewritten"
+	    if ! validate_uuid "$uuid"; then
+	      emit_decision "deny" "Sidekick /kay mode: refusing to record malformed audit UUID." ""
+	      return 0
+	    fi
+	    if ! rewritten="$(rewrite_codex_exec "$cmd")"; then
+	      emit_decision "deny" "Sidekick /kay mode: refusing to rewrite malformed Kay exec invocation." ""
+	      return 0
+	    fi
+	    hint="$(sidekick_extract_exec_prompt "$stripped")"
+	    [[ -z "$hint" ]] && hint="(task hint unavailable)"
+	    if ! sidekick_ensure_idx "$SIDEKICK_NAME"; then
+	      emit_decision "deny" "Sidekick /kay mode: Kay audit index is not writable or is outside the project. Remove any symlinked .kay path and re-run /kay." ""
+	      return 0
+	    fi
+	    if ! sidekick_append_idx_row "$SIDEKICK_NAME" "$uuid" "$hint"; then
+	      emit_decision "deny" "Sidekick /kay mode: Kay audit index could not record the delegated task. Check .kay/conversations.idx permissions and re-run /kay." ""
+	      return 0
+	    fi
+	    emit_decision "allow" "Sidekick: injected --full-auto and safe output surface." "$rewritten"
     return 0
   fi
 
-  if has_mutating_chain_segment "$cmd"; then
-    emit_decision "deny" "Sidekick /kay mode: command chain contains a mutating segment. Use kay exec --full-auto." ""
+  if has_non_readonly_chain_segment "$cmd"; then
+    emit_decision "deny" "Sidekick /kay mode: command chain contains a non-read-only segment. Use kay exec --full-auto." ""
     return 0
   fi
 
-  if has_mutating_pipe_segment "$cmd"; then
-    emit_decision "deny" "Sidekick /kay mode: pipe chain contains a mutating segment. Use kay exec --full-auto." ""
+  if has_non_readonly_pipe_segment "$cmd"; then
+    emit_decision "deny" "Sidekick /kay mode: pipe chain contains a non-read-only segment. Use kay exec --full-auto." ""
     return 0
   fi
 

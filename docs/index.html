@@ -902,16 +902,16 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 
       <!-- Kay -->
       <div class="sidekick-card primary">
-        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.5.5</div>
+        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.5.6</div>
         <div class="sk-logo"><i data-lucide="layers-3"></i></div>
         <div class="sk-name">Kay</div>
         <div class="sk-role">Every Code Agent · MiniMax.io + OpenCode Go</div>
-        <div class="benchmark-badge">Codex lineage: #1 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--accent-light-border-sm)">Terminal-Bench 2.0</a></div>
+        <div class="benchmark-badge">Codex CLI lineage: #6 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--accent-light-border-sm)">Terminal-Bench 2.0</a></div>
         <p class="sk-desc">Kay is Sidekick's Every Code agent line. It highlights MiniMax.io by default, keeps OpenCode Go multi-AI compatibility, and uses <code>kay</code> as the primary binary. The old <code>code</code>, <code>codex</code>, and <code>coder</code> names are compatibility aliases only.</p>
         <ul class="sk-features">
-          <li>Primary path: kay exec --full-auto</li>
+          <li>Activation surface: kay-delegate</li>
           <li>Legacy code, codex, and coder compatibility aliases</li>
-          <li>Codex CLI lineage highlighted by Terminal-Bench #1</li>
+          <li>Codex CLI lineage highlighted by Terminal-Bench #6</li>
           <li>MiniMax.io / MiniMax M2.7 defaults</li>
           <li>OpenCode Go multi-AI compatibility</li>
           <li>Native Kay agents, skills, subagents, and AGENTS.md</li>
@@ -920,7 +920,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <div class="sk-tags">
           <span class="tag tag-cyan">kay</span>
           <span class="tag tag-purple">Codex lineage</span>
-          <span class="tag tag-indigo">kay exec</span>
+          <span class="tag tag-indigo">kay-delegate</span>
           <span class="tag tag-green">MiniMax.io</span>
           <span class="tag tag-amber">OpenCode Go</span>
         </div>
@@ -929,11 +929,11 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 
       <!-- Forge -->
       <div class="sidekick-card">
-        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.5.5</div>
+        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.5.6</div>
         <div class="sk-logo"><i data-lucide="terminal"></i></div>
         <div class="sk-name">Forge</div>
         <div class="sk-role">ForgeCode · Terminal Agent</div>
-        <div class="benchmark-badge">#2, #4 &amp; #6 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--accent-light-border-sm)">Terminal-Bench 2.0</a></div>
+        <div class="benchmark-badge">#7, #11 &amp; #13 on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--accent-light-border-sm)">Terminal-Bench 2.0</a></div>
         <p class="sk-desc">Forge is the ForgeCode terminal agent packaged by Sidekick. It writes files, runs tests, commits changes, and reports back through the host conversation.</p>
         <ul class="sk-features">
           <li>Writes, edits, and refactors files autonomously</li>
@@ -979,7 +979,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
   <div class="container">
     <div class="section-label">Performance</div>
     <h2 class="section-title">Kay (Codex) and Forge on <a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:2px solid var(--accent-border-lg)">Terminal-Bench 2.0</a></h2>
-    <p class="section-desc"><a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light-border)">Terminal-Bench 2.0</a> is ICLR 2026's benchmark for terminal AI agents — 89 Docker-containerized real-world tasks. Codex CLI currently ranks #1, Simple Codex ranks #9, and ForgeCode holds #2, #4, and #6. Kay is shown through its Codex lineage.</p>
+    <p class="section-desc"><a href="https://www.tbench.ai/leaderboard/terminal-bench/2.0" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;border-bottom:1px solid var(--accent-light-border)">Terminal-Bench 2.0</a> is ICLR 2026's benchmark for terminal AI agents — 89 Docker-containerized real-world tasks. Verified May 15, 2026: Codex CLI ranks #6, ForgeCode holds #7, #11, and #13, Claude Code ranks #53, and OpenCode ranks #67. Kay is shown through its OSS Codex lineage.</p>
     <div class="reveal table-scroll">
       <table class="comparison-table">
         <thead>
@@ -992,70 +992,109 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#1</span></td>
+            <td>vix</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">Claude Opus 4.7</td>
+            <td><strong>90.2%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.1</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#2</span></td>
+            <td>NexAU-AHE</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.5</td>
+            <td><strong>84.7%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.1</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#3</span></td>
+            <td>LemonHarness</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">Multiple</td>
+            <td><strong>84.5%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.6</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#4</span></td>
+            <td>Capy</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.5</td>
+            <td><strong>83.1%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.1</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#5</span></td>
+            <td>Polaris</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">Multiple</td>
+            <td><strong>82.2%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.8</td>
+          </tr>
           <tr class="winner">
-            <td><span class="rank-badge">#1</span></td>
+            <td><span class="rank-badge">#6</span></td>
             <td><strong>Codex CLI → Kay upstream</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.5</td>
             <td><strong style="color:var(--accent-light)">82.0%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.2</td>
           </tr>
           <tr class="winner">
-            <td><span class="rank-badge">#2</span></td>
+            <td><span class="rank-badge">#7</span></td>
             <td><strong>ForgeCode ← Sidekick</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.4</td>
             <td><strong style="color:var(--accent-light)">81.8%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.0</td>
           </tr>
           <tr>
-            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#3</span></td>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#8</span></td>
+            <td>WOZCODE</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">Claude Opus 4.7</td>
+            <td><strong>80.2%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.1</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#9</span></td>
             <td>TongAgents</td>
             <td style="font-family:var(--font-mono);font-size: 1rem">Gemini 3.1 Pro</td>
             <td><strong>80.2%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.6</td>
           </tr>
+          <tr>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#10</span></td>
+            <td>LemonHarness</td>
+            <td style="font-family:var(--font-mono);font-size: 1rem">Multiple</td>
+            <td><strong>79.9%</strong></td>
+            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 3.0</td>
+          </tr>
           <tr class="winner">
-            <td><span class="rank-badge">#4</span></td>
+            <td><span class="rank-badge">#11</span></td>
             <td><strong>ForgeCode ← Sidekick</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">Claude Opus 4.6</td>
             <td><strong style="color:var(--accent-light)">79.8%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 1.6</td>
           </tr>
           <tr>
-            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#5</span></td>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#12</span></td>
             <td>SageAgent</td>
             <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.3-Codex</td>
             <td><strong>78.4%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.2</td>
           </tr>
           <tr class="winner">
-            <td><span class="rank-badge">#6</span></td>
+            <td><span class="rank-badge">#13</span></td>
             <td><strong>ForgeCode ← Sidekick</strong></td>
             <td style="font-family:var(--font-mono);font-size: 1rem">Gemini 3.1 Pro</td>
             <td><strong style="color:var(--accent-light)">78.4%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 1.8</td>
           </tr>
           <tr>
-            <td colspan="5" style="text-align:center;padding:6px 16px;font-size:.75rem;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.08em;border-bottom:none">· · · ranks 7 – 8 · · ·</td>
-          </tr>
-          <tr class="winner">
-            <td><span class="rank-badge">#9</span></td>
-            <td><strong>Simple Codex → Kay upstream</strong></td>
-            <td style="font-family:var(--font-mono);font-size: 1rem">GPT-5.3-Codex</td>
-            <td><strong style="color:var(--accent-light)">75.1%</strong></td>
-            <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.4</td>
+            <td colspan="5" style="text-align:center;padding:6px 16px;font-size:.75rem;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.08em;border-bottom:none">· · · ranks 14 – 52 · · ·</td>
           </tr>
           <tr>
-            <td colspan="5" style="text-align:center;padding:6px 16px;font-size:.75rem;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.08em;border-bottom:none">· · · ranks 10 – 39 · · ·</td>
-          </tr>
-          <tr>
-            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#40</span></td>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#53</span></td>
             <td>Claude Code</td>
             <td style="font-family:var(--font-mono);font-size: 1rem">Claude Opus 4.6</td>
             <td><strong>58.0%</strong></td>
             <td style="font-family:var(--font-mono);font-size:1rem;color:var(--text-dim)">± 2.9</td>
           </tr>
           <tr>
-            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#53</span></td>
+            <td><span style="color:var(--text-dim);font-family:var(--font-mono)">#67</span></td>
             <td>OpenCode</td>
             <td style="font-family:var(--font-mono);font-size: 1rem">Claude Opus 4.5</td>
             <td><strong>51.7%</strong></td>
@@ -1139,8 +1178,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
       <div class="install-code">
         <span class="comment"># Claude Code</span><br>
         <span class="key">/plugin install</span> <span class="val">alo-labs/sidekick</span><br><br>
-        <span class="comment"># Codex / Kay</span><br>
-        <span class="key">codex plugin marketplace add</span> <span class="val">alo-labs/sidekick</span><br>
+        <span class="comment"># Codex</span><br>
+        <span class="key">codex plugin marketplace add</span> <span class="val">alo-exp/sidekick</span><br>
         <span class="comment"># Then enable Sidekick from the Codex plugin surface</span>
       </div>
     </div>
@@ -1170,7 +1209,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <p>Install the plugin through the host's plugin surface, then restart the host so Sidekick hooks load before a Forge or Kay session.</p>
         <div class="step-code">
           <span class="string">Claude:</span> <span class="cmd">/plugin install alo-labs/sidekick</span><br>
-          <span class="string">Codex:</span> <span class="cmd">codex plugin marketplace add alo-labs/sidekick</span>
+          <span class="string">Codex:</span> <span class="cmd">codex plugin marketplace add alo-exp/sidekick</span>
         </div>
       </div>
       <div class="setup-step">

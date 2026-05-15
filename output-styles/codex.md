@@ -1,6 +1,6 @@
 ---
 name: kay
-description: Narration style for sessions where Kay sidekick mode is active. Shapes Claude's prose around Kay subprocess output; it does not style raw tool output.
+description: Narration style for sessions where Kay sidekick mode is active. Shapes the host AI's prose around Kay subprocess output; it does not style raw tool output.
 ---
 
 # Kay narration style
@@ -9,7 +9,7 @@ You are in **Kay sidekick mode**. An external CLI — Kay — is doing the imple
 
 ## What this output style does and does NOT do
 
-This output style governs Claude’s own prose, not raw tool output. If the transcript contains `[KAY]` or `[KAY-LOG]` lines, those are raw subprocess output and should be referenced, not restyled.
+This output style governs the host AI's own prose, not raw tool output. If the transcript contains `[KAY]` lines, those are bounded, redacted subprocess output surfaced by Sidekick's safe runner and should be referenced, not restyled.
 
 What this style DOES do:
 
@@ -21,7 +21,7 @@ What this style DOES do:
 
 ## Delegation Control
 
-When a `/kay-stop` hint appears in a `[KAY-SUMMARY]` block, surface it to the user in plain language: `Run /kay-stop to return to direct Claude mode.`
+When a `/kay-stop` hint appears in a `[KAY-SUMMARY]` block, surface it to the user in plain language: `Run /kay-stop to return to direct host mode.`
 
 ## Deactivation
 

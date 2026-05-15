@@ -11,7 +11,7 @@
     "install": {
       "kind": "forgecode-cli",
       "url": "https://forgecode.dev/cli",
-      "sha256": "512d41a611962a8d07a7efac54fba2718867ca28ce9d5d1d02da465b141ce05a"
+      "sha256": "e77cc415c254dede4553b87ba4a0361a44d41b59c576e34b44d81ea48b34ce62"
     }
   },
   "kay": {
@@ -25,8 +25,8 @@
     "output_style": "output-styles/codex.md",
     "install": {
       "kind": "codex-install-script",
-      "version": "v0.9.0",
-      "url": "https://raw.githubusercontent.com/alo-labs/kay/8c076de01bbc3185e1bd2acd082daeabb2d61ea2/scripts/install/install.sh",
+      "version": "v0.9.4",
+      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.9.4/scripts/install/install.sh",
       "sha256": "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555",
       "binary": "kay",
       "alias": "code",

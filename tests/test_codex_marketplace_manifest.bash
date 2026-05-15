@@ -8,13 +8,32 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(dirname "${SCRIPT_DIR}")"
-MARKETPLACE_FILE="${CODEX_MARKETPLACE_FILE:-/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json}"
+DEFAULT_MARKETPLACE_FILE="/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json"
+MARKETPLACE_FILE="${CODEX_MARKETPLACE_FILE:-}"
+CHECK_EXTERNAL_MARKETPLACE=0
+if [ -n "${MARKETPLACE_FILE}" ]; then
+  CHECK_EXTERNAL_MARKETPLACE=1
+elif [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
+  MARKETPLACE_FILE="${DEFAULT_MARKETPLACE_FILE}"
+  CHECK_EXTERNAL_MARKETPLACE=1
+fi
 SIDEKICK_REF="$(git -C "${SIDEKICK_DIR}" rev-parse HEAD)"
-SIDEKICK_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.claude-plugin/plugin.json'))['version'])")"
+SIDEKICK_VERSION="$(python3 - "${SIDEKICK_DIR}/.codex-plugin/plugin.json" <<'PY'
+import json
+import sys
+
+print(json.load(open(sys.argv[1]))["version"])
+PY
+)"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
+
+if [ "${CHECK_EXTERNAL_MARKETPLACE}" -ne 1 ]; then
+  echo -e "${green}SKIP${reset} external marketplace pin test (set CODEX_MARKETPLACE_FILE or SIDEKICK_RELEASE_GATE=1)"
+  exit 0
+fi
 
 if [ ! -f "${MARKETPLACE_FILE}" ]; then
   echo -e "${green}SKIP${reset} marketplace manifest test: ${MARKETPLACE_FILE} missing"
@@ -62,6 +81,44 @@ then
   assert_pass "Sidekick marketplace entry is pinned to the current Sidekick commit and version"
 else
   assert_fail "sidekick entry" "marketplace entry missing or not pinned to the expected ref"
+fi
+
+echo "=== sidekick_ref_content ==="
+MARKETPLACE_REF="$(python3 - "${MARKETPLACE_FILE}" <<'PY'
+import json
+import sys
+
+data = json.load(open(sys.argv[1]))
+plugins = {plugin["name"]: plugin for plugin in data["plugins"]}
+print(plugins["sidekick"]["source"]["ref"])
+PY
+)"
+MARKETPLACE_VERSION="$(python3 - "${MARKETPLACE_FILE}" <<'PY'
+import json
+import sys
+
+data = json.load(open(sys.argv[1]))
+plugins = {plugin["name"]: plugin for plugin in data["plugins"]}
+print(plugins["sidekick"]["version"])
+PY
+)"
+REF_VERSION="$(git -C "${SIDEKICK_DIR}" show "${MARKETPLACE_REF}:.codex-plugin/plugin.json" | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])' 2>/dev/null || true)"
+if [ "${REF_VERSION}" = "${MARKETPLACE_VERSION}" ]; then
+  assert_pass "Sidekick marketplace ref content version matches the advertised version"
+else
+  assert_fail "sidekick ref content" "ref=${MARKETPLACE_REF} advertises=${MARKETPLACE_VERSION} contains=${REF_VERSION:-unreadable}"
+fi
+
+echo "=== release_metadata_clean ==="
+if [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
+  DIRTY_RELEASE_FILES="$(git -C "${SIDEKICK_DIR}" status --porcelain -- .claude-plugin .codex-plugin CHANGELOG.md README.md context.md docs hooks install.sh sidekicks skills tests | sed -n '1,20p')"
+  if [ -z "${DIRTY_RELEASE_FILES}" ]; then
+    assert_pass "release metadata and package surfaces are committed before release gate"
+  else
+    assert_fail "release metadata clean" "dirty files:\n${DIRTY_RELEASE_FILES}"
+  fi
+else
+  echo "SKIP release metadata clean check (set SIDEKICK_RELEASE_GATE=1)"
 fi
 
 echo "=== marketplace_interface ==="

@@ -7,10 +7,10 @@
 #   1. Activate marker (simulating `/forge`).
 #   2. Feed PreToolUse enforcer a `forge -p …` Bash invocation.
 #      -> expect permissionDecision=allow + rewritten command with UUID,
-#         --verbose, output pipe, AND a row appended to .forge/conversations.idx.
+#         --verbose, safe runner, AND a row appended to .forge/conversations.idx.
 #   3. Feed PostToolUse progress-surface hook a STATUS block output from that
 #      same rewritten command.
-#      -> expect additionalContext with [FORGE-SUMMARY] + /forge:replay <UUID>.
+#      -> expect additionalContext with [FORGE-SUMMARY] + /forge-stop.
 #   4. Confirm the UUID that flowed through PreToolUse is the same UUID cited
 #      by PostToolUse (end-to-end round-trip).
 #   5. Deactivate: marker removed, idx preserved.
@@ -99,8 +99,7 @@ PRE_CMD="$(printf '%s' "${PRE_OUT}" | jq -r '.hookSpecificOutput.updatedInput.co
 if [ "${PRE_DECISION}" = "allow" ] \
   && echo "${PRE_CMD}" | grep -q -- "--conversation-id ${EXPECTED_UUID}" \
   && echo "${PRE_CMD}" | grep -q -- "--verbose" \
-  && echo "${PRE_CMD}" | grep -q '\[FORGE\]' \
-  && echo "${PRE_CMD}" | grep -q '\[FORGE-LOG\]'; then
+  && echo "${PRE_CMD}" | grep -q -- 'sidekick-safe-runner.sh'; then
   assert_pass "e2e_step2_pretooluse_rewrites_command"
 else
   assert_fail "e2e_step2_pretooluse_rewrites_command" "decision=${PRE_DECISION} cmd=${PRE_CMD}"
@@ -116,7 +115,7 @@ fi
 # -----------------------------------------------------------------------------
 echo "=== E2E step 3: PostToolUse surfaces STATUS block ==="
 # Simulate Forge's stdout stream for the rewritten command. The enforcer's
-# rewritten command prefixes lines with [FORGE], and the STATUS block below
+# rewritten command surfaces lines with [FORGE], and the STATUS block below
 # mirrors what Forge emits in practice.
 TOOL_OUT=$'[FORGE] Reading utils.py...\n[FORGE] Refactoring with early returns...\n[FORGE] Running tests... 12/12 passed\n[FORGE] STATUS: SUCCESS\n[FORGE] FILES_CHANGED: [utils.py]\n[FORGE] ASSUMPTIONS: []\n[FORGE] PATTERNS_DISCOVERED: []'
 POST_INPUT="$(jq -cn --arg cmd "${PRE_CMD}" --arg out "${TOOL_OUT}" \
