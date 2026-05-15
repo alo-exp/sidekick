@@ -132,17 +132,7 @@ main() {
   # NOTE: perl interpolates `$1[...]` as array subscript (@1 with literal
   # subscript), producing an empty expansion and wiping the line. Use
   # `${1}[...]` to force capture-group interpolation.
-  status_block="$(printf '%s' "$status_block" | perl -pe '
-    s/(?i)(authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
-    s/(?i)("authorization"\s*:\s*")((?:bearer\s+)?[^"]+)(")/${1}[REDACTED]${3}/g;
-    s/(?i)("api[_-]?key"\s*:\s*")([^"]+)(")/${1}[REDACTED]${3}/g;
-    s/(?i)((?<!")authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
-    s/(?i)((?<!")api[_-]?key\s*[:=]\s*)\S+/${1}[REDACTED]/g;
-    s/sk-[A-Za-z0-9_\-\.\/+]{10,}(?=\s|['"'"'">},]|$)/[REDACTED-SK-TOKEN]/g;
-    s/\bgh[pousra]_[A-Za-z0-9]{20,}\b/[REDACTED-GH-TOKEN]/g;
-    s/\bgithub_pat_[A-Za-z0-9_]{20,}\b/[REDACTED-GH-TOKEN]/g;
-    s/\bxox[abprse]-[A-Za-z0-9-]{10,}\b/[REDACTED-SLACK-TOKEN]/g;
-  ')"
+  status_block="$(printf '%s' "$status_block" | sidekick_redact_sensitive_text)"
 
   # Build additionalContext payload.
   local header body footer payload

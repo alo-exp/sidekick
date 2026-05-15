@@ -40,7 +40,9 @@ fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 resolve_codex_binary() {
   for candidate in kay code codex coder; do
-    if command -v "${candidate}" >/dev/null 2>&1; then
+    if command -v "${candidate}" >/dev/null 2>&1 \
+      && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
+      && "${candidate}" exec --help >/dev/null 2>&1; then
       printf '%s\n' "${candidate}"
       return 0
     fi
@@ -103,7 +105,7 @@ prepare_codex_runner "${CODEX_BIN}"
 
 echo "=== smoke_codex_version ==="
 _ver_out="$("${CODEX_BIN}" --version 2>&1 || true)"
-if [[ "${_ver_out}" == *"kay"* ]] || [[ "${_ver_out}" =~ [0-9]+\.[0-9]+ ]]; then
+if [[ "${_ver_out}" =~ ^kay([[:space:]]|$) ]]; then
   pass "kay --version identifies the runtime (${_ver_out})"
 else
   fail "smoke_codex_version" "unexpected: ${_ver_out}"

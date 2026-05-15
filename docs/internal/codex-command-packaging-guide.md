@@ -58,14 +58,19 @@ To keep deterministic order across picker surfaces:
 3. Avoid duplicate/near-duplicate canonical+bridge skills unless compatibility truly requires it.
 4. Remove obsolete skills instead of leaving stale entries in `skills/`.
 
-For Sidekick, the canonical 4-skill Kay surface is:
+For Sidekick, the canonical 4-skill delegation surface is:
 
 1. `sidekick:forge-delegate`
 2. `sidekick:forge-stop`
 3. `sidekick:kay-delegate`
 4. `sidekick:kay-stop`
 
-Codex currently reports plugin skills in lexicographic order, so `plugin/read` surfaces the Forge pair before the Kay pair even though both are canonical.
+Sidekick also ships thin setup aliases for website copy and slash-style activation:
+
+1. `sidekick:forge:delegate`
+2. `sidekick:kay:delegate`
+
+Codex currently reports plugin skills in lexicographic order, so `plugin/read` surfaces the Forge entries before the Kay entries even though both agent families are canonical.
 
 ## Cross-plugin rollout checklist
 

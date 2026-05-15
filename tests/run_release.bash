@@ -8,17 +8,17 @@
 #   1. run_all.bash          — unit + integration suites (always runs)
 #   2. smoke/run_smoke.bash   — live `forge --version` + trivial forge -p
 #                              (requires SIDEKICK_LIVE_FORGE=1)
-#   3. run_live_e2e.bash      — full Claude→Forge delegation on seeded testapp
+#   3. run_live_e2e.bash      — full host→Forge delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_FORGE=1)
 #   4. run_live_codex_marketplace_install.bash
 #                             — install Sidekick through the Codex marketplace
 #                              and prove it materializes in the Codex cache
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #   5. smoke/run_codex_smoke.bash
-#                             — live `codex --version` + trivial codex exec
+#                             — live `kay --version` + trivial kay exec
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #   6. run_live_codex_e2e.bash
-#                             — full Claude→Kay delegation on seeded testapp
+#                             — full host→Kay delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
 # The live stages skip cleanly (exit 0) when the env vars are unset, so this
@@ -55,9 +55,11 @@ run_stage() {
 }
 
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
+export SIDEKICK_RELEASE_GATE=1
 echo -e "${bold}Sidekick pre-release gate${reset}"
 if [[ "${SIDEKICK_LIVE_FORGE:-}" == "1" ]]; then
   echo -e "  live Forge: ${green}enabled${reset} (smoke + e2e will run)"
+  export SIDEKICK_VERIFY_REMOTE_INSTALLERS="${SIDEKICK_VERIFY_REMOTE_INSTALLERS:-1}"
 else
   echo -e "  live Forge: ${yellow}disabled${reset} (smoke + e2e will skip)"
   echo -e "  ${yellow}Tip:${reset} set SIDEKICK_LIVE_FORGE=1 before tagging to exercise the live path."

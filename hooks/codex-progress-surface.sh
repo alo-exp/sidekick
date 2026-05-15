@@ -37,6 +37,32 @@ extract_status_block() {
   '
 }
 
+is_kay_exec_command() {
+  local cmd="$1"
+  python3 - "$cmd" <<'PY'
+from pathlib import Path
+import shlex
+import sys
+
+try:
+    tokens = shlex.split(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+
+aliases = {"kay", "code", "codex", "coder"}
+if len(tokens) >= 2 and tokens[0] in aliases and tokens[1] == "exec":
+    raise SystemExit(0)
+
+for index, token in enumerate(tokens):
+    if Path(token).name == "sidekick-safe-runner.sh":
+        rest = tokens[index + 1:]
+        if len(rest) >= 3 and rest[0] == "kay" and rest[1] in aliases and rest[2] == "exec":
+            raise SystemExit(0)
+
+raise SystemExit(1)
+PY
+}
+
 main() {
   if ! command -v jq >/dev/null 2>&1; then
     exit 0
@@ -53,19 +79,12 @@ main() {
   cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
   [[ -n "$cmd" ]] || exit 0
   cmd="$(strip_env_prefix "$cmd")"
-  [[ "$cmd" =~ ^(kay|code|codex|coder)[[:space:]]+exec([[:space:]]|$) ]] || exit 0
+  is_kay_exec_command "$cmd" || exit 0
 
   output="$(printf '%s' "$input" | jq -r '.tool_response.output // .tool_response.stdout // empty' 2>/dev/null || true)"
   [[ -n "$output" ]] || exit 0
 
-  summary="$(printf '%s' "$output" | strip_ansi | extract_status_block | perl -pe '
-    s/(?i)(authorization:\s*)(?:bearer\s+)?\S+.*$/${1}[REDACTED]/g;
-    s/(?i)(api[_-]?key\s*[:=]\s*)\S+/${1}[REDACTED]/g;
-    s/sk-[A-Za-z0-9_\-\.\/+]{10,}(?=\s|[\'"'"'">},]|$)/[REDACTED-SK-TOKEN]/g;
-    s/\bgh[pousra]_[A-Za-z0-9]{20,}\b/[REDACTED-GH-TOKEN]/g;
-    s/\bgithub_pat_[A-Za-z0-9_]{20,}\b/[REDACTED-GH-TOKEN]/g;
-    s/\bxox[abprse]-[A-Za-z0-9-]{10,}\b/[REDACTED-SLACK-TOKEN]/g;
-  ')"
+  summary="$(printf '%s' "$output" | strip_ansi | extract_status_block | sidekick_redact_sensitive_text)"
   [[ -n "$summary" ]] || exit 0
 
   header="[KAY-SUMMARY] [UNTRUSTED] === Kay task complete ==="

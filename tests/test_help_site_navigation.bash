@@ -39,7 +39,7 @@ expect_not_contains "docs/index.html" "Start with the right doc" "homepage remov
 expect_not_contains "docs/index.html" "id=\"docs-map\"" "homepage removes the docs-map section"
 
 echo "=== T2: Help center exposes task-first navigation ==="
-for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' 'kay exec' 'legacy code alias'; do
+for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' '/forge:delegate' '/kay:delegate' 'kay-delegate' 'sidekick:kay-delegate' 'legacy code alias'; do
 expect_contains "docs/help/index.html" "${needle}" "help index contains ${needle}"
 done
 for path in docs/help/index.html docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html; do
@@ -60,9 +60,15 @@ expect_not_contains "docs/help/troubleshooting/index.html" "curl -fsSL https://f
 for path in docs/help/index.html docs/help/getting-started/index.html docs/help/concepts/index.html docs/help/workflows/index.html docs/help/reference/index.html docs/help/troubleshooting/index.html docs/help/search.js; do
   expect_not_contains "${path}" "code exec" "${path} removes deprecated code exec copy"
 done
+expect_not_contains "docs/help/getting-started/index.html" "Use <code>kay exec --full-auto</code> as the primary command" "getting started does not present kay exec as the primary user command"
+expect_not_contains "docs/help/concepts/index.html" "<code>kay exec --full-auto</code> is the primary path" "concepts does not present kay exec as the primary user path"
+expect_not_contains "docs/help/workflows/index.html" "Use <code>kay exec --full-auto" "workflow does not tell users to start by running kay exec directly"
+expect_not_contains "docs/help/search.js" "Use kay exec --full-auto as the primary path" "help search removes stale primary Kay exec copy"
+expect_not_contains "docs/help/search.js" "Primary path is kay exec --full-auto" "help search removes stale Kay primary path copy"
+expect_not_contains "docs/help/search.js" "Kay through kay exec" "help search removes stale Kay-through-exec support copy"
 
 echo "=== T3: Help search indexes the new docs pages ==="
-for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude, Codex, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' 'kay exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
+for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude Code, Codex, Forge, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' '/forge:delegate' '/kay:delegate' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
   expect_contains "docs/help/search.js" "${needle}" "help search contains ${needle}"
 done
 expect_not_contains "docs/help/search.js" "Claude Code users delegate to Forge" "help search removes stale host-specific Forge copy"
@@ -78,10 +84,10 @@ for path in docs/help/getting-started/index.html docs/help/concepts/index.html d
 done
 
 echo "=== T5: Getting Started is host-aware ==="
-for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay exec --full-auto'; do
+for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto'; do
   expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
 done
-for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-labs/sidekick' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
+for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-exp/sidekick' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
   expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started current flow contains ${needle}"
 done
 
@@ -100,6 +106,8 @@ done
 for needle in 'Forge Provider Configuration' 'Direct edits are denied after /forge or Kay mode starts' 'conversation database is not writable' 'AGENTS_UPDATE field will propose instructions'; do
   expect_contains "docs/help/troubleshooting/index.html" "${needle}" "troubleshooting current model contains ${needle}"
 done
+expect_contains "docs/help/troubleshooting/index.html" 'STEP 0A setup in <code>skills/forge.md</code>' "troubleshooting points provider repair to the flat Forge setup file"
+expect_not_contains "docs/help/troubleshooting/index.html" 'STEP 0A setup in <code>skills/forge/SKILL.md</code>' "troubleshooting does not point STEP 0A repair at the wrapper skill"
 
 echo ""
 echo "======================================="

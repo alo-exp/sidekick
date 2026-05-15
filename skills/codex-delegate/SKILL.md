@@ -1,22 +1,22 @@
 ---
 name: kay-delegate
-description: Canonical Kay delegation workflow for the Kay sidekick. Use when delegating implementation work to kay exec.
+description: Canonical Kay delegation workflow for the Kay sidekick. Use when activating Kay mode before delegated implementation work.
 ---
 
 # Kay Delegate Workflow
 
-Every Kay is the implementation sidekick. Claude plans, explains, and verifies.
+Kay is the implementation sidekick. The host AI plans, explains, and verifies.
 Kay writes files, runs tests, and executes implementation work.
 
 ```
-Claude = Brain
-Kay    = Hands
+Host AI = Brain
+Kay     = Hands
 ```
 
 ## Host Routing
 
-- When the active host is Claude Code, follow STEP 0 through STEP 2 as written.
-- When the active host is Codex, keep this skill to packaging/runtime configuration guidance only. Do not attempt to delegate work to the same runtime.
+- Claude Code and Codex hosts both follow STEP 0 through STEP 3.
+- When the active host is Codex, treat Kay as a child execution process launched through `kay exec`; do not confuse host Codex planning work with delegated Kay implementation work.
 
 ## Runtime Readiness
 
@@ -27,8 +27,15 @@ Kay readiness is checked when delegation starts for the current session. Session
 Before delegating, verify the runtime is available:
 
 ```bash
-kay --version 2>/dev/null || code --version 2>/dev/null || codex --version 2>/dev/null || coder --version 2>/dev/null
-kay exec --help 2>/dev/null || for alias in code codex coder; do "$alias" exec --help 2>/dev/null && break; done
+for candidate in kay code codex coder; do
+  if command -v "$candidate" >/dev/null 2>&1 \
+    && "$candidate" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
+    && "$candidate" exec --help >/dev/null 2>&1; then
+    KAY_RUNTIME="$candidate"
+    break
+  fi
+done
+test -n "${KAY_RUNTIME:-}" || { echo "No Kay-compatible runtime found"; exit 1; }
 ```
 
 Then verify Kay config:
@@ -46,9 +53,24 @@ kay login --provider minimax --with-api-key
 
 If `kay` is unavailable, install or repair Kay. The `code`, `codex`, and `coder` names are compatibility aliases only.
 
-## STEP 1 -- Delegation Protocol
+## STEP 1 -- Activate Kay Mode
 
-Preferred delegation command:
+Create the current-session Kay marker before delegating so Sidekick hooks can enforce direct-edit denial, inject `--full-auto`, surface bounded redacted Kay output with `[KAY]` and `[KAY-SUMMARY]` markers, and maintain `.kay/conversations.idx`:
+
+```bash
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Kay mode"; exit 1; }
+mkdir -p "${HOME}/.kay/sessions/${SIDEKICK_SESSION}"
+: > "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
+```
+
+Confirm: **"Kay sidekick mode activated for this session. Delegating implementation work to Kay."**
+
+To stop: `/kay-stop`
+
+## STEP 2 -- Delegation Protocol
+
+Child runtime command used after Kay mode is active:
 
 ```bash
 kay exec --full-auto "<task description>"
@@ -62,7 +84,7 @@ Useful options:
 - `--output-last-message` for final-response-only output
 - `resume --last` to continue prior non-interactive sessions
 
-## STEP 2 -- Native Workflow
+## STEP 3 -- Native Workflow
 
 - Use Kay's native `kay exec` automation for file changes, tests, and commits.
 - Use repository `AGENTS.md` instructions.

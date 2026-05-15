@@ -55,7 +55,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    ```
    This clears transient build / cache directories from the local repo so the release session ends cleanly.
 
-7. **Plugin cache sync** — `autoUpdate: true` in `~/.claude/settings.json` picks up the new tag on next session start. For an immediate local bump, clone the new tag into `~/.claude/plugins/cache/alo-exp/sidekick/<version>/`.
+7. **Plugin cache sync** — host plugin auto-update picks up the new tag on the next session start. For an immediate local bump, refresh the Claude Code cache under `~/.claude/plugins/cache/alo-exp/sidekick/<version>/` and the Codex cache under the matching `~/.codex/plugins/cache/.../sidekick/<version>/` path.
 
 ---
 
@@ -65,7 +65,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
 |---|---|
 | Live `forge` binary install in CI | Tier 2 + 3 would fail without it; gating on `SIDEKICK_LIVE_FORGE` keeps CI runtime fast and deterministic, and keeps costs at zero. |
 | Automated tagging on merge | Release notes are narrative; the maintainer writes them. Auto-tagging on every merge would pollute the release page. |
-| Plugin publishing step | Distribution is Claude Code marketplace pull, not a push pipeline. `marketplace.json` version is the single source of truth. |
+| Plugin publishing step | Distribution is host marketplace pull, not a push pipeline. `marketplace.json` and the Codex plugin manifest version are the release metadata sources. |
 | Linting / formatting workflow | Codebase is Bash + Markdown; `shellcheck` is run ad-hoc when the enforcer hook is modified, not as a gate. |
 | Coverage reporting | Test counts are in `docs/TESTING.md`; coverage-as-a-percentage is not tracked (branch-level coverage is asserted by dedicated suites). |
 

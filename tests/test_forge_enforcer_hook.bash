@@ -33,19 +33,40 @@ MARKER_DIR="${HOME_SANDBOX}/.claude/sessions/${TEST_SESSION_ID}"
 MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
 mkdir -p "${MARKER_DIR}" "${FORGE_STUB_DIR}"
+MARKER_ACTIVATION_COUNTER=0
 
-# Forge stub: a one-line script that exits with $FORGE_STUB_EXIT (default 0).
-# Tests mutate FORGE_STUB_EXIT between invocations to simulate DB-writable vs
-# DB-locked states without touching the real forge binary.
+activate_marker() {
+  MARKER_ACTIVATION_COUNTER=$((MARKER_ACTIVATION_COUNTER+1))
+  printf 'activation-%s-%s\n' "${TEST_SESSION_ID}" "${MARKER_ACTIVATION_COUNTER}" > "${MARKER_FILE}"
+}
+
+# Forge stub: exits with the numeric code in $HOME/forge-stub-exit, default 0.
+# Tests mutate that file to simulate DB-writable vs DB-locked states without
+# depending on env inheritance into sanitized sidekick subprocesses.
 cat > "${FORGE_STUB_DIR}/forge" <<'STUB'
 #!/usr/bin/env bash
-exit "${FORGE_STUB_EXIT:-0}"
+if [ -f "${HOME}/forge-stub-exit" ]; then
+  exit "$(cat "${HOME}/forge-stub-exit")"
+fi
+if [ -f "${HOME}/forge-capture-enable" ]; then
+  env > "${HOME}/forge-child-env.txt"
+  printf 'STATUS: SUCCESS\napi_key=child-secret-token\nPATTERNS_DISCOVERED: []\n'
+fi
+exit 0
 STUB
 chmod +x "${FORGE_STUB_DIR}/forge"
 
 # STUB_PATH prepends the stub dir so `forge conversation list` inside the hook
 # calls our stub, not the real binary.
 STUB_PATH="${FORGE_STUB_DIR}:${PATH}"
+
+set_forge_stub_exit() {
+  if [ "${1:-0}" = "0" ]; then
+    rm -f "${HOME_SANDBOX}/forge-stub-exit"
+  else
+    printf '%s' "$1" > "${HOME_SANDBOX}/forge-stub-exit"
+  fi
+}
 
 # -----------------------------------------------------------------------------
 echo "=== test_noop_when_marker_absent ==="
@@ -102,7 +123,7 @@ else
 fi
 
 # Activate marker for decision-logic tests.
-touch "${MARKER_FILE}"
+activate_marker
 
 # Helper: pipe stdin JSON to the hook with sandboxed HOME + CLAUDE_PROJECT_DIR +
 # stubbed forge on PATH, capture stdout + rc.
@@ -166,18 +187,79 @@ done
 [ "${_all_passed}" = "1" ] && assert_pass "test_level3_direct_edit_passthrough"
 
 # -----------------------------------------------------------------------------
-echo "=== test_rewrite_forge_p_injects_uuid_and_pipes ==="
+echo "=== test_level3_session_marker_flow ==="
+_start_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"sidekick forge-level3 start"}}')"
+_start_dec="$(printf '%s' "${_start_out}" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
+_start_cmd="$(printf '%s' "${_start_out}" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ "${_start_dec}" = "allow" ] && [ -n "${_start_cmd}" ]; then
+  HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" bash -c "${_start_cmd}" >/dev/null 2>&1
+else
+  assert_fail "test_level3_session_marker_flow[start]" "dec='${_start_dec}' cmd='${_start_cmd}' out='${_start_out}'"
+  _start_cmd=""
+fi
+
+_inside_j="$(jq -cn --arg p "${PROJECT_SANDBOX}/marker-write.txt" '{tool_name:"Write",tool_input:{file_path:$p,content:"y"}}')"
+_inside_out="$(run_hook "${_inside_j}")"
+_inside_bash_j="$(jq -cn --arg c "touch ${PROJECT_SANDBOX}/marker-bash.txt" '{tool_name:"Bash",tool_input:{command:$c}}')"
+_inside_bash_out="$(run_hook "${_inside_bash_j}")"
+_outside_j="$(jq -cn --arg p "/tmp/sidekick-marker-outside.txt" '{tool_name:"Write",tool_input:{file_path:$p,content:"y"}}')"
+_outside_out="$(run_hook "${_outside_j}")"
+_outside_dec="$(printf '%s' "${_outside_out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_outside_bash_j="$(jq -cn --arg c "touch /tmp/sidekick-marker-outside.txt" '{tool_name:"Bash",tool_input:{command:$c}}')"
+_outside_bash_out="$(run_hook "${_outside_bash_j}")"
+_outside_bash_dec="$(printf '%s' "${_outside_bash_out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_stop_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"sidekick forge-level3 stop"}}')"
+_stop_dec="$(printf '%s' "${_stop_out}" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
+_stop_cmd="$(printf '%s' "${_stop_out}" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ "${_stop_dec}" = "allow" ] && [ -n "${_stop_cmd}" ]; then
+  HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" bash -c "${_stop_cmd}" >/dev/null 2>&1
+fi
+_after_out="$(run_hook "${_inside_j}")"
+_after_dec="$(printf '%s' "${_after_out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ -z "${_inside_out}" ] \
+    && [ -z "${_inside_bash_out}" ] \
+    && [ "${_outside_dec}" = "deny" ] \
+    && [ "${_outside_bash_dec}" = "deny" ] \
+    && [ "${_stop_dec}" = "allow" ] \
+    && [ "${_after_dec}" = "deny" ]; then
+  assert_pass "test_level3_session_marker_flow"
+else
+  assert_fail "test_level3_session_marker_flow" "inside='${_inside_out}' inside_bash='${_inside_bash_out}' outside_dec='${_outside_dec}' outside_bash_dec='${_outside_bash_dec}' stop_dec='${_stop_dec}' after_dec='${_after_dec}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_level3_marker_does_not_survive_forge_stop_reactivation ==="
+_start_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"sidekick forge-level3 start"}}')"
+_start_cmd="$(printf '%s' "${_start_out}" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ -n "${_start_cmd}" ]; then
+  HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" bash -c "${_start_cmd}" >/dev/null 2>&1
+fi
+_stale_level3_marker="${MARKER_DIR}/.forge-level3-active"
+rm -f "${MARKER_FILE}"
+activate_marker
+_reactivated_j="$(jq -cn --arg p "${PROJECT_SANDBOX}/reactivated-write.txt" '{tool_name:"Write",tool_input:{file_path:$p,content:"y"}}')"
+_reactivated_out="$(run_hook "${_reactivated_j}")"
+_reactivated_dec="$(printf '%s' "${_reactivated_out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+rm -f "${_stale_level3_marker}"
+if [ -f "${MARKER_FILE}" ] && [ "${_reactivated_dec}" = "deny" ]; then
+  assert_pass "test_level3_marker_does_not_survive_forge_stop_reactivation"
+else
+  assert_fail "test_level3_marker_does_not_survive_forge_stop_reactivation" "dec='${_reactivated_dec}' out='${_reactivated_out}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_rewrite_forge_p_injects_uuid_and_safe_runner ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py\""}}')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
 if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- 'sidekick-safe-runner.sh' \
+    && echo "${_cmd}" | grep -q -- ' forge forge ' \
     && echo "${_cmd}" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-    && echo "${_cmd}" | grep -q -- '--verbose' \
-    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE\] /'" \
-    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE-LOG\] /'"; then
-  assert_pass "test_rewrite_forge_p_injects_uuid_and_pipes"
+    && echo "${_cmd}" | grep -q -- '--verbose'; then
+  assert_pass "test_rewrite_forge_p_injects_uuid_and_safe_runner"
 else
-  assert_fail "test_rewrite_forge_p_injects_uuid_and_pipes" "dec='${_dec}' cmd='${_cmd}'"
+  assert_fail "test_rewrite_forge_p_injects_uuid_and_safe_runner" "dec='${_dec}' cmd='${_cmd}'"
 fi
 
 # -----------------------------------------------------------------------------
@@ -186,14 +268,30 @@ _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refact
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
 if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- 'sidekick-safe-runner.sh' \
     && echo "${_cmd}" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
     && echo "${_cmd}" | grep -q -- '--verbose' \
-    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE\] /'" \
-    && echo "${_cmd}" | grep -q "sed 's/\^/\[FORGE-LOG\] /'" \
     && echo "${_cmd}" | grep -q -- '| tee .planning/forge.log'; then
   assert_pass "test_rewrite_forge_p_with_tee_tail_preserves_logging"
 else
   assert_fail "test_rewrite_forge_p_with_tee_tail_preserves_logging" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_safe_runner_sanitizes_child_env_and_redacts_output ==="
+touch "${HOME_SANDBOX}/forge-capture-enable"
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Capture env\""}}')"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+_run_out="$(CLAUDE_API_KEY=claude-secret CODEX_TOKEN=codex-secret OPENAI_API_KEY=openai-secret bash -c "PATH='${STUB_PATH}' HOME='${HOME_SANDBOX}' ${_cmd}" 2>&1 || true)"
+_child_env="$(cat "${HOME_SANDBOX}/forge-child-env.txt" 2>/dev/null || true)"
+rm -f "${HOME_SANDBOX}/forge-capture-enable" "${HOME_SANDBOX}/forge-child-env.txt"
+if [ -n "${_child_env}" ] \
+    && ! printf '%s' "${_child_env}" | grep -Eq 'CLAUDE|CODEX|API_KEY|TOKEN|SECRET|OPENAI' \
+    && ! printf '%s' "${_run_out}" | grep -q 'child-secret-token' \
+    && printf '%s' "${_run_out}" | grep -q '\[REDACTED\]'; then
+  assert_pass "test_safe_runner_sanitizes_child_env_and_redacts_output"
+else
+  assert_fail "test_safe_runner_sanitizes_child_env_and_redacts_output" "child_env='${_child_env}' run_out='${_run_out}'"
 fi
 
 # -----------------------------------------------------------------------------
@@ -210,18 +308,51 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-echo "=== test_rewrite_is_idempotent ==="
-_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge --conversation-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee --verbose -p \"x\""}}')"
-if [ -z "${_out}" ]; then
-  assert_pass "test_rewrite_is_idempotent"
+echo "=== test_rewrite_forge_p_ignores_prompt_conversation_id ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"--conversation-id=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\""}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty')"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+    && echo "${_cmd}" | grep -q -- '--verbose' \
+    && echo "${_cmd}" | grep -q -- '-p --conversation-id=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'; then
+  assert_pass "test_rewrite_forge_p_ignores_prompt_conversation_id"
 else
-  assert_fail "test_rewrite_is_idempotent" "expected empty, got: '${_out}'"
+  assert_fail "test_rewrite_forge_p_ignores_prompt_conversation_id" "dec='${_dec}' cmd='${_cmd}'"
 fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_rewrite_preserves_existing_conversation_id ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge --conversation-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee --verbose -p \"x\""}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '--conversation-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' \
+    && echo "${_cmd}" | grep -q -- '--verbose' \
+    && echo "${_cmd}" | grep -q -- 'sidekick-safe-runner.sh'; then
+  assert_pass "test_rewrite_preserves_existing_conversation_id"
+else
+  assert_fail "test_rewrite_preserves_existing_conversation_id" "dec='${_dec}' cmd='${_cmd}' out='${_out}'"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_existing_conversation_id_denies_when_idx_unsafe ==="
+_resume_project="$(mktemp -d)"
+_resume_outside="$(mktemp -d)"
+ln -s "${_resume_outside}" "${_resume_project}/.forge"
+_out="$(HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${_resume_project}" PATH="${STUB_PATH}" SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" bash "${HOOK_FILE}" <<< '{"tool_name":"Bash","tool_input":{"command":"forge --conversation-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee --verbose -p \"resume x\""}}' 2>/dev/null)"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "${_dec}" = "deny" ] && [ ! -e "${_resume_outside}/conversations.idx" ]; then
+  assert_pass "test_existing_conversation_id_denies_when_idx_unsafe"
+else
+  assert_fail "test_existing_conversation_id_denies_when_idx_unsafe" "dec='${_dec}' outside_idx=$([ -e "${_resume_outside}/conversations.idx" ] && echo yes || echo no) out='${_out}'"
+fi
+rm -rf "${_resume_project}" "${_resume_outside}"
 
 # -----------------------------------------------------------------------------
 echo "=== test_readonly_bash_passthrough ==="
 _all_passed=1
-for _c in 'git status' 'ls -la' 'grep foo bar.txt' 'cat README.md' 'find . -type f' 'forge conversation list'; do
+for _c in 'git status' 'ls -la' 'grep foo bar.txt' 'cat README.md' 'find . -type f' 'sed -n 1,3p README.md' "awk '{print}' README.md" 'forge conversation list'; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
   _out="$(run_hook "$_j")"
   if [ -n "${_out}" ]; then
@@ -232,9 +363,54 @@ done
 [ "${_all_passed}" = "1" ] && assert_pass "test_readonly_bash_passthrough"
 
 # -----------------------------------------------------------------------------
+echo "=== test_git_readonly_allowlist_is_token_aware ==="
+_all_passed=1
+for _c in \
+  'git branch' \
+  'git branch --list' \
+  'git remote -v' \
+  'git remote show origin' \
+  'git stash list'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_hook "$_j")"
+  if [ -n "${_out}" ]; then
+    assert_fail "test_git_readonly_allowlist_is_token_aware[${_c}]" "expected empty, got: '${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_git_readonly_allowlist_is_token_aware"
+
+# -----------------------------------------------------------------------------
+echo "=== test_git_mutating_nouns_denied ==="
+_all_passed=1
+for _c in \
+  'git branch -D old' \
+  'git branch new-feature' \
+  'git remote add origin https://example.invalid/repo.git' \
+  'git remote set-url origin https://example.invalid/repo.git' \
+  'git stash push -m work' \
+  'env git stash push -m work'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_hook "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "${_dec}" != "deny" ]; then
+    assert_fail "test_git_mutating_nouns_denied[${_c}]" "dec='${_dec}' out='${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_git_mutating_nouns_denied"
+
+# -----------------------------------------------------------------------------
 echo "=== test_mutating_bash_denied ==="
 _all_passed=1
-for _c in 'rm foo' 'git commit -m "x"' 'echo hi > /tmp/out'; do
+for _c in \
+  'rm foo' \
+  'git commit -m "x"' \
+  'echo hi > /tmp/out' \
+  "awk 'BEGIN { system(\"touch pwned\") }'" \
+  "sed 'w pwned' README.md" \
+  "sed '1e touch pwned' README.md" \
+  'find . -okdir touch {} \;'; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
   _out="$(run_hook "$_j")"
   _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
@@ -246,17 +422,72 @@ done
 [ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_denied"
 
 # -----------------------------------------------------------------------------
-echo "=== test_mutating_bash_level3_passthrough ==="
+echo "=== test_tee_tail_preserves_safe_runner_failure ==="
+set_forge_stub_exit 0
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Fail with tee\" | tee .planning/forge-fail.log"}}')"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty')"
+set_forge_stub_exit 7
+set +e
+bash -c "PATH='${STUB_PATH}' HOME='${HOME_SANDBOX}' ${_cmd}" >/tmp/sidekick-forge-tee-test.out 2>&1
+_rc=$?
+set -e
+set_forge_stub_exit 0
+if [ "${_rc}" -eq 7 ]; then
+  assert_pass "test_tee_tail_preserves_safe_runner_failure"
+else
+  assert_fail "test_tee_tail_preserves_safe_runner_failure" "rc='${_rc}' cmd='${_cmd}' out='$(cat /tmp/sidekick-forge-tee-test.out 2>/dev/null || true)'"
+fi
+rm -f /tmp/sidekick-forge-tee-test.out
+
+# -----------------------------------------------------------------------------
+echo "=== test_mutating_bash_level3_project_bounded_passthrough ==="
 _all_passed=1
-for _c in 'rm foo' 'git commit -m "x"' 'echo hi > /tmp/out'; do
+for _c in \
+  'rm foo' \
+  'git commit -m "x"' \
+  'python3 scripts/fix.py' \
+  "echo hi > ${PROJECT_SANDBOX}/out.txt" \
+  "mkdir -p ${PROJECT_SANDBOX}/nested"; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
-  _out="$(FORGE_LEVEL_3=1 HOME="${HOME_SANDBOX}" CLAUDE_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" bash "${HOOK_FILE}" <<< "${_j}" 2>/dev/null)"
+  _out="$(FORGE_LEVEL_3=1 run_hook "${_j}")"
   if [ -n "${_out}" ]; then
-    assert_fail "test_mutating_bash_level3_passthrough[${_c}]" "expected empty, got: '${_out}'"
+    assert_fail "test_mutating_bash_level3_project_bounded_passthrough[${_c}]" "expected empty, got: '${_out}'"
     _all_passed=0
   fi
 done
-[ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_level3_passthrough"
+[ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_level3_project_bounded_passthrough"
+
+# -----------------------------------------------------------------------------
+echo "=== test_mutating_bash_level3_outside_project_denied ==="
+_all_passed=1
+for _c in \
+  'touch /tmp/sidekick-review-outside-project' \
+  'echo hi > /tmp/out' \
+  'touch $HOME/sidekick-review-outside-project' \
+  'touch ${TMPDIR}/sidekick-review-outside-project' \
+  'cat > $HOME/sidekick-review-outside-project' \
+  'touch "$(printf /tmp/sidekick-review-outside-project)"' \
+  'rm -rf ~' \
+  'cd ~ && rm -rf *' \
+  'cp README.md ~' \
+  'git push origin main' \
+  'curl https://example.com' \
+  'brew install foo' \
+  'gh release delete v0.1.0' \
+  'bash -c "touch x"' \
+  'cd /tmp && touch out' \
+  'git -C /tmp commit -m "x"' \
+  'cat README.md | tee -a /tmp/out'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(FORGE_LEVEL_3=1 run_hook "${_j}")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  _rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
+  if [ "${_dec}" != "deny" ] || ! echo "${_rsn}" | grep -q 'outside the current project tree'; then
+    assert_fail "test_mutating_bash_level3_outside_project_denied[${_c}]" "dec='${_dec}' reason='${_rsn}' out='${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_mutating_bash_level3_outside_project_denied"
 
 # ENF-06 (v1.3): &&-chained command with a mutating tail is now DENIED.
 # The Phase 6 "known gap" has been closed — all chain segments are scanned.
@@ -268,6 +499,23 @@ if [ "${_dec}" = "deny" ]; then
 else
   assert_fail "test_chained_command_with_mutating_tail" "expected deny for chain with mutating tail, got: '${_out}'"
 fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_non_readonly_chain_and_pipe_denied ==="
+_all_passed=1
+for _c in \
+  "pwd && python3 -c 'open(\"pwned.txt\",\"w\").write(\"x\")'" \
+  'pwd && forge -p "Refactor utils.py"' \
+  "cat README.md | python3 -c 'open(\"pwned.txt\",\"w\").write(\"x\")'"; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_hook "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "${_dec}" != "deny" ]; then
+    assert_fail "test_non_readonly_chain_and_pipe_denied[${_c}]" "dec='${_dec}' out='${_out}'"
+    _all_passed=0
+  fi
+done
+[ "${_all_passed}" = "1" ] && assert_pass "test_non_readonly_chain_and_pipe_denied"
 
 # -----------------------------------------------------------------------------
 echo "=== test_readonly_chain_passes ==="
@@ -291,8 +539,8 @@ _reset_project_sandbox() {
 # -----------------------------------------------------------------------------
 echo "=== test_idx_created_on_first_rewrite ==="
 _reset_project_sandbox
-FORGE_STUB_EXIT=0
-_out="$(FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"first task\""}}')"
+set_forge_stub_exit 0
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"first task\""}}')"
 if [ -f "${PROJECT_SANDBOX}/.forge/conversations.idx" ]; then
   assert_pass "test_idx_created_on_first_rewrite"
 else
@@ -313,12 +561,28 @@ fi
 # -----------------------------------------------------------------------------
 echo "=== test_idx_row_task_hint ==="
 _reset_project_sandbox
-FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py to use early returns\""}}' >/dev/null
+set_forge_stub_exit 0
+run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Refactor utils.py to use early returns\""}}' >/dev/null
 _hint="$(awk -F'\t' '{print $4}' "${PROJECT_SANDBOX}/.forge/conversations.idx" 2>/dev/null || echo '')"
 if [ "${#_hint}" -le 80 ] && echo "${_hint}" | grep -q '^Refactor utils.py'; then
   assert_pass "test_idx_row_task_hint"
 else
   assert_fail "test_idx_row_task_hint" "hint='${_hint}' (len=${#_hint})"
+fi
+
+# -----------------------------------------------------------------------------
+echo "=== test_idx_row_redacts_secret_hint ==="
+_reset_project_sandbox
+set_forge_stub_exit 0
+run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"Use token=supersecret123 and password=hunter2\""}}' >/dev/null
+_hint="$(awk -F'\t' '{print $4}' "${PROJECT_SANDBOX}/.forge/conversations.idx" 2>/dev/null || echo '')"
+if echo "${_hint}" | grep -q '\[REDACTED\]' \
+    && ! echo "${_hint}" | grep -q 'supersecret123' \
+    && ! echo "${_hint}" | grep -q 'hunter2' \
+    && [ "${#_hint}" -le 80 ]; then
+  assert_pass "test_idx_row_redacts_secret_hint"
+else
+  assert_fail "test_idx_row_redacts_secret_hint" "hint='${_hint}'"
 fi
 
 # -----------------------------------------------------------------------------
@@ -335,8 +599,9 @@ _FIXED_UUID="deadbeef-1111-2222-3333-444455556666"
 export SIDEKICK_TEST_UUID_OVERRIDE="${_FIXED_UUID}"
 # Both invocations go through the rewrite branch — neither input has
 # --conversation-id, so idempotent-passthrough does NOT short-circuit.
-FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"first call\""}}' >/dev/null
-FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"second call\""}}' >/dev/null
+set_forge_stub_exit 0
+run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"first call\""}}' >/dev/null
+run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"second call\""}}' >/dev/null
 _count="$(grep -c "${_FIXED_UUID}" "${PROJECT_SANDBOX}/.forge/conversations.idx" 2>/dev/null || echo 0)"
 unset SIDEKICK_TEST_UUID_OVERRIDE
 if [ "${_count}" = "1" ]; then
@@ -354,7 +619,8 @@ fi
 # ensure_forge_dir_and_idx. If precheck fails, the idx file does not exist.
 echo "=== test_db_precheck_denies_when_forge_fails ==="
 _reset_project_sandbox
-_out="$(FORGE_STUB_EXIT=3 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"blocked task\""}}')"
+set_forge_stub_exit 3
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"blocked task\""}}')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
 if [ "${_dec}" = "deny" ] \
@@ -370,7 +636,8 @@ echo "=== test_symlinked_forge_dir_denied ==="
 _reset_project_sandbox
 _outside_forge_dir="$(mktemp -d)"
 ln -s "${_outside_forge_dir}" "${PROJECT_SANDBOX}/.forge"
-_out="$(FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"symlink task\""}}')"
+set_forge_stub_exit 0
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"symlink task\""}}')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 if [ "${_dec}" = "deny" ] && [ ! -e "${_outside_forge_dir}/conversations.idx" ]; then
   assert_pass "test_symlinked_forge_dir_denied"
@@ -390,20 +657,22 @@ rm -rf "${_outside_forge_dir}"
 # Uses `sleep 1; touch` (portable bash 3.2+, no date -v/date -d branching).
 echo "=== test_db_precheck_runs_once_via_sentinel ==="
 _reset_project_sandbox
-FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step1\""}}' >/dev/null
+set_forge_stub_exit 0
+run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step1\""}}' >/dev/null
 _step1_ok="no"
 if [ -f "${PROJECT_SANDBOX}/.forge/.db_check_ok" ]; then _step1_ok="yes"; fi
 
 # Step 2: failing stub but fresh sentinel → passthrough (sentinel short-circuits)
-_out2="$(FORGE_STUB_EXIT=3 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step2\""}}')"
+set_forge_stub_exit 3
+_out2="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step2\""}}')"
 _dec2="$(printf '%s' "$_out2" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _step2_ok="no"
 if [ "${_dec2}" = "allow" ]; then _step2_ok="yes"; fi
 
 # Step 3: bump marker mtime, keep failing stub → precheck re-runs and denies
 sleep 1
-touch "${MARKER_FILE}"
-_out3="$(FORGE_STUB_EXIT=3 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step3\""}}')"
+activate_marker
+_out3="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"step3\""}}')"
 _dec3="$(printf '%s' "$_out3" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _step3_ok="no"
 if [ "${_dec3}" = "deny" ]; then _step3_ok="yes"; fi
@@ -422,9 +691,10 @@ fi
 # idx persistence.
 echo "=== test_idx_preserved_across_deactivate ==="
 _reset_project_sandbox
-# Re-touch marker (test_db_precheck_runs_once_via_sentinel may have bumped it).
-touch "${MARKER_FILE}"
-FORGE_STUB_EXIT=0 run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"task before deactivate\""}}' >/dev/null
+# Refresh marker (test_db_precheck_runs_once_via_sentinel may have bumped it).
+activate_marker
+set_forge_stub_exit 0
+run_hook '{"tool_name":"Bash","tool_input":{"command":"forge -p \"task before deactivate\""}}' >/dev/null
 _rows_before="$(wc -l < "${PROJECT_SANDBOX}/.forge/conversations.idx" | tr -d ' ' || echo 0)"
 rm -f "${MARKER_FILE}"
 if [ -f "${PROJECT_SANDBOX}/.forge/conversations.idx" ]; then
@@ -438,7 +708,7 @@ else
   assert_fail "test_idx_preserved_across_deactivate" "idx removed on deactivate (should be preserved)"
 fi
 # Restore marker for any subsequent tests.
-touch "${MARKER_FILE}"
+activate_marker
 
 echo ""
 echo "======================================="

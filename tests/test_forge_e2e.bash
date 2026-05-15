@@ -4,7 +4,7 @@
 # Simulates what the forge skill does: checks forge is operational, runs a
 # simple coding task, verifies output.
 # Usage: bash tests/test_forge_e2e.bash
-# Requires: forge binary installed and OpenRouter credentials configured
+# Requires: SIDEKICK_LIVE_FORGE=1 or FORGE_E2E=1, Forge installed, and provider credentials configured
 # =============================================================================
 
 set -euo pipefail
@@ -45,16 +45,16 @@ run_with_timeout() {
 }
 
 # ---------------------------------------------------------------------------
-# CI guard — skip entire suite if forge binary not present
-# Set FORGE_E2E=1 to force-run in environments where forge is installed.
+# CI guard — skip live work unless explicitly enabled.
+# Set SIDEKICK_LIVE_FORGE=1 or FORGE_E2E=1 to run on a machine with Forge credentials.
 # ---------------------------------------------------------------------------
-if [ ! -f "${FORGE}" ] && [ "${FORGE_E2E:-0}" != "1" ]; then
-  skip "E2E suite" "forge binary not found — set FORGE_E2E=1 to run on a machine with forge installed"
+if [ "${SIDEKICK_LIVE_FORGE:-0}" != "1" ] && [ "${FORGE_E2E:-0}" != "1" ]; then
+  skip "E2E suite" "live Forge tests disabled — set SIDEKICK_LIVE_FORGE=1 or FORGE_E2E=1"
   echo ""
   echo "======================================="
   echo "Results: 0 passed, 0 failed, 1 skipped"
   echo "======================================="
-  echo "Suite SKIPPED: End-to-end forge smoke tests (no forge binary)"
+  echo "Suite SKIPPED: End-to-end forge smoke tests (live flag not set)"
   exit 0
 fi
 
@@ -88,7 +88,7 @@ fi
 # ---------------------------------------------------------------------------
 echo "=== E3: forge info ==="
 INFO=$(forge info 2>&1 || true)
-if echo "${INFO}" | grep -qiE 'provider|model|open_router|openrouter'; then
+if echo "${INFO}" | grep -qiE 'provider|model|minimax'; then
   assert_pass "forge info shows provider configuration"
 else
   skip "forge info" "No provider configured — run credential setup from STEP 0A-3"

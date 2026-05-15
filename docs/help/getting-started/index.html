@@ -169,8 +169,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>Install Sidekick through the plugin surface for the host you use:</p>
       <div class="code-label">Claude Code</div>
       <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span></div>
-      <div class="code-label">Codex / Kay</div>
-      <div class="code-block"><span class="cmd">codex plugin marketplace add alo-labs/sidekick</span></div>
+      <div class="code-label">Codex</div>
+      <div class="code-block"><span class="cmd">codex plugin marketplace add alo-exp/sidekick</span></div>
       <p>Restart the host after installation so the hook surface loads before you start a Forge or Kay session. The SessionStart hooks only run first-run bootstrap and legacy hook cleanup; Forge and Kay runtime readiness is checked when delegation starts for the current session.</p>
       <p>Codex users should install the Codex-facing Sidekick package through the Codex plugin surface. That path exposes the shared skill bodies and Kay runtime guidance without duplicating writable state from Claude Code.</p>
 
@@ -194,7 +194,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h3>Kay health check</h3>
-      <p>For the Kay path, verify that the Kay runtime is reachable and has a MiniMax-backed config. In Claude Code, Kay delegation launches a child Kay runtime. In Codex itself, the Kay skill is packaging and runtime guidance because the host already is the execution runtime.</p>
+      <p>For the Kay path, verify that the Kay runtime is reachable and has a MiniMax-backed config. Claude Code and Codex both start Kay mode through <code>kay-delegate</code> or <code>sidekick:kay-delegate</code>; active Kay mode then routes implementation through the native <code>kay exec</code> child runtime while Sidekick maintains <code>.kay/conversations.idx</code>.</p>
       <div class="code-label">Kay runtime</div>
       <div class="code-block"><span class="cmd">kay --version</span> <span class="comment"># legacy aliases may also exist</span>
 <span class="cmd">kay exec --help</span>
@@ -214,7 +214,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="step-num">2</div>
           <div class="step-body">
             <h4>Host submits to Forge</h4>
-            <p>The host sends the structured prompt to Forge (max 2,000 tokens). The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>, and output prefixes automatically; do not add those flags manually.</p>
+            <p>The host sends the structured prompt to Forge (max 2,000 tokens). The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>, and the safe output runner automatically; do not add those flags manually.</p>
           </div>
         </li>
         <li>
@@ -238,10 +238,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-path">Your First Kay Task</h2>
-      <p>Kay uses its native non-interactive execution path. Use <code>kay exec --full-auto</code> as the primary command; legacy <code>code</code>, <code>codex</code>, and <code>coder</code> binary names are compatibility-only.</p>
-      <div class="code-label">Kay delegation path</div>
-      <div class="code-block"><span class="cmd">kay exec --full-auto "implement the focused task, run tests, summarize changes"</span></div>
-      <p>Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support in play. Sidekick adds the packaging, compatibility aliases, session-scoped marker, hook summaries, and project-local <code>.kay/conversations.idx</code> lookup surface.</p>
+      <p>Start Kay mode through <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> when the host shows plugin-prefixed skills. The workflow verifies Kay, creates the session marker, then routes implementation through Kay's native <code>kay exec --full-auto</code> runtime path. Legacy <code>code</code>, <code>codex</code>, and <code>coder</code> binary names are compatibility-only.</p>
+      <div class="code-label">Kay activation surface</div>
+      <div class="code-block"><span class="cmd">kay-delegate</span>
+<span class="comment"># or sidekick:kay-delegate in plugin-prefixed pickers</span></div>
+      <p>Once Kay mode is active, the hook keeps <code>kay exec --full-auto</code> as the child runtime command, surfaces bounded redacted output, and preserves project-local <code>.kay/conversations.idx</code> lookup metadata. Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support in play.</p>
 
       <h2 id="agents-md-bootstrap">AGENTS.md Bootstrap</h2>
       <p>On your first <code>/forge</code> invocation, if no non-empty <code>AGENTS.md</code> exists in the project root, Sidekick creates one. This file accumulates standing instructions for Forge — project conventions, preferences, and patterns the host AI discovers over time.</p>

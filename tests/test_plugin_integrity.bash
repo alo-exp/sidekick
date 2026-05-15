@@ -34,6 +34,13 @@ check_hash() {
     assert_fail "integrity file ${rel_path}" "missing from repo"
     return
   fi
+  if git -C "${PLUGIN_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if git -C "${PLUGIN_DIR}" ls-files --error-unmatch "${rel_path}" >/dev/null 2>&1; then
+      assert_pass "${rel_path} is tracked by git"
+    else
+      assert_fail "integrity file ${rel_path}" "exists on disk but is not tracked by git"
+    fi
+  fi
   if [ "${claimed}" = "${actual}" ]; then
     assert_pass "${rel_path} hash matches manifest (${key})"
   else
@@ -50,6 +57,8 @@ check_hash "hooks_json_sha256" "hooks/hooks.json"
 check_hash "forge_delegation_enforcer_sha256" "hooks/forge-delegation-enforcer.sh"
 check_hash "codex_delegation_enforcer_sha256" "hooks/codex-delegation-enforcer.sh"
 check_hash "enforcer_utils_sha256" "hooks/lib/enforcer-utils.sh"
+check_hash "sidekick_registry_lib_sha256" "hooks/lib/sidekick-registry.sh"
+check_hash "safe_runner_sha256" "hooks/lib/sidekick-safe-runner.sh"
 check_hash "sidekick_registry_sha256" "sidekicks/registry.json"
 check_hash "legacy_hooks_scrub_sha256" "hooks/scrub-legacy-user-hooks.py"
 check_hash "forge_progress_surface_sha256" "hooks/forge-progress-surface.sh"
@@ -57,6 +66,8 @@ check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
 check_hash "validate_release_gate_sha256" "hooks/validate-release-gate.sh"
 check_hash "output_style_forge_sha256" "output-styles/forge.md"
 check_hash "output_style_codex_sha256" "output-styles/codex.md"
+check_hash "forge_delegate_alias_skill_md_sha256" "skills/forge:delegate/SKILL.md"
+check_hash "kay_delegate_alias_skill_md_sha256" "skills/kay:delegate/SKILL.md"
 check_hash "forge_stop_skill_md_sha256" "skills/forge-stop/SKILL.md"
 check_hash "codex_stop_skill_md_sha256" "skills/codex-stop/SKILL.md"
 
@@ -77,13 +88,19 @@ CLAIMED_CODEX_INSTALL="$(claim codex_installer_sha256)"
 REGISTRY_KAY_URL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['url'])")"
 REGISTRY_KAY_VERSION="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['version'])")"
 REGISTRY_KAY_SHA="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['sha256'])")"
-if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/8c076de01bbc3185e1bd2acd082daeabb2d61ea2/scripts/install/install.sh" ] \
-  && [ "${REGISTRY_KAY_VERSION}" = "v0.9.0" ] \
+if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/v0.9.4/scripts/install/install.sh" ] \
+  && [ "${REGISTRY_KAY_VERSION}" = "v0.9.4" ] \
   && [ "${REGISTRY_KAY_SHA}" = "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555" ] \
   && [ "${CLAIMED_CODEX_INSTALL}" = "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555" ]; then
   assert_pass "kay installer points at the pinned Kay installer with kay primary binary support"
 else
   assert_fail "kay installer source" "url=${REGISTRY_KAY_URL} version=${REGISTRY_KAY_VERSION} registry_sha=${REGISTRY_KAY_SHA} manifest_sha=${CLAIMED_CODEX_INSTALL}"
+fi
+
+if grep -q '^user-invocable: false' "${PLUGIN_DIR}/skills/forge.md"; then
+  assert_pass "legacy flat Forge skill is hidden from public invocation"
+else
+  assert_fail "legacy flat Forge skill visibility" "skills/forge.md must remain user-invocable: false"
 fi
 
 # install.sh pinned forge installer hash must match manifest.
@@ -93,6 +110,29 @@ if [ "${INSTALL_PINNED}" = "${CLAIMED_FORGECODE}" ]; then
   assert_pass "install.sh EXPECTED_FORGE_SHA matches manifest forgecode_installer_sha256"
 else
   assert_fail "forge installer hash pin" "install.sh=${INSTALL_PINNED} manifest=${CLAIMED_FORGECODE}"
+fi
+
+if [ "${SIDEKICK_VERIFY_REMOTE_INSTALLERS:-0}" = "1" ]; then
+  REGISTRY_FORGE_URL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['forge']['install']['url'])")"
+  REGISTRY_FORGE_SHA="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['forge']['install']['sha256'])")"
+  REMOTE_FORGE_TMP="$(mktemp "${TMPDIR:-/tmp}/sidekick-forge-installer.XXXXXX")"
+  if curl -fsSL --max-time 60 --connect-timeout 15 "${REGISTRY_FORGE_URL}" -o "${REMOTE_FORGE_TMP}"; then
+    if command -v shasum >/dev/null 2>&1; then
+      REMOTE_FORGE_SHA="$(shasum -a 256 "${REMOTE_FORGE_TMP}" | awk '{print $1}')"
+    else
+      REMOTE_FORGE_SHA="$(sha256sum "${REMOTE_FORGE_TMP}" | awk '{print $1}')"
+    fi
+    if [ "${REMOTE_FORGE_SHA}" = "${REGISTRY_FORGE_SHA}" ] && [ "${REMOTE_FORGE_SHA}" = "${CLAIMED_FORGECODE}" ]; then
+      assert_pass "remote Forge installer hash matches registry and manifest"
+    else
+      assert_fail "remote Forge installer hash" "remote=${REMOTE_FORGE_SHA} registry=${REGISTRY_FORGE_SHA} manifest=${CLAIMED_FORGECODE}"
+    fi
+  else
+    assert_fail "remote Forge installer fetch" "could not fetch ${REGISTRY_FORGE_URL}"
+  fi
+  rm -f "${REMOTE_FORGE_TMP}"
+else
+  echo "SKIP remote Forge installer hash check (set SIDEKICK_VERIFY_REMOTE_INSTALLERS=1)"
 fi
 
 # Verify plugin version major/minor expectation.
