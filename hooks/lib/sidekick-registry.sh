@@ -150,6 +150,18 @@ sidekick_project_sidekick_dir() {
   printf '%s/.%s' "$(sidekick_project_root)" "$sidekick"
 }
 
+sidekick_realpath() {
+  local path="$1"
+  if command -v realpath >/dev/null 2>&1; then
+    realpath "$path" 2>/dev/null && return 0
+  fi
+  python3 - "$path" <<'PY'
+from pathlib import Path
+import sys
+print(Path(sys.argv[1]).resolve(strict=False))
+PY
+}
+
 sidekick_idx_path() {
   local sidekick="$1"
   printf '%s/conversations.idx' "$(sidekick_project_sidekick_dir "$sidekick")"
@@ -157,8 +169,27 @@ sidekick_idx_path() {
 
 sidekick_ensure_idx() {
   local sidekick="$1"
-  mkdir -p "$(sidekick_project_sidekick_dir "$sidekick")" 2>/dev/null || return 1
-  touch -a "$(sidekick_idx_path "$sidekick")" 2>/dev/null || return 1
+  local root dir idx real_root real_dir real_idx
+  root="$(sidekick_project_root)" || return 1
+  dir="$(sidekick_project_sidekick_dir "$sidekick")"
+  idx="$dir/conversations.idx"
+
+  [[ -L "$dir" ]] && return 1
+  mkdir -p "$dir" 2>/dev/null || return 1
+  real_root="$(sidekick_realpath "$root")" || return 1
+  real_dir="$(sidekick_realpath "$dir")" || return 1
+  case "$real_dir/" in
+    "$real_root"/*) ;;
+    *) return 1 ;;
+  esac
+
+  [[ -L "$idx" ]] && return 1
+  touch -a "$idx" 2>/dev/null || return 1
+  real_idx="$(sidekick_realpath "$idx")" || return 1
+  case "$real_idx" in
+    "$real_dir"/*) ;;
+    *) return 1 ;;
+  esac
 }
 
 sidekick_gen_uuid() {
@@ -171,6 +202,29 @@ sidekick_gen_uuid() {
 
 sidekick_validate_uuid() {
   [[ "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+}
+
+sidekick_redact_sensitive_text() {
+  perl -pe '
+    my $sensitive = qr/(?:[A-Za-z0-9_.-]+[_-])?(?:api[_-]?key|apikey|token|access_token|refresh_token|client_secret|password|secret)/i;
+    s/(?i)("authorization"\s*:\s*")((?:bearer\s+)?[^"]+)(")/${1}[REDACTED]${3}/g;
+    s/("$sensitive"\s*:\s*")([^"]+)(")/${1}[REDACTED]${3}/g;
+    s/(?i)(authorization\s*[:=]\s*)(?:bearer\s+)?[^\s,;]+.*$/${1}[REDACTED]/g;
+    s/\b($sensitive)\b(\s*[:=]\s*)("[^"]*"|[^\s,;]+)/${1}${2}[REDACTED]/g;
+    s/sk-[A-Za-z0-9_\-\.\/+]{10,}(?=\s|['"'"'">},]|$)/[REDACTED-SK-TOKEN]/g;
+    s/\bgh[pousra]_[A-Za-z0-9]{20,}\b/[REDACTED-GH-TOKEN]/g;
+    s/\bgithub_pat_[A-Za-z0-9_]{20,}\b/[REDACTED-GH-TOKEN]/g;
+    s/\bxox[abprse]-[A-Za-z0-9-]{10,}\b/[REDACTED-SLACK-TOKEN]/g;
+  '
+}
+
+sidekick_sanitize_idx_hint() {
+  local hint="$1"
+  hint="${hint//$'\t'/ }"
+  hint="${hint//$'\n'/ }"
+  hint="${hint//$'\r'/ }"
+  hint="$(printf '%s' "$hint" | sidekick_redact_sensitive_text | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//')"
+  printf '%s' "${hint:0:80}"
 }
 
 sidekick_extract_exec_prompt() {
@@ -192,9 +246,7 @@ for idx, tok in enumerate(toks):
         break
 ' "$cmd" 2>/dev/null || true)"
   fi
-  hint="${hint//$'\t'/ }"
-  hint="${hint//$'\n'/ }"
-  printf '%s' "${hint:0:200}"
+  sidekick_sanitize_idx_hint "$hint"
 }
 
 sidekick_append_idx_row() {
@@ -202,6 +254,8 @@ sidekick_append_idx_row() {
   local uuid="$2"
   local hint="$3"
   local idx
+  hint="$(sidekick_sanitize_idx_hint "$hint")"
+  sidekick_ensure_idx "$sidekick" || return 1
   idx="$(sidekick_idx_path "$sidekick")"
   if [[ -f "$idx" ]] && grep -qF "$uuid" "$idx" 2>/dev/null; then
     return 0
@@ -210,8 +264,6 @@ sidekick_append_idx_row() {
   tag_suffix="${uuid##*-}"
   tag_suffix="${tag_suffix:0:8}"
   sidekick_tag="${sidekick}-$(date +%s)-${tag_suffix}"
-  {
-    printf '%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$uuid" "$sidekick_tag" "$hint" >> "$idx"
-  } 2>/dev/null || true
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$uuid" "$sidekick_tag" "$hint" >> "$idx" 2>/dev/null || return 1
   return 0
 }

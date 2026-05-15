@@ -175,7 +175,7 @@ PY
     && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${target_root}/hooks/lib/sidekick-registry.sh" \
     && grep -Fq '.codex/' "${target_root}/sidekicks/registry.json" \
     && ! grep -Fq '.claude/' "${target_root}/sidekicks/registry.json" \
-    && grep -Fq '~/.kay' "${target_root}/skills/codex-stop/SKILL.md" \
+    && grep -Fq '${HOME}/.kay/sessions' "${target_root}/skills/codex-stop/SKILL.md" \
     && ! grep -Fq '~/.claude' "${target_root}/skills/codex-stop/SKILL.md" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/config.toml" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/plugins/installed_plugins.json" \

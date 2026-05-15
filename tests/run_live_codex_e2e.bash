@@ -2,7 +2,7 @@
 # =============================================================================
 # Sidekick Plugin — Live Codex End-to-End Driver
 # =============================================================================
-# Pre-release check that exercises a FULL Claude→Kay delegation round-trip
+# Pre-release check that exercises a FULL host→Kay delegation round-trip
 # against the real Kay binary and the real model, on a seeded buggy testapp.
 # Gated behind SIDEKICK_LIVE_CODEX=1. Never runs in CI.
 #
@@ -33,10 +33,6 @@ echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${bold}Sidekick live-Kay E2E driver${reset}"
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 
-if ! command -v kay >/dev/null 2>&1 && ! command -v code >/dev/null 2>&1 && ! command -v codex >/dev/null 2>&1 && ! command -v coder >/dev/null 2>&1; then
-  echo -e "${red}FAIL${reset}: kay/code/codex/coder not on PATH"
-  exit 1
-fi
 if ! command -v python3 >/dev/null 2>&1; then
   echo -e "${red}FAIL${reset}: python3 not on PATH"
   exit 1
@@ -44,7 +40,9 @@ fi
 
 resolve_codex_binary() {
   for candidate in kay code codex coder; do
-    if command -v "${candidate}" >/dev/null 2>&1; then
+    if command -v "${candidate}" >/dev/null 2>&1 \
+      && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
+      && "${candidate}" exec --help >/dev/null 2>&1; then
       printf '%s\n' "${candidate}"
       return 0
     fi
@@ -95,6 +93,10 @@ run_with_timeout() {
 }
 
 CODEX_BIN="$(resolve_codex_binary)"
+if [ -z "${CODEX_BIN}" ]; then
+  echo -e "${red}FAIL${reset}: Kay-compatible kay/code/codex/coder not on PATH"
+  exit 1
+fi
 prepare_codex_runner "${CODEX_BIN}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

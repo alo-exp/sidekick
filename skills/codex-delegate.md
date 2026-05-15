@@ -6,6 +6,6 @@ user-invocable: false
 
 > Deprecated in favor of [`skills/codex-delegate/SKILL.md`](./codex-delegate/SKILL.md).
 
-# Code
+# Kay
 
-Use Code CLI for implementation work. The canonical activation, login, and delegation flow lives in the directory-style skill files.
+Use Kay for implementation work. The canonical activation, login, and delegation flow lives in the directory-style skill files. The legacy `code`, `codex`, and `coder` names are compatibility aliases only.

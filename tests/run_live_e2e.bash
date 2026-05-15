@@ -2,7 +2,7 @@
 # =============================================================================
 # Sidekick Plugin — Live Forge End-to-End Driver
 # =============================================================================
-# Pre-release check that exercises a FULL Claude→Forge delegation round-trip
+# Pre-release check that exercises a FULL host→Forge delegation round-trip
 # against the real forge binary and the real model, on a seeded buggy
 # testapp. Gated behind SIDEKICK_LIVE_FORGE=1. Never runs in CI.
 #

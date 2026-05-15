@@ -1,13 +1,13 @@
 # Sidekick — AI Coding Agents for Claude Code and Codex
 
-**Coding agents as Claude sidekicks** — each agent auto-installs, configures itself, and lets Claude delegate implementation work while focusing on planning and communication.
+**AI coding agents for Claude Code and Codex** — Sidekick lets the active host AI delegate implementation to Forge or Kay while the host stays focused on planning, review, mentoring, and communication.
 
 ## Sidekicks
 
-| Sidekick | Skill | Agent | Status |
-|----------|-------|-------|--------|
-| **Forge** | `forge` | [ForgeCode](https://forgecode.dev) — #2 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.5 |
-| **Kay** | `kay` | OSS Codex-lineage execution agent — `kay exec`, MiniMax M2.7, OpenCode Go compatibility | ✅ v0.5.5 |
+| Sidekick | Activation surface | Agent | Status |
+|----------|--------------------|-------|--------|
+| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.6 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, MiniMax M2.7, OpenCode Go compatibility | ✅ v0.5.6 |
 
 More sidekicks planned.
 
@@ -20,44 +20,35 @@ If you want the docs in the right order, start here:
 - [Start Here](docs/START-HERE.md) — task-first navigation
 - [Audience](docs/AUDIENCE.md) — who each doc is for
 - [Glossary](docs/GLOSSARY.md) — canonical terminology
-- [Compatibility](docs/COMPATIBILITY.md) — Claude, Codex, and Kay runtime differences
+- [Compatibility](docs/COMPATIBILITY.md) — Claude Code, Codex, Forge, and Kay runtime differences
 - [ADR index](docs/ADR/README.md) — durable docs-system decisions
 
 For help-site workflows, use the [Help Center](docs/help/).
 
 ## Installation
 
-Add to `~/.claude/settings.json`:
+Install through the active host's plugin surface:
 
-```json
-{
-  "extraKnownMarketplaces": {
-    "alo-labs": {
-      "source": {
-        "source": "github",
-        "repo": "alo-exp/sidekick"
-      },
-      "autoUpdate": true
-    }
-  },
-  "enabledPlugins": {
-    "sidekick@alo-labs": true
-  }
-}
+```bash
+# Claude Code
+/plugin install alo-labs/sidekick
+
+# Codex
+codex plugin marketplace add alo-exp/sidekick
 ```
 
-On the next Claude session, all sidekicks install automatically and keep themselves current on later session starts.
+On the next host session, Sidekick performs the first-run bootstrap. Runtime readiness is checked when you start Forge or Kay delegation for the current session.
 
 ---
 
 ## Forge — ForgeCode Sidekick
 
 ### What it does
-- **Auto-installs** ForgeCode on first session start and self-updates it on later session starts using Forge's native `forge update`
-- **Guides** OpenRouter API key setup (Qwen3 Coder Plus — best coding model, $0.33/$1.95/MTok)
-- **Turns Claude into an orchestrator**: Claude plans and communicates, Forge executes all file changes, tests, and commits
-- **Fallback ladder**: automatic 3-level recovery on failure — L1 Guide (reframe), L2 Handhold (decompose), L3 Take over (Claude acts directly + DEBRIEF)
-- **AGENTS.md mentoring**: after every task, Claude extracts learnings and writes them to a 3-tier instruction store (`~/forge/AGENTS.md`, `./AGENTS.md`, session logs) — delegation gets smarter over time
+- **Auto-installs** ForgeCode on first session start and checks readiness when Forge delegation starts for the current session
+- **Guides** Forge provider setup for MiniMax Coding without putting provider keys in the prompt
+- **Turns the host into an orchestrator**: Claude Code or Codex plans and communicates, while Forge executes file changes, tests, and commits
+- **Fallback ladder**: automatic 3-level recovery on failure — L1 Guide (reframe), L2 Handhold (decompose), L3 Take over (`sidekick forge-level3 start|stop`, project-scoped direct work + DEBRIEF)
+- **AGENTS.md mentoring**: after every task, the host AI extracts learnings and writes them to a 3-tier instruction store (`~/forge/AGENTS.md`, `./AGENTS.md`, session logs) — delegation gets smarter over time
 - **Skill injection**: 4 bootstrap skills (testing-strategy, code-review, security, quality-gates) auto-injected into task prompts based on task type
 - **Token optimization**: task prompts capped at 2,000 tokens with validated `.forge.toml` compaction defaults
 
@@ -65,45 +56,45 @@ On the next Claude session, all sidekicks install automatically and keep themsel
 
 ### What it does
 - **Auto-installs** Kay from the pinned `alo-labs/kay` installer on first session start and keeps legacy `code`, `codex`, and `coder` aliases compatibility-only
-- **Routes** delegated work through `kay exec --full-auto` so Kay remains the primary runtime identity
+- **Activates** Kay work through `kay-delegate`; active Kay mode launches `kay exec --full-auto` so Kay remains the runtime identity
 - **Uses** Kay's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
-- **Follows** the Codex developer-doc pattern (developer mode, Docs MCP, Codex CLI) of packaging repeatable work as skills and driving implementation through a composable CLI Codex can use
+- **Supports** Claude Code and Codex hosts by running Kay as a child execution process through the packaged `kay-delegate` skill
 - **Defaults** to MiniMax `MiniMax-M2.7` through Kay-local `~/.kay/config.toml`, with OpenCode Go available for multi-AI compatibility
 - **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias preserved only as a hidden compatibility entry at `skills/codex-delegate.md`.
+
+The website setup shortcuts `/forge:delegate` and `/kay:delegate` are shipped alias skills. They route to the canonical `/forge` and `kay-delegate` workflows.
 
 ### Kay flow
 
 ```
-You → Claude or Codex (plan + communicate) → Kay (implement + commit) → host (review + report)
+You → Claude Code or Codex (plan + communicate) → Kay (implement + commit) → host AI (review + report)
 ```
 
-Claude handles: architecture, explanations, research, code review
+Host AI handles: architecture, explanations, research, code review
 Kay handles: writing files, features, tests, git commits
 
 ### Forge flow
 
 ```
-You → Claude (plan + communicate) → Forge (implement + commit) → Claude (review + report)
+You → Claude Code or Codex (plan + communicate) → Forge (implement + commit) → host AI (review + report)
 ```
 
-Claude handles: architecture, explanations, research, code review
+Host AI handles: architecture, explanations, research, code review
 Forge handles: writing files, features, tests, git commits
 
-### Forge installation
+### Forge provider setup
 
-Claude will guide you to:
-1. Sign up at **openrouter.ai** (Google/GitHub OAuth, ~30 seconds)
-2. Add $5 credits at **openrouter.ai/settings/credits**
-3. Create an API key and paste it into Claude
+The host AI will guide you to:
+1. Create MiniMax.io API access at https://platform.minimax.io/subscribe/token-plan.
+2. Store the credential in Forge's native `~/forge/.credentials.json` array format.
+3. Point Forge at MiniMax M2.7 through `~/forge/.forge.toml`.
 
-Claude configures Forge automatically and delegates all coding work from that point.
+The host configures Forge automatically and delegates coding work from that point.
 
 ### Providers & Models
 | Provider | Model | Notes |
 |----------|-------|-------|
-| **OpenRouter** (recommended) | **Qwen3 Coder Plus** `qwen/qwen3-coder-plus` | Default. 1M context, tool-use, $0.33/$1.95/MTok |
-| OpenRouter | **Gemma 4** `google/gemma-4-31b-it` | Alternative. Dense, fast, separate rate limit |
-| **MiniMax Coding** | **MiniMax M2.7** `MiniMax-M2.7` | Direct API — get key at platform.minimaxi.com |
+| **MiniMax Coding** | **MiniMax M2.7** `MiniMax-M2.7` | Direct API — get key at https://platform.minimax.io/subscribe/token-plan |
 
 ---
 
@@ -113,9 +104,10 @@ Claude configures Forge automatically and delegates all coding work from that po
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 27 suites — hook classifiers, idx audit, plugin integrity, docs contract, help-site navigation, slash commands, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 30 suites — hook classifiers, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
-| **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full Claude→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
+| **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full host→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
+| **Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | Installs Sidekick through the Codex marketplace path and verifies the installed Kay and Forge surfaces. |
 | **Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `kay --version` + trivial `kay exec` round-trip against the real binary, with legacy names kept as compatibility aliases. |
 | **Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full host→Kay delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
 

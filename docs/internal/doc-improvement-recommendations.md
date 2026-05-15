@@ -139,7 +139,7 @@ That can live in `docs/ADR/` or a similar decision-log area.
 
 - Add an explicit audience matrix
 - Add a glossary for canonical terms
-- Add a runtime compatibility matrix for Claude / Codex / Kay
+- Add a runtime compatibility matrix for Claude Code / Codex host surfaces and Forge / Kay execution agents
 
 ### P1
 

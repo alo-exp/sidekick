@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -25,8 +26,10 @@ STATE_DIR = Path.home() / ".sidekick"
 STATE_FILE = STATE_DIR / "legacy-hooks-scrub-state.json"
 BACKUP_DIR = STATE_DIR / "legacy-hooks-scrub-backups"
 TARGETS = (Path.home() / ".codex" / "hooks.json", Path.home() / ".Codex" / "hooks.json")
-MIGRATION_ID = "legacy-hooks-scrub-v1"
+MIGRATION_ID = "legacy-hooks-scrub-v2"
 SCRIPT_PATH = Path(__file__).resolve()
+PLUGIN_ROOT = SCRIPT_PATH.parent.parent.resolve()
+HOST_ROOT_MARKERS = ("SIDEKICK_PLUGIN_ROOT", "CODEX_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT")
 
 BLOCK_SIGNATURES = (
     {
@@ -120,11 +123,30 @@ def save_state(state: dict[str, Any]) -> None:
 
 
 def command_matches_install(command: str) -> bool:
-    return all(snippet in command for snippet in ("test -f", ".installed", "install.sh", "touch", "bash"))
+    return all(snippet in command for snippet in ("test -f", ".installed", "install.sh", "touch", "bash")) and command_has_sidekick_owner(command)
 
 
 def command_matches_script(command: str, script_name: str) -> bool:
-    return script_name in command and any(prefix in command for prefix in ("bash", "python3"))
+    return (
+        f"hooks/{script_name}" in command
+        and any(prefix in command for prefix in ("bash", "python3"))
+        and command_has_sidekick_owner(command)
+    )
+
+
+def command_has_sidekick_owner(command: str) -> bool:
+    normalized = command.replace("\\", "/")
+    if str(PLUGIN_ROOT) in normalized:
+        return True
+    if any(marker in command for marker in HOST_ROOT_MARKERS):
+        return True
+    if ".sidekick/.installed" in normalized:
+        return True
+    if re.search(r"/\.(?:codex|Codex|claude)/plugins/cache/[^\"' ;]+/sidekick/", normalized):
+        return True
+    if re.search(r"/sidekick/(?:current|[0-9][^/\"' ;]*|[0-9a-f]{40})/(?:hooks/|install\.sh)", normalized):
+        return True
+    return False
 
 
 def block_matches_signature(event_name: str, block: dict[str, Any], signature: dict[str, Any]) -> bool:
@@ -227,7 +249,12 @@ def write_cleaned_target(target: Path, cleaned: dict[str, Any]) -> None:
 
 def apply_migration(force: bool = False) -> int:
     state = load_state()
-    if state and state.get("status") in {"applied", "clean", "rolled_back"} and not force:
+    if (
+        state
+        and state.get("migration") == MIGRATION_ID
+        and state.get("status") in {"applied", "clean", "rolled_back"}
+        and not force
+    ):
         print(f"[sidekick] legacy hook scrub already {state['status']}; skipping")
         return 0
 

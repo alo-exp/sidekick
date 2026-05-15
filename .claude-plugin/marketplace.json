@@ -14,7 +14,7 @@
         "repo": "alo-exp/sidekick"
       },
       "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Kay are the first two: they auto-install, configure themselves, and turn Claude into an orchestrator that delegates implementation while handling planning and user interaction itself.",
-      "version": "0.5.5",
+      "version": "0.5.6",
       "author": {
         "name": "Ālo Labs",
         "url": "https://alolabs.dev"
@@ -22,7 +22,7 @@
       "homepage": "https://github.com/alo-exp/sidekick",
       "repository": "https://github.com/alo-exp/sidekick",
       "license": "MIT",
-      "keywords": ["sidekick", "forge", "codex", "forgecode", "terminal-agent", "coding-agent", "openrouter", "orchestration"]
+      "keywords": ["sidekick", "claude-code", "forge", "codex", "kay", "forgecode", "terminal-agent", "coding-agent", "orchestration"]
     }
   ]
 }

@@ -5,7 +5,3 @@ max_tokens = 16384
 token_threshold = 80000
 eviction_window = 0.20
 retention_window = 6
-
-[session]
-provider_id = "open_router"
-model_id = "qwen/qwen3-coder-plus"

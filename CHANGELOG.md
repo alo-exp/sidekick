@@ -1,14 +1,31 @@
 # Changelog
 
-## Unreleased
+## v0.5.6 — 2026-05-15
 
-### Session-scoped delegation cleanup
+### Kay primary runtime, release gate, and website consistency
+
+Sidekick now presents Kay as the primary runtime identity everywhere, keeps `code`/`codex`/`coder` as compatibility-only aliases, refreshes the public website plus Help Center for the current Claude Code/Codex + Forge/Kay support model, and hardens the release gate before publishing.
 
 **Changed:**
 
-- **`hooks/hooks.json`**, **`hooks/runtime-sync.sh`**, **`tests/test_runtime_sync.bash`**: removed SessionStart runtime asset sync. Forge and Kay readiness is now checked when delegation starts for the current session instead of updating or repairing agent runtimes at every host session start.
-- **`hooks/scrub-legacy-user-hooks.py`**: legacy hook cleanup now recognizes stale runtime-sync hook blocks and removes them from user hook files.
-- **`docs/*`**, **`skills/forge/SKILL.md`**, **`skills/codex-delegate/SKILL.md`**: docs and skill copy now describe session-scoped readiness checks instead of SessionStart runtime sync.
+- **`hooks/scrub-legacy-user-hooks.py`**: legacy hook cleanup now recognizes stale Sidekick-owned runtime-sync hook blocks while preserving unrelated user hooks with the same script basenames.
+- **`tests/test_clean_reinstall.bash`**, **`tests/test_legacy_hook_scrub.bash`**, **`tests/test_validate_release_gate_hook.bash`**, plus docs/homepage/OG/integrity tests: expanded coverage for clean reinstall behavior, Sidekick-owned legacy hook cleanup, current-session release-gate markers, Kay activation copy, homepage setup commands, and social preview claims.
+- **`install.sh`**, **`sidekicks/registry.json`**, **`skills/codex-delegate/SKILL.md`**, **`skills/codex-delegate.md`**, **`skills/codex-stop/SKILL.md`**: Kay is now the canonical command family (`kay`, with active Kay mode routing child work through `kay exec --full-auto`) and installer target; the installer is pinned to Kay `v0.9.4`, while legacy `code`, `codex`, and `coder` names remain compatibility-only aliases.
+- **`hooks/forge-delegation-enforcer.sh`**, **`hooks/codex-delegation-enforcer.sh`**, **`hooks/lib/sidekick-safe-runner.sh`**: delegated Forge/Kay subprocesses now run with a sanitized environment and surface only bounded, redacted output back to the host transcript.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**, **`docs/help/*`**, **`docs/og-image.*`**: public-facing surfaces now describe both Claude Code and Codex hosts, both Forge and Kay execution agents, MiniMax/OpenCode Go backend paths, and the current Terminal-Bench 2.0 positioning.
+- **`docs/pre-release-quality-gate.md`**, **`docs/internal/pre-release-quality-gate.md`**, **`hooks/validate-release-gate.sh`**: release-gate markers are scoped to the current host session, use the active host state path, and require distinct stage markers before `gh release create`.
+- **`.claude-plugin/plugin.json`**, **`.codex-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**: version bumped to `0.5.6`; manifest integrity refreshed for changed runtime assets.
+
+**Fixed:**
+
+- **Website setup flow**: setup cards now use current MiniMax and OpenCode Go URLs, hyperlink long URLs, center step numbers, and show the requested per-session delegate commands: `/forge:delegate` and `/kay:delegate`.
+- **Delegate aliases**: `/forge:delegate` and `/kay:delegate` are now backed by shipped alias skills that route to the canonical `/forge` and `kay-delegate` workflows.
+- **Help Center and legacy setup drift**: removed stale direct Code-runtime invocation copy, stale config paths as primary guidance, SessionStart sync repair guidance, stale router-as-Kay-backend positioning, and outdated third-party-router guidance from the hidden legacy Forge flat skill.
+- **Release-gate bypasses**: blocked additional shell expansion, shell/GitHub CLI alias, persistent `gh` alias, `case`, interpreter inline/stdin/heredoc/argv-vector payload, array/positional, literal shell-variable `bash -c` payload, REST `gh api`, and GraphQL release/tag mutation paths before quality-gate markers are complete.
+- **OpenGraph image**: regenerated the social preview for Claude Code + Codex hosts, Codex CLI lineage (#6), and ForgeCode (#7) without implying Kay itself owns the upstream benchmark result.
+- **Forge lifecycle consistency**: source Forge activation, registry, and stop-skill marker paths are Claude-scoped by default and rewritten for Codex installs by the host-surface rewrite.
+- **Forge Level 3 takeover**: Level 3 now has an explicit session marker control path (`sidekick forge-level3 start|stop`), keeps Bash bounded to the current project tree, rejects shell-expanded outside-path forms, and continues to deny command-text env-prefix self-activation.
+- **Delegation output and audit hygiene**: task hints now redact secret-looking values before writing `.forge/.kay` indexes, Forge conversation mutators are denied under active delegation mode, progress surfaces redact broader token/password/client-secret forms, and docs now describe the safe runner as bounded/redacted rather than live-streaming raw output.
 
 ## v0.5.5 — 2026-05-13
 

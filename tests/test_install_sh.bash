@@ -66,6 +66,13 @@ prepare_install_sandbox() {
   cp "${PLUGIN_DIR}/sidekicks/registry.json" "${root}/sidekicks/registry.json"
 }
 
+copy_plugin_file() {
+  local root="$1"
+  local rel="$2"
+  mkdir -p "${root}/$(dirname "${rel}")"
+  cp "${PLUGIN_DIR}/${rel}" "${root}/${rel}"
+}
+
 echo "=== T1: Syntax check ==="
 if bash -n "${INSTALL_SH}" 2>&1; then
   assert_pass "install.sh has no syntax errors"
@@ -135,10 +142,15 @@ if grep -q 'install_codex_runtime' "${INSTALL_SH}" \
   && grep -q 'KAY_BIN' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODE_ALIAS' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODER_ALIAS' "${INSTALL_SH}" \
+  && grep -q 'CODEX_INSTALL_VERSION' "${INSTALL_SH}" \
+  && ! grep -q 'update --help' "${INSTALL_SH}" \
+  && grep -q -- '--version 2>/dev/null | grep -qiE' "${INSTALL_SH}" \
+  && grep -q -- '--release "${CODEX_INSTALL_VERSION}"' "${INSTALL_SH}" \
+  && grep -q 'CODEX_INSTALL_DIR="${SIDEKICK_BIN_DIR}" bash "${CODEX_INSTALL_TMP}"' "${INSTALL_SH}" \
   && grep -q 'cleanup_install_tmps' "${INSTALL_SH}"; then
-  assert_pass "Kay runtime bootstrap logic present with compatibility aliases"
+  assert_pass "Kay runtime bootstrap logic present with pinned release, exec-capable detection, custom install dir, and compatibility aliases"
 else
-  assert_fail "Kay bootstrap" "missing Kay runtime install, aliases, or cleanup logic"
+  assert_fail "Kay bootstrap" "missing Kay runtime install, pinned release, exec-capable detection, custom install dir, aliases, or cleanup logic"
 fi
 
 echo "=== T13: Idempotency (add_to_path) ==="
@@ -283,6 +295,7 @@ echo "=== T20: clean reinstall bootstrap ==="
 if grep -q 'SIDEKICK_CLEAN_REINSTALL' "${INSTALL_SH}" \
   && grep -q 'purge_legacy_codex_sidekick_state' "${INSTALL_SH}" \
   && grep -q 'normalize_codex_path' "${INSTALL_SH}" \
+  && grep -q 'resolve_bootstrap_target_root' "${INSTALL_SH}" \
   && grep -q 'retire_legacy_codex_uppercase_state' "${INSTALL_SH}" \
   && grep -q 'bootstrap_sidekick_cache_tree' "${INSTALL_SH}" \
   && grep -q 'rm -rf "${plugin_root_dir}"' "${INSTALL_SH}" \
@@ -302,12 +315,165 @@ if grep -q 'seed_hook_trust_state' "${INSTALL_SH}" \
   && grep -q 'plugin_id = "sidekick@alo-labs"' "${INSTALL_SH}" \
   && grep -q '\${HOME}/.claude/hooks.json' "${INSTALL_SH}" \
   && grep -q 'rewrite_host_surface "${install_host}"' "${INSTALL_SH}" \
+  && grep -q 'refresh_installed_integrity_manifest' "${INSTALL_SH}" \
   && grep -q 'seed_hook_trust_state "${install_host}" "${PLUGIN_ROOT}"' "${INSTALL_SH}" \
   && grep -q 'retire_legacy_codex_uppercase_state "${install_host}" "${PLUGIN_ROOT}"' "${INSTALL_SH}"; then
   assert_pass "hook trust seeding is source-specific and host-isolated"
 else
   assert_fail "hook trust seeding" "missing source-specific trust seeding or host-isolated trust targets"
 fi
+
+echo "=== T22: host rewrite refreshes installed manifest integrity ==="
+_host_root="$(mktemp -d)"
+_host_home="$(mktemp -d)"
+for _rel in \
+  "install.sh" \
+  ".claude-plugin/plugin.json" \
+  "hooks/hooks.json" \
+  "hooks/lib/sidekick-registry.sh" \
+  "hooks/validate-release-gate.sh" \
+  "skills/forge-stop/SKILL.md" \
+  "sidekicks/registry.json"; do
+  copy_plugin_file "${_host_root}" "${_rel}"
+done
+if HOME="${_host_home}" SIDEKICK_INSTALL_HOST=codex SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=0 PATH="/usr/bin:/bin:/usr/sbin:/sbin" bash "${_host_root}/install.sh" >/tmp/sidekick-install-host-rewrite.out 2>&1; then
+  if python3 - "${_host_root}" <<'PY'
+from pathlib import Path
+import hashlib
+import json
+import sys
+
+root = Path(sys.argv[1])
+manifest = json.loads((root / ".claude-plugin/plugin.json").read_text())
+integrity = manifest.get("_integrity", {})
+targets = {
+    "validate_release_gate_sha256": "hooks/validate-release-gate.sh",
+    "forge_stop_skill_md_sha256": "skills/forge-stop/SKILL.md",
+    "hooks_json_sha256": "hooks/hooks.json",
+}
+for key, rel in targets.items():
+    actual = hashlib.sha256((root / rel).read_bytes()).hexdigest()
+    if integrity.get(key) != actual:
+        raise SystemExit(f"{key}: claimed={integrity.get(key)} actual={actual}")
+PY
+  then
+    assert_pass "host rewrite refreshes installed manifest integrity"
+  else
+    assert_fail "installed manifest integrity" "installed hashes do not match rewritten files"
+  fi
+else
+  assert_fail "installed manifest integrity" "$(cat /tmp/sidekick-install-host-rewrite.out 2>/dev/null || true)"
+fi
+rm -rf "${_host_root}" "${_host_home}" /tmp/sidekick-install-host-rewrite.out
+
+echo "=== T23: session-only host env skips cache bootstrap safely ==="
+_session_root="$(mktemp -d)"
+_session_home="$(mktemp -d)"
+prepare_install_sandbox "${_session_root}"
+if env -u CODEX_PLUGIN_ROOT -u CLAUDE_PLUGIN_ROOT -u SIDEKICK_PLUGIN_ROOT \
+  HOME="${_session_home}" \
+  CODEX_THREAD_ID="session-only-install-test" \
+  SIDEKICK_INSTALL_FORGE=0 \
+  SIDEKICK_INSTALL_KAY=0 \
+  PATH="/usr/bin:/bin:/usr/sbin:/sbin" \
+  bash "${_session_root}/install.sh" >/tmp/sidekick-install-session-only.out 2>&1; then
+  if [ -f "${_session_home}/.codex/config.toml" ] && [ ! -e "${_session_root}/current" ]; then
+    assert_pass "session-only host env does not bootstrap an empty plugin root"
+  else
+    assert_fail "session-only host env bootstrap" "unexpected cache alias or missing host trust state"
+  fi
+else
+  assert_fail "session-only host env bootstrap" "$(cat /tmp/sidekick-install-session-only.out 2>/dev/null || true)"
+fi
+rm -rf "${_session_root}" "${_session_home}" /tmp/sidekick-install-session-only.out
+
+echo "=== T24: Kay installer honors custom BIN_DIR ==="
+_custom_root="$(mktemp -d)"
+_custom_home="$(mktemp -d)"
+_custom_toolbox="$(mktemp -d)"
+_custom_bin="${_custom_home}/custom-bin"
+prepare_install_sandbox "${_custom_root}"
+make_install_toolbox "${_custom_toolbox}" "1"
+cat > "${_custom_toolbox}/curl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+out=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+cat > "${out}" <<'INSTALLER'
+#!/usr/bin/env bash
+set -euo pipefail
+bin_dir="${CODEX_INSTALL_DIR:-${HOME}/.local/bin}"
+mkdir -p "${bin_dir}"
+cat > "${bin_dir}/kay" <<'KAY'
+#!/usr/bin/env bash
+if [ "${1:-}" = "exec" ]; then
+  exit 0
+fi
+if [ "${1:-}" = "--version" ]; then
+  printf 'kay 0.9.4\n'
+  exit 0
+fi
+exit 0
+KAY
+chmod +x "${bin_dir}/kay"
+INSTALLER
+chmod +x "${out}"
+EOF
+chmod +x "${_custom_toolbox}/curl"
+_fake_installer="$(mktemp)"
+"${_custom_toolbox}/curl" -o "${_fake_installer}" ignored
+_fake_sha="$(shasum -a 256 "${_fake_installer}" | awk '{print $1}')"
+rm -f "${_fake_installer}"
+python3 - "${_custom_root}/sidekicks/registry.json" "${_fake_sha}" <<'PY'
+import json
+import sys
+
+path, sha = sys.argv[1:3]
+with open(path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+data["kay"]["install"]["url"] = "https://example.invalid/kay-install.sh"
+data["kay"]["install"]["sha256"] = sha
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump(data, fh, indent=2)
+    fh.write("\n")
+PY
+mkdir -p "${_custom_bin}"
+cat > "${_custom_bin}/codex" <<'CODEX'
+#!/usr/bin/env bash
+if [ "${1:-}" = "exec" ]; then
+  touch "${HOME}/codex-exec-called"
+  exit 0
+fi
+if [ "${1:-}" = "--version" ]; then
+  printf 'codex 1.2.3\n'
+  exit 0
+fi
+exit 0
+CODEX
+chmod +x "${_custom_bin}/codex"
+if HOME="${_custom_home}" SIDEKICK_PLUGIN_ROOT="${_custom_root}" BIN_DIR="${_custom_bin}" PATH="${_custom_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=1 bash "${_custom_root}/install.sh" >/tmp/sidekick-install-custom-bin.out 2>&1; then
+  if [ -x "${_custom_bin}/kay" ] \
+    && [ ! -e "${_custom_home}/.local/bin/kay" ] \
+    && [ ! -e "${_custom_home}/codex-exec-called" ] \
+    && "${_custom_bin}/kay" --version 2>/dev/null | grep -q '^kay '; then
+    assert_pass "Kay installer receives CODEX_INSTALL_DIR for custom BIN_DIR and rejects non-Kay aliases"
+  else
+    assert_fail "custom Kay install dir" "kay not installed in custom BIN_DIR only, or non-Kay alias was accepted"
+  fi
+else
+  assert_fail "custom Kay install dir" "$(cat /tmp/sidekick-install-custom-bin.out 2>/dev/null || true)"
+fi
+rm -rf "${_custom_root}" "${_custom_home}" "${_custom_toolbox}" /tmp/sidekick-install-custom-bin.out
 
 echo ""
 echo "======================================="

@@ -171,7 +171,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-delegation">Kay Delegation Model</h2>
-      <p>Kay is Sidekick's execution agent for the OSS Codex lineage. It uses Kay's native automation surface instead of recreating Forge's prompt-injection loop: <code>kay exec --full-auto</code> is the primary path, while older binary names are kept only as compatibility aliases.</p>
+      <p>Kay is Sidekick's execution agent for the OSS Codex lineage. The user-facing activation surface is <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> in plugin-prefixed hosts. Once Kay mode is active, Sidekick routes implementation through Kay's native <code>kay exec --full-auto</code> runtime path, while older binary names are kept only as compatibility aliases.</p>
       <p>Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, compatibility aliases, a session-scoped Kay marker when Kay mode is active, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
@@ -219,7 +219,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="ladder-level ladder-l3">
           <div class="ladder-label l3-color">Level 3</div>
           <div class="ladder-title">Take Over — Direct Action + DEBRIEF</div>
-          <div class="ladder-desc">The delegation restriction is temporarily lifted inside the project boundary. The host implements the task directly, then produces a structured DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE). The AGENTS_UPDATE text is proposed for user confirmation before AGENTS.md is changed.</div>
+          <div class="ladder-desc">The host enables the session marker with <code>sidekick forge-level3 start</code>, works only inside the project boundary, then stops Level 3 and produces a structured DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE). The AGENTS_UPDATE text is proposed for user confirmation before AGENTS.md is changed.</div>
         </div>
       </div>
 
@@ -294,20 +294,6 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>For Kay, use Kay's native login flow when credentials are missing:</p>
       <div class="code-label">Kay MiniMax login</div>
       <div class="code-block"><span class="key">kay login</span> <span class="val">--provider minimax --with-api-key</span></div>
-
-      <h3>OpenRouter / Qwen3 Coder Plus</h3>
-      <p>Forge can use OpenRouter with the <code>qwen/qwen3-coder-plus</code> model when your Forge provider config and credential entry use <code>open_router</code>.</p>
-      <div class="code-label">~/forge/.forge.toml — OpenRouter</div>
-      <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
-<span class="key">max_tokens</span> = <span class="val">16384</span>
-
-[<span class="key">session</span>]
-<span class="key">provider_id</span> = <span class="val">"open_router"</span>
-<span class="key">model_id</span>    = <span class="val">"qwen/qwen3-coder-plus"</span></div>
-      <div class="code-label">~/forge/.credentials.json — OpenRouter credentials array</div>
-      <div class="code-block">[
-  { <span class="key">"id"</span>: <span class="val">"open_router"</span>, <span class="key">"auth_details"</span>: { <span class="key">"api_key"</span>: <span class="val">"sk-or-your-key-here"</span> } }
-]</div>
 
       <h3>MiniMax Coding</h3>
       <p>Forge can also use MiniMax Coding directly. This is separate from Kay's MiniMax-backed runtime, but both paths use the MiniMax M2.7 model family.</p>

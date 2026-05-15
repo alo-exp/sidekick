@@ -71,6 +71,19 @@ _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // e
 if [ "$_dec" = "deny" ]; then pass "test_is_mutating_sed_inplace"
 else fail "test_is_mutating_sed_inplace" "dec='$_dec' out='$_out'"; fi
 
+echo "=== test_is_mutating_sed_inplace_reordered_options ==="
+_all=1
+for _c in "sed -E -i 's/foo/bar/' README.md" "sed --in-place 's/foo/bar/' README.md" "sed -i.bak 's/foo/bar/' README.md"; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ]; then
+    fail "test_is_mutating_sed_inplace_reordered_options[$_c]" "dec='$_dec' out='$_out'"
+    _all=0
+  fi
+done
+[ "$_all" = "1" ] && pass "test_is_mutating_sed_inplace_reordered_options"
+
 # -----------------------------------------------------------------------------
 # test_is_mutating_awk_inplace
 # `awk -i inplace` is a real GNU-awk extension that mutates files.
@@ -81,6 +94,12 @@ _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // e
 if [ "$_dec" = "deny" ]; then pass "test_is_mutating_awk_inplace"
 else fail "test_is_mutating_awk_inplace" "dec='$_dec' out='$_out'"; fi
 
+echo "=== test_is_mutating_awk_inplace_reordered_options ==="
+_out="$(run_enf '{"tool_name":"Bash","tool_input":{"command":"awk '\''{print}'\'' -i inplace file.txt"}}')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+if [ "$_dec" = "deny" ]; then pass "test_is_mutating_awk_inplace_reordered_options"
+else fail "test_is_mutating_awk_inplace_reordered_options" "dec='$_dec' out='$_out'"; fi
+
 # -----------------------------------------------------------------------------
 # test_has_write_redirect_append
 # `>>` is a write redirect just like `>`; must be denied.
@@ -90,6 +109,23 @@ _out="$(run_enf '{"tool_name":"Bash","tool_input":{"command":"echo hi >> /tmp/ou
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 if [ "$_dec" = "deny" ]; then pass "test_has_write_redirect_append"
 else fail "test_has_write_redirect_append" "dec='$_dec' out='$_out'"; fi
+
+# -----------------------------------------------------------------------------
+# test_process_substitution_input_denied
+# `<(...)` executes a nested command even when the outer command is read-only.
+# -----------------------------------------------------------------------------
+echo "=== test_process_substitution_input_denied ==="
+_all=1
+for _c in 'cat <(rm foo)' "grep x <(sed -i 's/a/b/' file.txt)"; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ]; then
+    fail "test_process_substitution_input_denied[$_c]" "dec='$_dec' out='$_out'"
+    _all=0
+  fi
+done
+[ "$_all" = "1" ] && pass "test_process_substitution_input_denied"
 
 # -----------------------------------------------------------------------------
 # test_has_write_redirect_devnull_is_passthrough
@@ -180,7 +216,7 @@ done
 # -----------------------------------------------------------------------------
 echo "=== test_readonly_single_word_commands ==="
 _all=1
-for _c in 'jq . file.json' 'awk {print} file' 'env' 'printenv HOME' 'date -u' 'uname -a' 'wc -l file' 'head -5 file'; do
+for _c in 'jq . file.json' 'env' 'printenv HOME' 'date -u' 'uname -a' 'wc -l file' 'head -5 file' 'sed -n 1,3p README.md' "awk '{print}' README.md"; do
   _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
   _out="$(run_enf "$_j")"
   if [ -n "$_out" ]; then
@@ -196,13 +232,24 @@ done
 # denied conservatively.
 # -----------------------------------------------------------------------------
 echo "=== test_unclassified_command_denied ==="
-_out="$(run_enf '{"tool_name":"Bash","tool_input":{"command":"mystery_tool --do-stuff"}}')"
-_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
-_rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
-if [ "$_dec" = "deny" ] && echo "$_rsn" | grep -q 'could not be classified'; then
+_all=1
+for _c in \
+  'mystery_tool --do-stuff' \
+  "awk 'BEGIN { system(\"touch pwned\") }'" \
+  "sed 'w pwned' README.md" \
+  "sed '1e touch pwned' README.md" \
+  'find . -okdir touch {} \;'; do
+  _j="$(jq -cn --arg c "$_c" '{tool_name:"Bash",tool_input:{command:$c}}')"
+  _out="$(run_enf "$_j")"
+  _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+  _rsn="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
+  if [ "$_dec" != "deny" ] || ! echo "$_rsn" | grep -Eq 'could not be classified|Use forge -p|mutating command denied'; then
+    fail "test_unclassified_command_denied[$_c]" "dec='$_dec' reason='$_rsn'"
+    _all=0
+  fi
+done
+if [ "$_all" = "1" ]; then
   pass "test_unclassified_command_denied"
-else
-  fail "test_unclassified_command_denied" "dec='$_dec' reason='$_rsn'"
 fi
 
 # =============================================================================
@@ -245,6 +292,49 @@ if echo "$_ctx" | grep -q 'STATUS: SUCCESS' && echo "$_ctx" | grep -q '\[FORGE-S
   pass "test_surface_uses_stdout_fallback_when_output_absent"
 else
   fail "test_surface_uses_stdout_fallback_when_output_absent" "ctx='$_ctx'"
+fi
+
+# -----------------------------------------------------------------------------
+# test_safe_runner_bounds_and_redacts_tail
+# The delegated sidekick process is captured to a 0600 tempfile; the host sees
+# only a bounded, redacted tail when no STATUS block is present.
+# -----------------------------------------------------------------------------
+echo "=== test_safe_runner_bounds_and_redacts_tail ==="
+cat > "$STUB_DIR/noisy-sidekick" <<'STUB'
+#!/usr/bin/env bash
+for i in $(seq 1 120); do
+  printf 'line %03d OPENAI_API_KEY=secret-%03d\n' "$i" "$i"
+done
+STUB
+chmod +x "$STUB_DIR/noisy-sidekick"
+_runner_out="$(PATH="$STUB_DIR:$PATH" OPENAI_API_KEY=host-secret bash "$PLUGIN_DIR/hooks/lib/sidekick-safe-runner.sh" forge noisy-sidekick 2>&1)"
+_runner_lines="$(printf '%s\n' "$_runner_out" | grep -c '^\[FORGE\]' || true)"
+if [ "$_runner_lines" -eq 80 ] \
+    && printf '%s' "$_runner_out" | grep -q 'line 120' \
+    && ! printf '%s' "$_runner_out" | grep -Eq 'secret-[0-9]{3}|host-secret'; then
+  pass "test_safe_runner_bounds_and_redacts_tail"
+else
+  fail "test_safe_runner_bounds_and_redacts_tail" "lines=$_runner_lines out='$_runner_out'"
+fi
+
+echo "=== test_safe_runner_preserves_final_status_after_large_output ==="
+cat > "$STUB_DIR/large-status-sidekick" <<'STUB'
+#!/usr/bin/env bash
+python3 - <<'PY'
+print("x" * (3 * 1024 * 1024))
+print("STATUS: SUCCESS")
+print("FILES_CHANGED: []")
+print("ASSUMPTIONS: []")
+print("PATTERNS_DISCOVERED: []")
+PY
+STUB
+chmod +x "$STUB_DIR/large-status-sidekick"
+_large_runner_out="$(PATH="$STUB_DIR:$PATH" bash "$PLUGIN_DIR/hooks/lib/sidekick-safe-runner.sh" forge large-status-sidekick 2>&1)"
+if printf '%s' "$_large_runner_out" | grep -q '\[FORGE\] STATUS: SUCCESS' \
+    && printf '%s' "$_large_runner_out" | grep -q '\[FORGE\] PATTERNS_DISCOVERED: \[\]'; then
+  pass "test_safe_runner_preserves_final_status_after_large_output"
+else
+  fail "test_safe_runner_preserves_final_status_after_large_output" "out='$_large_runner_out'"
 fi
 
 # -----------------------------------------------------------------------------
@@ -304,7 +394,8 @@ _j='{"tool_name":"Bash","tool_input":{"command":"FOO=forge_trap forge -p \"task\
 _out="$(SIDEKICK_TEST_UUID_OVERRIDE="$_valid_uuid" run_enf "$_j")"
 _cmd="$(echo "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
 # Expect: the env prefix is stripped, not preserved, and the prompt remains intact.
-if [[ "$_cmd" == "forge --conversation-id $_valid_uuid --verbose -p task"* ]] \
+if [[ "$_cmd" == *"sidekick-safe-runner.sh"* ]] \
+   && [[ "$_cmd" == *"forge --conversation-id $_valid_uuid --verbose -p task"* ]] \
    && [[ "$_cmd" != *"FOO=forge_trap"* ]]; then
   pass "test_env_prefix_with_forge_inside_value"
 else
@@ -358,17 +449,38 @@ else
   fail "test_idempotent_passthrough_rejects_invalid_uuid" "out='$_out'"
 fi
 
-# test_idempotent_passthrough_accepts_valid_uuid
-# A pre-existing --conversation-id with a valid lowercase RFC 4122 UUID must
-# pass through unchanged (no deny output — hook exits 0 silently).
-echo "=== test_idempotent_passthrough_accepts_valid_uuid ==="
+# test_prompt_conversation_id_is_rewritten
+# A --conversation-id string after -p belongs to the prompt text, not the Forge
+# option list. The hook must still inject its own UUID and safe output runner.
+echo "=== test_prompt_conversation_id_is_rewritten ==="
 _valid_conv_uuid="12345678-1234-1234-1234-123456789abc"
 _j_valid_conv="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"forge -p \\\"task\\\" --conversation-id $_valid_conv_uuid\"}}"
 _out="$(run_enf "$_j_valid_conv")"
-if [[ -z "$_out" ]]; then
-  pass "test_idempotent_passthrough_accepts_valid_uuid"
+_dec="$(echo "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(echo "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "$_dec" = "allow" ] \
+  && echo "$_cmd" | grep -Eq -- '--conversation-id [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+  && echo "$_cmd" | grep -q -- "--conversation-id $_valid_conv_uuid"; then
+  pass "test_prompt_conversation_id_is_rewritten"
 else
-  fail "test_idempotent_passthrough_accepts_valid_uuid" "expected empty output, got='$_out'"
+  fail "test_prompt_conversation_id_is_rewritten" "dec='$_dec' cmd='$_cmd'"
+fi
+
+# test_existing_conversation_id_is_normalized
+# A pre-existing --conversation-id before -p with a valid lowercase RFC 4122
+# UUID is preserved, while the safe rewrite still adds the safe output runner.
+echo "=== test_existing_conversation_id_is_normalized ==="
+_j_pre_prompt_conv="{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"forge --conversation-id $_valid_conv_uuid --verbose -p \\\"task\\\"\"}}"
+_out="$(run_enf "$_j_pre_prompt_conv")"
+_dec="$(echo "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(echo "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "$_dec" = "allow" ] \
+  && echo "$_cmd" | grep -q -- "--conversation-id $_valid_conv_uuid" \
+  && echo "$_cmd" | grep -q -- '--verbose' \
+  && echo "$_cmd" | grep -q -- 'sidekick-safe-runner.sh'; then
+  pass "test_existing_conversation_id_is_normalized"
+else
+  fail "test_existing_conversation_id_is_normalized" "dec='$_dec' cmd='$_cmd' out='$_out'"
 fi
 
 # test_surface_redacts_authorization_header
@@ -393,7 +505,7 @@ _payload_sk='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_res
 _out_sk="$(run_surf "$_payload_sk")"
 _ctx_sk="$(echo "$_out_sk" | jq -r '.hookSpecificOutput.additionalContext // empty')"
 if ! echo "$_ctx_sk" | grep -q 'sk-or-v1-reallylong1234567890' \
-   && echo "$_ctx_sk" | grep -q '\[REDACTED-SK-TOKEN\]'; then
+   && echo "$_ctx_sk" | grep -q '\[REDACTED'; then
   pass "test_surface_redacts_standalone_sk_token"
 else
   fail "test_surface_redacts_standalone_sk_token" "ctx='$_ctx_sk'"
@@ -445,6 +557,17 @@ if echo "$_ctx_ak" | grep -q 'api-key: \[REDACTED\]' \
   pass "test_surface_redacts_api_key_colon_form"
 else
   fail "test_surface_redacts_api_key_colon_form" "ctx='$_ctx_ak'"
+fi
+
+echo "=== test_surface_redacts_extended_secret_keys ==="
+_payload_ext='{"tool_name":"Bash","tool_input":{"command":"forge -p x"},"tool_response":{"output":"STATUS: ok\nOPENAI_API_KEY=access123\nGITHUB_TOKEN: refresh456\nANTHROPIC_API_KEY=\"client789\"\nMY_PASSWORD=hunter2\nsecret: hidden\nPATTERNS_DISCOVERED: none"}}'
+_out_ext="$(run_surf "$_payload_ext")"
+_ctx_ext="$(echo "$_out_ext" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+if echo "$_ctx_ext" | grep -q '\[REDACTED\]' \
+   && ! echo "$_ctx_ext" | grep -Eq 'access123|refresh456|client789|hunter2|hidden'; then
+  pass "test_surface_redacts_extended_secret_keys"
+else
+  fail "test_surface_redacts_extended_secret_keys" "ctx='$_ctx_ext'"
 fi
 
 # -----------------------------------------------------------------------------
