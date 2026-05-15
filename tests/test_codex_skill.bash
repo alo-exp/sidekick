@@ -68,10 +68,12 @@ fi
 echo "=== T5: kay-delegate activates the session marker ==="
 if grep -q 'SIDEKICK_SESSION_ID' "${DELEGATE_FILE}" \
   && grep -q 'CODEX_THREAD_ID' "${DELEGATE_FILE}" \
-  && grep -q 'CLAUDE_SESSION_ID' "${DELEGATE_FILE}" \
-  && grep -q '\.kay/sessions' "${DELEGATE_FILE}" \
-  && grep -q '\.kay-delegation-active' "${DELEGATE_FILE}" \
-  && grep -q 'Claude Code and Codex hosts both follow' "${DELEGATE_FILE}"; then
+	  && grep -q 'CLAUDE_SESSION_ID' "${DELEGATE_FILE}" \
+	  && grep -q '\.kay/sessions' "${DELEGATE_FILE}" \
+	  && grep -q '\.kay-delegation-active' "${DELEGATE_FILE}" \
+	  && grep -q '\.sidekick/sessions' "${DELEGATE_FILE}" \
+	  && grep -q 'active-sidekick' "${DELEGATE_FILE}" \
+	  && grep -q 'Claude Code and Codex hosts both follow' "${DELEGATE_FILE}"; then
   assert_pass "Kay activation marker workflow supports Claude Code and Codex hosts"
 else
   assert_fail "Kay activation marker" "missing session marker creation or host support wording"
@@ -82,9 +84,10 @@ if grep -q '^---$' "${STOP_FILE}" \
   && grep -q '^name: kay-stop' "${STOP_FILE}" \
   && grep -q 'SIDEKICK_SESSION_ID' "${STOP_FILE}" \
   && grep -q 'CODEX_THREAD_ID' "${STOP_FILE}" \
-  && grep -q 'CLAUDE_SESSION_ID' "${STOP_FILE}" \
-  && grep -q '\.kay/sessions' "${STOP_FILE}" \
-  && grep -q '\.kay-delegation-active' "${STOP_FILE}"; then
+	  && grep -q 'CLAUDE_SESSION_ID' "${STOP_FILE}" \
+	  && grep -q '\.kay/sessions' "${STOP_FILE}" \
+	  && grep -q '\.kay-delegation-active' "${STOP_FILE}" \
+	  && grep -q 'active-sidekick' "${STOP_FILE}"; then
   assert_pass "kay-stop marker workflow mirrors host session resolution"
 else
   assert_fail "kay-stop" "missing YAML frontmatter, name, host session resolution, or marker handling"

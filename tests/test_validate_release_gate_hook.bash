@@ -2,8 +2,9 @@
 # Unit tests for hooks/validate-release-gate.sh
 #
 # The hook blocks `gh release create` commands via Claude Code's PreToolUse
-# permissionDecision=deny mechanism unless all current-session quality-gate stage markers
-# are present in the active host quality-gate state file.
+# permissionDecision=deny mechanism unless all current-session quality-gate stage
+# markers and two current-session live-pyramid run markers are present in the
+# active host quality-gate state file.
 #
 # We override HOME to a temp directory for each scenario so we can
 # write marker files deterministically without touching the real state.
@@ -69,12 +70,48 @@ write_markers() {
   done
 }
 
+current_head_sha() {
+  git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || printf 'unknown'
+}
+
+write_live_pyramid_markers() {
+  local h="$1" count="${2:-2}" i sha
+  sha="$(current_head_sha)"
+  for i in $(seq 1 "${count}"); do
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z" >> "${h}/.claude/.sidekick/quality-gate-state"
+  done
+}
+
+write_live_pyramid_markers_for_sha() {
+  local h="$1" sha="$2" count="${3:-2}" i
+  for i in $(seq 1 "${count}"); do
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z" >> "${h}/.claude/.sidekick/quality-gate-state"
+  done
+}
+
 write_codex_markers() {
   local h="$1"; shift
   : > "${h}/.codex/.sidekick/quality-gate-state"
   for s in "$@"; do
     echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session}" >> "${h}/.codex/.sidekick/quality-gate-state"
   done
+}
+
+write_codex_live_pyramid_markers() {
+  local h="$1" count="${2:-2}" i sha
+  sha="$(current_head_sha)"
+  for i in $(seq 1 "${count}"); do
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z" >> "${h}/.codex/.sidekick/quality-gate-state"
+  done
+}
+
+write_gh_alias_config() {
+  local gh_config="$1"
+  mkdir -p "${gh_config}"
+  cat > "${gh_config}/aliases.yml" <<'YAML'
+rel: release create
+rc: '!gh release create'
+YAML
 }
 
 assert_denied_command() {
@@ -108,60 +145,54 @@ assert_denied_command_with_gh_aliases() {
 }
 
 assert_denied_command_with_command_scoped_gh_alias() {
-  local label="$1" h bin gh_config payload out rc decision
+  local label="$1" h bin gh_config capture payload out rc decision
   echo "${label}"
   h="$(setup_home)"
   bin="$(mktemp -d)"
   gh_config="$(mktemp -d)"
-  cat > "${bin}/gh" <<'SH'
+  capture="$(mktemp)"
+  write_gh_alias_config "${gh_config}"
+  cat > "${bin}/gh" <<SH
 #!/usr/bin/env bash
-if [ "${1:-}" = "alias" ] && [ "${2:-}" = "list" ]; then
-  if [ -n "${SIDEKICK_TEST_GH_CONFIG_DIR:-}" ] && [ "${GH_CONFIG_DIR:-}" = "${SIDEKICK_TEST_GH_CONFIG_DIR}" ]; then
-    printf 'rel\trelease create\n'
-  fi
-  exit 0
-fi
+printf 'gh-executed\n' >> "${capture}"
 exit 0
 SH
   chmod +x "${bin}/gh"
   payload="$(jq -cn --arg cmd "GH_CONFIG_DIR=${gh_config} gh rel v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
-  out="$(PATH="${bin}:${PATH}" SIDEKICK_TEST_GH_CONFIG_DIR="${gh_config}" run_hook "${h}" "${payload}")"; rc=$?
+  out="$(PATH="${bin}:${PATH}" run_hook "${h}" "${payload}")"; rc=$?
   decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
-  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
-    assert_pass "${label}: permissionDecision=deny"
+  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ] && [ ! -s "${capture}" ]; then
+    assert_pass "${label}: permissionDecision=deny without executing gh"
   else
-    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out} gh_capture=$(cat "${capture}" 2>/dev/null)"
   fi
-  rm -rf "${h}" "${bin}" "${gh_config}"
+  rm -rf "${h}" "${bin}" "${gh_config}" "${capture}"
 }
 
 assert_denied_command_with_gh_global_config_alias() {
-  local label="$1" command_template="$2" h bin gh_config command payload out rc decision
+  local label="$1" command_template="$2" h bin gh_config capture command payload out rc decision
   echo "${label}"
   h="$(setup_home)"
   bin="$(mktemp -d)"
   gh_config="$(mktemp -d)"
-  cat > "${bin}/gh" <<'SH'
+  capture="$(mktemp)"
+  write_gh_alias_config "${gh_config}"
+  cat > "${bin}/gh" <<SH
 #!/usr/bin/env bash
-if [ "${1:-}" = "alias" ] && [ "${2:-}" = "list" ]; then
-  if [ -n "${SIDEKICK_TEST_GH_CONFIG_DIR:-}" ] && [ "${GH_CONFIG_DIR:-}" = "${SIDEKICK_TEST_GH_CONFIG_DIR}" ]; then
-    printf 'rel\trelease create\n'
-  fi
-  exit 0
-fi
+printf 'gh-executed\n' >> "${capture}"
 exit 0
 SH
   chmod +x "${bin}/gh"
   command="${command_template//__GH_CONFIG_DIR__/${gh_config}}"
   payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
-  out="$(PATH="${bin}:${PATH}" SIDEKICK_TEST_GH_CONFIG_DIR="${gh_config}" run_hook "${h}" "${payload}")"; rc=$?
+  out="$(PATH="${bin}:${PATH}" run_hook "${h}" "${payload}")"; rc=$?
   decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
-  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
-    assert_pass "${label}: permissionDecision=deny"
+  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ] && [ ! -s "${capture}" ]; then
+    assert_pass "${label}: permissionDecision=deny without executing gh"
   else
-    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out} gh_capture=$(cat "${capture}" 2>/dev/null)"
   fi
-  rm -rf "${h}" "${bin}" "${gh_config}"
+  rm -rf "${h}" "${bin}" "${gh_config}" "${capture}"
 }
 
 assert_gh_alias_lookup_sanitizes_env() {
@@ -171,12 +202,10 @@ assert_gh_alias_lookup_sanitizes_env() {
   bin="$(mktemp -d)"
   gh_config="$(mktemp -d)"
   capture="$(mktemp)"
+  write_gh_alias_config "${gh_config}"
   cat > "${bin}/gh" <<SH
 #!/usr/bin/env bash
 env > "${capture}"
-if [ "\${1:-}" = "alias" ] && [ "\${2:-}" = "list" ]; then
-  printf 'rel\trelease create\n'
-fi
 exit 0
 SH
   chmod +x "${bin}/gh"
@@ -185,10 +214,10 @@ SH
   decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
   if [ "${rc}" -eq 0 ] \
     && [ "${decision}" = "deny" ] \
-    && ! grep -Eq 'CLAUDE_API_KEY|CODEX_TOKEN|OPENAI_API_KEY|GH_TOKEN|secret' "${capture}"; then
-    assert_pass "${label}: sanitized env and permissionDecision=deny"
+    && [ ! -s "${capture}" ]; then
+    assert_pass "${label}: gh alias config parsed without executing gh"
   else
-    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out} captured=$(cat "${capture}" 2>/dev/null)"
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out} gh_capture=$(cat "${capture}" 2>/dev/null)"
   fi
   rm -rf "${h}" "${bin}" "${gh_config}" "${capture}"
 }
@@ -237,17 +266,53 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4: gh release create with ALL 4 markers → pass-through
+# Scenario 4: gh release create with all markers and two live runs → pass-through
 # ---------------------------------------------------------------------------
-echo "Scenario 4: release command with all markers passes"
+echo "Scenario 4: release command with all markers and live pyramid passes"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
+  assert_pass "all 4 markers plus live pyramid: exit 0, no deny"
+else
+  assert_fail "all markers plus live pyramid pass" "rc=${RC} out=${OUT}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
+# Scenario 4b: all 4 stage markers without live pyramid markers → deny
+# ---------------------------------------------------------------------------
+echo "Scenario 4b: stage markers without live pyramid are denied"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
-if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
-  assert_pass "all 4 markers: exit 0, no deny"
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"live pyramid incomplete"* ]] && [[ "${REASON}" == *"0/2"* ]]; then
+  assert_pass "stage markers without live pyramid: permissionDecision=deny"
 else
-  assert_fail "all markers pass" "rc=${RC} out=${OUT}"
+  assert_fail "stage markers without live pyramid deny" "rc=${RC} decision=${DECISION} reason=${REASON}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
+# Scenario 4c: only one live-pyramid run marker → deny
+# ---------------------------------------------------------------------------
+echo "Scenario 4c: one live-pyramid marker is denied"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 1
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"1/2"* ]]; then
+  assert_pass "one live-pyramid marker: permissionDecision=deny"
+else
+  assert_fail "one live-pyramid marker deny" "rc=${RC} decision=${DECISION} reason=${REASON}"
 fi
 rm -rf "${H}"
 
@@ -1358,6 +1423,69 @@ assert_denied_command "Scenario 49ao: gh api implicit POST release endpoint is d
   "gh api repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f name=v1.2.1"
 assert_denied_command "Scenario 49ap: gh api POST tag ref endpoint is denied" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=abc123"
+assert_denied_command "Scenario 49ap2: curl POST release endpoint is denied" \
+  "curl -sS -X POST https://api.github.com/repos/alo-exp/sidekick/releases -d '{\"tag_name\":\"v1.2.1\"}'"
+assert_denied_command "Scenario 49ap2b: curl attached short data flag release endpoint is denied" \
+  "curl -sS -d'{\"tag_name\":\"v1.2.1\"}' https://api.github.com/repos/alo-exp/sidekick/releases"
+assert_denied_command "Scenario 49ap2c: curl attached short form flag release endpoint is denied" \
+  "curl -sS -Ftag_name=v1.2.1 https://api.github.com/repos/alo-exp/sidekick/releases"
+assert_denied_command "Scenario 49ap3: curl data-implied POST tag ref endpoint is denied" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs/tags/v1.2.1\",\"sha\":\"abc123\"}'"
+assert_denied_command "Scenario 49ap4: wget POST release endpoint is denied" \
+  "wget --method=POST --body-data '{\"tag_name\":\"v1.2.1\"}' https://api.github.com/repos/alo-exp/sidekick/releases"
+assert_denied_command "Scenario 49ap5: python direct GitHub release API write is denied" \
+  "python3 -c 'import requests; requests.post(\"https://api.github.com/repos/alo-exp/sidekick/releases\", json={\"tag_name\":\"v1.2.1\"})'"
+assert_denied_command "Scenario 49ap6: python urllib direct GitHub release API write is denied" \
+  "python3 -c 'import urllib.request as u; u.urlopen(u.Request(\"https://api.github.com/repos/alo-exp/sidekick/releases\", data=b\"{}\"))'"
+assert_denied_command "Scenario 49ap6b: python requests import alias write is denied" \
+  "python3 -c 'from requests import post as p; p(\"https://api.github.com/repos/alo-exp/sidekick/releases\", json={\"tag_name\":\"v1.2.1\"})'"
+assert_denied_command "Scenario 49ap6c: python requests session write is denied" \
+  "python3 -c 'import requests; s=requests.Session(); s.post(\"https://api.github.com/repos/alo-exp/sidekick/releases\", json={\"tag_name\":\"v1.2.1\"})'"
+assert_denied_command "Scenario 49ap6d: python split-host http.client write is denied" \
+  "python3 -c 'import http.client as h; c=h.HTTPSConnection(\"api.github.com\"); c.request(\"POST\", \"/repos/alo-exp/sidekick/releases\", body=\"{}\")'"
+assert_denied_command "Scenario 49ap6e: python GraphQL release mutation is denied" \
+  "python3 -c 'import requests; requests.post(\"https://api.github.com/graphql\", json={\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"})'"
+_curl_config="$(mktemp)"
+cat > "${_curl_config}" <<'EOF'
+url = "https://api.github.com/repos/alo-exp/sidekick/releases"
+request = POST
+data = "{\"tag_name\":\"v1.2.1\"}"
+EOF
+assert_denied_command "Scenario 49ap7: curl config file release endpoint is denied" \
+  "curl -K ${_curl_config}"
+assert_denied_command "Scenario 49ap7b: curl stdin config source is denied" \
+  "curl -K -"
+assert_denied_command "Scenario 49ap7c: curl attached stdin config source is denied" \
+  "curl -K-"
+_wget_urls="$(mktemp)"
+printf '%s\n' "https://api.github.com/repos/alo-exp/sidekick/releases" > "${_wget_urls}"
+assert_denied_command "Scenario 49ap8: wget input file release endpoint is denied" \
+  "wget --method=POST --body-data '{\"tag_name\":\"v1.2.1\"}' -i ${_wget_urls}"
+assert_denied_command "Scenario 49ap8b: wget stdin input source is denied" \
+  "wget -i -"
+assert_denied_command "Scenario 49ap8c: wget attached stdin input source is denied" \
+  "wget -i-"
+rm -f "${_curl_config}" "${_wget_urls}"
+assert_denied_command "Scenario 49ap9: node direct GitHub release API write is denied" \
+  "node -e 'fetch(\"https://api.github.com/repos/alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{}\"})'"
+echo "Scenario 49ap9b: curl missing config on example.com passes through"
+H="$(setup_home)"
+OUT="$(run_hook "${H}" '{"tool_name":"Bash","tool_input":{"command":"curl -K /tmp/sidekick-missing.cfg https://example.com"}}')"; RC=$?
+if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
+  assert_pass "curl missing config on example.com: exit 0, no JSON decision"
+else
+  assert_fail "curl missing config on example.com" "rc=${RC} out=${OUT}"
+fi
+rm -rf "${H}"
+echo "Scenario 49ap9c: wget missing input on example.com passes through"
+H="$(setup_home)"
+OUT="$(run_hook "${H}" '{"tool_name":"Bash","tool_input":{"command":"wget -i /tmp/sidekick-missing.txt https://example.com"}}')"; RC=$?
+if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
+  assert_pass "wget missing input on example.com: exit 0, no JSON decision"
+else
+  assert_fail "wget missing input on example.com" "rc=${RC} out=${OUT}"
+fi
+rm -rf "${H}"
 assert_denied_command "Scenario 49aq: alias expansion release command is denied" \
   "shopt -s expand_aliases; alias r='gh release create'; r v1.2.1"
 assert_denied_command "Scenario 49ar: case branch release command is denied" \
@@ -1489,6 +1617,7 @@ assert_denied_command "Scenario 49ck: deeply nested shell wrappers are denied" \
 echo "Scenario 50: Codex host markers satisfy release command"
 H="$(setup_home)"
 write_codex_markers "${H}" 1 2 3 4
+write_codex_live_pyramid_markers "${H}" 2
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
 OUT="$(run_hook_codex "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)

@@ -19,6 +19,10 @@ Stop Forge-first mode and restore normal direct-host behavior.
      ```bash
      rm -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
        "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
+     ACTIVE_FILE="${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
+     if [ -f "${ACTIVE_FILE}" ] && [ "$(cat "${ACTIVE_FILE}")" = "forge" ]; then
+       rm -f "${ACTIVE_FILE}"
+     fi
      ```
      Then attempt to revert the active output style to `default` (or the prior style if tracked). Confirm: **"Forge-first mode deactivated for this session. Direct-host mode restored."**
    - **If no:** acknowledge: **"Forge-first mode is not currently active."**

@@ -60,9 +60,19 @@ Create the current-session Kay marker before delegating so Sidekick hooks can en
 ```bash
 SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Kay mode"; exit 1; }
-mkdir -p "${HOME}/.kay/sessions/${SIDEKICK_SESSION}"
+mkdir -p "${HOME}/.kay/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.claude/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.codex/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
+rm -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
+  "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-level3-active" \
+  "${HOME}/.codex/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
+  "${HOME}/.codex/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
+printf '%s\n' "kay" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
 : > "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
 ```
+
+Kay and Forge are mutually exclusive per host session. Kay activation clears any current-session Forge marker and writes `active-sidekick=kay`, so the Forge hook becomes a no-op before Kay commands start.
 
 Confirm: **"Kay sidekick mode activated for this session. Delegating implementation work to Kay."**
 

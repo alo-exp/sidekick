@@ -78,10 +78,10 @@ var IDX = [
   // ── DELEGATION WORKFLOW ───────────────────────────────────────
   { page:'Delegation Workflow', url:'workflows/', anchor:'activation',
     title:'Activate Forge delegation mode',
-    text:'Run /forge to activate. The host loads SKILL.md runs the four-part readiness check bootstraps missing Sidekick-owned project files and writes a fresh activation marker under the current host session directory. Hooks stay dormant until that marker exists.' },
+    text:'Run /forge to activate. The host loads SKILL.md runs the four-part readiness check bootstraps missing Sidekick-owned project files clears any Kay marker writes active-sidekick=forge and writes a fresh activation marker under the current host session directory. Hooks enforce from the Forge marker; active-sidekick is a mutual-exclusion override that suppresses Kay when present.' },
   { page:'Delegation Workflow', url:'workflows/', anchor:'kay-workflow',
     title:'Kay workflow — verify, execute, review',
-    text:'Kay workflow verifies the Kay runtime and MiniMax login, activates Kay mode through kay-delegate or sidekick:kay-delegate, then uses the native kay exec --full-auto runtime path while reviewing Kay progress summary and .kay/conversations.idx lookup metadata.' },
+    text:'Kay workflow verifies the Kay runtime and MiniMax login, activates Kay mode through kay-delegate or sidekick:kay-delegate, clears any Forge marker writes active-sidekick=kay, then uses the native kay exec --full-auto runtime path while reviewing Kay progress summary and .kay/conversations.idx lookup metadata.' },
   { page:'Delegation Workflow', url:'workflows/', anchor:'task-prompt',
     title:'5-field task prompt structure',
     text:'OBJECTIVE one-sentence what Forge must do. CONTEXT only relevant files current state. DESIRED STATE specific verifiable outcome. SUCCESS CRITERIA checklist to verify success. INJECTED SKILLS up to 2 bootstrap skills. Total 2000 tokens max. The host composes from plain-language description.' },

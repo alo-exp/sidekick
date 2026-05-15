@@ -270,7 +270,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <h2 id="hook-enforcement"><span class="issue-badge badge-behavior"><i data-lucide="shield-check"></i> Behavior</span> Hook Enforcement Issues</h2>
 
       <h3>Direct edits are denied after /forge or Kay mode starts</h3>
-      <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. It blocks direct implementation writes and asks the host to route work through Forge or Kay.</p>
+      <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. If the shared <code>active-sidekick</code> selector is present it suppresses the opposite sidekick for that host session, but the marker remains the source of truth for the active mode. It blocks direct implementation writes and asks the host to route work through Forge or Kay.</p>
       <p><strong>Fix:</strong> Delegate the task through Forge mode for Forge, or <code>kay-delegate</code> / <code>sidekick:kay-delegate</code> for Kay. Inside active Kay mode, the child runtime command is <code>kay exec --full-auto "&lt;task&gt;"</code>. For Forge L3 takeover only, the host runs <code>sidekick forge-level3 start</code>, completes the failing subtask inside the project boundary, then runs <code>sidekick forge-level3 stop</code>.</p>
 
       <h3>Forge says the conversation database is not writable</h3>

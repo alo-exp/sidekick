@@ -173,7 +173,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">4</div></div>
           <div class="flow-body">
             <h4>Confirm activation</h4>
-            <p>The host writes a fresh Forge activation marker under the current host session directory and confirms: "Forge-first delegation mode activated." The hook layer stays dormant until that marker exists, then routes implementation work to Forge until you run <code>/forge-stop</code>.</p>
+            <p>The host clears any Kay marker, writes <code>active-sidekick=forge</code>, then writes a fresh Forge activation marker under the current host session directory and confirms: "Forge-first delegation mode activated." The hook layer routes implementation work to Forge from the marker; the selector just prevents the Kay hook from enforcing during the same host session, and it stays active until you run <code>/forge-stop</code>.</p>
           </div>
         </div>
       </div>
@@ -197,7 +197,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Activate Kay mode</h4>
-            <p>Run <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> in plugin-prefixed hosts, then give the host the task to delegate. When Kay mode launches the child runtime, the hook keeps <code>kay exec --full-auto</code> in force and surfaces bounded, redacted output with <code>[KAY]</code>.</p>
+            <p>Run <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> in plugin-prefixed hosts, then give the host the task to delegate. Activation clears any Forge marker and writes <code>active-sidekick=kay</code>. When Kay mode launches the child runtime, the hook keeps <code>kay exec --full-auto</code> in force and surfaces bounded, redacted output with <code>[KAY]</code>.</p>
           </div>
         </div>
         <div class="flow-step">
@@ -272,6 +272,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
         <div class="callout-body"><strong>Always review ASSUMPTIONS.</strong> If Forge made an incorrect assumption (wrong env variable name, wrong test framework, etc.), correct it now. The host can convert the correction into deduplicated AGENTS.md guidance so Forge doesn't repeat the assumption.</div>
       </div>
+      <p>The resulting <code>./AGENTS.md</code> also keeps a <code>## Forge Output Format</code> section so task responses stay structured around <code>STATUS</code>, <code>FILES_CHANGED</code>, <code>ASSUMPTIONS</code>, and <code>PATTERNS_DISCOVERED</code>.</p>
 
       <h2 id="agents-update">Step 6 — AGENTS.md Update</h2>
       <p>After each Forge task completion, the host runs the AGENTS.md mentoring loop. This is automatic for extraction and deduplication; L3 takeover updates are proposed for confirmation before being written.</p>

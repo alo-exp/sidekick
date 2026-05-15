@@ -12,12 +12,14 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
 - Codex installs: `~/.codex/.sidekick/quality-gate-state`
 **Marker format**: `quality-gate-stage-N session=<current-host-session-id>`
+**Live-pyramid marker format**: `quality-gate-live-pyramid session=<current-host-session-id> sha=<git-sha> at=<utc-timestamp>`
 
 **Required markers** (must all be present before release):
 - `quality-gate-stage-1`
 - `quality-gate-stage-2`
 - `quality-gate-stage-3`
 - `quality-gate-stage-4`
+- Two distinct current-session `quality-gate-live-pyramid` markers written by successful full live runs of `tests/run_release.bash`
 
 **Session reset**: All four markers are scoped to the current host session id. The gate must be completed in full during the session in which the release is being cut — markers from a previous session do not satisfy the release hook.
 
@@ -350,16 +352,19 @@ After all three targets are clean with no blocking issues:
 
 ## Release
 
-After all 4 markers are written to `$SIDEKICK_QG_STATE`,
-and after the full Forge/Kay live pyramid has been run twice, verify and
-create the release:
+After all 4 stage markers are written to `$SIDEKICK_QG_STATE`,
+and after the full Forge/Kay live pyramid has been run twice with
+`SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`,
+verify and create the release:
 
 ```bash
-# Verify all 4 current-session markers are present
+# Verify all 4 current-session stage markers and 2 live-pyramid markers are present
 SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
 count=$(grep -oE "^quality-gate-stage-[1-4] session=${SIDEKICK_QG_SESSION}$" "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 test "$count" = "4" || { echo "Expected 4 distinct current-session markers, found $count"; exit 1; }
+live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" '$1=="quality-gate-live-pyramid"{for(i=2;i<=NF;i++)if($i=="session="sid){print $0}}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
+test "$live_count" -ge 2 || { echo "Expected 2 current-session live-pyramid markers, found $live_count"; exit 1; }
 
 # Create the GitHub release
 gh release create v<version> \

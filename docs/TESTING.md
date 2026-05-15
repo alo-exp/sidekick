@@ -96,10 +96,10 @@ Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model cal
 
 ```bash
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full pyramid — maintainer pre-tag
-bash tests/run_release.bash                                               # stage 1 only, stages 2-6 skip cleanly — safe for CI
+bash tests/run_release.bash                                               # stage 1 only, stages 2-6 skip cleanly — safe for CI, not release-authorizing
 ```
 
-Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the full live Forge/Kay pyramid twice locally before the version tag is pushed.
+Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the full live Forge/Kay pyramid twice locally before the version tag is pushed. Only full live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
 
 After the GitHub release is published, run `bash tests/post_release_cleanup.bash` to remove any transient repo-local artifacts left behind by the release process.
 

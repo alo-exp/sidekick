@@ -137,6 +137,21 @@ sidekick_session_marker_file() {
   esac
 }
 
+sidekick_active_mode_file() {
+  local session_id
+  session_id="$(sidekick_session_id)" || return 1
+  printf '%s/.sidekick/sessions/%s/active-sidekick' "${HOME}" "${session_id}"
+}
+
+sidekick_active_mode_allows() {
+  local sidekick="$1"
+  local active_file active
+  active_file="$(sidekick_active_mode_file)" || return 0
+  [[ -f "$active_file" ]] || return 0
+  IFS= read -r active < "$active_file" 2>/dev/null || active=""
+  [[ "$active" == "$sidekick" ]]
+}
+
 sidekick_project_root() {
   local root="${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}"
   if command -v realpath >/dev/null 2>&1; then
