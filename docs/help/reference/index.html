@@ -162,7 +162,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </table>
 
       <h2 id="forge-hooks">Plugin Hooks</h2>
-      <p>Sidekick ships a small SessionStart surface for first-run bootstrap and legacy cleanup, plus PreToolUse and PostToolUse hooks that stay dormant until a sidekick session marker exists. SessionStart no longer updates or repairs Forge/Kay runtimes after install.</p>
+      <p>Sidekick ships a small SessionStart surface for first-run bootstrap and legacy cleanup, plus PreToolUse and PostToolUse hooks that stay dormant until a sidekick session marker exists. The shared <code>active-sidekick</code> selector is a mutual-exclusion override: when present it points at Forge or Kay, and when absent the matching marker still drives enforcement. SessionStart no longer updates or repairs Forge/Kay runtimes after install.</p>
       <table class="ref-table">
         <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
         <tbody>
@@ -172,7 +172,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, denies direct implementation edits, rewrites Kay runtime calls to include <code>--full-auto</code> and the safe output runner, and appends an entry to <code>.kay/conversations.idx</code>.</td></tr>
           <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output, strips terminal controls, redacts obvious secrets, and surfaces a compact untrusted <code>[FORGE-SUMMARY]</code> STATUS block when one is present.</td></tr>
           <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay subprocess output, strips terminal controls, redacts obvious secrets, and emits a compact untrusted <code>[KAY-SUMMARY]</code> progress surface when a STATUS block is present.</td></tr>
-          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four current-session <code>quality-gate-stage-N session=&lt;id&gt;</code> markers are present in the active host state file: <code>~/.claude/.sidekick/quality-gate-state</code> for Claude/source installs or <code>~/.codex/.sidekick/quality-gate-state</code> for Codex installs.</td></tr>
+          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands unless all four current-session <code>quality-gate-stage-N session=&lt;id&gt;</code> markers and two current-session <code>quality-gate-live-pyramid</code> markers are present in the active host state file: <code>~/.claude/.sidekick/quality-gate-state</code> for Claude/source installs or <code>~/.codex/.sidekick/quality-gate-state</code> for Codex installs.</td></tr>
         </tbody>
       </table>
 
@@ -314,7 +314,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <tr><td>skills/codex-delegate/SKILL.md</td><td>Kay delegate workflow and runtime guidance</td></tr>
           <tr><td>.forge.toml</td><td>Project root compaction config (gitignored); credentials live in <code>~/forge/.credentials.json</code></td></tr>
           <tr><td>.forge/conversations.idx</td><td>Project-local Forge task lookup ledger</td></tr>
-          <tr><td>host session marker</td><td>Zero-byte Forge state marker under the active host's session directory; this is created by <code>/forge</code> and removed by <code>/forge-stop</code></td></tr>
+          <tr><td>host session marker</td><td>Forge state marker under the active host's session directory; this is created by <code>/forge</code> and removed by <code>/forge-stop</code></td></tr>
+          <tr><td><code>~/.sidekick/sessions/&lt;session&gt;/active-sidekick</code></td><td>Shared selector containing <code>forge</code> or <code>kay</code>; activation writes it so only one sidekick hook enforces per host session</td></tr>
           <tr><td>~/.kay/sessions/&lt;session&gt;/.kay-delegation-active</td><td>Kay state marker used by Kay hooks when Kay mode is active</td></tr>
           <tr><td>.kay/conversations.idx</td><td>Project-local Kay task lookup ledger</td></tr>
           <tr><td>~/.kay/config.toml</td><td>Kay runtime config; legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> paths remain compatibility-only</td></tr>

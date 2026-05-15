@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
 <style>
 /* ───── RESET ───── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1263,7 +1263,7 @@ const html = document.documentElement;
 function updateToggleIcon() {
   const icon = html.getAttribute('data-theme') === 'dark' ? 'sun' : 'moon';
   themeToggle.innerHTML = `<i data-lucide="${icon}"></i>`;
-  lucide.createIcons({nodes: [themeToggle]});
+  if (window.lucide) lucide.createIcons({nodes: [themeToggle]});
 }
 updateToggleIcon();
 themeToggle.addEventListener('click', () => {
@@ -1286,7 +1286,7 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // Initialize Lucide icons
-lucide.createIcons();
+if (window.lucide) lucide.createIcons();
 </script>
 </body>
 </html>

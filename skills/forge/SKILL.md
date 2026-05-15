@@ -50,12 +50,17 @@ Resolve the same host session id the hooks use, then create or refresh the marke
 ```bash
 SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Forge mode"; exit 1; }
-mkdir -p "${HOME}/.claude/sessions/${SIDEKICK_SESSION}"
-rm -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
+mkdir -p "${HOME}/.claude/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.kay/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
+rm -f "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active" \
+  "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
+printf '%s\n' "forge" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
 printf '%s\n' "$(uuidgen | tr 'A-Z' 'a-z')" > "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
 ```
 
 - Before writing the marker, remove any stale sibling `.forge-level3-active` marker for the same resolved session. Level 3 must be re-entered explicitly through the fallback ladder after each fresh `/forge` activation.
+- `/forge` is mutually exclusive with Kay mode. Activation removes the current-session Kay marker and writes `active-sidekick=forge`, so the Kay hook becomes a no-op before Forge commands start.
 - If file already exists (stale from prior session): re-run full health check, then acknowledge: **"Forge-first mode is already active (re-validated)."**
 
 ### 4. Confirm

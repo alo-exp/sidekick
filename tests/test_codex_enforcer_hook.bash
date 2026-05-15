@@ -31,8 +31,10 @@ CODEX_STUB_DIR="${HOME_SANDBOX}/bin"
 TEST_SESSION_ID="codex-test-$$"
 MARKER_DIR="${HOME_SANDBOX}/.kay/sessions/${TEST_SESSION_ID}"
 MARKER_FILE="${MARKER_DIR}/.kay-delegation-active"
+ACTIVE_MODE_DIR="${HOME_SANDBOX}/.sidekick/sessions/${TEST_SESSION_ID}"
+ACTIVE_MODE_FILE="${ACTIVE_MODE_DIR}/active-sidekick"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
-mkdir -p "${MARKER_DIR}" "${CODEX_STUB_DIR}"
+mkdir -p "${MARKER_DIR}" "${ACTIVE_MODE_DIR}" "${CODEX_STUB_DIR}"
 
 cat > "${CODEX_STUB_DIR}/kay" <<'STUB'
 #!/usr/bin/env bash
@@ -75,6 +77,16 @@ else
 fi
 
 touch "${MARKER_FILE}"
+
+echo "=== test_noop_when_forge_is_active_sidekick ==="
+printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
+_out="$(run_hook '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x","content":"y"}}')"
+if [ -z "${_out}" ]; then
+  assert_pass "test_noop_when_forge_is_active_sidekick"
+else
+  assert_fail "test_noop_when_forge_is_active_sidekick" "expected empty, got: '${_out}'"
+fi
+rm -f "${ACTIVE_MODE_FILE}"
 
 _assert_deny_with_kay_reason() {
   local name="$1" tool_name="$2"

@@ -167,12 +167,12 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>The key insight is that Forge (ForgeCode) is a specialized coding agent that operates autonomously. The host's role is to communicate the task clearly, verify the outcome, and mentor future runs through AGENTS.md.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Delegation is session scoped.</strong> Once <code>/forge</code> is active, implementation tasks are routed to Forge until <code>/forge-stop</code> removes the current-session marker. If you are orienting yourself first, read <a href="../../START-HERE.md">Start Here</a>.</div>
+        <div class="callout-body"><strong>Delegation is session scoped.</strong> Once <code>/forge</code> is active, implementation tasks are routed to Forge until <code>/forge-stop</code> removes the current-session marker. Forge and Kay are mutually exclusive in the same host session through the shared <code>active-sidekick</code> selector. If you are orienting yourself first, read <a href="../../START-HERE.md">Start Here</a>.</div>
       </div>
 
       <h2 id="kay-delegation">Kay Delegation Model</h2>
       <p>Kay is Sidekick's execution agent for the OSS Codex lineage. The user-facing activation surface is <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> in plugin-prefixed hosts. Once Kay mode is active, Sidekick routes implementation through Kay's native <code>kay exec --full-auto</code> runtime path, while older binary names are kept only as compatibility aliases.</p>
-      <p>Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, compatibility aliases, a session-scoped Kay marker when Kay mode is active, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
+      <p>Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, compatibility aliases, a session-scoped Kay marker when Kay mode is active, the shared <code>active-sidekick</code> selector, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
         <div class="callout-body"><strong>Forge and Kay are intentionally different.</strong> Forge uses a host-led fallback ladder and mentoring loop. Kay uses its native execution model with Sidekick packaging, summaries, and compatibility around it.</div>
@@ -249,6 +249,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <h2 id="agents-md">AGENTS.md Mentoring Loop</h2>
       <p>After every Forge task completion, the host extracts standing instructions and writes only new, deduplicated guidance to AGENTS.md. This is the mechanism by which delegation gets smarter over time.</p>
+      <p>The resulting <code>./AGENTS.md</code> also keeps a <code>## Forge Output Format</code> section so future Forge runs stay structured around <code>STATUS</code>, <code>FILES_CHANGED</code>, <code>ASSUMPTIONS</code>, and <code>PATTERNS_DISCOVERED</code>.</p>
 
       <h3>What the host extracts</h3>
       <ul>
