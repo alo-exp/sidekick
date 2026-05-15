@@ -2,13 +2,17 @@
 # Pre-release quality gate enforcer
 # Intercepts Bash tool calls containing "gh release create" and denies them
 # (via the Claude Code PreToolUse permissionDecision envelope) unless all
-# current-session quality-gate stage markers are present in Sidekick's state file.
+# current-session quality-gate stage markers and two live-pyramid run markers
+# are present in Sidekick's state file.
 #
 # Stage count and marker names are defined in docs/pre-release-quality-gate.md.
 # Each stage in that document resolves host-specific state, invokes
 # /superpowers:verification-before-completion, then writes:
 #   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
 #   printf 'quality-gate-stage-N session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
+# A successful live `tests/run_release.bash` run with both live gates enabled
+# appends:
+#   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp>
 # If stages are added or removed from that document, update STAGE_COUNT below
 # and commit both files together.
 #
@@ -19,6 +23,8 @@
 set -euo pipefail
 
 STAGE_COUNT=4
+LIVE_PYRAMID_REQUIRED_RUNS=2
+LIVE_PYRAMID_MARKER="quality-gate-live-pyramid"
 SIDEKICK_QG_DIR="$HOME/.claude/.sidekick"
 if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ]; then
   SIDEKICK_QG_DIR="$HOME/.codex/.sidekick"
@@ -55,7 +61,6 @@ import codecs
 import os
 import re
 import shlex
-import subprocess
 import sys
 
 CONTROL = {";", "&&", "||", "|", "&"}
@@ -74,6 +79,12 @@ TIME_VALUE_OPTIONS = {"-f", "--format", "-o", "--output"}
 TIME_FLAG_OPTIONS = {"-p", "-a", "--append", "-v", "--verbose"}
 GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
 GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
+GITHUB_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+GITHUB_RELEASE_API_RE = re.compile(
+    r"(?:https?://api\.github\.com)?/?repos/[^/\s\"']+/[^/\s\"']+/"
+    r"(?:releases(?:[/\?#\"'\s]|$)|git/refs(?:[/\?#\"'\s]|$))",
+    re.I,
+)
 SUDO_VALUE_OPTIONS = {
     "-u", "--user",
     "-g", "--group",
@@ -122,6 +133,16 @@ GRAPHQL_RELEASE_MUTATION_RE = re.compile(
     r"\b(?:create|update|delete)Release\b|"
     r"\b(?:create|update|delete)Ref\b|"
     r"refs/tags/",
+    re.IGNORECASE,
+)
+GRAPHQL_RELEASE_ENDPOINT_RE = re.compile(r"api\.github\.com/graphql", re.IGNORECASE)
+REQUESTS_SESSION_WRITE_RE = re.compile(
+    r"\b(?:requests|httpx)\.Session\(\)\.(?:request|post|put|patch|delete)\s*\(",
+    re.IGNORECASE,
+)
+REQUESTS_IMPORTED_WRITE_RE = re.compile(
+    r"from\s+(?:requests|httpx)\s+import\s+(request|post|put|patch|delete)"
+    r"(?:\s+as\s+([A-Za-z_][A-Za-z0-9_]*))?",
     re.IGNORECASE,
 )
 PERSISTENT_GH_ALIASES = {}
@@ -614,6 +635,8 @@ def gh_release_create_command(segment, gh_index):
 
 
 def is_release_api_endpoint(endpoint):
+    endpoint = endpoint.strip()
+    endpoint = re.sub(r"^https?://api\.github\.com/?", "", endpoint, flags=re.I)
     path = endpoint.split("?", 1)[0].strip("/")
     parts = [part for part in path.split("/") if part]
     if len(parts) < 4 or parts[0] != "repos":
@@ -742,6 +765,204 @@ def gh_api_release_write_command(segment, gh_index):
     if not is_release_api_endpoint(endpoint):
         return False
     return effective_method in GH_API_WRITE_METHODS or has_write_fields
+
+
+def direct_github_release_api_url(value):
+    return bool(GITHUB_RELEASE_API_RE.search(value))
+
+
+def file_text_mentions_release_write(text, command_has_write_semantics=False):
+    if not text:
+        return False
+    if language_payload_mentions_release_command(text):
+        return True
+    if command_has_write_semantics and direct_github_release_api_url(text):
+        return True
+    return False
+
+
+def read_release_source_text(source):
+    try:
+        path = Path(source)
+    except Exception:
+        return None
+    if not path.is_file():
+        return None
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return None
+
+
+def release_source_is_uninspectable(source):
+    return source == "-" or source.startswith("<(") or source.startswith("/dev/fd/")
+
+
+def release_payload_matches_git_endpoint(payload):
+    return bool(
+        re.search(r"api\.github\.com", payload, re.IGNORECASE)
+        and (
+            re.search(r"repos/[^/\s\"']+/[^/\s\"']+/(?:releases|git/refs)\b", payload)
+            or GRAPHQL_RELEASE_MUTATION_RE.search(payload)
+        )
+    )
+
+
+def release_payload_import_aliases(payload):
+    aliases = []
+    for method, alias in REQUESTS_IMPORTED_WRITE_RE.findall(payload):
+        aliases.append(alias or method)
+    return aliases
+
+
+def curl_release_write_command(segment, start):
+    method = None
+    has_write_body = False
+    urls = []
+    config_files = []
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            urls.extend(segment[index + 1:])
+            break
+        if token in {"-X", "--request"}:
+            if index + 1 < len(segment):
+                method = segment[index + 1].upper()
+            index += 2
+            continue
+        if token.startswith("-X") and token != "-X":
+            method = token[2:].upper()
+            index += 1
+            continue
+        if token.startswith("--request="):
+            method = token.split("=", 1)[1].upper()
+            index += 1
+            continue
+        if token in {
+            "-d", "--data", "--data-raw", "--data-binary", "--data-urlencode",
+            "--json", "-F", "--form", "--form-string",
+        }:
+            has_write_body = True
+            index += 2
+            continue
+        if token.startswith("-d") and token != "-d":
+            has_write_body = True
+            index += 1
+            continue
+        if token.startswith("-F") and token != "-F":
+            has_write_body = True
+            index += 1
+            continue
+        if token.startswith(("--data=", "--data-raw=", "--data-binary=", "--data-urlencode=", "--json=", "--form=", "--form-string=")):
+            has_write_body = True
+            index += 1
+            continue
+        if token in {"--url"}:
+            if index + 1 < len(segment):
+                urls.append(segment[index + 1])
+            index += 2
+            continue
+        if token.startswith("--url="):
+            urls.append(token.split("=", 1)[1])
+            index += 1
+            continue
+        if token in {"-K", "--config"}:
+            if index + 1 < len(segment):
+                config_files.append(segment[index + 1])
+            index += 2
+            continue
+        if token.startswith("--config="):
+            config_files.append(token.split("=", 1)[1])
+            index += 1
+            continue
+        if token.startswith("-K") and token != "-K":
+            config_files.append(token[2:])
+            index += 1
+            continue
+        if token in {"-H", "--header", "-u", "--user", "-o", "--output", "-A", "--user-agent", "--connect-to", "--resolve"}:
+            index += 2
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        urls.append(token)
+        index += 1
+    if any(direct_github_release_api_url(url) for url in urls):
+        return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    for config_file in config_files:
+        config_text = read_release_source_text(config_file)
+        if config_text is None:
+            if release_source_is_uninspectable(config_file):
+                return True
+            continue
+        if file_text_mentions_release_write(config_text, command_has_write_semantics):
+            return True
+    return False
+
+
+def wget_release_write_command(segment, start):
+    method = None
+    has_write_body = False
+    urls = []
+    input_files = []
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            urls.extend(segment[index + 1:])
+            break
+        if token == "--method":
+            if index + 1 < len(segment):
+                method = segment[index + 1].upper()
+            index += 2
+            continue
+        if token.startswith("--method="):
+            method = token.split("=", 1)[1].upper()
+            index += 1
+            continue
+        if token in {"--post-data", "--post-file", "--body-data", "--body-file"}:
+            has_write_body = True
+            index += 2
+            continue
+        if token.startswith("--post-data=") or token.startswith("--post-file=") or token.startswith("--body-data=") or token.startswith("--body-file="):
+            has_write_body = True
+            index += 1
+            continue
+        if token in {"-i", "--input-file"}:
+            if index + 1 < len(segment):
+                input_files.append(segment[index + 1])
+            index += 2
+            continue
+        if token.startswith("--input-file="):
+            input_files.append(token.split("=", 1)[1])
+            index += 1
+            continue
+        if token.startswith("-i") and token != "-i":
+            input_files.append(token[2:])
+            index += 1
+            continue
+        if token in {"-O", "--output-document", "--header", "--user", "--password"}:
+            index += 2
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        urls.append(token)
+        index += 1
+    if any(direct_github_release_api_url(url) for url in urls):
+        return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    for input_file in input_files:
+        file_text = read_release_source_text(input_file)
+        if file_text is None:
+            if release_source_is_uninspectable(input_file):
+                return True
+            continue
+        if file_text_mentions_release_write(file_text, command_has_write_semantics):
+            return True
+    return False
 
 
 def command_start_candidates(segment):
@@ -1858,6 +2079,59 @@ def parse_gh_alias_list(output):
     return aliases
 
 
+def parse_gh_alias_config(output):
+    aliases = parse_gh_alias_list(output)
+    in_aliases_block = False
+    for raw_line in output.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if re.match(r"^aliases\s*:\s*$", stripped):
+            in_aliases_block = True
+            continue
+        if in_aliases_block and line == stripped and not stripped.startswith("-"):
+            in_aliases_block = False
+        if not in_aliases_block:
+            continue
+        match = re.match(r"^\s+([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.+?)\s*$", line)
+        if not match:
+            continue
+        name = match.group(1).strip()
+        expansion = unquote_gh_alias_expansion(match.group(2).strip())
+        if expansion:
+            aliases[name] = expansion
+    return aliases
+
+
+def gh_alias_config_paths(gh_config_dir=None):
+    dirs = []
+    if gh_config_dir:
+        dirs.append(Path(gh_config_dir))
+    else:
+        env_config_dir = os.environ.get("GH_CONFIG_DIR")
+        if env_config_dir:
+            dirs.append(Path(env_config_dir))
+        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+        if xdg_config_home:
+            dirs.append(Path(xdg_config_home) / "gh")
+        home = os.environ.get("HOME")
+        if home:
+            dirs.append(Path(home) / ".config" / "gh")
+
+    seen = set()
+    for directory in dirs:
+        if not directory:
+            continue
+        for filename in ("aliases.yml", "aliases.yaml", "config.yml", "config.yaml"):
+            path = directory / filename
+            key = str(path)
+            if key in seen:
+                continue
+            seen.add(key)
+            yield path
+
+
 def persistent_gh_aliases(gh_config_dir=None):
     cache_key = gh_config_dir or "__default__"
     if cache_key in PERSISTENT_GH_ALIASES:
@@ -1866,30 +2140,16 @@ def persistent_gh_aliases(gh_config_dir=None):
     if alias_fixture is not None and gh_config_dir is None:
         PERSISTENT_GH_ALIASES[cache_key] = parse_gh_alias_list(alias_fixture)
         return PERSISTENT_GH_ALIASES[cache_key]
-    env = {}
-    for key in ("HOME", "PATH", "XDG_CONFIG_HOME", "SIDEKICK_TEST_GH_CONFIG_DIR"):
-        value = os.environ.get(key)
-        if value is not None:
-            env[key] = value
-    env.setdefault("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
-    if gh_config_dir:
-        env["GH_CONFIG_DIR"] = gh_config_dir
-    try:
-        result = subprocess.run(
-            ["gh", "alias", "list"],
-            capture_output=True,
-            check=False,
-            env=env,
-            text=True,
-            timeout=1,
-        )
-    except (FileNotFoundError, OSError, subprocess.SubprocessError):
-        PERSISTENT_GH_ALIASES[cache_key] = {}
-        return PERSISTENT_GH_ALIASES[cache_key]
-    if result.returncode != 0:
-        PERSISTENT_GH_ALIASES[cache_key] = {}
-        return PERSISTENT_GH_ALIASES[cache_key]
-    PERSISTENT_GH_ALIASES[cache_key] = parse_gh_alias_list(result.stdout)
+
+    aliases = {}
+    for path in gh_alias_config_paths(gh_config_dir):
+        try:
+            if not path.is_file():
+                continue
+            aliases.update(parse_gh_alias_config(path.read_text(encoding="utf-8")))
+        except OSError:
+            continue
+    PERSISTENT_GH_ALIASES[cache_key] = aliases
     return PERSISTENT_GH_ALIASES[cache_key]
 
 
@@ -2062,6 +2322,33 @@ def literal_argv_mentions_release_command(payload):
 
 def language_payload_mentions_release_command(payload):
     if re.search(r"\bgh\s+release\s+create\b", payload):
+        return True
+    if direct_github_release_api_url(payload) and (
+        re.search(r"\b(?:POST|PUT|PATCH|DELETE)\b", payload, re.I)
+        or re.search(r"\b(?:requests|httpx)\.(?:post|put|patch|delete)\s*\(", payload, re.I)
+        or re.search(r"\b(?:requests|httpx)\.request\s*\(", payload, re.I)
+        or re.search(r"\burlopen\s*\(", payload, re.I)
+        or re.search(r"\bRequest\s*\(", payload, re.I)
+        or re.search(r"\burllib(?:\.request)?\.urlopen\s*\(", payload, re.I)
+        or re.search(r"\burllib(?:\.request)?\.Request\s*\(", payload, re.I)
+        or re.search(r"\bhttp\.client\.(?:HTTPConnection|HTTPSConnection)\s*\(", payload, re.I)
+        or re.search(r"\b(?:aiohttp|urllib3)\b", payload, re.I)
+        or re.search(r"\bfetch\s*\(", payload)
+        or re.search(r"\b(?:curl|wget)\b", payload)
+    ):
+        return True
+    if GRAPHQL_RELEASE_ENDPOINT_RE.search(payload) and GRAPHQL_RELEASE_MUTATION_RE.search(payload):
+        return True
+    if release_payload_matches_git_endpoint(payload) and (
+        REQUESTS_SESSION_WRITE_RE.search(payload)
+        or re.search(r"\burlopen\s*\(", payload, re.I)
+        or re.search(r"\bRequest\s*\(", payload, re.I)
+        or re.search(r"\b(?:requests|httpx)\.(?:post|put|patch|delete|request)\s*\(", payload, re.I)
+        or any(
+            re.search(rf"\b{re.escape(alias)}\s*\(", payload)
+            for alias in release_payload_import_aliases(payload)
+        )
+    ):
         return True
     if re.search(r"\bgh\s+api\b", payload) and (
         re.search(r"repos/[^/]+/[^/]+/(?:releases|git/refs)\b", payload)
@@ -2481,6 +2768,10 @@ def contains_release_create(command, depth=0):
                     alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
                     if contains_release_create(alias_payload, depth + 1):
                         return True
+            if command_name == "curl" and curl_release_write_command(segment, start):
+                return True
+            if command_name == "wget" and wget_release_write_command(segment, start):
+                return True
             if expand_aliases and segment[start] in aliases:
                 alias_payload = " ".join(
                     [aliases[segment[start]]] + [shlex.quote(token) for token in segment[start + 1:]]
@@ -2586,6 +2877,39 @@ for stage in $(seq 1 "$STAGE_COUNT"); do
 done
 
 if [ ${#missing[@]} -eq 0 ]; then
+  current_head_sha="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+  live_pyramid_runs=$(
+    awk -v marker="$LIVE_PYRAMID_MARKER" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
+      $1 == marker {
+        has_session = 0
+        has_sha = 0
+        for (i = 2; i <= NF; i++) {
+          if ($i == "session=" sid) {
+            has_session = 1
+          }
+          if (sha != "" && $i == "sha=" sha) {
+            has_sha = 1
+          }
+        }
+        if (has_session && has_sha) {
+          print $0
+        }
+      }
+    ' "$STATE_FILE" 2>/dev/null | sort -u | wc -l | tr -d ' '
+  )
+
+  if [ "${live_pyramid_runs:-0}" -ge "$LIVE_PYRAMID_REQUIRED_RUNS" ]; then
+    exit 0
+  fi
+
+  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session ${LIVE_PYRAMID_MARKER} marker(s). Run SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
+  jq -cn --arg reason "$reason" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: $reason
+    }
+  }'
   exit 0
 fi
 

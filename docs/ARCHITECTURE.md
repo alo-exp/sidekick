@@ -18,7 +18,7 @@ Two roles are preserved at every layer:
 Enforcement is three-layered so that neither the LLM nor an untrusted prompt can bypass delegation:
 
 1. **Skill prompting** (`skills/forge/SKILL.md`, `skills/codex-delegate/SKILL.md`) — tells the host AI *what* to delegate and *how* to compose the task prompt for the active sidekick.
-2. **Harness enforcement** (`hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh`, PreToolUse) — while a marker file exists, mutating `Write`/`Edit`/`NotebookEdit` tools are denied and the matching sidekick shell commands are rewritten or refused according to the active registry entry.
+2. **Harness enforcement** (`hooks/forge-delegation-enforcer.sh`, `hooks/codex-delegation-enforcer.sh`, PreToolUse) — while a marker file exists, mutating `Write`/`Edit`/`NotebookEdit` tools are denied and the matching sidekick shell commands are rewritten or refused according to the active registry entry. The shared `active-sidekick` selector is an override that suppresses the opposite sidekick when it is present.
 3. **Progress surface** (`hooks/forge-progress-surface.sh`, `hooks/codex-progress-surface.sh`, PostToolUse) — parses each sidekick's terminal output, strips ANSI, emits bounded `[FORGE-SUMMARY]` or `[KAY-SUMMARY]` additionalContext, and surfaces the matching stop hint.
 
 Result: when Forge or Kay delegation mode is active, every mutating operation is either a sidekick subprocess call (rewritten + indexed + surfaced) or a hard-deny from the harness.
@@ -90,7 +90,7 @@ User receives styled narration           ◄──────┘
 ## Design Principles
 
 1. **Delegate at the harness layer, not the prompt layer.** Prompt-only rules can be rationalized around. A PreToolUse hook returning `permissionDecision: "deny"` cannot.
-2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick so Forge and Kay never collide in the same project directory.
+2. **Keep sidekick state isolated.** Sidekick indexes, markers, and history commands stay per-sidekick, while a shared current-session `active-sidekick` selector makes Forge and Kay mutually exclusive before hooks enforce either mode.
 3. **Leverage each runtime's native storage.** Sidekick indexes only carry lookup metadata; Forge and Kay keep their own conversation/history stores.
 4. **Zero host-to-sidekick roundtrip per rewrite.** The enforcer is shell, not an LLM wrapper — deterministic, millisecond latency, no token cost.
 5. **Non-destructive on install/update.** Plugin config files (`.forge/agents/forge.md`, `.forge.toml`) are written only when absent. Re-activation re-runs the current-session health check but never overwrites user edits.

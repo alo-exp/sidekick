@@ -35,7 +35,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    ```bash
    SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    ```
-   This chains tier 1 (`run_all.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Both runs must print `RELEASE GATE PASSED` before proceeding.
+   This chains tier 1 (`run_all.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Each live run records a current-session `quality-gate-live-pyramid` marker; the release hook requires two of those markers before it allows `gh release create`.
 
 3. **Update artifacts** — `CHANGELOG.md` (root) appended with the version entry, `README.md` version badge bumped, `.planning/STATE.md` flipped to `shipped`, `_integrity` SHA-256 hashes in `plugin.json` refreshed for any changed hook / command / skill / output-style file.
 

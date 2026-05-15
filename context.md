@@ -31,7 +31,7 @@ Forge/Kay = Hands
 - Kay activates through `kay-delegate` / `sidekick:kay-delegate`; active Kay mode routes child execution through `kay exec --full-auto`.
 - Kay keeps `code`, `codex`, and `coder` as compatibility aliases only.
 - SessionStart only runs first-run bootstrap and legacy hook cleanup; runtime readiness checks happen when a delegation workflow starts.
-- Active Forge delegation markers live under the active host session root (`.claude/sessions/...` for Claude Code, `.codex/sessions/...` for Codex). Kay markers live under `.kay/sessions/...`.
+- Active Forge delegation markers live under the active host session root (`.claude/sessions/...` for Claude Code, `.codex/sessions/...` for Codex). Kay markers live under `.kay/sessions/...`. The shared `~/.sidekick/sessions/<session>/active-sidekick` selector makes Forge and Kay mutually exclusive in the same host session.
 - Trace indexes live in `.forge/conversations.idx` and `.kay/conversations.idx`.
 
 ---
