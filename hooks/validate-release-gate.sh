@@ -5,7 +5,7 @@
 # current-session quality-gate stage markers and two live-pyramid run markers
 # are present in Sidekick's state file.
 #
-# Stage count and marker names are defined in docs/pre-release-quality-gate.md.
+# Stage count and marker names are defined in site/pre-release-quality-gate.md.
 # Each stage in that document resolves host-specific state, invokes
 # /superpowers:verification-before-completion, then writes:
 #   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
@@ -2914,7 +2914,7 @@ if [ ${#missing[@]} -eq 0 ]; then
 fi
 
 missing_list=$(IFS=, ; echo "${missing[*]}")
-reason="Pre-release quality gate not complete. Missing stage(s): ${missing_list}. Run all ${STAGE_COUNT} stages in docs/pre-release-quality-gate.md before cutting a release."
+reason="Pre-release quality gate not complete. Missing stage(s): ${missing_list}. Run all ${STAGE_COUNT} stages in site/pre-release-quality-gate.md before cutting a release."
 
 # Emit the canonical PreToolUse deny envelope. exit 0 — the harness reads the
 # decision from stdout, not from the exit code.

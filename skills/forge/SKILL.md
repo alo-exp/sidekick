@@ -268,7 +268,7 @@ After extraction and deduplication, write to all applicable tiers:
    Append project-specific conventions: project structure patterns, naming conventions, task patterns, and Forge behavior corrections specific to this codebase.
    Append under the appropriate section header (Project Conventions, Task Patterns, or Forge Corrections).
 
-3. **Session log -- `docs/sessions/YYYY-MM-DD-session.md`**
+3. **Session log -- `site/sessions/YYYY-MM-DD-session.md`**
    Append an entry with:
    - **Task name:** what Forge was asked to do
    - **Extracted instructions:** the new instructions identified (if any)
