@@ -87,7 +87,7 @@ echo "=== T5: Getting Started is host-aware ==="
 for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto'; do
   expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
 done
-for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-exp/sidekick' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
+for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-labs-codex/sidekick' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
   expect_contains "docs/help/getting-started/index.html" "${needle}" "getting started current flow contains ${needle}"
 done
 
