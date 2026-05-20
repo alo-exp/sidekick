@@ -753,7 +753,7 @@ if tail is not None:
             raw = root / raw
         resolved = raw.resolve(strict=False)
         allowed = False
-        for sub in (root / ".planning", root / "docs"):
+        for sub in (root / ".planning", root / "site"):
             try:
                 resolved.relative_to(sub.resolve(strict=False))
             except ValueError:

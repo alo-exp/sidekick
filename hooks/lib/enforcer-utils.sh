@@ -1037,7 +1037,7 @@ if not raw.is_absolute():
     raw = root / raw
 
 real = raw.resolve(strict=False)
-for subdir in (root / ".planning", root / "docs"):
+for subdir in (root / ".planning", root / "site"):
     try:
         real.relative_to(subdir.resolve(strict=False))
     except ValueError:
