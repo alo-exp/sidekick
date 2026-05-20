@@ -34,7 +34,7 @@ Install through the active host's plugin surface:
 /plugin install alo-labs/sidekick
 
 # Codex
-codex plugin marketplace add alo-exp/sidekick
+codex plugin marketplace add alo-labs-codex/sidekick
 ```
 
 On the next host session, Sidekick performs the first-run bootstrap. Runtime readiness is checked when you start Forge or Kay delegation for the current session.
