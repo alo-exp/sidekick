@@ -398,7 +398,7 @@ deny_direct_edit() {
   emit_decision "deny" "$DENY_EDIT_REASON" ""
 }
 
-# PATH-01/02/03: .planning/** and docs/** edits pass through when /forge is active.
+# PATH-01/02/03: .planning/** and site/** edits pass through when /forge is active.
 # L3 takeover extends direct file tools to the current project tree only.
 decide_write_edit() {
   local tool_input_json="$1"

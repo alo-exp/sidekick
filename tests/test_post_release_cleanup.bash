@@ -24,7 +24,7 @@ echo "=== T2: Cleanup semantics ==="
 SANDBOX="$(mktemp -d)"
 trap 'rm -rf "${SANDBOX}"' EXIT
 cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules)
-preserve_dirs=(.planning docs/specs docs/design)
+preserve_dirs=(.planning site/specs site/design)
 for dir in "${cleanup_dirs[@]}"; do
   mkdir -p "${SANDBOX}/${dir}"
 done

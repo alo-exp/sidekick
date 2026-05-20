@@ -23,8 +23,8 @@ grep -q '## Project Conventions' "${PLUGIN_DIR}/AGENTS.md" && assert_pass "Proje
 echo "=== T3: SKILL.md mentions deduplication ==="
 grep -qiE 'dedup|duplicate|semantically equivalent' "${PLUGIN_DIR}/skills/forge/SKILL.md" && assert_pass "Deduplication logic referenced in SKILL.md" || assert_fail "Deduplication" "not mentioned in SKILL.md"
 
-echo "=== T4: docs/sessions/ directory exists ==="
-[ -d "${PLUGIN_DIR}/docs/sessions" ] && assert_pass "docs/sessions/ directory exists" || assert_fail "docs/sessions/" "directory not found"
+echo "=== T4: site/sessions/ directory exists ==="
+[ -d "${PLUGIN_DIR}/site/sessions" ] && assert_pass "site/sessions/ directory exists" || assert_fail "site/sessions/" "directory not found"
 
 echo ""
 echo "======================================="

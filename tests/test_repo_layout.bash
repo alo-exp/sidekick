@@ -41,9 +41,15 @@ expect_valid_json() {
 }
 
 echo "=== T1: Top-level project shape ==="
-for dir in .claude .claude-plugin .codex-plugin .forge .github .planning docs hooks output-styles sidekicks skills tests; do
+for dir in .claude .claude-plugin .codex-plugin .forge .github .planning hooks output-styles sidekicks site skills tests; do
   expect_dir "${dir}"
 done
+
+if [ -e "${ROOT}/docs" ]; then
+  assert_fail "legacy docs directory absent" "unexpected legacy docs/ directory present"
+else
+  assert_pass "legacy docs directory absent"
+fi
 
 for file in .forge.toml .gitignore .silver-bullet.json AGENTS.md CHANGELOG.md CLAUDE.md README.md context.md install.sh silver-bullet.md; do
   expect_file "${file}"
@@ -58,12 +64,12 @@ for dir in .tmp .cache target build dist coverage .pytest_cache node_modules; do
   fi
 done
 
-echo "=== T3: Organized docs layout ==="
-for dir in docs/ADR docs/help docs/internal docs/knowledge docs/lessons docs/workflows docs/sessions docs/specs docs/design; do
+echo "=== T3: Organized site layout ==="
+for dir in site/ADR site/help site/internal site/knowledge site/lessons site/workflows site/sessions site/specs site/design; do
   expect_dir "${dir}"
 done
 
-for file in docs/doc-scheme.md docs/START-HERE.md docs/AUDIENCE.md docs/GLOSSARY.md docs/COMPATIBILITY.md docs/TESTING.md docs/ARCHITECTURE.md docs/CICD.md docs/pre-release-quality-gate.md docs/ADR/README.md; do
+for file in site/doc-scheme.md site/START-HERE.md site/AUDIENCE.md site/GLOSSARY.md site/COMPATIBILITY.md site/TESTING.md site/ARCHITECTURE.md site/CICD.md site/pre-release-quality-gate.md site/ADR/README.md; do
   expect_file "${file}"
 done
 
