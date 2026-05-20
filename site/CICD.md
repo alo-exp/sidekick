@@ -14,13 +14,15 @@
 
 Always-green for anything merged to `main`. Live-Forge tiers (smoke + E2E) are NOT run in CI — they're gated on `SIDEKICK_LIVE_FORGE=1` and exit 0 cleanly when unset, so the CI runner wouldn't exercise them even if called.
 
-### 2. `pages.yml` — docs site deployment
+### 2. `pages.yml` — site deployment
 
 **Trigger:** `push` to `main` touching `site/**`; also `workflow_dispatch`.
 **Runner:** `ubuntu-latest`.
-**Flow:** `checkout` → `configure-pages` → `upload-pages-artifact` (path: `docs`) → `deploy-pages`.
+**Flow:** `checkout` → `configure-pages` → `upload-pages-artifact` (path: `site`) → `deploy-pages`.
 **Concurrency:** `group: pages`, `cancel-in-progress: false` — a new deploy waits for the prior one to finish rather than cancelling it.
 **Permissions:** `contents: read`, `pages: write`, `id-token: write`.
+
+The repository Pages setting is configured for GitHub Actions (`build_type: workflow`), so the legacy branch-based Pages builder stays off.
 
 The deployed site lives at https://sidekick.alolabs.dev (CNAME set in `site/CNAME`).
 
@@ -84,4 +86,4 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
 
 1. Check the `configure-pages` step — most common cause is the Pages source being set to "Branch" instead of "GitHub Actions" in the repo settings.
 2. Dead links or missing nav entries don't fail the build (no link-check step) — they surface only when the site is viewed.
-3. Manual redeploy: `gh workflow run pages.yml`.
+3. Manual redeploy: `gh workflow run "Deploy to GitHub Pages"`.
