@@ -11,7 +11,7 @@
 #   export_env_prefix        — consume leading env-var tokens from cmd text (ENF-04)
 #   has_write_redirect       — detect unquoted write-redirect (bug-fixed: ENF-01/02/03)
 #   first_token              — extract first 1-2 command tokens after env prefix
-#   is_allowed_doc_path      — return 0 if path is under .planning/ or docs/ (PATH-01)
+#   is_allowed_doc_path      — return 0 if path is under .planning/ or site/ (PATH-01)
 #   is_within_project_root    — return 0 if path resolves inside CLAUDE_PROJECT_DIR
 #   is_read_only             — return 0 if command is known read-only (includes gh ENF-05)
 #   is_mutating              — return 0 if command is known mutating (includes gh ENF-05)
@@ -1008,13 +1008,13 @@ PY
 
 # -----------------------------------------------------------------------------
 # is_allowed_doc_path  (PATH-01)
-# Return 0 (allow) if the given path is under .planning/ or docs/.
+# Return 0 (allow) if the given path is under .planning/ or site/.
 # Strips a single leading "./" prefix to normalize "./planning/..." etc.
 #
 # Examples:
 #   ".planning/PLAN.md"   → .planning/ match → 0 (allow)
 #   "./.planning/PLAN.md" → strip ./ → ".planning/PLAN.md" → 0 (allow)
-#   "docs/index.html"     → docs/ match → 0 (allow)
+#   "site/index.html"     → site/ match → 0 (allow)
 #   "./planning/PLAN.md"  → strip ./ → "planning/PLAN.md" → no match → 1 (deny)
 #   "hooks/enforcer.sh"   → no match → 1 (deny)
 #   ""                    → empty → 1 (deny)

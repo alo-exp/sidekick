@@ -41,49 +41,49 @@ expect_not_contains() {
 }
 
 echo "=== T1: Reader docs exist ==="
-for file in docs/START-HERE.md docs/AUDIENCE.md docs/GLOSSARY.md docs/COMPATIBILITY.md docs/ADR/README.md docs/ADR/2026-05-08-docs-system.md; do
+for file in site/START-HERE.md site/AUDIENCE.md site/GLOSSARY.md site/COMPATIBILITY.md site/ADR/README.md site/ADR/2026-05-08-docs-system.md; do
   expect_file "${file}"
 done
 
 echo "=== T2: Scheme and gateway mention the reader docs ==="
-for needle in 'docs/START-HERE.md' 'docs/AUDIENCE.md' 'docs/GLOSSARY.md' 'docs/COMPATIBILITY.md' 'docs/ADR/README.md'; do
-  expect_contains "docs/doc-scheme.md" "${needle}" "doc-scheme references ${needle}"
+for needle in 'site/START-HERE.md' 'site/AUDIENCE.md' 'site/GLOSSARY.md' 'site/COMPATIBILITY.md' 'site/ADR/README.md'; do
+  expect_contains "site/doc-scheme.md" "${needle}" "doc-scheme references ${needle}"
 done
 
-for needle in 'docs/START-HERE.md' 'docs/AUDIENCE.md' 'docs/GLOSSARY.md' 'docs/COMPATIBILITY.md' 'docs/ADR/README.md'; do
-  expect_contains "docs/knowledge/INDEX.md" "${needle}" "knowledge index references ${needle}"
+for needle in 'site/START-HERE.md' 'site/AUDIENCE.md' 'site/GLOSSARY.md' 'site/COMPATIBILITY.md' 'site/ADR/README.md'; do
+  expect_contains "site/knowledge/INDEX.md" "${needle}" "knowledge index references ${needle}"
 done
 
 echo "=== T3: Start-here and glossary content ==="
 for needle in '# Start Here' 'What are you trying to do?' 'Install Sidekick' 'Delegate a task' 'Debug something that failed' 'Prepare for release' 'Extend or package a plugin' 'Understand the system shape'; do
-  expect_contains "docs/START-HERE.md" "${needle}" "start-here contains ${needle}"
+  expect_contains "site/START-HERE.md" "${needle}" "start-here contains ${needle}"
 done
 
 for needle in '# Audience' 'Reader Matrix' 'New user' 'Maintainer' 'Release operator' 'Plugin author' 'Claude Code user' 'Codex user' 'Kay user' 'Kay operator'; do
-  expect_contains "docs/AUDIENCE.md" "${needle}" "audience contains ${needle}"
+  expect_contains "site/AUDIENCE.md" "${needle}" "audience contains ${needle}"
 done
 
 for needle in '# Glossary' 'host AI' 'Forge' 'Kay' 'legacy Code aliases' 'host Codex' 'bridge' 'wrapper'; do
-  expect_contains "docs/GLOSSARY.md" "${needle}" "glossary contains ${needle}"
+  expect_contains "site/GLOSSARY.md" "${needle}" "glossary contains ${needle}"
 done
-expect_not_contains "docs/GLOSSARY.md" 'MiniMax-backed `code` runtime' "glossary removes code as primary Kay runtime"
+expect_not_contains "site/GLOSSARY.md" 'MiniMax-backed `code` runtime' "glossary removes code as primary Kay runtime"
 
 for needle in '# Compatibility' 'Host Surface' 'Execution Agent' 'Execution identity' 'Provider precedence' '`kay`'; do
-  expect_contains "docs/COMPATIBILITY.md" "${needle}" "compatibility contains ${needle}"
+  expect_contains "site/COMPATIBILITY.md" "${needle}" "compatibility contains ${needle}"
 done
-expect_not_contains "docs/COMPATIBILITY.md" 'Claude / Forge' "compatibility removes stale Claude/Forge pairing"
-expect_not_contains "docs/COMPATIBILITY.md" 'Codex / Kay' "compatibility removes stale Codex/Kay pairing"
-expect_not_contains "docs/COMPATIBILITY.md" '| Execution identity | `forge` | `code` |' "compatibility removes code as primary execution identity"
+expect_not_contains "site/COMPATIBILITY.md" 'Claude / Forge' "compatibility removes stale Claude/Forge pairing"
+expect_not_contains "site/COMPATIBILITY.md" 'Codex / Kay' "compatibility removes stale Codex/Kay pairing"
+expect_not_contains "site/COMPATIBILITY.md" '| Execution identity | `forge` | `code` |' "compatibility removes code as primary execution identity"
 
 echo "=== T4: ADR home and decision record ==="
 for needle in '# Architecture Decision Records' '2026-05-08-docs-system.md' 'Docs System Upgrade'; do
-  expect_contains "docs/ADR/README.md" "${needle}" "ADR index contains ${needle}"
+  expect_contains "site/ADR/README.md" "${needle}" "ADR index contains ${needle}"
 done
-expect_contains "docs/ADR/2026-05-08-docs-system.md" 'Status: Accepted' "docs-system ADR accepted"
+expect_contains "site/ADR/2026-05-08-docs-system.md" 'Status: Accepted' "docs-system ADR accepted"
 
 echo "=== T5: Shared-host wording stays host-neutral ==="
 for stale in 'Brain (Claude)' 'Kay/Claude pickers' 'Claude-to-sidekick roundtrip' 'Matches Claude Code plugin contract' 'The only Claude Code mechanism'; do
-  expect_not_contains "docs/ARCHITECTURE.md" "${stale}" "architecture avoids stale host-specific wording: ${stale}"
+  expect_not_contains "site/ARCHITECTURE.md" "${stale}" "architecture avoids stale host-specific wording: ${stale}"
 done
 
 for stale in 'Claude acts directly' 'Claude extracts learnings' 'Full Claude→Forge delegation'; do
@@ -91,12 +91,12 @@ for stale in 'Claude acts directly' 'Claude extracts learnings' 'Full Claude→F
 done
 
 for stale in 'Claude never writes code' 'Claude drives extraction explicitly'; do
-  expect_not_contains "docs/PRD-Overview.md" "${stale}" "PRD overview avoids stale host-specific wording: ${stale}"
+  expect_not_contains "site/PRD-Overview.md" "${stale}" "PRD overview avoids stale host-specific wording: ${stale}"
 done
 
-expect_not_contains "docs/pre-release-quality-gate.md" 'Claude acts directly' "release gate avoids stale host-specific L3 wording"
-expect_contains "docs/pre-release-quality-gate.md" 'preserved while the command is still normalized' "release gate documents resume UUID normalization"
-expect_not_contains "docs/pre-release-quality-gate.md" 'idempotent pass-through before `-p`' "release gate removes stale UUID pass-through wording"
+expect_not_contains "site/pre-release-quality-gate.md" 'Claude acts directly' "release gate avoids stale host-specific L3 wording"
+expect_contains "site/pre-release-quality-gate.md" 'preserved while the command is still normalized' "release gate documents resume UUID normalization"
+expect_not_contains "site/pre-release-quality-gate.md" 'idempotent pass-through before `-p`' "release gate removes stale UUID pass-through wording"
 
 echo "=== T6: README sidekick surfaces stay canonical ==="
 expect_contains "README.md" '| Sidekick | Activation surface | Agent | Status |' "README sidekick table names activation surface"

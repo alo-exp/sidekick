@@ -42,7 +42,7 @@ Forge/Kay = Hands
 sidekick/
 ├── .claude-plugin/          # Claude plugin manifest and integrity hash block
 ├── .codex-plugin/           # Codex plugin manifest
-├── docs/                    # Website, Help Center, architecture, testing, ADRs
+├── site/                    # Website, Help Center, architecture, testing, ADRs
 ├── hooks/                   # SessionStart, PreToolUse, and PostToolUse hook scripts
 ├── output-styles/           # Forge/Kay narration contracts
 ├── sidekicks/registry.json  # Runtime metadata and pinned installer hashes

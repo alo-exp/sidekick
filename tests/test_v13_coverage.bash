@@ -396,13 +396,13 @@ for _c in \
     _all=0
   fi
 done
-_j="$(jq -cn --arg c "forge --conversation-id $_uuid --verbose -p \"task\" | tee docs/forge.log" '{tool_name:"Bash",tool_input:{command:$c}}')"
+_j="$(jq -cn --arg c "forge --conversation-id $_uuid --verbose -p \"task\" | tee site/forge.log" '{tool_name:"Bash",tool_input:{command:$c}}')"
 _out="$(run_enf "$_j")"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
 if [ "$_dec" = "allow" ] \
   && echo "$_cmd" | grep -q -- "--conversation-id $_uuid" \
-  && echo "$_cmd" | grep -q -- "| tee docs/forge.log"; then
+  && echo "$_cmd" | grep -q -- "| tee site/forge.log"; then
   :
 else
   fail "test_enf08_existing_uuid_pipe_tail_is_validated[allowed tee]" "dec='$_dec' cmd='$_cmd' out='$_out'"
@@ -428,7 +428,7 @@ done
 
 echo "=== test_path_docs_write_allowed ==="
 _all=1
-for _fp in 'docs/index.html' 'docs/help/index.html' 'docs/internal/SECURITY.md'; do
+for _fp in 'site/index.html' 'site/help/index.html' 'site/internal/SECURITY.md'; do
   _j="$(jq -cn --arg f "$_fp" '{tool_name:"Write",tool_input:{file_path:$f,content:"x"}}')"
   _out="$(run_enf "$_j")"
   if [ -n "$_out" ]; then
@@ -440,7 +440,7 @@ done
 
 echo "=== test_path_docs_edit_allowed ==="
 _all=1
-for _fp in 'docs/index.html' 'docs/help/concepts/index.html'; do
+for _fp in 'site/index.html' 'site/help/concepts/index.html'; do
   _j="$(jq -cn --arg f "$_fp" '{tool_name:"Edit",tool_input:{file_path:$f,old_string:"a",new_string:"b"}}')"
   _out="$(run_enf "$_j")"
   if [ -n "$_out" ]; then
