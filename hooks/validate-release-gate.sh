@@ -25,6 +25,8 @@ set -euo pipefail
 STAGE_COUNT=4
 LIVE_PYRAMID_REQUIRED_RUNS=2
 LIVE_PYRAMID_MARKER="quality-gate-live-pyramid"
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${HOOK_DIR}/.." && pwd)"
 SIDEKICK_QG_DIR="$HOME/.claude/.sidekick"
 if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ]; then
   SIDEKICK_QG_DIR="$HOME/.codex/.sidekick"
@@ -2877,7 +2879,7 @@ for stage in $(seq 1 "$STAGE_COUNT"); do
 done
 
 if [ ${#missing[@]} -eq 0 ]; then
-  current_head_sha="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+  current_head_sha="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || true)"
   live_pyramid_runs=$(
     awk -v marker="$LIVE_PYRAMID_MARKER" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
       $1 == marker {

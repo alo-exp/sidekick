@@ -280,15 +280,15 @@ sidekick_kay_model_for_prompt() {
   normalized="$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized" in
-    *review*|*reviewing*|*code\ review*|*audit*|*critique*)
-      printf '%s' 'mimo-v2.5-pro'
+    *run\ tests*|*rerun\ tests*|*test\ run*|*test\ running*|*test\ results*|*test\ report*|*issue\ reporting*|*report\ issues*|*issue\ report*|*issue\ triage*|*failure\ report*|*bug\ report*|*find\ issues*|*verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)
+      printf '%s' 'deepseek-v4-flash'
       return 0
       ;;
   esac
 
   case "$normalized" in
-    *verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)
-      printf '%s' 'deepseek-v4-flash'
+    *review*|*reviewing*|*code\ review*|*audit*|*critique*)
+      printf '%s' 'mimo-v2.5-pro'
       return 0
       ;;
   esac
