@@ -19,7 +19,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 - `quality-gate-stage-2`
 - `quality-gate-stage-3`
 - `quality-gate-stage-4`
-- Two distinct current-session `quality-gate-live-pyramid` markers written by successful full live runs of `tests/run_release.bash`
+- Two distinct current-session `quality-gate-live-pyramid` markers written by successful live runs of `tests/run_release.bash`
 
 **Session reset**: All four markers are scoped to the current host session id. The gate must be completed in full during the session in which the release is being cut — markers from a previous session do not satisfy the release hook.
 
@@ -354,7 +354,7 @@ After all three targets are clean with no blocking issues:
 
 After all 4 stage markers are written to `$SIDEKICK_QG_STATE`,
 and after the full Forge/Kay live pyramid has been run twice with
-`SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`,
+`SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`,
 verify and create the release:
 
 ```bash

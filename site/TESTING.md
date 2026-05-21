@@ -95,11 +95,12 @@ Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model cal
 `tests/run_release.bash` chains all six tiers with fail-fast stage aborts:
 
 ```bash
-SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full pyramid — maintainer pre-tag
-bash tests/run_release.bash                                               # stage 1 only, stages 2-6 skip cleanly — safe for CI, not release-authorizing
+SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash                        # Codex live pyramid — maintainer pre-tag
+SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full pyramid when Forge live is available
+bash tests/run_release.bash                                              # stage 1 only, stages 2-6 skip cleanly — safe for CI, not release-authorizing
 ```
 
-Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the full live Forge/Kay pyramid twice locally before the version tag is pushed. Only full live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
+Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the live Kay pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Only live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
 
 After the GitHub release is published, run `bash tests/post_release_cleanup.bash` to remove any transient repo-local artifacts left behind by the release process.
 
@@ -127,7 +128,7 @@ Not covered today (accepted gaps, documented in `.planning/`):
 bash tests/run_all.bash
 
 # Pre-release gate (~2 min when both live env vars are set):
-SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 
 # Single suite:
 bash tests/test_forge_enforcer_hook.bash
