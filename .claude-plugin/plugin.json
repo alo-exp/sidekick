@@ -28,11 +28,11 @@
     "install_sh_sha256": "8313cd0fac7d24079d72610d0966038b04095af479f96b66434e6e2320360d7c",
     "forge_md_sha256": "751fe7961b309118a2757723195dc3c0472fe8343c504558191738c4d971d8e4",
     "forge_skill_md_sha256": "21d763ed8210628d3cb0a2616e4eac64f34f9cc8f3290550f499df2c4f63c867",
-    "codex_delegate_skill_md_sha256": "7a14077980a151b52b2dcd1d62aef3125c930f47adb7655c85d9b2309aea887f",
+    "codex_delegate_skill_md_sha256": "c028127e3607c9566182af94c8cc7ca8ec4afcda7e7d3c23b9533d6de7321ca5",
     "codex_delegate_md_sha256": "e009e0ee8d52dfa451006c0f108745cf9e17a72c273712b0df50e594b46b2832",
     "hooks_json_sha256": "a46663c5f5425b93f914735a6cb18e03ae7f3a88af88f5812bc0336d6db585da",
     "forge_delegation_enforcer_sha256": "438bf22bd95e512cb74ee9b094a7c7372e370bfc431dfe128c14441d4f559380",
-    "codex_delegation_enforcer_sha256": "6cfadd2d03f36fb4143fc6d6376d85e0a1e2d083c5c93da13ba7a95c0cfb3e02",
+    "codex_delegation_enforcer_sha256": "a06b6a58997767c0fd71b662128054b5802980cdde852dba285273853fd5c8a6",
     "enforcer_utils_sha256": "656809430d413ddc7f851ff80d2c2d33374c33e31899223881002879f8d111d2",
     "sidekick_registry_sha256": "c3b1569f0f6a3ee959f1efeca6111f2e50b2152f47ef6f9ed8db873a61124fae",
     "legacy_hooks_scrub_sha256": "40e4e0888aa0ea35a16e5c4062f775d71677e5a6b6df15e655fb2e632b963da8",
@@ -49,7 +49,7 @@
     "codex_installer_sha256": "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555",
     "verify_at": "https://forgecode.dev/releases",
     "source": "https://github.com/alo-exp/sidekick",
-  "sidekick_registry_lib_sha256": "e460b7c6a520abeb1b7f8816986228b0578ad1320f6e0b6b1496c0f6aaa569d1",
+  "sidekick_registry_lib_sha256": "8d4177969477d693701c4796be79438e8a515eb0f736f9ffe21688073fc20c4f",
     "safe_runner_sha256": "0fd1eea86c83bfa15b3dae99837227cd2c3b0f11586491d9dea05d81d147c241"
   }
 }

@@ -15,7 +15,7 @@
 | Claude Code user | [help/](help/), [help/getting-started/](help/getting-started/) | Explains how a Claude Code host can delegate to either Forge or Kay |
 | Codex user | [help/](help/), [COMPATIBILITY.md](COMPATIBILITY.md), [internal/codex-command-packaging-guide.md](internal/codex-command-packaging-guide.md) | Explains how a Codex host can delegate to either Forge or Kay |
 | Kay user | [COMPATIBILITY.md](COMPATIBILITY.md), [internal/codex-command-packaging-guide.md](internal/codex-command-packaging-guide.md) | Focuses on the Kay execution agent and its packaging contract |
-| Kay operator | [COMPATIBILITY.md](COMPATIBILITY.md), [README.md](../README.md) | Explains how the MiniMax-backed Kay runtime fits into Sidekick |
+| Kay operator | [COMPATIBILITY.md](COMPATIBILITY.md), [README.md](../README.md) | Explains how the Kay delegation path and OpenCode Go routing fit into Sidekick |
 
 ## How to Use This Matrix
 
