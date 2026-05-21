@@ -19,7 +19,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 - `quality-gate-stage-2`
 - `quality-gate-stage-3`
 - `quality-gate-stage-4`
-- Two distinct current-session `quality-gate-live-pyramid` markers written by successful full live runs of `tests/run_release.bash`
+- Two distinct current-session `quality-gate-live-pyramid` markers written by successful live runs of `tests/run_release.bash`
 
 **Session reset**: All four markers are scoped to the current host session id. The gate must be completed in full during the session in which the release is being cut — markers from a previous session do not satisfy the release hook.
 
@@ -181,7 +181,7 @@ Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-
 Audit test coverage across all test files:
 
 - `tests/run_all.bash` runs all non-live suites and exits non-zero on any failure
-- `tests/run_release.bash` chains all six tiers (unit + integration → Forge smoke → Forge live E2E → Kay marketplace install → Kay smoke → Kay live E2E) with fail-fast stage aborts
+- `tests/run_release.bash` chains all six tiers (unit + integration → Forge smoke → Forge live E2E → Kay marketplace install → Kay smoke → Kay live E2E) with fail-fast stage aborts, and records a live-pyramid marker for Codex live runs even when Forge live is intentionally skipped
 - Every material branch in `forge-delegation-enforcer.sh` is exercised by `test_forge_enforcer_hook.bash` and/or `test_v12_coverage.bash`
   - Verify: `sed -i` / `awk -i inplace` rejection, `>> append` pass/deny, `> /dev/null` passthrough, env-var prefix before `forge -p`, unclassified mutating deny
 - Every `STATUS:` block parsing path in `forge-progress-surface.sh` is exercised by `test_forge_progress_surface.bash`
@@ -375,7 +375,7 @@ After all three targets are clean with no blocking issues:
 
 After all 4 stage markers are written to `$SIDEKICK_QG_STATE`,
 and after the full Forge/Kay live pyramid has been run twice with
-`SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`:
+`SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`:
 
 ```bash
 # Verify all 4 distinct current-session stage markers and 2 live-pyramid markers are present

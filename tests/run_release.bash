@@ -22,14 +22,16 @@
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
 # The live stages skip cleanly (exit 0) when the env vars are unset, so this
-# script is still useful in CI. A no-live run is not release-authorizing: only a
-# run with both SIDEKICK_LIVE_FORGE=1 and SIDEKICK_LIVE_CODEX=1 records a
-# current-session live-pyramid marker. The release hook requires two such
-# markers before it allows a GitHub release command.
+# script is still useful in CI. A Codex live run is release-authorizing: a run
+# with SIDEKICK_LIVE_CODEX=1 records a current-session live-pyramid marker.
+# Forge live stages may also be run when available, but they are not required
+# when Forge testing is intentionally skipped. The release hook requires two
+# such markers before it allows a GitHub release command.
 #
 # Usage
 #   bash tests/run_release.bash
-#   SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+#   SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+#   SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # when Forge live is available
 # =============================================================================
 
 set -uo pipefail
@@ -56,7 +58,7 @@ run_stage() {
 }
 
 live_pyramid_enabled() {
-  [[ "${SIDEKICK_LIVE_FORGE:-}" == "1" && "${SIDEKICK_LIVE_CODEX:-}" == "1" ]]
+  [[ "${SIDEKICK_LIVE_CODEX:-}" == "1" ]]
 }
 
 quality_gate_state_file() {
@@ -120,8 +122,8 @@ if live_pyramid_enabled; then
   echo -e "${green}${bold}RELEASE GATE PASSED${reset} — one live-pyramid run recorded."
   echo -e "${yellow}Release hook requirement:${reset} complete two current-session live-pyramid runs before tagging."
 else
-  echo -e "${yellow}${bold}NON-LIVE RELEASE CHECKS PASSED${reset} — live stages skipped; not safe to tag."
-  echo -e "${yellow}Next:${reset} rerun twice with ${bold}SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1${reset} before releasing."
+  echo -e "${yellow}${bold}NON-LIVE RELEASE CHECKS PASSED${reset} — live Kay stages skipped; not safe to tag."
+  echo -e "${yellow}Next:${reset} rerun twice with ${bold}SIDEKICK_LIVE_CODEX=1${reset} before releasing."
 fi
 echo -e "${yellow}Next:${reset} run ${bold}bash tests/post_release_cleanup.bash${reset} after the release is published."
 echo -e "${bold}═══════════════════════════════════════════${reset}"

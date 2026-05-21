@@ -2902,7 +2902,7 @@ if [ ${#missing[@]} -eq 0 ]; then
     exit 0
   fi
 
-  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session ${LIVE_PYRAMID_MARKER} marker(s). Run SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
+  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session ${LIVE_PYRAMID_MARKER} marker(s). Run SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
