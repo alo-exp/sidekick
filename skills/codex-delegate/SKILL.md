@@ -42,13 +42,16 @@ Then verify Kay config:
 
 - `$CODE_HOME/config.toml` defaults to `~/.kay/config.toml`
 - legacy `~/.code/config.toml` and `~/.codex/config.toml` are compatibility-only
-- provider should match the chosen backend path, usually `minimax` or `opencode-go`
-- MiniMax path should use `MiniMax-M2.7`
+- provider should be `opencode-go` for Sidekick's Kay delegation path
+- Sidekick routes Kay models automatically by task type:
+  - planning, main workhorse, and reviewing tasks -> `mimo-v2.5-pro`
+  - trivial technical work -> `minimax-m2.7`
+  - work completion verification, not review -> `deepseek-v4-flash`
 
 If login is missing, guide the user to:
 
 ```bash
-kay login --provider minimax --with-api-key
+kay login --provider opencode-go --with-api-key
 ```
 
 If `kay` is unavailable, install or repair Kay. The `code`, `codex`, and `coder` names are compatibility aliases only.
@@ -87,6 +90,8 @@ kay exec --full-auto "<task description>"
 ```
 
 Compatibility aliases (`code`, `codex`, `coder`) accept the same arguments when an older environment only exposes them.
+
+Sidekick injects the OpenCode Go provider and task-specific model automatically when Kay mode is active. Do not hand-add `-c model_provider=...` or `-c model=...` unless you are debugging the routing layer.
 
 Useful options:
 

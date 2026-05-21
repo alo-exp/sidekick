@@ -14,7 +14,7 @@ Sidekick is a Claude Code and Codex plugin that gives the host AI two execution 
 | Sidekick | Runtime | Role |
 |---|---|---|
 | Forge | `forge` | ForgeCode execution agent with fallback ladder, progress surface, and mentoring loop |
-| Kay | `kay` | OSS Codex-lineage execution agent with MiniMax.io defaults and OpenCode Go compatibility |
+| Kay | `kay` | OSS Codex-lineage execution agent with OpenCode Go default-provider routing and task-based model selection |
 
 The host AI stays in the planning, review, communication, and mentoring role. Forge or Kay performs implementation work.
 
@@ -28,7 +28,7 @@ Forge/Kay = Hands
 ## Current Runtime Contracts
 
 - Forge delegates through `forge -p`.
-- Kay activates through `kay-delegate` / `sidekick:kay-delegate`; active Kay mode routes child execution through `kay exec --full-auto`.
+- Kay activates through `kay-delegate` / `sidekick:kay-delegate`; active Kay mode routes child execution through `kay exec --full-auto` and Sidekick injects `model_provider=opencode-go` plus the routed model automatically.
 - Kay keeps `code`, `codex`, and `coder` as compatibility aliases only.
 - SessionStart only runs first-run bootstrap and legacy hook cleanup; runtime readiness checks happen when a delegation workflow starts.
 - Active Forge delegation markers live under the active host session root (`.claude/sessions/...` for Claude Code, `.codex/sessions/...` for Codex). Kay markers live under `.kay/sessions/...`. The shared `~/.sidekick/sessions/<session>/active-sidekick` selector makes Forge and Kay mutually exclusive in the same host session.

@@ -7,7 +7,7 @@
 | Sidekick | Activation surface | Agent | Status |
 |----------|--------------------|-------|--------|
 | **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.6 |
-| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, MiniMax M2.7, OpenCode Go compatibility | ✅ v0.5.6 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro / MiniMax M2.7 / DeepSeek V4 Flash model buckets | ✅ v0.5.6 |
 
 More sidekicks planned.
 
@@ -56,10 +56,10 @@ On the next host session, Sidekick performs the first-run bootstrap. Runtime rea
 
 ### What it does
 - **Auto-installs** Kay from the pinned `alo-labs/kay` installer on first session start and keeps legacy `code`, `codex`, and `coder` aliases compatibility-only
-- **Activates** Kay work through `kay-delegate`; active Kay mode launches `kay exec --full-auto` so Kay remains the runtime identity
+- **Activates** Kay work through `kay-delegate`; active Kay mode launches `kay exec --full-auto` and Sidekick injects the OpenCode Go provider plus the task-appropriate model automatically
 - **Uses** Kay's native agents, skills, subagents, and `AGENTS.md` support instead of recreating Forge-style prompt injection
 - **Supports** Claude Code and Codex hosts by running Kay as a child execution process through the packaged `kay-delegate` skill
-- **Defaults** to MiniMax `MiniMax-M2.7` through Kay-local `~/.kay/config.toml`, with OpenCode Go available for multi-AI compatibility
+- **Defaults** to OpenCode Go at delegation time, with the model selected automatically from the task type
 - **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias preserved only as a hidden compatibility entry at `skills/codex-delegate.md`.
 
 The website setup shortcuts `/forge:delegate` and `/kay:delegate` are shipped alias skills. They route to the canonical `/forge` and `kay-delegate` workflows.
@@ -94,7 +94,9 @@ The host configures Forge automatically and delegates coding work from that poin
 ### Providers & Models
 | Provider | Model | Notes |
 |----------|-------|-------|
-| **MiniMax Coding** | **MiniMax M2.7** `MiniMax-M2.7` | Direct API — get key at https://platform.minimax.io/subscribe/token-plan |
+| **OpenCode Go** | **MiMo-V2.5-Pro** `mimo-v2.5-pro` | Main workhorse path for planning, implementation, and reviewing tasks |
+| **OpenCode Go** | **MiniMax M2.7** `minimax-m2.7` | Trivial technical work |
+| **OpenCode Go** | **DeepSeek V4 Flash** `deepseek-v4-flash` | Work completion verification, not review |
 
 ---
 

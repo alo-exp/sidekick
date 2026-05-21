@@ -99,6 +99,24 @@ if [ -z "${CODEX_BIN}" ]; then
 fi
 prepare_codex_runner "${CODEX_BIN}"
 
+OPENCODE_GO_API_KEY_VALUE="${OPENCODE_GO_API_KEY:-${CUSTOM_OPENCODE_GO_API_KEY:-}}"
+KAY_AUTH_PATH="${KAY_AUTH_PATH:-${HOME}/.kay/auth.json}"
+if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ] && [ -f "${KAY_AUTH_PATH}" ]; then
+  OPENCODE_GO_API_KEY_VALUE="$(python3 -c 'import json, sys, pathlib
+path = pathlib.Path(sys.argv[1])
+data = json.loads(path.read_text())
+creds = data.get("provider_credentials", {})
+api_key = creds.get("opencode-go", {}).get("api_key")
+if api_key:
+    print(api_key)
+    raise SystemExit(0)
+raise SystemExit(1)' "${KAY_AUTH_PATH}")"
+fi
+if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ]; then
+  echo -e "${red}FAIL${reset}: OPENCODE_GO_API_KEY was not set and no OpenCode Go key was found in ${KAY_AUTH_PATH}"
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TESTAPP_SRC="${SCRIPT_DIR}/testapp"
 [[ -f "${TESTAPP_SRC}/calc.py" && -f "${TESTAPP_SRC}/test_calc.py" ]] || {
@@ -155,7 +173,7 @@ EOF
 echo "=== e2e_codex_delegation ==="
 echo "Sending 5-field prompt to Kay (timeout 180s)..."
 set +e
-CODEX_OUT="$(cd "${SANDBOX}" && run_with_timeout 180 "${CODEX_RUNNER[@]}" "${TASK_PROMPT}" 2>&1)"
+CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider=opencode-go -c model=mimo-v2.5-pro "${TASK_PROMPT}" 2>&1)"
 CODEX_RC=$?
 set -e
 echo "kay rc=${CODEX_RC}"
