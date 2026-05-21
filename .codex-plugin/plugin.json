@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "Sidekick \u2014 a collection of AI coding agents as Codex sidekicks. Forge and Kay are the first two: each sidekick auto-installs, configures itself, and lets Codex delegate coding work while Codex stays focused on planning and communication. The Codex package keeps the workflow bodies in skills.",
   "author": {
     "name": "\u0100lo Labs",

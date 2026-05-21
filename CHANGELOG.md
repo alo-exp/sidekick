@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.7 — 2026-05-21
+
+### Codex-only release gating and Kay/site refresh
+
+Sidekick now keeps Kay as the primary runtime identity, refreshes the public site/help surfaces to the current Kay/Forge support model, and allows Codex-only live release gating when Forge live is intentionally skipped.
+
+**Changed:**
+
+- **`install.sh`**, **`sidekicks/registry.json`**, **`skills/codex-delegate/SKILL.md`**, **`skills/codex-delegate.md`**, **`skills/codex-stop/SKILL.md`**: Kay remains the canonical command family and installer target, with `kay exec --full-auto` as the active delegate path.
+- **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**, **`docs/help/*`**, **`docs/og-image.*`**: public-facing surfaces were refreshed for the current Kay/Forge support model and Terminal-Bench positioning.
+- **`docs/pre-release-quality-gate.md`**, **`docs/internal/pre-release-quality-gate.md`**, **`tests/run_release.bash`**, **`hooks/validate-release-gate.sh`**, **`tests/run_live_codex_marketplace_install.bash`**: Codex-only live release gating is now allowed when Forge live is intentionally skipped, and marketplace skill-surface verification matches the installed Codex rewrite flow.
+- **`.claude-plugin/plugin.json`**, **`.codex-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**: version bumped to `0.5.7`.
+
 ## v0.5.6 — 2026-05-15
 
 ### Kay primary runtime, release gate, and website consistency
