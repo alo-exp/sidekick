@@ -289,7 +289,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># keep last 6 exchanges always</span></div>
 
       <h2 id="provider-config">Provider Configuration</h2>
-      <p>Sidekick keeps provider ownership with the active runtime. Forge provider and model settings live in <code>~/forge/.forge.toml</code> with API credentials in <code>~/forge/.credentials.json</code>. Kay defaults to MiniMax M2.7 in <code>~/.kay/config.toml</code>, with legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> retained only as compatibility paths.</p>
+      <p>Sidekick keeps provider ownership with the active runtime. Forge provider and model settings live in <code>~/forge/.forge.toml</code> with API credentials in <code>~/forge/.credentials.json</code>. Kay uses OpenCode Go provider routing in <code>~/.kay/config.toml</code>, with MiMo-V2.5-Pro for planning, implementation, reviewing, and other non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification. Legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> are retained only as compatibility paths.</p>
 
       <h3>Kay MiniMax config</h3>
       <p>For Kay, use Kay's native login flow when credentials are missing:</p>
