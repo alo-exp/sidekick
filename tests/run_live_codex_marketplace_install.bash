@@ -204,9 +204,7 @@ if [ -d "${INSTALLED_ROOT}" ]; then
     && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${INSTALLED_ROOT}/hooks/lib/sidekick-registry.sh" \
     && grep -Fq '.codex/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
     && ! grep -Fq '.claude/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
-    && grep -Fq '~/.codex' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
     && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
-    && grep -Fq '~/.codex' "${INSTALLED_ROOT}/skills/forge-stop/SKILL.md" \
     && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/forge-stop/SKILL.md" \
     && grep -Fq '${HOME}/.kay/sessions' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
     && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
