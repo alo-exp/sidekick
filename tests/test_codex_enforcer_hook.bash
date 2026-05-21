@@ -164,10 +164,49 @@ _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // e
 _cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
 if [ "${_dec}" = "allow" ] \
     && echo "${_cmd}" | grep -q -- 'sidekick-safe-runner.sh' \
-    && echo "${_cmd}" | grep -Eq -- ' kay exec --full-auto'; then
+    && echo "${_cmd}" | grep -Eq -- ' kay exec ' \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -q -- '-c model=mimo-v2.5-pro' \
+    && echo "${_cmd}" | grep -Eq -- ' --full-auto( |$)'; then
   assert_pass "test_rewrite_codex_exec_injects_full_auto_and_safe_runner"
 else
   assert_fail "test_rewrite_codex_exec_injects_full_auto_and_safe_runner" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+echo "=== test_route_review_tasks_to_mimo_v2_5_pro ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Review the current diff for risks\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -q -- '-c model=mimo-v2.5-pro'; then
+  assert_pass "test_route_review_tasks_to_mimo_v2_5_pro"
+else
+  assert_fail "test_route_review_tasks_to_mimo_v2_5_pro" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+echo "=== test_route_trivial_tasks_to_minimax_m27 ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Quick typo fix in README\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -q -- '-c model=minimax-m2.7'; then
+  assert_pass "test_route_trivial_tasks_to_minimax_m27"
+else
+  assert_fail "test_route_trivial_tasks_to_minimax_m27" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+echo "=== test_route_verification_tasks_to_deepseek_v4_flash ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Verify the completion of the previous task\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -q -- '-c model=deepseek-v4-flash'; then
+  assert_pass "test_route_verification_tasks_to_deepseek_v4_flash"
+else
+  assert_fail "test_route_verification_tasks_to_deepseek_v4_flash" "dec='${_dec}' cmd='${_cmd}'"
 fi
 
 echo "=== test_incompatible_code_binary_is_not_treated_as_kay ==="

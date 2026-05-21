@@ -112,7 +112,7 @@ Managed by GSD. Rarely edited directly — created and consumed by workflow skil
 | `STATE.md` | `gsd-new-project` | Current progress, decisions, quick tasks |
 | `REQUIREMENTS.md` | `gsd-new-milestone` | Scoped requirements with acceptance criteria |
 | Phase dirs (`phases/`) | Planning skills | Per-phase context, research, plans, reviews |
-| `WORKFLOW.md` | `/silver` composer | Composition state — path log, dynamic insertions, next path |
+| `workflows/` | `/silver` composer | Per-instance workflow trackers under `.planning/workflows/<id>.md`; legacy `WORKFLOW.md` is historical evidence only |
 | `VALIDATION.md` | `silver-validate` | Pre-build validation results |
 | `UI-SPEC.md` | `gsd-ui-phase` | UI specification — layout, components, interactions |
 | `UI-REVIEW.md` | `gsd-ui-review` | UI review findings — 6-pillar assessment |
@@ -155,4 +155,4 @@ Every document has a growth limit:
 3. `lessons/` captures portable learnings — never duplicates project-specific knowledge
 4. `ARCHITECTURE.md` is high-level design — detailed phase designs stay in `.planning/phases/`
 5. `CHANGELOG.md` is the task log — git log is the commit log (different granularity)
-6. `WORKFLOW.md` is the composition execution log — `silver-bullet.md` §2h describes the architecture, `WORKFLOW.md` tracks the instance
+6. Per-instance workflow files under `.planning/workflows/` are the composition execution log — `silver-bullet.md` §2h describes the architecture, and each active workflow tracks its own instance file. Legacy `.planning/WORKFLOW.md` is historical evidence only.

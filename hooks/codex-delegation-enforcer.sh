@@ -60,7 +60,7 @@ resolve_codex_binary_name() {
 }
 
 deny_reason() {
-  printf 'Sidekick /kay mode is active: direct file edits are delegated to Kay. Use: Bash { command: "%s --full-auto \"<your task description>\"" }. Legacy code/codex/coder aliases remain compatibility-only.' "$(delegate_command)"
+  printf 'Sidekick /kay mode is active: direct file edits are delegated to Kay. Use: Bash { command: "%s --full-auto \"<your task description>\"" }. Sidekick injects the OpenCode Go provider and task model automatically; legacy code/codex/coder aliases remain compatibility-only.' "$(delegate_command)"
 }
 
 deny_direct_edit() {
@@ -102,17 +102,20 @@ has_codex_exec() {
 
 rewrite_codex_exec() {
   local cmd="$1"
-  local stripped binary_name original_binary
+  local stripped binary_name original_binary prompt route_provider route_model
 
   stripped="$(strip_env_prefix "$cmd")"
   original_binary="$(printf '%s' "$stripped" | awk '{print $1}')"
   binary_name="$(resolve_codex_binary_name || printf '%s' "$original_binary")"
+  prompt="$(sidekick_extract_exec_prompt_raw "$stripped")"
+  route_provider="$(sidekick_kay_model_provider)"
+  route_model="$(sidekick_kay_model_for_prompt "$prompt")"
 
-  python3 - "$binary_name" "$stripped" "${HOOK_DIR}/lib/sidekick-safe-runner.sh" <<'PY'
+  python3 - "$binary_name" "$stripped" "$route_provider" "$route_model" "${HOOK_DIR}/lib/sidekick-safe-runner.sh" <<'PY'
 import shlex
 import sys
 
-binary_name, cmd, runner_path = sys.argv[1:4]
+binary_name, cmd, model_provider, model_name, runner_path = sys.argv[1:6]
 
 try:
     lexer = shlex.shlex(cmd, posix=True, punctuation_chars='|;&()<>')
@@ -128,8 +131,24 @@ for tok in tokens:
     if tok in {";", "&&", "||", "|", "&", ">", "<", "(", ")"}:
         raise SystemExit(1)
 
+filtered = [tokens[0], tokens[1]]
+i = 2
+while i < len(tokens):
+    tok = tokens[i]
+    if tok == "-c" and i + 1 < len(tokens):
+        config = tokens[i + 1]
+        if config.startswith("model_provider=") or config.startswith("model="):
+            i += 2
+            continue
+    filtered.append(tok)
+    i += 1
+
+tokens = filtered
+route_tokens = ["-c", f"model_provider={model_provider}", "-c", f"model={model_name}"]
+tokens[2:2] = route_tokens
+
 if "--full-auto" not in tokens[2:]:
-    tokens.insert(2, "--full-auto")
+    tokens.insert(2 + len(route_tokens), "--full-auto")
 
 tokens[0] = binary_name
 rewritten = " ".join(shlex.quote(tok) for tok in ["bash", runner_path, "kay"] + tokens)

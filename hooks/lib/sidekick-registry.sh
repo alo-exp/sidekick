@@ -243,6 +243,12 @@ sidekick_sanitize_idx_hint() {
 }
 
 sidekick_extract_exec_prompt() {
+  local hint
+  hint="$(sidekick_extract_exec_prompt_raw "$1")"
+  sidekick_sanitize_idx_hint "$hint"
+}
+
+sidekick_extract_exec_prompt_raw() {
   local cmd="$1"
   local hint=""
   if command -v python3 >/dev/null 2>&1; then
@@ -261,7 +267,40 @@ for idx, tok in enumerate(toks):
         break
 ' "$cmd" 2>/dev/null || true)"
   fi
-  sidekick_sanitize_idx_hint "$hint"
+  printf '%s' "$hint"
+}
+
+sidekick_kay_model_provider() {
+  printf '%s' 'opencode-go'
+}
+
+sidekick_kay_model_for_prompt() {
+  local prompt normalized
+  prompt="${1:-}"
+  normalized="$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')"
+
+  case "$normalized" in
+    *review*|*reviewing*|*code\ review*|*audit*|*critique*)
+      printf '%s' 'mimo-v2.5-pro'
+      return 0
+      ;;
+  esac
+
+  case "$normalized" in
+    *verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)
+      printf '%s' 'deepseek-v4-flash'
+      return 0
+      ;;
+  esac
+
+  case "$normalized" in
+    *trivial*|*tiny*|*small*|*quick*|*simple*|*typo*|*whitespace*|*format*|*formatting*|*comment*|*rename*|*config*|*minor*|*one-liner*|*cleanup*)
+      printf '%s' 'minimax-m2.7'
+      return 0
+      ;;
+  esac
+
+  printf '%s' 'mimo-v2.5-pro'
 }
 
 sidekick_append_idx_row() {

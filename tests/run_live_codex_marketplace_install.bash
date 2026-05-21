@@ -161,25 +161,25 @@ Do not edit any files.
 EOF
 
 echo "=== live_kay_exec ==="
-MINIMAX_API_KEY_VALUE="${MINIMAX_API_KEY:-}"
-FORGE_CREDENTIALS_PATH="${FORGE_CREDENTIALS_PATH:-${HOME}/forge/.credentials.json}"
-if [ -z "${MINIMAX_API_KEY_VALUE}" ] && [ -f "${FORGE_CREDENTIALS_PATH}" ]; then
-  MINIMAX_API_KEY_VALUE="$(python3 -c 'import json, sys, pathlib
+OPENCODE_GO_API_KEY_VALUE="${OPENCODE_GO_API_KEY:-${CUSTOM_OPENCODE_GO_API_KEY:-}}"
+KAY_AUTH_PATH="${KAY_AUTH_PATH:-${HOME}/.kay/auth.json}"
+if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ] && [ -f "${KAY_AUTH_PATH}" ]; then
+  OPENCODE_GO_API_KEY_VALUE="$(python3 -c 'import json, sys, pathlib
 path = pathlib.Path(sys.argv[1])
-for entry in json.loads(path.read_text()):
-    if entry.get("id") == "minimax":
-        api_key = entry.get("auth_details", {}).get("api_key")
-        if api_key:
-            print(api_key)
-            raise SystemExit(0)
-raise SystemExit(1)' "${FORGE_CREDENTIALS_PATH}")"
+data = json.loads(path.read_text())
+creds = data.get("provider_credentials", {})
+api_key = creds.get("opencode-go", {}).get("api_key")
+if api_key:
+    print(api_key)
+    raise SystemExit(0)
+raise SystemExit(1)' "${KAY_AUTH_PATH}")"
 fi
-if [ -z "${MINIMAX_API_KEY_VALUE}" ]; then
-  fail "minimax_key" "MINIMAX_API_KEY was not set and no minimax key was found in ${FORGE_CREDENTIALS_PATH}"
+if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ]; then
+  fail "opencode_go_key" "OPENCODE_GO_API_KEY was not set and no OpenCode Go key was found in ${KAY_AUTH_PATH}"
   exit 1
 fi
 set +e
-EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" MINIMAX_API_KEY="${MINIMAX_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=minimax -c model=MiniMax-M2.7 "${TASK_PROMPT}" 2>&1)"
+EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=opencode-go -c model=minimax-m2.7 "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
 echo "kay rc=${EXEC_RC}"
