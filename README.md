@@ -6,8 +6,8 @@
 
 | Sidekick | Activation surface | Agent | Status |
 |----------|--------------------|-------|--------|
-| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.7 |
-| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro / MiniMax M2.7 / DeepSeek V4 Flash model buckets | ✅ v0.5.7 |
+| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.8 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro / MiniMax M2.7 / DeepSeek V4 Flash buckets for non-trivial, trivial, and verification/reporting work | ✅ v0.5.8 |
 
 More sidekicks planned.
 
@@ -94,9 +94,9 @@ The host configures Forge automatically and delegates coding work from that poin
 ### Providers & Models
 | Provider | Model | Notes |
 |----------|-------|-------|
-| **OpenCode Go** | **MiMo-V2.5-Pro** `mimo-v2.5-pro` | Main workhorse path for planning, implementation, and reviewing tasks |
+| **OpenCode Go** | **MiMo-V2.5-Pro** `mimo-v2.5-pro` | Main workhorse path for planning, implementation, reviewing, and other non-trivial tasks |
 | **OpenCode Go** | **MiniMax M2.7** `minimax-m2.7` | Trivial technical work |
-| **OpenCode Go** | **DeepSeek V4 Flash** `deepseek-v4-flash` | Work completion verification, not review |
+| **OpenCode Go** | **DeepSeek V4 Flash** `deepseek-v4-flash` | Test running, issue reporting, and work completion verification, not review |
 
 ---
 

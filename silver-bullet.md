@@ -837,19 +837,23 @@ not considered finished until the working tree is clean again.
 This section is written and committed by SB whenever the user expresses a workflow preference.
 Initially empty — all workflow defaults apply. Read at every relevant decision point.
 
-Last updated: (not yet set)
+Last updated: 2026-05-21
 
 ### 10a. Routing Preferences
 | Work type | Override route | Since |
 |-----------|---------------|-------|
+| MiniMax-backed Kay work | Use OpenCode Go as the provider path for MiniMax model routing | 2026-05-21 |
+| Test running / issue reporting | Use DeepSeek V4 Flash for verification runs and issue summaries | 2026-05-21 |
 
 ### 10b. Step Skip Preferences
 | Workflow | Step skipped | Condition | Since |
 |----------|-------------|-----------|-------|
+| Forge testing | All Forge test suites and any MiniMax.io provider-required tests | MiniMax key expired; use OpenCode Go's MiniMax model via OCG key instead | 2026-05-21 |
 
 ### 10c. Tool Preferences
 | Decision point | Preferred tool | Since |
 |----------------|---------------|-------|
+| MiniMax provider selection | OpenCode Go provider via OCG key | 2026-05-21 |
 
 ### 10d. MultAI Preferences
 | Trigger | Disposition | Since |

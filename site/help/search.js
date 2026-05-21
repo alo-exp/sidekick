@@ -21,12 +21,12 @@ var IDX = [
     text:'Entry point for durable decision records about the docs system, taxonomy, glossary, compatibility, and verification model.' },
   { page:'Help Center', url:'../', anchor:'support',
     title:'Sidekick ships Forge and Kay',
-    text:'Claude Code and Codex can both route work to either agent: use /forge or /forge:delegate for Forge mode, and kay-delegate, sidekick:kay-delegate, or /kay:delegate for Kay mode. The legacy code alias remains compatibility-only. OpenCode Go remains Kay multi-AI compatibility.' },
+    text:'Claude Code and Codex can both route work to either agent: use /forge or /forge:delegate for Forge mode, and kay-delegate, sidekick:kay-delegate, or /kay:delegate for Kay mode. The legacy code alias remains compatibility-only. OpenCode Go remains Kay compatibility path with MiMo-V2.5-Pro for non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification.' },
 
   // ── GETTING STARTED ───────────────────────────────────────────
   { page:'Getting Started', url:'getting-started/', anchor:'what-is-sidekick',
     title:'What is Sidekick?',
-    text:'Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. Claude Code and Codex can both route work to Forge or Kay; Kay uses the Every Code agent path with MiniMax M2.7 defaults and OpenCode Go compatibility.' },
+    text:'Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. Claude Code and Codex can both route work to Forge or Kay; Kay uses the OpenCode Go path with MiMo-V2.5-Pro for non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification.' },
   { page:'Getting Started', url:'getting-started/', anchor:'prerequisites',
     title:'Prerequisites — host and provider key',
     text:'Required: Claude Code or Codex host, provider key for MiniMax or Forge provider config, Node.js 18 or later for Claude Code. Forge and Kay readiness is checked when delegation starts for the current session.' },
@@ -52,7 +52,7 @@ var IDX = [
     text:'When you invoke /forge the host activates Forge delegation mode for the current session. The host does not write code directly. It composes structured prompts submits to Forge monitors output reviews results handles failures and turns corrections into AGENTS.md guidance. Persists until /forge-stop.' },
   { page:'Core Concepts', url:'concepts/', anchor:'kay-delegation',
     title:'Kay delegation model — native execution',
-    text:"Kay is Sidekick's execution agent for the OSS Codex lineage. Activation starts with kay-delegate or sidekick:kay-delegate; active Kay mode routes work through kay exec --full-auto. Sidekick adds package wiring, a session-scoped .kay marker, .kay/conversations.idx, and progress summaries." },
+    text:"Kay is Sidekick's execution agent for the OSS Codex lineage. Activation starts with kay-delegate or sidekick:kay-delegate; active Kay mode routes work through kay exec --full-auto. Sidekick adds package wiring, a session-scoped .kay marker, .kay/conversations.idx, and progress summaries. Kay task routing uses MiMo-V2.5-Pro for planning, implementation, reviewing, and other non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification." },
   { page:'Core Concepts', url:'concepts/', anchor:'skill-md',
     title:'SKILL.md — the Forge delegation instruction set',
     text:'All Forge delegation behavior defined in skills/forge/SKILL.md. Loaded on /forge invocation. Contains runtime readiness activation health check delegation protocol deactivation failure detection fallback ladder skill injection AGENTS.md mentoring and token optimization.' },
@@ -73,7 +73,7 @@ var IDX = [
     text:'Task prompts capped at 2000 tokens. Only 5 mandatory fields no conversation history no unrelated files. Injection budget 2 skills. Project .forge.toml validated defaults: max_tokens 16384 and compact token_threshold 80000 eviction_window 0.20 retention_window 6.' },
   { page:'Core Concepts', url:'concepts/', anchor:'provider-config',
     title:'Provider configuration — Forge and Kay',
-    text:'Forge provider config lives in ~/forge/.forge.toml and credentials in ~/forge/.credentials.json. Kay defaults to MiniMax M2.7 in Kay config, with legacy config paths retained only for compatibility. Use kay login --provider minimax --with-api-key for Kay credentials.' },
+    text:'Forge provider config lives in ~/forge/.forge.toml and credentials in ~/forge/.credentials.json. Kay uses OpenCode Go provider routing in Kay config, with MiMo-V2.5-Pro for non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification. Use kay login --provider minimax --with-api-key for Kay credentials.' },
 
   // ── DELEGATION WORKFLOW ───────────────────────────────────────
   { page:'Delegation Workflow', url:'workflows/', anchor:'activation',
@@ -121,7 +121,7 @@ var IDX = [
     text:'Forge provider or credentials not valid: check forge binary, forge info, ~/forge/.credentials.json array of id and auth_details entries, and ~/forge/.forge.toml provider_id and model_id. Model not available: verify the minimax MiniMax-M2.7 provider pair. Bootstrap skills not loaded: reinstall /plugin install alo-labs/sidekick.' },
   { page:'Troubleshooting', url:'troubleshooting/', anchor:'kay-runtime',
     title:'Kay runtime issues — kay exec unavailable or MiniMax login missing',
-    text:'If kay exec is unavailable, check kay --version and kay exec --help. Reinstall Sidekick or the Kay runtime if the primary binary is unavailable. If MiniMax login is missing, run kay login --provider minimax --with-api-key.' },
+    text:"If kay exec is unavailable, check kay --version and kay exec --help. Reinstall Sidekick or the Kay runtime if the primary binary is unavailable. If the MiniMax-backed trivial-work route is missing credentials, run kay login --provider minimax --with-api-key." },
   { page:'Troubleshooting', url:'troubleshooting/', anchor:'fallback',
     title:'Fallback ladder not triggering — escalation issues',
     text:'Failure signal not recognized describe to the host what went wrong manually trigger fallback. L1 retry same wrong output is expected L1 is single retry then escalates to L2. L3 takeover no DEBRIEF ask the host explicitly to produce DEBRIEF.' },

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.8 — 2026-05-21
+
+### Kay DeepSeek routing and docs mirror
+
+Sidekick now routes Kay test running and issue reporting through DeepSeek V4 Flash while keeping MiMo-V2.5-Pro as the default for non-trivial work and MiniMax M2.7 for trivial work. Public docs and help-site copy were refreshed to match the routing policy.
+
+**Changed:**
+
+- **`hooks/lib/sidekick-registry.sh`**, **`tests/test_codex_enforcer_hook.bash`**: Kay routing now treats test running and issue reporting as DeepSeek V4 Flash work; regression coverage was added for the new rule.
+- **`hooks/validate-release-gate.sh`**: release-gate validation now resolves the repo root from the hook location before comparing live-pyramid marker SHAs, so the gate works consistently even when the caller cwd is not the repo root.
+- **`README.md`**, **`context.md`**, **`site/COMPATIBILITY.md`**, **`site/help/*`**: canonical and generated docs now mirror the updated routing policy wording.
+- **`.claude-plugin/plugin.json`**, **`.codex-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**: version bumped to `0.5.8`.
+
 ## v0.5.7 — 2026-05-21
 
 ### Codex-only release gating and Kay/site refresh
