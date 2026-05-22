@@ -254,10 +254,10 @@ echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 if [ "${FAIL}" -eq 0 ]; then
   echo -e "${green}${bold}LIVE MARKETPLACE INSTALL PASSED${reset} ($PASS checks)"
-  echo "Workspace preserved for inspection: ${WORKSPACE}"
+  echo "Temporary workspace was: ${WORKSPACE} (removed on exit)"
 else
   echo -e "${red}${bold}LIVE MARKETPLACE INSTALL FAILED${reset} ($FAIL of $((PASS+FAIL)) failed)"
-  echo "Workspace preserved for inspection: ${WORKSPACE}"
+  echo "Temporary workspace was: ${WORKSPACE} (removed on exit)"
 fi
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 

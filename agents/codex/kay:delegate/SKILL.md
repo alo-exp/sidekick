@@ -6,7 +6,7 @@ description: Alias activation surface for Kay delegation mode. Use when the user
 # /kay:delegate
 
 This is a user-facing alias for the canonical Kay delegation skill at
-`skills/codex-delegate/SKILL.md`.
+`codex-delegate/SKILL.md` in this generated codex skill root (`agents/codex/codex-delegate/SKILL.md` in the repository).
 
 When invoked, follow the canonical `kay-delegate` workflow exactly:
 
