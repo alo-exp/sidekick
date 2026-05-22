@@ -2,14 +2,15 @@
 # Pre-release quality gate enforcer
 # Intercepts Bash tool calls containing "gh release create" and denies them
 # (via the Claude Code PreToolUse permissionDecision envelope) unless all
-# current-session quality-gate stage markers and two live-pyramid run markers
-# are present in Sidekick's state file.
+# current-session, current-commit quality-gate stage markers and two
+# live-pyramid run markers are present in Sidekick's state file.
 #
 # Stage count and marker names are defined in site/pre-release-quality-gate.md.
 # Each stage in that document resolves host-specific state, invokes
 # /superpowers:verification-before-completion, then writes:
 #   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
-#   printf 'quality-gate-stage-N session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
+#   SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD)"
+#   printf 'quality-gate-stage-N session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
 # A successful live `tests/run_release.bash` run with both live gates enabled
 # appends:
 #   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp>
@@ -2869,22 +2870,39 @@ if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
 fi
 
 missing=()
+current_head_sha="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || true)"
 for stage in $(seq 1 "$STAGE_COUNT"); do
-  # Anchored whole-line fixed-string match so quality-gate-stage-10 does
-  # not satisfy stage 1, and stale markers from another host session do not
-  # satisfy the current session.
-  if ! grep -qxF "quality-gate-stage-${stage} session=${QUALITY_GATE_SESSION_ID}" "$STATE_FILE" 2>/dev/null; then
+  # Token-aware match so quality-gate-stage-10 does not satisfy stage 1, stale
+  # markers from another host session do not satisfy the current session, and
+  # stale markers from an older commit do not satisfy source-checkout releases.
+  if ! awk -v marker="quality-gate-stage-${stage}" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
+    $1 == marker {
+      has_session = 0
+      has_sha = (sha == "") ? 1 : 0
+      for (i = 2; i <= NF; i++) {
+        if ($i == "session=" sid) {
+          has_session = 1
+        }
+        if (sha != "" && $i == "sha=" sha) {
+          has_sha = 1
+        }
+      }
+      if (has_session && has_sha) {
+        found = 1
+      }
+    }
+    END { exit found ? 0 : 1 }
+  ' "$STATE_FILE" 2>/dev/null; then
     missing+=("${stage}")
   fi
 done
 
 if [ ${#missing[@]} -eq 0 ]; then
-  current_head_sha="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || true)"
   live_pyramid_runs=$(
     awk -v marker="$LIVE_PYRAMID_MARKER" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
       $1 == marker {
         has_session = 0
-        has_sha = 0
+        has_sha = (sha == "") ? 1 : 0
         for (i = 2; i <= NF; i++) {
           if ($i == "session=" sid) {
             has_session = 1
@@ -2916,7 +2934,7 @@ if [ ${#missing[@]} -eq 0 ]; then
 fi
 
 missing_list=$(IFS=, ; echo "${missing[*]}")
-reason="Pre-release quality gate not complete. Missing stage(s): ${missing_list}. Run all ${STAGE_COUNT} stages in site/pre-release-quality-gate.md before cutting a release."
+reason="Pre-release quality gate not complete for the current session and commit. Missing stage(s): ${missing_list}. Run all ${STAGE_COUNT} stages in site/pre-release-quality-gate.md before cutting a release."
 
 # Emit the canonical PreToolUse deny envelope. exit 0 — the harness reads the
 # decision from stdout, not from the exit code.

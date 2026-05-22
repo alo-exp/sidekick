@@ -103,7 +103,7 @@ SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full
 bash tests/run_release.bash                                              # non-live release check; still requires clean committed release metadata and marketplace pin
 ```
 
-Every release must first pass the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md`, including each stage's own clean-pass loop, then pass the live Kay pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Only live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
+Every release must first pass the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md`, including each stage's own clean-pass loop, then pass the live Kay pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Stage markers and live markers are scoped to the current host session and current commit SHA; only live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
 
 After the GitHub release is published, run `bash tests/post_release_cleanup.bash` to remove any transient repo-local artifacts left behind by the release process.
 

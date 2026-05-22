@@ -24,6 +24,7 @@ seed_fixture() {
   local home_dir="$2"
   local session_keep="$3"
   local pre_keep="$4"
+  local plugin_root="${5:-${REPO_ROOT}}"
 
   mkdir -p "$(dirname "${file_path}")"
   cat > "${file_path}" <<EOF
@@ -33,7 +34,7 @@ seed_fixture() {
       "hooks": [
         {
           "type": "command",
-          "command": "test -f \"${home_dir}/.claude/.sidekick/.installed\" || (bash \"${REPO_ROOT}/install.sh\" && touch \"${home_dir}/.claude/.sidekick/.installed\")"
+          "command": "test -f \"${home_dir}/.claude/.sidekick/.installed\" || (bash \"${plugin_root}/install.sh\" && touch \"${home_dir}/.claude/.sidekick/.installed\")"
         }
       ]
     },
@@ -41,7 +42,7 @@ seed_fixture() {
       "hooks": [
         {
           "type": "command",
-          "command": "ROOT=\"${REPO_ROOT}\"; if [ -f \"\${ROOT}/.installed\" ]; then bash \"\${ROOT}/hooks/runtime-sync.sh\"; fi"
+          "command": "ROOT=\"${plugin_root}\"; if [ -f \"\${ROOT}/.installed\" ]; then bash \"\${ROOT}/hooks/runtime-sync.sh\"; fi"
         }
       ]
     },
@@ -60,11 +61,11 @@ seed_fixture() {
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"${REPO_ROOT}/hooks/forge-delegation-enforcer.sh\""
+          "command": "bash \"${plugin_root}/hooks/forge-delegation-enforcer.sh\""
         },
         {
           "type": "command",
-          "command": "bash \"${REPO_ROOT}/hooks/codex-delegation-enforcer.sh\""
+          "command": "bash \"${plugin_root}/hooks/codex-delegation-enforcer.sh\""
         }
       ]
     },
@@ -73,7 +74,7 @@ seed_fixture() {
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"${REPO_ROOT}/hooks/validate-release-gate.sh\""
+          "command": "bash \"${plugin_root}/hooks/validate-release-gate.sh\""
         }
       ]
     },
@@ -93,11 +94,11 @@ seed_fixture() {
       "hooks": [
         {
           "type": "command",
-          "command": "bash \"${REPO_ROOT}/hooks/forge-progress-surface.sh\""
+          "command": "bash \"${plugin_root}/hooks/forge-progress-surface.sh\""
         },
         {
           "type": "command",
-          "command": "bash \"${REPO_ROOT}/hooks/codex-progress-surface.sh\""
+          "command": "bash \"${plugin_root}/hooks/codex-progress-surface.sh\""
         }
       ]
     }
@@ -157,7 +158,10 @@ TMP_HOME="$(mktemp -d)"
 CLEAN_HOME="$(mktemp -d)"
 V1_HOME="$(mktemp -d)"
 COLLISION_HOME="$(mktemp -d)"
-trap 'rm -rf "${TMP_HOME}" "${CLEAN_HOME}" "${V1_HOME}" "${COLLISION_HOME}"' EXIT
+ALIAS_HOME="$(mktemp -d)"
+ALIAS_REAL="$(mktemp -d)"
+ALIAS_LINK="${ALIAS_REAL}-link"
+trap 'rm -rf "${TMP_HOME}" "${CLEAN_HOME}" "${V1_HOME}" "${COLLISION_HOME}" "${ALIAS_HOME}" "${ALIAS_REAL}" "${ALIAS_LINK}"' EXIT
 
 echo "=== lower_case_scrub ==="
 mkdir -p "${TMP_HOME}/.codex"
@@ -306,6 +310,21 @@ then
 else
   assert_fail "same-basename unowned hooks" "unowned hook block was modified or scrubbed"
 fi
+
+echo "=== aliased_plugin_root_scrub ==="
+ln -s "${ALIAS_REAL}" "${ALIAS_LINK}"
+mkdir -p "${ALIAS_REAL}/hooks" "${ALIAS_HOME}/.codex"
+cp "${SCRUBBER}" "${ALIAS_REAL}/hooks/scrub-legacy-user-hooks.py"
+seed_fixture "${ALIAS_HOME}/.codex/hooks.json" "${ALIAS_HOME}" "echo keep-alias" "echo unrelated-alias" "${ALIAS_LINK}"
+cp "${ALIAS_HOME}/.codex/hooks.json" "${ALIAS_HOME}/.codex/hooks.json.original"
+
+if HOME="${ALIAS_HOME}" python3 "${ALIAS_LINK}/hooks/scrub-legacy-user-hooks.py" >/tmp/sidekick-scrub-alias.out 2>/tmp/sidekick-scrub-alias.err; then
+  assert_pass "aliased plugin-root scrub exits successfully"
+else
+  assert_fail "aliased plugin-root scrub" "non-zero exit"
+fi
+
+assert_json "${ALIAS_HOME}" "${ALIAS_HOME}/.codex/hooks.json" "${ALIAS_HOME}/.codex/hooks.json.original" "echo keep-alias" "echo unrelated-alias" "clean"
 
 if HOME="${TMP_HOME}" python3 "${SCRUBBER}" --rollback >/tmp/sidekick-scrub-lower-rollback.out 2>/tmp/sidekick-scrub-lower-rollback.err; then
   assert_pass "lower-case rollback exits successfully"

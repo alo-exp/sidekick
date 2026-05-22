@@ -3,8 +3,8 @@
 #
 # The hook blocks `gh release create` commands via Claude Code's PreToolUse
 # permissionDecision=deny mechanism unless all current-session quality-gate stage
-# markers and two current-session live-pyramid run markers are present in the
-# active host quality-gate state file.
+# current-commit markers and two current-session live-pyramid run markers are
+# present in the active host quality-gate state file.
 #
 # We override HOME to a temp directory for each scenario so we can
 # write marker files deterministically without touching the real state.
@@ -38,6 +38,11 @@ run_hook_codex() {
   HOME="$1" SIDEKICK_SESSION_ID= SESSION_ID= CLAUDE_SESSION_ID= CODEX_THREAD_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2"
 }
 
+run_hook_no_git() {
+  # $1 = temp HOME, $2 = JSON payload, $3 = package root with hooks/ but no .git
+  HOME="$1" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2"
+}
+
 run_hook_without_python() {
   # $1 = temp HOME, $2 = JSON payload. PATH deliberately contains jq/cat but
   # not python3, proving the release gate fails closed when its parser runtime is
@@ -63,15 +68,32 @@ setup_home() {
 }
 
 write_markers() {
-  local h="$1"; shift
+  local h="$1" sha; shift
+  sha="$(current_head_sha)"
   : > "${h}/.claude/.sidekick/quality-gate-state"
   for s in "$@"; do
-    echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session}" >> "${h}/.claude/.sidekick/quality-gate-state"
+    echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
   done
 }
 
 current_head_sha() {
   git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || printf 'unknown'
+}
+
+write_markers_for_sha() {
+  local h="$1" sha="$2"; shift 2
+  : > "${h}/.claude/.sidekick/quality-gate-state"
+  for s in "$@"; do
+    echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
+  done
+}
+
+write_legacy_session_only_markers() {
+  local h="$1"; shift
+  : > "${h}/.claude/.sidekick/quality-gate-state"
+  for s in "$@"; do
+    echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session}" >> "${h}/.claude/.sidekick/quality-gate-state"
+  done
 }
 
 write_live_pyramid_markers() {
@@ -90,10 +112,11 @@ write_live_pyramid_markers_for_sha() {
 }
 
 write_codex_markers() {
-  local h="$1"; shift
+  local h="$1" sha; shift
+  sha="$(current_head_sha)"
   : > "${h}/.codex/.sidekick/quality-gate-state"
   for s in "$@"; do
-    echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session}" >> "${h}/.codex/.sidekick/quality-gate-state"
+    echo "quality-gate-stage-${s} session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha}" >> "${h}/.codex/.sidekick/quality-gate-state"
   done
 }
 
@@ -282,6 +305,25 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
+# Scenario 4a: packaged hook without .git uses current-session live markers
+# ---------------------------------------------------------------------------
+echo "Scenario 4a: release command passes from package tree without git metadata"
+H="$(setup_home)"
+NO_GIT_ROOT="$(mktemp -d)"
+mkdir -p "${NO_GIT_ROOT}/hooks"
+cp "${HOOK}" "${NO_GIT_ROOT}/hooks/validate-release-gate.sh"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook_no_git "${H}" "${PAYLOAD}" "${NO_GIT_ROOT}")"; RC=$?
+if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
+  assert_pass "package tree without .git: current-session live pyramid passes"
+else
+  assert_fail "package tree without .git pass" "rc=${RC} out=${OUT}"
+fi
+rm -rf "${H}" "${NO_GIT_ROOT}"
+
+# ---------------------------------------------------------------------------
 # Scenario 4b: all 4 stage markers without live pyramid markers → deny
 # ---------------------------------------------------------------------------
 echo "Scenario 4b: stage markers without live pyramid are denied"
@@ -317,13 +359,49 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
+# Scenario 4d: stale stage marker SHA does not satisfy current checkout
+# ---------------------------------------------------------------------------
+echo "Scenario 4d: stale stage marker SHA is denied"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "stale-stage-sha" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"current session and commit"* ]] && [[ "${REASON}" == *"1,2,3,4"* ]]; then
+  assert_pass "stale stage marker SHA: permissionDecision=deny"
+else
+  assert_fail "stale stage marker SHA deny" "rc=${RC} decision=${DECISION} reason=${REASON}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
+# Scenario 4e: legacy session-only stage markers are denied in source checkout
+# ---------------------------------------------------------------------------
+echo "Scenario 4e: legacy session-only stage markers are denied"
+H="$(setup_home)"
+write_legacy_session_only_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"current session and commit"* ]]; then
+  assert_pass "legacy session-only stage markers: permissionDecision=deny"
+else
+  assert_fail "legacy session-only stage markers deny" "rc=${RC} decision=${DECISION} reason=${REASON}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
 # Scenario 5: stage-10 marker must NOT satisfy stage-1 (anchored match)
 # ---------------------------------------------------------------------------
 echo "Scenario 5: stage-10 does not satisfy stage-1 (anchored grep)"
 H="$(setup_home)"
 : > "${H}/.claude/.sidekick/quality-gate-state"
 # Only a spurious stage-10 marker — stages 1-4 should all still be missing.
-echo "quality-gate-stage-10 session=${SIDEKICK_TEST_SESSION:-test-session}" >> "${H}/.claude/.sidekick/quality-gate-state"
+echo "quality-gate-stage-10 session=${SIDEKICK_TEST_SESSION:-test-session} sha=$(current_head_sha)" >> "${H}/.claude/.sidekick/quality-gate-state"
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1"}}'
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
@@ -374,7 +452,7 @@ echo "Scenario 8: stale markers from another session are denied"
 H="$(setup_home)"
 : > "${H}/.claude/.sidekick/quality-gate-state"
 for s in 1 2 3 4; do
-  echo "quality-gate-stage-${s} session=old-session" >> "${H}/.claude/.sidekick/quality-gate-state"
+  echo "quality-gate-stage-${s} session=old-session sha=$(current_head_sha)" >> "${H}/.claude/.sidekick/quality-gate-state"
 done
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1"}}'
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?

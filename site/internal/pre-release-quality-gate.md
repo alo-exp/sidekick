@@ -11,22 +11,22 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 **State file**: host-specific Sidekick state.
 - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
 - Codex installs: `~/.codex/.sidekick/quality-gate-state`
-**Marker format**: `quality-gate-stage-N session=<current-host-session-id>`
+**Marker format**: `quality-gate-stage-N session=<current-host-session-id> sha=<git-sha>`
 **Live-pyramid marker format**: `quality-gate-live-pyramid session=<current-host-session-id> sha=<git-sha> at=<utc-timestamp>`
 
 **Required markers** (must all be present before release):
-- `quality-gate-stage-1`
-- `quality-gate-stage-2`
-- `quality-gate-stage-3`
-- `quality-gate-stage-4`
-- Two distinct current-session `quality-gate-live-pyramid` markers written by successful live runs of `tests/run_release.bash`
+- Current-session, current-commit `quality-gate-stage-1`
+- Current-session, current-commit `quality-gate-stage-2`
+- Current-session, current-commit `quality-gate-stage-3`
+- Current-session, current-commit `quality-gate-stage-4`
+- Two distinct current-session, current-commit `quality-gate-live-pyramid` markers written by successful live runs of `tests/run_release.bash`
 
-**Session reset**: All four markers are scoped to the current host session id. The gate must be completed in full during the session in which the release is being cut — markers from a previous session do not satisfy the release hook.
+**Session and commit reset**: All four stage markers are scoped to the current host session id and git commit SHA. The gate must be completed in full during the session in which the release is being cut, after the final release commit is present — markers from a previous session or previous commit do not satisfy the release hook.
 
 Each stage is complete only when:
 1. The work is done and verified
 2. The `/superpowers:verification-before-completion` skill has been invoked (not just run manually)
-3. The marker is written with the current host session id: `printf 'quality-gate-stage-N session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"`
+3. The marker is written with the current host session id and git SHA: `printf 'quality-gate-stage-N session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"`
 
 Resolve the state file once in the release shell before writing any marker:
 
@@ -36,6 +36,8 @@ if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_
   SIDEKICK_QG_DIR="${HOME}/.codex/.sidekick"
 fi
 SIDEKICK_QG_STATE="${SIDEKICK_QG_DIR}/quality-gate-state"
+SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
 ```
 
 **Violating the verification rule is equivalent to skipping the stage.**
@@ -68,7 +70,9 @@ After the canonical triad loop and structure/security checks are clean:
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
-   printf 'quality-gate-stage-1 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
+   SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+   test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
+   printf 'quality-gate-stage-1 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: Zero accepted code review findings across the canonical triad loop, fresh verification confirms clean, marker written.
@@ -145,7 +149,9 @@ After two consecutive clean passes across all 5 dimensions:
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
-   printf 'quality-gate-stage-2 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
+   SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+   test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
+   printf 'quality-gate-stage-2 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: Two consecutive clean passes from all 5 dimensions, no consistency gaps remain, marker written.
@@ -258,7 +264,9 @@ After all five steps are complete and verified:
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
-   printf 'quality-gate-stage-3 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
+   SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+   test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
+   printf 'quality-gate-stage-3 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: All public-facing content is accurate and current, CHANGELOG.md has a finalized release entry, CI passes on main, marker written.
@@ -343,7 +351,9 @@ After all three targets are clean with no blocking issues:
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
-   printf 'quality-gate-stage-4 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
+   SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+   test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
+   printf 'quality-gate-stage-4 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
    ```
 
 **Exit criteria**: Zero blocking security findings, all three targets pass clean, marker written.
@@ -358,12 +368,14 @@ and after the Codex live release pyramid has been run twice with
 verify and create the release:
 
 ```bash
-# Verify all 4 current-session stage markers and 2 live-pyramid markers are present
+# Verify all 4 current-session/current-commit stage markers and 2 live-pyramid markers are present
 SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
-count=$(grep -oE "^quality-gate-stage-[1-4] session=${SIDEKICK_QG_SESSION}$" "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
+SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
+test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
+count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1 ~ /^quality-gate-stage-[1-4]$/ { has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $1 }' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 test "$count" = "4" || { echo "Expected 4 distinct current-session markers, found $count"; exit 1; }
-live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" '$1=="quality-gate-live-pyramid"{for(i=2;i<=NF;i++)if($i=="session="sid){print $0}}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
+live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $0}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 test "$live_count" -ge 2 || { echo "Expected 2 current-session live-pyramid markers, found $live_count"; exit 1; }
 
 # Create the GitHub release

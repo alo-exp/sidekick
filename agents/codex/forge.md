@@ -3,11 +3,11 @@ name: forge
 user-invocable: false
 description: >
   Deprecated compatibility wrapper for ForgeCode setup and delegation notes.
-  New installs invoke /forge from skills/forge/SKILL.md.
+  New installs invoke /forge from the generated host skill at forge/SKILL.md.
 ---
 
 > **Deprecated compatibility file:** The canonical user-facing Forge skill is
-> [`skills/forge/SKILL.md`](./forge/SKILL.md). This flat file is retained only so
+> [`forge/SKILL.md`](./forge/SKILL.md). This flat file is retained only so
 > older host/plugin loaders have a setup reference when `/forge` detects a broken
 > runtime.
 
@@ -160,7 +160,7 @@ any of these conditions appear:
 - Forge stalls, asks a clarifying question instead of implementing, or repeats the
   same failed approach.
 
-Use the canonical fallback ladder from `skills/forge/SKILL.md`: Level 1 Guide,
+Use the canonical fallback ladder from `forge/SKILL.md` in this generated codex skill root (`agents/codex/forge/SKILL.md` in the repository): Level 1 Guide,
 Level 2 Handhold, then Level 3 Take Over. Do not skip levels unless the user
 explicitly asks to stop delegation.
 
@@ -197,7 +197,7 @@ done.
 
 After each task, identify durable lessons that would improve future Forge
 execution. Append only actionable, deduplicated instructions to the global,
-project, and session-log tiers described by `skills/forge/SKILL.md`. Never copy
+project, and session-log tiers described by `forge/SKILL.md` in this generated codex skill root (`agents/codex/forge/SKILL.md` in the repository). Never copy
 Forge output verbatim into standing instructions.
 
 ## Delegation

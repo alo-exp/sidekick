@@ -143,7 +143,7 @@ SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
 
-Before any release, complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Each Codex live run records a `quality-gate-live-pyramid` marker; the release hook requires two markers before publishing.
+Before any release, complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two Codex live markers before publishing.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.
