@@ -122,8 +122,12 @@ expect_not_contains "site/PRD-Overview.md" "v0.5.6" "PRD overview removes stale 
 echo "=== T9: Release runner docs match current contracts ==="
 expect_contains "README.md" "then runs every live-gated wrapper in skip-safe mode" "README documents expanded run_all scope"
 expect_contains "site/TESTING.md" "then runs every live-gated wrapper in skip-safe mode" "testing docs document expanded run_all scope"
+expect_contains "README.md" "runs the strict non-live tier" "README distinguishes release runner tier from quality-gate stage"
+expect_contains "CHANGELOG.md" "dynamic refspecs" "changelog documents dynamic release refspec guard"
 expect_contains "site/pre-release-quality-gate.md" 'If release commits intentionally include `[skip ci]`' "release gate documents skip-CI local evidence path"
 expect_contains "site/internal/pre-release-quality-gate.md" 'If release commits intentionally include `[skip ci]`' "internal release gate documents skip-CI local evidence path"
+expect_contains "site/pre-release-quality-gate.md" 'recorded local evidence when `[skip ci]` is intentionally used' "release gate exit criteria allow skip-CI evidence"
+expect_contains "site/internal/pre-release-quality-gate.md" 'recorded local evidence when `[skip ci]` is intentionally used' "internal release gate exit criteria allow skip-CI evidence"
 
 echo ""
 echo "======================================="

@@ -16,12 +16,13 @@ Sidekick now keeps canonical host-agnostic workflows under `skills/` while gener
 - **`.claude-plugin/plugin.json`**, **`.codex-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**: version bumped to `0.6.0`, with plugin manifests pointing at the generated host-specific skill bundles.
 - **`tests/run_all.bash`**, **`tests/run_release.bash`**, **`.github/workflows/ci.yml`**, **`README.md`**, **`context.md`**, **`site/CICD.md`**, **`site/TESTING.md`**, **`site/pre-release-quality-gate.md`**: testing docs and automation now distinguish strict local validation, skip-safe local sweeps, and live release authorization.
 - **`hooks/validate-release-gate.sh`**, **`site/pre-release-quality-gate.md`**: release-gate stage markers now include the current git SHA, preventing stale stage evidence from satisfying a release after final code changes.
+- **`hooks/validate-release-gate.sh`**: release authorization now blocks release tag pushes, including `git push origin vX.Y.Z`, `refs/tags/*`, `--tags`, `--follow-tags`, `--mirror`, and dynamic refspecs, until all required gate evidence is present.
 - **Kay visual prompt routing**: visual and screenshot-style prompts now route to `mimo-v2.5`, the native multimodal MiMo path, while `mimo-v2.5-pro` remains the non-trivial text/code/review workhorse.
 
 **Fixed:**
 
 - **`hooks/validate-release-gate.sh`**, **`tests/run_release.bash`**: release authorization now fails closed when no current git SHA can be resolved, and live-pyramid marker recording aborts on state-file write failures.
-- **`install.sh`**, **`scripts/render-agent-bundle.py`**, **`tests/run_unit.bash`**: host install rewrites now prefer the active host plugin root, generated skills no longer point users back at canonical `skills/` paths, renderer temp deletion is guarded, and strict unit runs no longer execute repo-local post-release cleanup.
+- **`install.sh`**, **`scripts/render-agent-bundle.py`**, **`tests/run_unit.bash`**, **`tests/test_repo_layout.bash`**: host install rewrites now prefer the active host plugin root, Kay-disabled installs no longer read Kay registry metadata, generated skills no longer point users back at canonical `skills/` paths, renderer temp deletion is guarded, and strict unit runs no longer execute repo-local post-release cleanup or silently remove transient repo artifacts.
 
 ## v0.5.8 — 2026-05-21
 

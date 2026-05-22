@@ -269,7 +269,7 @@ After all five steps are complete and verified:
    printf 'quality-gate-stage-3 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
    ```
 
-**Exit criteria**: All public-facing content is accurate and current, CHANGELOG.md has a finalized release entry, CI passes on main, marker written.
+**Exit criteria**: All public-facing content is accurate and current, CHANGELOG.md has a finalized release entry, CI passes on main when CI runs, or recorded local evidence when `[skip ci]` is intentionally used, marker written.
 
 ---
 

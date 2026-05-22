@@ -313,7 +313,7 @@ All suites in `tests/run_unit.bash` must pass with 0 failures. Run `bash tests/r
    printf 'quality-gate-stage-3 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
    ```
 
-**Exit criteria**: All public-facing content accurate and current, `run_unit.bash` passes, CI green on main, marker written.
+**Exit criteria**: All public-facing content accurate and current, `run_unit.bash` and `run_all.bash` pass locally, CI green on main when CI runs, or recorded local evidence when `[skip ci]` is intentionally used, marker written.
 
 ---
 

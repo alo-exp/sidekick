@@ -352,6 +352,22 @@ fi
 rm -rf "${H}" "${NO_GIT_ROOT}" "${NO_GIT_CWD}"
 
 # ---------------------------------------------------------------------------
+# Scenario 4b2: missing session id guidance names all accepted variables
+# ---------------------------------------------------------------------------
+echo "Scenario 4b2: missing host session guidance names Claude session variable"
+H="$(setup_home)"
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(HOME="${H}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID= CLAUDE_SESSION_ID= SESSION_ID= bash "${HOOK}" <<<"${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"CLAUDE_SESSION_ID"* ]]; then
+  assert_pass "missing host session guidance includes CLAUDE_SESSION_ID"
+else
+  assert_fail "missing host session guidance" "rc=${RC} decision=${DECISION} reason=${REASON} out=${OUT}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
 # Scenario 4c: all 4 stage markers without live pyramid markers → deny
 # ---------------------------------------------------------------------------
 echo "Scenario 4c: stage markers without live pyramid are denied"

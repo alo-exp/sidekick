@@ -817,9 +817,6 @@ trap cleanup_install_tmps EXIT
 # Leave blank ("") only if you intentionally want display-only verification.
 # (SENTINEL FINDING-R7-7/R8-3/R10-1: supply chain hardening)
 EXPECTED_FORGE_SHA="e77cc415c254dede4553b87ba4a0361a44d41b59c576e34b44d81ea48b34ce62"
-CODEX_INSTALL_URL="$(sidekick_source_registry_get kay 'install.url')"
-CODEX_INSTALL_SHA="$(sidekick_source_registry_get kay 'install.sha256')"
-CODEX_INSTALL_VERSION="$(sidekick_source_registry_get kay 'install.version')"
 
 if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
   if bootstrap_target_root="$(resolve_bootstrap_target_root "${bootstrap_host}")"; then
@@ -920,6 +917,9 @@ fi
 # --- Ensure Kay runtime is installed and aliased ---
 if [ "${INSTALL_KAY}" = "1" ]; then
   echo "[forge-plugin] Checking Kay installation..."
+  CODEX_INSTALL_URL="$(sidekick_source_registry_get kay 'install.url')"
+  CODEX_INSTALL_SHA="$(sidekick_source_registry_get kay 'install.sha256')"
+  CODEX_INSTALL_VERSION="$(sidekick_source_registry_get kay 'install.version')"
 
   ensure_codex_aliases() {
     local source_bin="$1"
