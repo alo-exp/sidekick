@@ -74,10 +74,29 @@ if grep -q 'canonical Forge delegation workflow' "${SKILL_FILE}" \
   && grep -q '## Runtime Setup / Repair' "${SKILL_FILE}" \
   && ! grep -q 'follow `skills/forge.md` STEP' "${SKILL_FILE}" \
   && ! grep -q 'direct the user to `skills/forge.md`' "${SKILL_FILE}" \
-  && ! grep -q 'wraps it with a persistent session state mechanism' "${SKILL_FILE}"; then
+  && ! grep -q 'wraps it with a persistent session state mechanism' "${SKILL_FILE}" \
+  && ! grep -q 'defined in plan' "${SKILL_FILE}" \
+  && ! grep -q 'plan 01-03' "${SKILL_FILE}"; then
   assert_pass "Forge skill is self-contained canonical workflow"
 else
   assert_fail "Forge canonical workflow" "still depends on the legacy flat wrapper or lacks setup guidance"
+fi
+
+echo "=== T11c: Generated Forge skills do not reference hidden planning context ==="
+generated_plan_refs=()
+for generated in \
+  "${PLUGIN_DIR}/agents/claude/forge/SKILL.md" \
+  "${PLUGIN_DIR}/agents/codex/forge/SKILL.md"; do
+  if [ ! -f "${generated}" ]; then
+    generated_plan_refs+=("${generated}:missing")
+  elif grep -Eq 'defined in plan|plan 01-03' "${generated}"; then
+    generated_plan_refs+=("${generated}")
+  fi
+done
+if [ "${#generated_plan_refs[@]}" -eq 0 ]; then
+  assert_pass "Generated Forge skills are free of hidden planning references"
+else
+  assert_fail "Generated Forge skill planning references" "${generated_plan_refs[*]}"
 fi
 
 echo "=== T12: Level 3 fallback uses host project boundary ==="

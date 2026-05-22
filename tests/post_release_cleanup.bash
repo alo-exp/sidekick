@@ -13,7 +13,28 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="${SIDEKICK_REPO_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+RAW_REPO_ROOT="${SIDEKICK_REPO_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+
+if ! REPO_ROOT="$(cd "${RAW_REPO_ROOT}" && pwd -P 2>/dev/null)"; then
+  echo "post-release cleanup: refusing unknown repo root: ${RAW_REPO_ROOT}" >&2
+  exit 1
+fi
+
+if [ -z "${REPO_ROOT}" ] || [ "${REPO_ROOT}" = "/" ]; then
+  echo "post-release cleanup: refusing unsafe repo root: ${REPO_ROOT}" >&2
+  exit 1
+fi
+
+HOME_ROOT="$(cd "${HOME}" && pwd -P 2>/dev/null || true)"
+if [ -n "${HOME_ROOT}" ] && [ "${REPO_ROOT}" = "${HOME_ROOT}" ]; then
+  echo "post-release cleanup: refusing to run against HOME: ${REPO_ROOT}" >&2
+  exit 1
+fi
+
+if [ ! -f "${REPO_ROOT}/.claude-plugin/plugin.json" ] || [ ! -f "${REPO_ROOT}/tests/post_release_cleanup.bash" ]; then
+  echo "post-release cleanup: refusing root without Sidekick repo markers: ${REPO_ROOT}" >&2
+  exit 1
+fi
 
 cleanup_paths=(
   ".tmp"

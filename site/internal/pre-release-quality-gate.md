@@ -89,7 +89,7 @@ Spawn 5 parallel audit agents, each examining one dimension. Collect all finding
 
 Audit `skills/forge/SKILL.md` against `README.md` and all help pages:
 
-- **STEP 0A**: The exact commands in SKILL.md's activation STEP 0A match what `README.md` and `site/help/getting-started/index.html` say to run during first-time setup. No divergence in file paths, key names, or command syntax.
+- **Runtime Setup / Repair**: The setup and repair guidance in the canonical `skills/forge/SKILL.md` matches what `README.md` and `site/help/getting-started/index.html` say to run during first-time setup. No divergence in file paths, key names, or command syntax.
 - **Health check steps**: The health check verification items listed in SKILL.md match the troubleshooting page entries at `site/help/troubleshooting/index.html`. Every check SKILL.md performs has a corresponding troubleshooting entry for what to do when it fails.
 - **Fallback ladder**: L1/L2/L3 level names, escalation conditions, and retry counts in SKILL.md match the visual ladder diagram in `site/help/concepts/index.html` exactly.
 - **Skill injection table**: The 4 bootstrap skill names and their task-type mappings in SKILL.md match the tables in `site/help/concepts/index.html` and `site/help/reference/index.html` with identical spelling.
@@ -110,7 +110,7 @@ Audit `tests/` against README claims and SKILL.md behavior:
 
 Audit `.forge.toml`, `~/forge/.forge.toml` (example in docs), and AGENTS.md format:
 
-- **Provider/model references**: The `provider_id` and `model_id` example values across all docs (concepts page, reference page, README) match the values in the actual example config in `install.sh` or STEP 0A
+- **Provider/model references**: The `provider_id` and `model_id` example values across all docs (concepts page, reference page, README) match the values in the actual example config in `install.sh` or `skills/forge/SKILL.md` Runtime Setup / Repair guidance
 - **`max_tokens` value**: Is `16384` everywhere it appears — SKILL.md, reference page, concepts page, all config examples
 - **Compaction defaults**: `token_threshold = 80000`, `eviction_window = 0.20`, `retention_window = 6` are consistent across all docs and code that references these values
 - **AGENTS.md format**: The category headings (Code Style, Testing, Git Workflow, Forge Behavior, Project Conventions) match between SKILL.md's bootstrap template description and the AGENTS.md format section in `site/help/reference/index.html`
@@ -200,7 +200,7 @@ For each of the 5 help section pages, read the page in full and verify:
 
 **`site/help/getting-started/index.html`**
 - Install command matches README.md and site/index.html exactly
-- STEP 0A credentials setup commands are current and correct
+- Runtime Setup / Repair credential setup guidance is current and correct
 - Health check output example reflects current `/forge` activation behavior
 - Plugin install commands are correct: Claude Code uses `/plugin install alo-labs/sidekick`; Codex uses `codex plugin marketplace add alo-labs-codex/sidekick`.
 

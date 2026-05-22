@@ -1798,6 +1798,8 @@ assert_denied_command "Scenario 49cs4: git push explicit tag deletion refspec is
   "git push origin :refs/tags/release-candidate"
 assert_denied_command "Scenario 49cs5: git push tag operand with dynamic tag is denied" \
   'git push origin tag "$TAG"'
+assert_denied_command "Scenario 49cs5b: git push bare numeric semver tag is denied" \
+  "git push origin 0.6.0"
 assert_denied_command "Scenario 49cs6: git command-scoped release tag alias is denied" \
   'git -c alias.sidekickreleasepush="push origin v1.2.1" sidekickreleasepush'
 assert_denied_command "Scenario 49cs7: git command-scoped shell release tag alias is denied" \

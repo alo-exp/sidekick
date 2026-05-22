@@ -25,6 +25,8 @@ SANDBOX="$(mktemp -d)"
 trap 'rm -rf "${SANDBOX}"' EXIT
 cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules '~')
 preserve_dirs=(.planning site/specs site/design)
+mkdir -p "${SANDBOX}/.claude-plugin" "${SANDBOX}/tests"
+touch "${SANDBOX}/.claude-plugin/plugin.json" "${SANDBOX}/tests/post_release_cleanup.bash"
 for dir in "${cleanup_dirs[@]}"; do
   mkdir -p "${SANDBOX}/${dir}"
 done
@@ -76,6 +78,32 @@ if echo "${SECOND_OUTPUT}" | grep -q 'no transient artifacts found'; then
   assert_pass "Cleanup is idempotent"
 else
   assert_fail "Idempotency" "expected no-op summary on second run"
+fi
+
+echo "=== T4: Safety guards ==="
+UNSAFE_ROOT="${SANDBOX}/unsafe-no-markers"
+mkdir -p "${UNSAFE_ROOT}/.tmp"
+if SIDEKICK_REPO_ROOT="${UNSAFE_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
+  assert_fail "Cleanup rejects roots without markers" "command succeeded"
+else
+  assert_pass "Cleanup rejects roots without markers"
+fi
+if [ -d "${UNSAFE_ROOT}/.tmp" ]; then
+  assert_pass "Unsafe root artifact preserved after marker rejection"
+else
+  assert_fail "Unsafe root artifact preserved" "artifact was removed"
+fi
+
+if SIDEKICK_REPO_ROOT="${HOME}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
+  assert_fail "Cleanup rejects HOME root" "command succeeded"
+else
+  assert_pass "Cleanup rejects HOME root"
+fi
+
+if SIDEKICK_REPO_ROOT="/" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
+  assert_fail "Cleanup rejects filesystem root" "command succeeded"
+else
+  assert_pass "Cleanup rejects filesystem root"
 fi
 
 echo ""
