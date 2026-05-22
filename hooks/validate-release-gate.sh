@@ -327,6 +327,41 @@ def static_producer_payload(segment):
 REDIRECT_WRITE_TOKENS = {">", ">>", ">|", "<>"}
 
 
+def generated_file_keys(source):
+    keys = set()
+    if not source:
+        return keys
+    keys.add(source)
+    if source.startswith("./"):
+        keys.add(source[2:])
+    elif "/" not in source and not release_source_is_uninspectable(source):
+        keys.add("./" + source)
+    if release_source_is_uninspectable(source) or EXPANSION_RE.search(source):
+        return keys
+    try:
+        path = Path(source).expanduser()
+        if not path.is_absolute():
+            path = Path(os.environ.get("PWD") or os.getcwd()) / path
+        keys.add(str(path.resolve(strict=False)))
+    except OSError:
+        pass
+    return keys
+
+
+def record_generated_file(generated_files, source, payload):
+    for key in generated_file_keys(source):
+        generated_files[key] = payload
+
+
+def generated_file_lookup(generated_files, source):
+    if not generated_files:
+        return False, None
+    for key in generated_file_keys(source):
+        if key in generated_files:
+            return True, generated_files[key]
+    return False, None
+
+
 def generated_file_write(segment):
     for index, token in enumerate(segment):
         if token not in REDIRECT_WRITE_TOKENS:
@@ -343,9 +378,102 @@ def generated_file_write(segment):
     return None
 
 
+def tee_generated_file_writes(segment, payload):
+    if not segment:
+        return []
+    start = command_index_from(segment)
+    if start >= len(segment) or Path(segment[start]).name != "tee":
+        return []
+    targets = []
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            targets.extend(segment[index + 1:])
+            break
+        if token in {"-a", "--append", "-i", "--ignore-interrupts", "-p", "--output-error"}:
+            index += 1
+            continue
+        if token.startswith("--output-error="):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        targets.append(token)
+        index += 1
+    return [
+        (target, None if release_source_is_uninspectable(target) or EXPANSION_RE.search(target) else payload)
+        for target in targets
+    ]
+
+
+def heredoc_generated_file_writes(command):
+    writes = []
+    for receiver, payload in heredoc_payloads(command):
+        try:
+            tokens = tokenize(receiver)
+        except Exception:
+            continue
+        for segment in segments(tokens):
+            generated = generated_file_write(segment)
+            if generated is not None:
+                writes.append((generated[0], payload))
+            writes.extend(tee_generated_file_writes(segment, payload))
+    return writes
+
+
+def strip_heredoc_bodies(command):
+    lines = command.splitlines()
+    output = []
+    index = 0
+    changed = False
+    while index < len(lines):
+        line = lines[index]
+        match = re.search(r"<<-?\s*(?:'([^']+)'|\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_]*))", line)
+        if not match:
+            output.append(line)
+            index += 1
+            continue
+        changed = True
+        output.append(line[:match.start()].rstrip())
+        delimiter = match.group(1) or match.group(2) or match.group(3)
+        cursor = index + 1
+        while cursor < len(lines):
+            if lines[cursor].strip() == delimiter:
+                break
+            cursor += 1
+        index = cursor + 1 if cursor < len(lines) else index + 1
+    return "\n".join(output) if changed else command
+
+
+def heredoc_generated_file_used_for_release(command, depth):
+    stripped = strip_heredoc_bodies(command)
+    if stripped == command:
+        return False
+    for target, payload in heredoc_generated_file_writes(command):
+        if payload is None:
+            payload_needs_gate = True
+        else:
+            payload_needs_gate = (
+                language_payload_mentions_release_command(payload)
+                or contains_release_create(payload, depth + 1)
+                or curl_config_mentions_release_write(payload, True)
+            )
+        if not payload_needs_gate:
+            continue
+        for key in generated_file_keys(target):
+            if key and stripped.count(key) > 1:
+                return True
+    return False
+
+
 def render_static_command(command):
+    token_command = strip_heredoc_bodies(command)
+    if token_command != command:
+        token_command = normalize_statement_newlines(token_command)
     try:
-        tokens = tokenize(command)
+        tokens = tokenize(token_command)
     except Exception:
         return None
     for segment in segments(tokens):
@@ -1020,12 +1148,13 @@ def is_graphql_endpoint(endpoint):
 
 
 def graphql_release_mutation_text(value):
-    if GRAPHQL_RELEASE_MUTATION_RE.search(value):
+    text = normalized_payload_text(value)
+    if GRAPHQL_RELEASE_MUTATION_RE.search(text):
         return True
-    if GRAPHQL_REF_MUTATION_RE.search(value) and payload_mentions_tag_ref(value):
+    if GRAPHQL_REF_MUTATION_RE.search(text) and payload_mentions_tag_ref(text):
         return True
-    if "=" in value:
-        _, _, tail = value.partition("=")
+    if "=" in text:
+        _, _, tail = text.partition("=")
         return graphql_release_mutation_text(tail)
     return False
 
@@ -1225,8 +1354,9 @@ def read_release_source_text(source):
 
 
 def generated_source_text(source, generated_files=None):
-    if generated_files and source in generated_files:
-        return generated_files[source]
+    found, text = generated_file_lookup(generated_files, source)
+    if found:
+        return text
     return None
 
 
@@ -1253,8 +1383,9 @@ def payload_or_source_mentions_tag_ref(payload, generated_files=None):
         return False
     if release_source_is_uninspectable(source):
         return None
-    if generated_files and source in generated_files:
-        source_text = generated_files[source]
+    found, generated_text = generated_file_lookup(generated_files, source)
+    if found:
+        source_text = generated_text
         if source_text is None:
             return None
         return payload_mentions_tag_ref(source_text)
@@ -1421,8 +1552,9 @@ def curl_release_write_command(segment, start, generated_files=None):
             return True
     for config_file in config_files:
         config_text = None
-        if generated_files and config_file in generated_files:
-            config_text = generated_files[config_file]
+        found, generated_text = generated_file_lookup(generated_files, config_file)
+        if found:
+            config_text = generated_text
             if config_text is None:
                 return True
         elif release_source_is_uninspectable(config_file):
@@ -2419,6 +2551,8 @@ def split_expansion_words(value):
 def inherited_env_value_needs_resolution(name, value):
     if DYNAMIC_RELEASE_ENDPOINT_HINT_RE.search(name):
         return True
+    if token_is_release_tag_ref(value):
+        return True
     lowered = value.lower()
     return (
         "api.github.com" in lowered
@@ -2962,13 +3096,13 @@ def script_operand_has_release_hint(token):
 def script_operand_needs_gate(token, depth, generated_files=None):
     if not token or token == "-":
         return script_operand_has_release_hint(token)
-    if release_source_is_uninspectable(token) or EXPANSION_RE.search(token):
-        return script_operand_has_release_hint(token)
-    if generated_files and token in generated_files:
-        text = generated_files[token]
+    found, text = generated_file_lookup(generated_files, token)
+    if found:
         if text is None:
             return True
         return language_payload_mentions_release_command(text) or contains_release_create(text, depth + 1)
+    if release_source_is_uninspectable(token) or EXPANSION_RE.search(token):
+        return script_operand_has_release_hint(token)
     text = read_bounded_script_text(token)
     if text is None:
         return script_operand_has_release_hint(token)
@@ -3101,7 +3235,8 @@ def local_script_operand_needs_gate(segment, start, depth, generated_files=None)
     ):
         if probe:
             operands.append(probe)
-    if generated_files and start < len(segment) and segment[start] in generated_files:
+    found, _ = generated_file_lookup(generated_files, segment[start] if start < len(segment) else None)
+    if found:
         operands.append(segment[start])
     return any(script_operand_needs_gate(operand, depth, generated_files) for operand in operands)
 
@@ -3574,6 +3709,8 @@ def contains_release_create(command, depth=0):
                 return True
             if contains_release_create(payload, depth + 1):
                 return True
+    if heredoc_generated_file_used_for_release(command, depth):
+        return True
     for payload, args in function_invocation_payloads(command):
         if payload_with_positionals_can_complete_release(payload, args, depth + 1):
             return True
@@ -3609,12 +3746,14 @@ def contains_release_create(command, depth=0):
     gh_aliases = {}
     generated_files = {}
     expand_aliases = False
+    for target, payload in heredoc_generated_file_writes(command):
+        record_generated_file(generated_files, target, payload)
     for raw_segment, incoming_control in segments_with_controls(tokens):
         raw_segment = combine_braced_expansion_tokens(raw_segment)
         generated_segment = resolve_variables(raw_segment, literal_vars, positionals, arrays)
         generated = generated_file_write(generated_segment)
         if generated is not None:
-            generated_files[generated[0]] = generated[1]
+            record_generated_file(generated_files, generated[0], generated[1])
         assignments = standalone_literal_assignments(raw_segment)
         if assignments is not None:
             literal_vars.update(assignments)
@@ -3812,7 +3951,10 @@ import sys
 CONTROL = {";", "&&", "||", "|", "&"}
 GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--super-prefix"}
 GIT_FLAG_GLOBALS = {"--bare", "--no-pager", "--paginate", "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs", "--icase-pathspecs"}
+GIT_PUSH_VALUE_OPTIONS = {"-o", "--push-option", "--receive-pack", "--exec", "--recurse-submodules"}
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
+GH_RELEASE_CREATE_VALUE_OPTIONS = {"--target", "--title", "--notes", "--notes-file", "--discussion-category"}
+GH_RELEASE_CREATE_FLAG_OPTIONS = {"--draft", "--generate-notes", "--latest", "--prerelease", "--verify-tag"}
 RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 
 def tokenize(command):
@@ -4004,6 +4146,893 @@ raise SystemExit(1)
 PY
 }
 
+release_target_metadata() {
+  python3 - "$1" <<'PY'
+from pathlib import Path
+import os
+import re
+import shlex
+import sys
+import urllib.parse
+
+CONTROL = {";", "&&", "||", "|", "&"}
+ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+ASSIGNMENT_FULL_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
+ENV_VALUE_OPTIONS = {"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}
+SHELLS = {"sh", "bash", "zsh"}
+GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--super-prefix"}
+GIT_FLAG_GLOBALS = {"--bare", "--no-pager", "--paginate", "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs", "--icase-pathspecs"}
+GIT_PUSH_VALUE_OPTIONS = {"-o", "--push-option", "--receive-pack", "--exec", "--recurse-submodules"}
+GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
+GH_RELEASE_CREATE_VALUE_OPTIONS = {"--target", "--title", "--notes", "--notes-file", "--discussion-category"}
+GH_RELEASE_CREATE_FLAG_OPTIONS = {"--draft", "--generate-notes", "--latest", "--prerelease", "--verify-tag"}
+GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
+GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
+GH_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
+TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
+EXPANSION_RE = re.compile(r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{|\$\(|`)")
+UNRESOLVABLE = "__UNRESOLVABLE__"
+PERSISTENT_GH_ALIASES = {}
+
+def tokenize(command):
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
+    lexer.whitespace_split = True
+    return list(lexer)
+
+def segments(tokens):
+    segment = []
+    for token in tokens:
+        if token in CONTROL:
+            if segment:
+                yield segment
+                segment = []
+            continue
+        segment.append(token)
+    if segment:
+        yield segment
+
+def unsafe_ref(value):
+    return not value or bool(EXPANSION_RE.search(value)) or value.startswith("<(") or value in {"-", "@-"}
+
+def token_is_release_tag_ref(token):
+    token = token.lstrip("+")
+    return token.startswith("refs/tags/") or bool(RELEASE_TAG_RE.match(token))
+
+def refspec_targets_release_tag(refspec):
+    parts = [part for part in refspec.split(":") if part]
+    if any(token_is_release_tag_ref(part) for part in parts):
+        return True
+    return bool(EXPANSION_RE.search(refspec))
+
+def release_ref_from_refspec(refspec):
+    if not refspec:
+        return UNRESOLVABLE
+    source = refspec.split(":", 1)[0].lstrip("+")
+    if not source:
+        return UNRESOLVABLE
+    return UNRESOLVABLE if unsafe_ref(source) else source
+
+def skip_env(segment, index):
+    index += 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return index + 1
+        if token in ENV_VALUE_OPTIONS:
+            index += 2
+            continue
+        if any(token.startswith(option + "=") for option in ENV_VALUE_OPTIONS if option.startswith("--")):
+            index += 1
+            continue
+        if token.startswith("-") or ASSIGNMENT_RE.match(token):
+            index += 1
+            continue
+        break
+    return index
+
+def command_index_from(segment, index=0):
+    while index < len(segment) and ASSIGNMENT_RE.match(segment[index]):
+        index += 1
+    while index < len(segment):
+        wrapper = Path(segment[index]).name
+        if wrapper == "env":
+            index = skip_env(segment, index)
+            continue
+        if wrapper in {"command", "builtin", "noglob", "time", "gtime", "nice", "nohup", "setsid"}:
+            index += 1
+            continue
+        if wrapper in {"sudo", "doas"}:
+            index += 1
+            while index < len(segment) and segment[index].startswith("-"):
+                index += 2 if segment[index] in {"-u", "--user", "-g", "--group", "-h", "--host"} else 1
+            while index < len(segment) and ASSIGNMENT_RE.match(segment[index]):
+                index += 1
+            continue
+        if wrapper == "exec":
+            index += 1
+            while index < len(segment):
+                if segment[index] == "-a":
+                    index += 2
+                    continue
+                if segment[index] in {"-c", "-l"}:
+                    index += 1
+                    continue
+                break
+            continue
+        break
+    return index
+
+def skip_gh_globals(segment, index):
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return index + 1
+        if token in GH_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("-R") and token != "-R":
+            index += 1
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in GH_VALUE_GLOBALS if option.startswith("--")):
+            index += 1
+            continue
+        if token in GH_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return index
+
+def gh_subcommand_index(segment, gh_index):
+    return skip_gh_globals(segment, gh_index + 1)
+
+def gh_config_dir_option(segment, gh_index):
+    index = gh_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            break
+        if token == "--config-dir":
+            return segment[index + 1] if index + 1 < len(segment) else None
+        if token.startswith("--config-dir="):
+            return token.split("=", 1)[1]
+        if token in GH_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("-R") and token != "-R":
+            index += 1
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in GH_VALUE_GLOBALS if option.startswith("--")):
+            index += 1
+            continue
+        if token in GH_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return None
+
+def gh_alias_payload(expansion, args=None):
+    args = args or []
+    expansion = expansion.strip()
+    if expansion.startswith("!"):
+        payload = expansion[1:].strip()
+    elif expansion.startswith("gh "):
+        payload = expansion
+    else:
+        payload = "gh " + expansion
+    if args:
+        payload = " ".join([payload] + [shlex.quote(arg) for arg in args])
+    return payload
+
+def unquote_gh_alias_expansion(expansion):
+    expansion = expansion.strip()
+    if len(expansion) < 2 or expansion[0] not in {"'", '"'} or expansion[-1] != expansion[0]:
+        return expansion
+    try:
+        parts = shlex.split(expansion)
+    except ValueError:
+        return expansion
+    return parts[0] if len(parts) == 1 else expansion
+
+def parse_gh_alias_list(output):
+    aliases = {}
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if "\t" in line:
+            name, expansion = line.split("\t", 1)
+        elif ":" in line:
+            name, expansion = line.split(":", 1)
+        else:
+            parts = re.split(r"\s{2,}", line, maxsplit=1)
+            if len(parts) == 1:
+                parts = line.split(None, 1)
+            if len(parts) != 2:
+                continue
+            name, expansion = parts
+        name = name.strip()
+        expansion = unquote_gh_alias_expansion(expansion)
+        if re.match(r"^[A-Za-z][A-Za-z0-9_-]*$", name) and expansion:
+            aliases[name] = expansion
+    return aliases
+
+def parse_gh_alias_config(output):
+    aliases = parse_gh_alias_list(output)
+    in_aliases_block = False
+    for raw_line in output.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if re.match(r"^aliases\s*:\s*$", stripped):
+            in_aliases_block = True
+            continue
+        if in_aliases_block and line == stripped and not stripped.startswith("-"):
+            in_aliases_block = False
+        if not in_aliases_block:
+            continue
+        match = re.match(r"^\s+([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.+?)\s*$", line)
+        if not match:
+            continue
+        name = match.group(1).strip()
+        expansion = unquote_gh_alias_expansion(match.group(2).strip())
+        if expansion:
+            aliases[name] = expansion
+    return aliases
+
+def gh_alias_config_paths(gh_config_dir=None):
+    dirs = []
+    if gh_config_dir:
+        dirs.append(Path(gh_config_dir))
+    else:
+        env_config_dir = os.environ.get("GH_CONFIG_DIR")
+        if env_config_dir:
+            dirs.append(Path(env_config_dir))
+        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+        if xdg_config_home:
+            dirs.append(Path(xdg_config_home) / "gh")
+        home = os.environ.get("HOME")
+        if home:
+            dirs.append(Path(home) / ".config" / "gh")
+    seen = set()
+    for directory in dirs:
+        if not directory:
+            continue
+        for filename in ("aliases.yml", "aliases.yaml", "config.yml", "config.yaml"):
+            path = directory / filename
+            key = str(path)
+            if key in seen:
+                continue
+            seen.add(key)
+            yield path
+
+def persistent_gh_aliases(gh_config_dir=None):
+    cache_key = gh_config_dir or "__default__"
+    if cache_key in PERSISTENT_GH_ALIASES:
+        return PERSISTENT_GH_ALIASES[cache_key]
+    alias_fixture = os.environ.get("SIDEKICK_GH_ALIAS_LIST")
+    if alias_fixture is not None and gh_config_dir is None:
+        PERSISTENT_GH_ALIASES[cache_key] = parse_gh_alias_list(alias_fixture)
+        return PERSISTENT_GH_ALIASES[cache_key]
+    aliases = {}
+    for path in gh_alias_config_paths(gh_config_dir):
+        try:
+            if path.is_file():
+                aliases.update(parse_gh_alias_config(path.read_text(encoding="utf-8")))
+        except OSError:
+            continue
+    PERSISTENT_GH_ALIASES[cache_key] = aliases
+    return aliases
+
+def gh_alias_assignment(segment, gh_index):
+    subcommand_index = gh_subcommand_index(segment, gh_index)
+    if subcommand_index >= len(segment) or segment[subcommand_index] != "alias":
+        return None
+    action_index = skip_gh_globals(segment, subcommand_index + 1)
+    if action_index >= len(segment) or segment[action_index] != "set":
+        return None
+    index = action_index + 1
+    shell_alias = False
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            break
+        if token in {"--shell", "-s"}:
+            shell_alias = True
+            index += 1
+            continue
+        if token.startswith("--shell="):
+            shell_alias = token.split("=", 1)[1].lower() not in {"0", "false", "no"}
+            index += 1
+            continue
+        if token == "--clobber" or token.startswith("--clobber="):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    if index + 1 >= len(segment):
+        return None
+    name = segment[index]
+    if not re.match(r"^[A-Za-z][A-Za-z0-9_-]*$", name):
+        return None
+    expansion_tokens = []
+    index += 1
+    while index < len(segment):
+        token = segment[index]
+        if token in {"--shell", "-s"}:
+            shell_alias = True
+            index += 1
+            continue
+        if token.startswith("--shell="):
+            shell_alias = token.split("=", 1)[1].lower() not in {"0", "false", "no"}
+            index += 1
+            continue
+        if token == "--clobber" or token.startswith("--clobber="):
+            index += 1
+            continue
+        expansion_tokens.append(token)
+        index += 1
+    expansion = " ".join(expansion_tokens).strip()
+    if shell_alias and expansion and not expansion.startswith("!"):
+        expansion = "!" + expansion
+    return name, expansion
+
+def git_subcommand_index(segment, git_index):
+    index = git_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return index + 1
+        if token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("-c") and token != "-c":
+            index += 1
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in GIT_VALUE_GLOBALS if option.startswith("--")):
+            index += 1
+            continue
+        if token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return index
+
+def git_global_alias_assignments(segment, git_index):
+    aliases = {}
+    index = git_index + 1
+    while index < len(segment):
+        token = segment[index]
+        config_value = None
+        if token == "--":
+            break
+        if token == "-c" and index + 1 < len(segment):
+            config_value = segment[index + 1]
+            index += 2
+        elif token.startswith("-c") and token != "-c":
+            config_value = token[2:]
+            index += 1
+        elif token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        elif token.startswith("--") and any(token.startswith(option + "=") for option in GIT_VALUE_GLOBALS if option.startswith("--")):
+            index += 1
+            continue
+        elif token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        else:
+            break
+        if config_value:
+            match = re.match(r"^alias\.([A-Za-z0-9_.-]+)=(.*)$", config_value)
+            if match and match.group(2).strip():
+                aliases[match.group(1)] = match.group(2).strip()
+    return aliases
+
+def git_alias_payload(alias_name, args, aliases):
+    seen = set()
+    current = alias_name
+    current_args = list(args or [])
+    for _ in range(8):
+        if current in seen or current not in aliases:
+            break
+        seen.add(current)
+        expansion = aliases[current].strip()
+        if expansion.startswith("!"):
+            return " ".join([expansion[1:]] + [shlex.quote(arg) for arg in current_args])
+        try:
+            tokens = shlex.split(expansion)
+        except ValueError:
+            return " ".join(["git", expansion] + [shlex.quote(arg) for arg in current_args])
+        if tokens and tokens[0] in aliases:
+            current = tokens[0]
+            current_args = tokens[1:] + current_args
+            continue
+        return " ".join(["git"] + [shlex.quote(token) for token in tokens + current_args])
+    return None
+
+def git_payload_with_outer_c(payload, target_dir):
+    if not payload or not target_dir:
+        return payload
+    try:
+        payload_tokens = tokenize(payload)
+    except Exception:
+        return payload
+    for payload_segment in segments(payload_tokens):
+        start = command_index_from(payload_segment)
+        if start >= len(payload_segment) or Path(payload_segment[start]).name != "git":
+            return payload
+        subcommand_index = git_subcommand_index(payload_segment, start)
+        if "-C" in payload_segment[start + 1:subcommand_index]:
+            return payload
+        return " ".join(
+            ["git", "-C", shlex.quote(target_dir)]
+            + [shlex.quote(token) for token in payload_segment[start + 1:]]
+        )
+    return payload
+
+def compose_git_c_target(current, value):
+    if not value or unsafe_ref(value):
+        return UNRESOLVABLE
+    try:
+        path = Path(value).expanduser()
+        if current and current != UNRESOLVABLE and not path.is_absolute():
+            path = Path(current) / path
+        return str(path)
+    except Exception:
+        return UNRESOLVABLE
+
+def git_push_release_ref(operands, release_push):
+    if release_push:
+        return UNRESOLVABLE
+    refspecs = operands[1:] if len(operands) > 1 else []
+    index = 0
+    while index < len(refspecs):
+        refspec = refspecs[index]
+        if refspec == "tag":
+            if index + 1 >= len(refspecs):
+                return UNRESOLVABLE
+            return release_ref_from_refspec(refspecs[index + 1])
+        if refspec_targets_release_tag(refspec):
+            return release_ref_from_refspec(refspec)
+        index += 1
+    return None
+
+def shell_payload_parts(segment, start):
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return None
+        if token == "-c" or (token.startswith("-") and not token.startswith("--") and "c" in token[1:]):
+            if index + 1 < len(segment):
+                return segment[index + 1], segment[index + 2:]
+            return None
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    return None
+
+def literal_assignment(token):
+    match = ASSIGNMENT_FULL_RE.match(token)
+    if not match or re.search(r"[$`]", match.group(2)):
+        return None
+    return match.group(1), match.group(2)
+
+def substitute_vars(text, variables):
+    def replace(match):
+        return variables.get(match.group(1) or match.group(2), match.group(0))
+    return re.sub(r"\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)\})", replace, text)
+
+def resolve_segment(segment, variables):
+    resolved = []
+    for token in segment:
+        parsed = re.match(r"^\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)\})$", token)
+        if parsed and (parsed.group(1) or parsed.group(2)) in variables:
+            resolved.extend(shlex.split(variables[parsed.group(1) or parsed.group(2)]))
+        else:
+            resolved.append(substitute_vars(token, variables))
+    return resolved
+
+def command_scoped_assignments(segment, start):
+    assignments = {}
+    for token in segment[:start]:
+        parsed = literal_assignment(token)
+        if parsed is not None:
+            assignments[parsed[0]] = parsed[1]
+    return assignments
+
+def github_api_path_parts(endpoint):
+    value = urllib.parse.unquote(str(endpoint)).strip().strip("'\"")
+    if value in {"graphql", "/graphql"}:
+        return ["graphql"]
+    parsed = urllib.parse.urlparse(value if "://" in value else "https://placeholder/" + value.lstrip("/"))
+    parts = [part for part in parsed.path.split("/") if part]
+    if parts[:2] == ["api", "v3"]:
+        parts = parts[2:]
+    return parts
+
+def is_releases_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    return len(parts) >= 4 and parts[0] == "repos" and parts[3] == "releases"
+
+def is_git_refs_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    return len(parts) >= 5 and parts[0] == "repos" and parts[3:5] == ["git", "refs"]
+
+def is_graphql_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    return parts == ["graphql"] or parts == ["api", "graphql"]
+
+def field_pair(payload):
+    if "=" not in payload:
+        return None
+    key, _, value = payload.partition("=")
+    return key.rstrip(":"), value
+
+def read_source(source):
+    try:
+        path = Path(source)
+    except Exception:
+        return None
+    if not path.is_file():
+        return None
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return None
+
+def normalized_payload_text(payload):
+    if not payload:
+        return ""
+    text = str(payload)
+    decoded = urllib.parse.unquote_plus(text)
+    variants = {text, decoded}
+    for value in list(variants):
+        variants.add(value.replace("\\/", "/"))
+    for value in list(variants):
+        variants.add(
+            re.sub(
+                r"\\u([0-9a-fA-F]{4})",
+                lambda match: chr(int(match.group(1), 16)),
+                value,
+            )
+        )
+    for value in list(variants):
+        variants.add(value.replace("\\/", "/"))
+    return "\n".join(variants)
+
+def payload_values(payloads):
+    values = []
+    for payload in payloads:
+        pair = field_pair(payload)
+        value = pair[1] if pair else payload
+        if value in {"-", "@-"}:
+            values.append(UNRESOLVABLE)
+            continue
+        if value.startswith("@"):
+            source = value[1:]
+            if unsafe_ref(source):
+                values.append(UNRESOLVABLE)
+                continue
+            text = read_source(source)
+            values.append(text if text is not None else UNRESOLVABLE)
+            continue
+        values.append(normalized_payload_text(value))
+    return values
+
+def payload_mentions_tag_ref(payloads):
+    text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
+    return bool(TAG_REF_TEXT_RE.search(text)) or any(
+        (field_pair(payload) or ("", ""))[0] == "ref" and unsafe_ref((field_pair(payload) or ("", ""))[1])
+        for payload in payloads
+    )
+
+def target_from_key(payloads, keys):
+    for payload in payloads:
+        pair = field_pair(payload)
+        if pair and pair[0] in keys:
+            value = pair[1]
+            if value.startswith("@"):
+                text = read_source(value[1:])
+                value = text.strip() if text is not None else UNRESOLVABLE
+            return UNRESOLVABLE if unsafe_ref(value) else value
+    text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
+    for key in keys:
+        pattern = re.compile(rf"[\"']?{re.escape(key)}[\"']?\s*[:=]\s*[\"']?([A-Za-z0-9._:/+-]+)", re.IGNORECASE)
+        match = pattern.search(text)
+        if match:
+            value = match.group(1)
+            return UNRESOLVABLE if unsafe_ref(value) else value
+    return None
+
+def graphql_target(payloads):
+    text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
+    if "createRef" in text and TAG_REF_TEXT_RE.search(text):
+        return target_from_key([text], {"oid"}) or UNRESOLVABLE
+    if "createRelease" in text or "updateRelease" in text:
+        return target_from_key([text], {"targetCommitish", "target_commitish"})
+    return None
+
+def gh_api_metadata(segment, gh_index):
+    subcommand_index = gh_subcommand_index(segment, gh_index)
+    if subcommand_index >= len(segment) or segment[subcommand_index] != "api":
+        return None
+    method = None
+    has_write_fields = False
+    endpoint = None
+    payloads = []
+    index = subcommand_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            continue
+        if token in {"-X", "--method"}:
+            if index + 1 < len(segment):
+                method = segment[index + 1].upper()
+            index += 2
+            continue
+        if token.startswith("-X") and token != "-X":
+            method = token[2:].upper()
+            index += 1
+            continue
+        if token.startswith("--method="):
+            method = token.split("=", 1)[1].upper()
+            index += 1
+            continue
+        if token in {"-f", "--field", "-F", "--raw-field"}:
+            has_write_fields = True
+            if index + 1 < len(segment):
+                payloads.append(segment[index + 1])
+            index += 2
+            continue
+        if token == "--input":
+            has_write_fields = True
+            if index + 1 < len(segment):
+                payloads.append("@" + segment[index + 1])
+            index += 2
+            continue
+        if token.startswith("--field=") or token.startswith("--raw-field="):
+            has_write_fields = True
+            payloads.append(token.split("=", 1)[1])
+            index += 1
+            continue
+        if token.startswith("--input="):
+            has_write_fields = True
+            payloads.append("@" + token.split("=", 1)[1])
+            index += 1
+            continue
+        if (token.startswith("-f") or token.startswith("-F")) and token not in {"-f", "-F"}:
+            has_write_fields = True
+            payloads.append(token[2:])
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        if endpoint is None:
+            endpoint = token
+        index += 1
+    if not endpoint:
+        return None
+    effective_method = method or ("POST" if has_write_fields else "GET")
+    command_has_write_semantics = effective_method in GH_API_WRITE_METHODS or has_write_fields
+    if not command_has_write_semantics:
+        return None
+    target = None
+    if is_releases_endpoint(endpoint):
+        target = target_from_key(payloads, {"target_commitish", "targetCommitish"})
+        if target is None:
+            target = target_from_key(payloads, {"tag_name", "tagName"}) or UNRESOLVABLE
+    elif is_git_refs_endpoint(endpoint) and payload_mentions_tag_ref(payloads):
+        target = target_from_key(payloads, {"sha"}) or UNRESOLVABLE
+    elif is_graphql_endpoint(endpoint):
+        target = graphql_target(payloads)
+    if target:
+        return target
+    return None
+
+def gh_release_metadata(segment, gh_index):
+    subcommand_index = gh_subcommand_index(segment, gh_index)
+    if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
+        return None
+    action_index = skip_gh_globals(segment, subcommand_index + 1)
+    if action_index >= len(segment) or segment[action_index] != "create":
+        return None
+    index = action_index + 1
+    tag = None
+    while index < len(segment):
+        current = segment[index]
+        if current == "--":
+            if index + 1 < len(segment) and tag is None:
+                tag = segment[index + 1]
+            break
+        if current == "--target":
+            return ("ref", segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE)
+        if current.startswith("--target="):
+            return ("ref", current.split("=", 1)[1])
+        if current in GH_RELEASE_CREATE_VALUE_OPTIONS:
+            index += 2
+            continue
+        if any(current.startswith(option + "=") for option in GH_RELEASE_CREATE_VALUE_OPTIONS):
+            index += 1
+            continue
+        if current in GH_RELEASE_CREATE_FLAG_OPTIONS or current.startswith("-"):
+            index += 1
+            continue
+        if tag is None:
+            tag = current
+        index += 1
+    if tag:
+        return ("ref", tag if not unsafe_ref(tag) else UNRESOLVABLE)
+    return ("unresolvable", UNRESOLVABLE)
+
+def git_metadata(segment, git_index):
+    target_dir = None
+    index = git_index + 1
+    while index < len(segment):
+        current = segment[index]
+        if current == "-C":
+            target_dir = compose_git_c_target(
+                target_dir,
+                segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE,
+            )
+            index += 2
+            continue
+        if current.startswith("-C") and current != "-C":
+            target_dir = compose_git_c_target(target_dir, current[2:])
+            index += 1
+            continue
+        if current == "--":
+            index += 1
+            break
+        if current in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        if current.startswith("--") and any(current.startswith(option + "=") for option in GIT_VALUE_GLOBALS if option.startswith("--")):
+            index += 1
+            continue
+        if current in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    alias_index = git_subcommand_index(segment, git_index)
+    aliases = git_global_alias_assignments(segment, git_index)
+    if alias_index < len(segment) and segment[alias_index] in aliases:
+        payload = git_alias_payload(segment[alias_index], segment[alias_index + 1:], aliases)
+        return ("payload", git_payload_with_outer_c(payload, target_dir))
+    if index >= len(segment) or segment[index] != "push":
+        return None
+    operands = []
+    cursor = index + 1
+    release_push = False
+    while cursor < len(segment):
+        current = segment[cursor]
+        if current == "--":
+            operands.extend(segment[cursor + 1:])
+            break
+        if current in GIT_PUSH_RELEASE_TAG_OPTIONS:
+            release_push = True
+            break
+        if current in GIT_PUSH_VALUE_OPTIONS:
+            cursor += 2
+            continue
+        if current.startswith("--") and any(current.startswith(option + "=") for option in GIT_PUSH_VALUE_OPTIONS if option.startswith("--")):
+            cursor += 1
+            continue
+        if current.startswith("-o") and current != "-o":
+            cursor += 1
+            continue
+        if current.startswith("-"):
+            cursor += 1
+            continue
+        operands.append(current)
+        cursor += 1
+    release_ref = git_push_release_ref(operands, release_push)
+    if release_ref:
+        if release_ref == UNRESOLVABLE:
+            return ("unresolvable", UNRESOLVABLE)
+        if target_dir is None:
+            return ("ref", release_ref)
+        if target_dir == UNRESOLVABLE or unsafe_ref(target_dir):
+            return ("unresolvable", UNRESOLVABLE)
+        return ("git-c-ref", f"{target_dir}\t{release_ref}")
+    return None
+
+def extract(command, depth=0):
+    if depth > 8:
+        return None
+    try:
+        tokens = tokenize(command.replace("\\\n", ""))
+    except Exception:
+        return ("unresolvable", UNRESOLVABLE)
+    variables = {}
+    gh_aliases = {}
+    for raw_segment in segments(tokens):
+        if len(raw_segment) == 1:
+            parsed = literal_assignment(raw_segment[0])
+            if parsed:
+                variables[parsed[0]] = parsed[1]
+                continue
+        if raw_segment and Path(raw_segment[0]).name in {"export", "declare", "typeset"}:
+            exported = {}
+            for token in raw_segment[1:]:
+                parsed = literal_assignment(token)
+                if parsed:
+                    exported[parsed[0]] = parsed[1]
+            if exported:
+                variables.update(exported)
+                continue
+        segment = resolve_segment(raw_segment, variables)
+        start = command_index_from(segment)
+        if start >= len(segment):
+            continue
+        command_name = Path(segment[start]).name
+        command_env = command_scoped_assignments(segment, start)
+        scoped_vars = dict(variables)
+        scoped_vars.update(command_env)
+        if command_name in SHELLS:
+            shell_parts = shell_payload_parts(segment, start)
+            if shell_parts:
+                nested = substitute_vars(shell_parts[0], scoped_vars)
+                result = extract(nested, depth + 1)
+                if result:
+                    return result
+        if command_name == "eval":
+            result = extract(" ".join(segment[start + 1:]), depth + 1)
+            if result:
+                return result
+        if command_name == "gh":
+            gh_config_dir = (
+                gh_config_dir_option(segment, start)
+                or command_env.get("GH_CONFIG_DIR")
+                or variables.get("GH_CONFIG_DIR")
+            )
+            effective_gh_aliases = dict(persistent_gh_aliases(gh_config_dir))
+            effective_gh_aliases.update(gh_aliases)
+            alias_assignment = gh_alias_assignment(segment, start)
+            if alias_assignment is not None:
+                alias_name, alias_expansion = alias_assignment
+                gh_aliases[alias_name] = alias_expansion
+                result = extract(gh_alias_payload(alias_expansion), depth + 1)
+                if result:
+                    return result
+                continue
+            target = gh_release_metadata(segment, start)
+            if target:
+                return ("unresolvable", UNRESOLVABLE) if target[1] == UNRESOLVABLE or unsafe_ref(target[1]) else target
+            target = gh_api_metadata(segment, start)
+            if target:
+                return ("unresolvable", UNRESOLVABLE) if target == UNRESOLVABLE or unsafe_ref(target) else ("ref", target)
+            alias_index = gh_subcommand_index(segment, start)
+            if alias_index < len(segment) and segment[alias_index] in effective_gh_aliases:
+                alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
+                result = extract(alias_payload, depth + 1)
+                if result:
+                    return result
+        if command_name == "git":
+            result = git_metadata(segment, start)
+            if result and result[0] == "payload" and result[1]:
+                nested = extract(result[1], depth + 1)
+                if nested:
+                    return nested
+            if result and result[0] in {"git-c", "git-c-ref", "ref", "unresolvable"}:
+                return result
+    return None
+
+result = extract(sys.argv[1])
+if not result:
+    raise SystemExit(1)
+print(f"{result[0]}\t{result[1]}")
+PY
+}
+
 if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
   reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, CLAUDE_SESSION_ID, or SESSION_ID and rerun the gate in the current session."
   jq -cn --arg reason "$reason" '{
@@ -4017,7 +5046,33 @@ if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
 fi
 
 current_release_sha() {
-  local candidate git_c_target gh_target_ref
+  local candidate git_c_ref git_c_target gh_target_ref metadata metadata_kind metadata_value
+  metadata="$(release_target_metadata "$COMMAND" 2>/dev/null || true)"
+  if [ -n "${metadata}" ]; then
+    metadata_kind="${metadata%%$'\t'*}"
+    metadata_value="${metadata#*$'\t'}"
+    if [ "${metadata_kind}" = "unresolvable" ]; then
+      return 1
+    fi
+    if [ "${metadata_kind}" = "git-c" ]; then
+      git -C "${metadata_value}" rev-parse --short=12 HEAD 2>/dev/null && return 0
+      return 1
+    fi
+    if [ "${metadata_kind}" = "git-c-ref" ]; then
+      git_c_target="${metadata_value%%$'\t'*}"
+      git_c_ref="${metadata_value#*$'\t'}"
+      git -C "${git_c_target}" rev-parse --short=12 "${git_c_ref}^{commit}" 2>/dev/null && return 0
+      return 1
+    fi
+    if [ "${metadata_kind}" = "ref" ]; then
+      for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
+        if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null; then
+          return 0
+        fi
+      done
+      return 1
+    fi
+  fi
   gh_target_ref="$(release_gh_target_ref "$COMMAND" 2>/dev/null || true)"
   if [ "${gh_target_ref}" = "__UNRESOLVABLE__" ]; then
     return 1
