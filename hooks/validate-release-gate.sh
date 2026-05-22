@@ -11,7 +11,7 @@
 #   mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
 #   SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD)"
 #   printf 'quality-gate-stage-N session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
-# A successful live `tests/run_release.bash` run with both live gates enabled
+# A successful live `tests/run_release.bash` run with Codex live enabled
 # appends:
 #   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp>
 # If stages are added or removed from that document, update STAGE_COUNT below
