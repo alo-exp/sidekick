@@ -2869,8 +2869,26 @@ if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
   exit 0
 fi
 
+current_release_sha() {
+  git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null && return 0
+  git -C "${PWD:-.}" rev-parse --short=12 HEAD 2>/dev/null && return 0
+  return 1
+}
+
 missing=()
-current_head_sha="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || true)"
+current_head_sha="$(current_release_sha || true)"
+if [ -z "$current_head_sha" ]; then
+  reason="Pre-release quality gate cannot validate this release command because no current git SHA is available. Run the release command from the Sidekick source checkout or rerun the quality gate in a git checkout before cutting a release."
+  jq -cn --arg reason "$reason" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: $reason
+    }
+  }'
+  exit 0
+fi
+
 for stage in $(seq 1 "$STAGE_COUNT"); do
   # Token-aware match so quality-gate-stage-10 does not satisfy stage 1, stale
   # markers from another host session do not satisfy the current session, and
@@ -2878,12 +2896,12 @@ for stage in $(seq 1 "$STAGE_COUNT"); do
   if ! awk -v marker="quality-gate-stage-${stage}" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
     $1 == marker {
       has_session = 0
-      has_sha = (sha == "") ? 1 : 0
+      has_sha = 0
       for (i = 2; i <= NF; i++) {
         if ($i == "session=" sid) {
           has_session = 1
         }
-        if (sha != "" && $i == "sha=" sha) {
+        if ($i == "sha=" sha) {
           has_sha = 1
         }
       }
@@ -2902,12 +2920,12 @@ if [ ${#missing[@]} -eq 0 ]; then
     awk -v marker="$LIVE_PYRAMID_MARKER" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
       $1 == marker {
         has_session = 0
-        has_sha = (sha == "") ? 1 : 0
+        has_sha = 0
         for (i = 2; i <= NF; i++) {
           if ($i == "session=" sid) {
             has_session = 1
           }
-          if (sha != "" && $i == "sha=" sha) {
+          if ($i == "sha=" sha) {
             has_sha = 1
           }
         }

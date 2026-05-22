@@ -18,6 +18,11 @@ Sidekick now keeps canonical host-agnostic workflows under `skills/` while gener
 - **`hooks/validate-release-gate.sh`**, **`site/pre-release-quality-gate.md`**: release-gate stage markers now include the current git SHA, preventing stale stage evidence from satisfying a release after final code changes.
 - **Kay visual prompt routing**: visual and screenshot-style prompts now route to `mimo-v2.5`, the native multimodal MiMo path, while `mimo-v2.5-pro` remains the non-trivial text/code/review workhorse.
 
+**Fixed:**
+
+- **`hooks/validate-release-gate.sh`**, **`tests/run_release.bash`**: release authorization now fails closed when no current git SHA can be resolved, and live-pyramid marker recording aborts on state-file write failures.
+- **`install.sh`**, **`scripts/render-agent-bundle.py`**, **`tests/run_unit.bash`**: host install rewrites now prefer the active host plugin root, generated skills no longer point users back at canonical `skills/` paths, renderer temp deletion is guarded, and strict unit runs no longer execute repo-local post-release cleanup.
+
 ## v0.5.8 — 2026-05-21
 
 ### Kay DeepSeek routing and docs mirror

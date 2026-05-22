@@ -43,6 +43,11 @@ run_hook_no_git() {
   HOME="$1" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2"
 }
 
+run_hook_no_git_from_cwd() {
+  # $1 = temp HOME, $2 = JSON payload, $3 = package root with hooks/ but no .git, $4 = caller cwd
+  (cd "$4" && HOME="$1" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2")
+}
+
 run_hook_without_python() {
   # $1 = temp HOME, $2 = JSON payload. PATH deliberately contains jq/cat but
   # not python3, proving the release gate fails closed when its parser runtime is
@@ -305,9 +310,9 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4a: packaged hook without .git uses current-session live markers
+# Scenario 4a: packaged hook without .git falls back to release command cwd SHA
 # ---------------------------------------------------------------------------
-echo "Scenario 4a: release command passes from package tree without git metadata"
+echo "Scenario 4a: release command passes from package tree using caller git cwd"
 H="$(setup_home)"
 NO_GIT_ROOT="$(mktemp -d)"
 mkdir -p "${NO_GIT_ROOT}/hooks"
@@ -317,16 +322,38 @@ write_live_pyramid_markers "${H}" 2
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
 OUT="$(run_hook_no_git "${H}" "${PAYLOAD}" "${NO_GIT_ROOT}")"; RC=$?
 if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
-  assert_pass "package tree without .git: current-session live pyramid passes"
+  assert_pass "package tree without .git: caller git cwd SHA authorizes current-session live pyramid"
 else
-  assert_fail "package tree without .git pass" "rc=${RC} out=${OUT}"
+  assert_fail "package tree without .git caller cwd pass" "rc=${RC} out=${OUT}"
 fi
 rm -rf "${H}" "${NO_GIT_ROOT}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4b: all 4 stage markers without live pyramid markers → deny
+# Scenario 4b: packaged hook with no git metadata anywhere → deny
 # ---------------------------------------------------------------------------
-echo "Scenario 4b: stage markers without live pyramid are denied"
+echo "Scenario 4b: release command is denied when no current git SHA is available"
+H="$(setup_home)"
+NO_GIT_ROOT="$(mktemp -d)"
+NO_GIT_CWD="$(mktemp -d)"
+mkdir -p "${NO_GIT_ROOT}/hooks"
+cp "${HOOK}" "${NO_GIT_ROOT}/hooks/validate-release-gate.sh"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook_no_git_from_cwd "${H}" "${PAYLOAD}" "${NO_GIT_ROOT}" "${NO_GIT_CWD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"no current git SHA"* ]]; then
+  assert_pass "package tree and caller cwd without git metadata: permissionDecision=deny"
+else
+  assert_fail "no git metadata deny" "rc=${RC} decision=${DECISION} reason=${REASON} out=${OUT}"
+fi
+rm -rf "${H}" "${NO_GIT_ROOT}" "${NO_GIT_CWD}"
+
+# ---------------------------------------------------------------------------
+# Scenario 4c: all 4 stage markers without live pyramid markers → deny
+# ---------------------------------------------------------------------------
+echo "Scenario 4c: stage markers without live pyramid are denied"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
@@ -341,9 +368,9 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4c: only one live-pyramid run marker → deny
+# Scenario 4d: only one live-pyramid run marker → deny
 # ---------------------------------------------------------------------------
-echo "Scenario 4c: one live-pyramid marker is denied"
+echo "Scenario 4d: one live-pyramid marker is denied"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 1
@@ -359,9 +386,9 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4d: stale stage marker SHA does not satisfy current checkout
+# Scenario 4e: stale stage marker SHA does not satisfy current checkout
 # ---------------------------------------------------------------------------
-echo "Scenario 4d: stale stage marker SHA is denied"
+echo "Scenario 4e: stale stage marker SHA is denied"
 H="$(setup_home)"
 write_markers_for_sha "${H}" "stale-stage-sha" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
@@ -377,9 +404,9 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4e: legacy session-only stage markers are denied in source checkout
+# Scenario 4f: legacy session-only stage markers are denied in source checkout
 # ---------------------------------------------------------------------------
-echo "Scenario 4e: legacy session-only stage markers are denied"
+echo "Scenario 4f: legacy session-only stage markers are denied"
 H="$(setup_home)"
 write_legacy_session_only_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2

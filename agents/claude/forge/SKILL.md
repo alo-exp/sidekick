@@ -9,16 +9,16 @@ description: >
 # /forge -- Forge Delegation Mode
 
 This skill adds explicit activation/deactivation mode switching on top of the existing
-`skills/forge.md` orchestration protocol. It does NOT replace `skills/forge.md` -- it
+`forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) orchestration protocol. It does NOT replace `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) -- it
 wraps it with a persistent session state mechanism via a marker file.
 
-The stop workflow lives canonically in `skills/forge-stop/SKILL.md`.
+The stop workflow lives canonically in `forge-stop/SKILL.md` in this generated claude skill root (`agents/claude/forge-stop/SKILL.md` in the repository).
 
 ---
 
 ## Runtime Readiness
 
-Forge readiness is checked when `/forge` is invoked for the current session. SessionStart does not update or repair Forge; if the health check fails, direct the user to `skills/forge.md` STEP 0A for setup or repair.
+Forge readiness is checked when `/forge` is invoked for the current session. SessionStart does not update or repair Forge; if the health check fails, direct the user to `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) STEP 0A for setup or repair.
 
 ---
 
@@ -33,7 +33,7 @@ All 4 criteria must pass before activation proceeds:
 3. **Credentials present:** Run `jq -e 'type == "array" and length > 0 and all(.[]; (.id | type == "string" and length > 0) and (.auth_details | type == "object" and (keys | length > 0)))' ~/forge/.credentials.json > /dev/null 2>&1` — exits 0 if credentials are present. Uses the current Forge schema: an array of `{id, auth_details}` entries with non-empty `id` values and non-empty `auth_details` objects. Returns false (not a jq error) on malformed files or any legacy shape. Never read, display, or include credential values in any output or context.
 4. **Config valid:** `~/forge/.forge.toml` contains non-empty `provider_id` and `model_id`
 
-If ANY check fails: print which check failed and direct the user to `skills/forge.md` STEP 0A for setup instructions. Stop activation.
+If ANY check fails: print which check failed and direct the user to `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) STEP 0A for setup instructions. Stop activation.
 
 ### 2. Bootstrap Config (first invocation only)
 
@@ -96,11 +96,11 @@ SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"
 test -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
 ```
 
-- **If active:** follow `skills/forge.md` STEP 1 through STEP 9 for task execution.
+- **If active:** follow `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) STEP 1 through STEP 9 for task execution.
 - **DLGT-04 enforcement:** while the marker exists, the host AI MUST NOT directly use Write, Edit, or Bash tools for implementation work. Exception: Level 3 fallback (Phase 2).
 - **Task prompt format:** compose prompts per the spec (section 4):
   OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS.
-- **Communication:** The host AI reports progress and outcomes to the user in plain language (per `skills/forge.md` STEP 6).
+- **Communication:** The host AI reports progress and outcomes to the user in plain language (per `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) STEP 6).
 
 ---
 
@@ -120,7 +120,7 @@ After each Forge output, the host AI runs three checks:
 2. **Wrong output check:** Forge output does not satisfy SUCCESS CRITERIA from the task prompt. If the SAME failure mode appears on retry -> failure confirmed, trigger next level.
 3. **Stall check:** Forge asks a clarifying question back without making progress (behavioral stall in interactive ZSH). Treat as Level 1 trigger -- reframe with more specifics.
 
-Reference: `skills/forge.md` STEP 5 for contextual failure recovery patterns.
+Reference: `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) STEP 5 for contextual failure recovery patterns.
 
 ---
 
@@ -282,7 +282,7 @@ After extraction and deduplication, write to all applicable tiers:
 On first `/forge` invocation when `./AGENTS.md` is empty or absent:
 
 1. Check if `./AGENTS.md` exists and has content (file size > 0). If it does, skip bootstrap entirely.
-2. Read `skills/forge.md` for key conventions:
+2. Read `forge.md` in this generated claude skill root (`agents/claude/forge.md` in the repository) for key conventions:
    - Output format expectations: STATUS, FILES_CHANGED, ASSUMPTIONS, PATTERNS_DISCOVERED
    - Delegation principles: Host AI = Brain (plan, communicate, review), Forge = Hands (write, edit, run)
    - Structured response requirements from STEP 6
