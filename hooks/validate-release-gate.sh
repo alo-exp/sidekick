@@ -147,6 +147,7 @@ GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
 RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 RELEASE_TAG_TEXT_RE = re.compile(r"\bv?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?\b")
 DYNAMIC_RELEASE_TAG_HINT_RE = re.compile(r"(?:TAG|VERSION|RELEASE)", re.IGNORECASE)
+DYNAMIC_BRANCH_HINT_RE = re.compile(r"(?:BRANCH|HEADS?)", re.IGNORECASE)
 DYNAMIC_RELEASE_ENDPOINT_HINT_RE = re.compile(r"(?:RELEASE|TAG|VERSION).*(?:URL|ENDPOINT|API)|(?:URL|ENDPOINT|API).*(?:RELEASE|TAG|VERSION)", re.IGNORECASE)
 TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
 SCRIPT_PATH_HINT_RE = re.compile(r"(?:release|tag|publish)", re.IGNORECASE)
@@ -168,6 +169,16 @@ INTERPRETER_PAYLOAD_OPTIONS = {
     "deno": {"eval"},
     "bun": {"-e"},
 }
+KNOWN_EXECUTABLE_COMMANDS = (
+    {"gh", "git", "curl", "wget"}
+    | SHELLS
+    | EXEC_WRAPPERS
+    | PREFIX_WRAPPERS
+    | TIME_WRAPPERS
+    | PRIVILEGE_WRAPPERS
+    | LAUNCH_WRAPPERS
+    | set(INTERPRETER_PAYLOAD_OPTIONS)
+)
 GRAPHQL_RELEASE_MUTATION_RE = re.compile(
     r"\b(?:create|update|delete)Release\b",
     re.IGNORECASE,
@@ -176,7 +187,10 @@ GRAPHQL_REF_MUTATION_RE = re.compile(
     r"\b(?:create|update|delete)Ref\b",
     re.IGNORECASE,
 )
-GRAPHQL_RELEASE_ENDPOINT_RE = re.compile(r"api\.github\.com/graphql", re.IGNORECASE)
+GRAPHQL_RELEASE_ENDPOINT_RE = re.compile(
+    r"(?:https?://[^/\s\"']+/)?(?:api/)?graphql\b",
+    re.IGNORECASE,
+)
 GIT_PUSH_RELEASE_TEXT_RE = re.compile(
     r"\bgit\s+push\b[^\n;&|`]*?(?:refs/tags/|(?:^|[\s'\"=:/])v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?(?:$|[\s'\";,&|)]))",
     re.IGNORECASE,
@@ -310,6 +324,25 @@ def static_producer_payload(segment):
     return None
 
 
+REDIRECT_WRITE_TOKENS = {">", ">>", ">|", "<>"}
+
+
+def generated_file_write(segment):
+    for index, token in enumerate(segment):
+        if token not in REDIRECT_WRITE_TOKENS:
+            continue
+        if index + 1 >= len(segment):
+            continue
+        target = segment[index + 1]
+        if release_source_is_uninspectable(target) or EXPANSION_RE.search(target):
+            return target, None
+        payload = static_producer_payload(segment[:index])
+        if payload is not None and EXPANSION_RE.search(payload):
+            payload = None
+        return target, payload
+    return None
+
+
 def render_static_command(command):
     try:
         tokens = tokenize(command)
@@ -322,11 +355,42 @@ def render_static_command(command):
 
 def normalize_command(command):
     normalized = command.replace("\\\r\n", "").replace("\\\n", "")
+    if "<<" not in normalized:
+        normalized = normalize_statement_newlines(normalized)
     normalized = re.sub(r"\)(?=;)", ") ", normalized)
     normalized = expand_ansi_c_quotes(normalized)
     normalized = expand_parameter_expansions(normalized)
     normalized = expand_static_substitutions(normalized)
     return normalized
+
+
+def normalize_statement_newlines(command):
+    output = []
+    in_single = False
+    in_double = False
+    escaped = False
+    for ch in command:
+        if escaped:
+            output.append(ch)
+            escaped = False
+            continue
+        if ch == "\\" and not in_single:
+            output.append(ch)
+            escaped = True
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            output.append(ch)
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            output.append(ch)
+            continue
+        if ch == "\n" and not in_single and not in_double:
+            output.append(";")
+            continue
+        output.append(ch)
+    return "".join(output)
 
 
 def expand_ansi_c_quotes(command):
@@ -771,7 +835,11 @@ def refspec_targets_release_tag(refspec):
     parts = [part for part in refspec.split(":") if part]
     if any(token_is_release_tag_ref(part) for part in parts):
         return True
-    return refspec_is_dynamic(refspec) and bool(DYNAMIC_RELEASE_TAG_HINT_RE.search(refspec))
+    if not refspec_is_dynamic(refspec):
+        return False
+    if DYNAMIC_BRANCH_HINT_RE.search(refspec) or "refs/heads/" in refspec:
+        return False
+    return True
 
 
 def git_push_refspecs_target_release_tag(refspecs):
@@ -830,11 +898,14 @@ def referenced_env_names(value):
     ]
 
 
-def expand_inherited_env_refs(value):
+def expand_inherited_env_refs(value, env_map=None):
     text = str(value)
+    env_map = env_map or {}
 
     def replace(match):
         name = match.group(1) or match.group(2)
+        if name in env_map:
+            return env_map[name]
         return os.environ.get(name, match.group(0))
 
     return ENV_REFERENCE_RE.sub(replace, text)
@@ -847,10 +918,10 @@ def dynamic_release_endpoint_hint(value):
     )
 
 
-def endpoint_variants(endpoint):
+def endpoint_variants(endpoint, env_map=None):
     text = str(endpoint).strip()
     variants = {text}
-    expanded = expand_inherited_env_refs(text)
+    expanded = expand_inherited_env_refs(text, env_map)
     if expanded != text:
         variants.add(expanded)
     return variants
@@ -905,7 +976,7 @@ def normalized_payload_text(payload):
         return ""
     text = str(payload)
     decoded = urllib.parse.unquote_plus(text)
-    variants = {text, decoded}
+    variants = {text, decoded, expand_inherited_env_refs(text), expand_inherited_env_refs(decoded)}
     for value in list(variants):
         variants.add(value.replace("\\/", "/"))
     for value in list(variants):
@@ -925,6 +996,17 @@ def payload_mentions_tag_ref(payload):
     return bool(TAG_REF_TEXT_RE.search(normalized_payload_text(payload)))
 
 
+def payload_has_dynamic_ref(payload):
+    text = normalized_payload_text(payload)
+    if re.search(r"[\"']?\bref\b[\"']?\s*[:=]\s*[\"']?v?[0-9]+[.][0-9]+[.][0-9]+", text, re.IGNORECASE):
+        return True
+    if not EXPANSION_RE.search(text):
+        return False
+    if "refs/heads/" in text or DYNAMIC_BRANCH_HINT_RE.search(text):
+        return False
+    return re.search(r"[\"']?\bref\b[\"']?\s*[:=]", text, re.IGNORECASE) is not None or "git/refs" in text
+
+
 def is_release_api_endpoint(endpoint):
     return is_releases_api_endpoint(endpoint) or is_git_tag_refs_api_endpoint(endpoint)
 
@@ -932,7 +1014,7 @@ def is_release_api_endpoint(endpoint):
 def is_graphql_endpoint(endpoint):
     for candidate in endpoint_variants(endpoint):
         parts = github_api_path_parts(candidate)
-        if parts == ["graphql"]:
+        if parts == ["graphql"] or parts == ["api", "graphql"]:
             return True
     return False
 
@@ -991,7 +1073,7 @@ def graphql_payload_needs_gate(value):
     return False
 
 
-def gh_api_release_write_command(segment, gh_index):
+def gh_api_release_write_command(segment, gh_index, generated_files=None):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "api":
         return False
@@ -1071,7 +1153,7 @@ def gh_api_release_write_command(segment, gh_index):
         return command_has_write_semantics
     if not is_git_refs_api_endpoint(endpoint) or not command_has_write_semantics:
         return False
-    return rest_tag_ref_payloads_need_gate(graphql_payloads)
+    return rest_tag_ref_payloads_need_gate(graphql_payloads, generated_files)
 
 
 def direct_github_release_api_url(value):
@@ -1142,6 +1224,12 @@ def read_release_source_text(source):
         return None
 
 
+def generated_source_text(source, generated_files=None):
+    if generated_files and source in generated_files:
+        return generated_files[source]
+    return None
+
+
 def payload_file_source(payload):
     if payload in {"-", "@-"}:
         return "-"
@@ -1155,23 +1243,30 @@ def payload_file_source(payload):
     return None
 
 
-def payload_or_source_mentions_tag_ref(payload):
+def payload_or_source_mentions_tag_ref(payload, generated_files=None):
     if payload_mentions_tag_ref(payload):
         return True
+    if payload_has_dynamic_ref(payload):
+        return None
     source = payload_file_source(payload)
     if source is None:
         return False
     if release_source_is_uninspectable(source):
         return None
+    if generated_files and source in generated_files:
+        source_text = generated_files[source]
+        if source_text is None:
+            return None
+        return payload_mentions_tag_ref(source_text)
     source_text = read_release_source_text(source)
     if source_text is None:
         return None
     return payload_mentions_tag_ref(source_text)
 
 
-def rest_tag_ref_payloads_need_gate(payloads):
+def rest_tag_ref_payloads_need_gate(payloads, generated_files=None):
     for payload in payloads:
-        result = payload_or_source_mentions_tag_ref(payload)
+        result = payload_or_source_mentions_tag_ref(payload, generated_files)
         if result is True or result is None:
             return True
     return False
@@ -1217,11 +1312,12 @@ def release_payload_import_aliases(payload):
     return aliases
 
 
-def curl_release_write_command(segment, start):
+def curl_release_write_command(segment, start, generated_files=None):
     method = None
     has_write_body = False
     urls = []
     config_files = []
+    config_texts = []
     body_payloads = []
     index = start + 1
     while index < len(segment):
@@ -1277,8 +1373,27 @@ def curl_release_write_command(segment, start):
             continue
         if token in {"-K", "--config"}:
             if index + 1 < len(segment):
-                config_files.append(segment[index + 1])
-            index += 2
+                if segment[index + 1] == "<(":
+                    depth = 1
+                    cursor = index + 2
+                    payload = []
+                    while cursor < len(segment):
+                        if segment[cursor] == "(":
+                            depth += 1
+                        elif segment[cursor] == ")":
+                            depth -= 1
+                            if depth == 0:
+                                break
+                        payload.append(segment[cursor])
+                        cursor += 1
+                    producer_payload = static_producer_payload(payload)
+                    if producer_payload is None:
+                        return True
+                    config_texts.append(producer_payload)
+                    index = cursor + 1
+                else:
+                    config_files.append(segment[index + 1])
+                    index += 2
             continue
         if token.startswith("--config="):
             config_files.append(token.split("=", 1)[1])
@@ -1296,30 +1411,49 @@ def curl_release_write_command(segment, start):
             continue
         urls.append(token)
         index += 1
-    if any(direct_github_release_api_url(url) for url in urls):
-        return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
     command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    release_url_present = any(direct_github_release_api_url(url) for url in urls)
+    config_write_semantics = False
+    for config_text in config_texts:
+        if curl_config_has_write_semantics(config_text):
+            config_write_semantics = True
+        if curl_config_mentions_release_write(config_text, command_has_write_semantics or release_url_present):
+            return True
+    for config_file in config_files:
+        config_text = None
+        if generated_files and config_file in generated_files:
+            config_text = generated_files[config_file]
+            if config_text is None:
+                return True
+        elif release_source_is_uninspectable(config_file):
+            if release_url_present or config_file in {"-", "@-"}:
+                return True
+        else:
+            config_text = read_release_source_text(config_file)
+        if config_text is None:
+            if release_url_present:
+                return True
+            continue
+        if curl_config_has_write_semantics(config_text):
+            config_write_semantics = True
+        if curl_config_mentions_release_write(config_text, command_has_write_semantics or release_url_present):
+            return True
+    command_has_write_semantics = command_has_write_semantics or config_write_semantics
+    if release_url_present:
+        return command_has_write_semantics
     if any(is_git_refs_api_endpoint(url) for url in urls) and command_has_write_semantics:
         if any(is_git_tag_refs_api_endpoint(url) for url in urls):
             return True
-        if rest_tag_ref_payloads_need_gate(body_payloads):
+        if rest_tag_ref_payloads_need_gate(body_payloads, generated_files):
             return True
     if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
         if not body_payloads:
             return False
         return any(graphql_payload_needs_gate(payload) for payload in body_payloads)
-    for config_file in config_files:
-        config_text = read_release_source_text(config_file)
-        if config_text is None:
-            if release_source_is_uninspectable(config_file):
-                return True
-            continue
-        if curl_config_mentions_release_write(config_text, command_has_write_semantics):
-            return True
     return False
 
 
-def wget_release_write_command(segment, start):
+def wget_release_write_command(segment, start, generated_files=None):
     method = None
     has_write_body = False
     urls = []
@@ -1389,7 +1523,7 @@ def wget_release_write_command(segment, start):
     if any(is_git_refs_api_endpoint(url) for url in urls) and command_has_write_semantics:
         if any(is_git_tag_refs_api_endpoint(url) for url in urls):
             return True
-        if rest_tag_ref_payloads_need_gate(body_payloads):
+        if rest_tag_ref_payloads_need_gate(body_payloads, generated_files):
             return True
     if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
         if not body_payloads:
@@ -2715,6 +2849,29 @@ def git_alias_payload(expansion, args=None):
     return payload
 
 
+def git_alias_payload_with_aliases(alias_name, args, aliases):
+    seen = set()
+    current_name = alias_name
+    current_args = list(args or [])
+    for _ in range(8):
+        if current_name in seen or current_name not in aliases:
+            break
+        seen.add(current_name)
+        expansion = aliases[current_name].strip()
+        if expansion.startswith("!"):
+            return git_alias_payload(expansion, current_args)
+        try:
+            tokens = shlex.split(expansion)
+        except ValueError:
+            return git_alias_payload(expansion, current_args)
+        if tokens and tokens[0] in aliases:
+            current_name = tokens[0]
+            current_args = tokens[1:] + current_args
+            continue
+        return git_alias_payload(expansion, current_args)
+    return git_alias_payload(aliases.get(alias_name, alias_name), current_args)
+
+
 def enables_alias_expansion(segment):
     start = command_index_from(segment)
     if start >= len(segment) or Path(segment[start]).name != "shopt":
@@ -2802,11 +2959,16 @@ def script_operand_has_release_hint(token):
     return bool(SCRIPT_PATH_HINT_RE.search(token or "") or DYNAMIC_RELEASE_TAG_HINT_RE.search(token or ""))
 
 
-def script_operand_needs_gate(token, depth):
+def script_operand_needs_gate(token, depth, generated_files=None):
     if not token or token == "-":
         return script_operand_has_release_hint(token)
     if release_source_is_uninspectable(token) or EXPANSION_RE.search(token):
         return script_operand_has_release_hint(token)
+    if generated_files and token in generated_files:
+        text = generated_files[token]
+        if text is None:
+            return True
+        return language_payload_mentions_release_command(text) or contains_release_create(text, depth + 1)
     text = read_bounded_script_text(token)
     if text is None:
         return script_operand_has_release_hint(token)
@@ -2902,20 +3064,34 @@ def direct_script_operand(segment, start):
     if start >= len(segment):
         return None
     token = segment[start]
+    if Path(token).name in KNOWN_EXECUTABLE_COMMANDS:
+        return None
     if token in CONTROL or token in GROUP_PREFIXES:
         return None
     try:
         path = Path(token).expanduser()
     except Exception:
         return token if script_operand_has_release_hint(token) else None
-    if path.is_file() and (path.suffix in SCRIPT_EXTENSIONS or script_operand_has_release_hint(token)):
+    has_shebang = False
+    if path.is_file():
+        try:
+            with path.open("rb") as handle:
+                has_shebang = handle.read(2) == b"#!"
+        except OSError:
+            has_shebang = False
+    if path.is_file() and (
+        path.suffix in SCRIPT_EXTENSIONS
+        or script_operand_has_release_hint(token)
+        or os.access(path, os.X_OK)
+        or has_shebang
+    ):
         return token
     if "/" in token and script_operand_has_release_hint(token):
         return token
     return None
 
 
-def local_script_operand_needs_gate(segment, start, depth):
+def local_script_operand_needs_gate(segment, start, depth, generated_files=None):
     operands = []
     for probe in (
         source_script_operand(segment, start),
@@ -2925,7 +3101,9 @@ def local_script_operand_needs_gate(segment, start, depth):
     ):
         if probe:
             operands.append(probe)
-    return any(script_operand_needs_gate(operand, depth) for operand in operands)
+    if generated_files and start < len(segment) and segment[start] in generated_files:
+        operands.append(segment[start])
+    return any(script_operand_needs_gate(operand, depth, generated_files) for operand in operands)
 
 
 def static_interpreter_stdin_payload(previous_segment, incoming_control, interpreter_segment):
@@ -3048,11 +3226,12 @@ def referenced_environment_names_in_payload(payload):
     return names
 
 
-def payload_env_endpoint_needs_gate(payload, command_has_write_semantics):
+def payload_env_endpoint_needs_gate(payload, command_has_write_semantics, env_map=None):
     if not command_has_write_semantics:
         return False
+    env_map = env_map or {}
     for name in referenced_environment_names_in_payload(payload):
-        value = os.environ.get(name)
+        value = env_map.get(name) or os.environ.get(name)
         if value:
             if direct_github_release_api_url(value):
                 return True
@@ -3064,13 +3243,13 @@ def payload_env_endpoint_needs_gate(payload, command_has_write_semantics):
     return False
 
 
-def language_payload_mentions_release_command(payload):
+def language_payload_mentions_release_command(payload, env_map=None):
     if GH_RELEASE_MUTATING_RE.search(payload):
         return True
     if GIT_PUSH_RELEASE_TEXT_RE.search(payload):
         return True
     command_has_write_semantics = language_payload_has_write_semantics(payload)
-    if payload_env_endpoint_needs_gate(payload, command_has_write_semantics):
+    if payload_env_endpoint_needs_gate(payload, command_has_write_semantics, env_map):
         return True
     if direct_github_release_api_url(payload) and command_has_write_semantics:
         return True
@@ -3120,8 +3299,8 @@ def language_payload_mentions_release_command(payload):
     return False
 
 
-def language_payload_with_args_mentions_release_command(payload, args):
-    if language_payload_mentions_release_command(payload):
+def language_payload_with_args_mentions_release_command(payload, args, env_map=None):
+    if language_payload_mentions_release_command(payload, env_map):
         return True
     if not args or not re.search(r"\b(?:argv|ARGV|process\.argv|sys\.argv)\b", payload):
         return False
@@ -3135,7 +3314,7 @@ def language_payload_with_args_mentions_release_command(payload, args):
         expanded = re.sub(rf"\bprocess\.argv\[\s*{py_index + 1}\s*\]", literal, expanded)
         expanded = re.sub(rf"\bARGV\[\s*{index}\s*\]", literal, expanded)
         expanded = re.sub(rf"\$ARGV\[\s*{index}\s*\]", literal, expanded)
-    return language_payload_mentions_release_command(expanded)
+    return language_payload_mentions_release_command(expanded, env_map)
 
 
 def eval_payload(segment, start, variables=None):
@@ -3428,9 +3607,14 @@ def contains_release_create(command, depth=0):
     arrays = {}
     aliases = {}
     gh_aliases = {}
+    generated_files = {}
     expand_aliases = False
     for raw_segment, incoming_control in segments_with_controls(tokens):
         raw_segment = combine_braced_expansion_tokens(raw_segment)
+        generated_segment = resolve_variables(raw_segment, literal_vars, positionals, arrays)
+        generated = generated_file_write(generated_segment)
+        if generated is not None:
+            generated_files[generated[0]] = generated[1]
         assignments = standalone_literal_assignments(raw_segment)
         if assignments is not None:
             literal_vars.update(assignments)
@@ -3470,10 +3654,14 @@ def contains_release_create(command, depth=0):
             previous_segment = raw_segment
             continue
         segment = resolve_variables(raw_segment, literal_vars, positionals, arrays)
+        segment_start = command_index_from(raw_segment)
+        command_env = command_scoped_assignments(raw_segment, segment_start)
+        scoped_vars = dict(literal_vars)
+        scoped_vars.update(command_env)
         raw_shell_parts = shell_payload_parts(raw_segment)
         if raw_shell_parts:
             raw_shell_text, raw_shell_args = raw_shell_parts
-            resolved_shell_text = embedded_variable_substitution(raw_shell_text, literal_vars)
+            resolved_shell_text = embedded_variable_substitution(raw_shell_text, scoped_vars)
             if resolved_shell_text != raw_shell_text and contains_release_create(resolved_shell_text, depth + 1):
                 return True
             if resolved_shell_text != raw_shell_text and payload_with_positionals_can_complete_release(resolved_shell_text, raw_shell_args, depth + 1):
@@ -3488,10 +3676,12 @@ def contains_release_create(command, depth=0):
             if start >= len(segment):
                 continue
             command_name = Path(segment[start]).name
-            if local_script_operand_needs_gate(segment, start, depth):
+            command_env = command_scoped_assignments(segment, start)
+            scoped_env = dict(literal_vars)
+            scoped_env.update(command_env)
+            if local_script_operand_needs_gate(segment, start, depth, generated_files):
                 return True
             if command_name == "gh":
-                command_env = command_scoped_assignments(segment, start)
                 gh_config_dir = gh_config_dir_option(segment, start) or command_env.get("GH_CONFIG_DIR") or literal_vars.get("GH_CONFIG_DIR")
                 effective_gh_aliases = dict(persistent_gh_aliases(gh_config_dir))
                 effective_gh_aliases.update(gh_aliases)
@@ -3505,7 +3695,7 @@ def contains_release_create(command, depth=0):
                     continue
                 if gh_alias_import_command(segment, start):
                     return True
-                if gh_release_mutating_command(segment, start) or gh_api_release_write_command(segment, start):
+                if gh_release_mutating_command(segment, start) or gh_api_release_write_command(segment, start, generated_files):
                     return True
                 alias_index = gh_subcommand_index(segment, start)
                 if alias_index < len(segment) and segment[alias_index] in effective_gh_aliases:
@@ -3517,17 +3707,18 @@ def contains_release_create(command, depth=0):
                 effective_git_aliases.update(git_global_alias_assignments(segment, start))
                 alias_index = git_subcommand_index(segment, start)
                 if alias_index < len(segment) and segment[alias_index] in effective_git_aliases:
-                    alias_payload = git_alias_payload(
-                        effective_git_aliases[segment[alias_index]],
+                    alias_payload = git_alias_payload_with_aliases(
+                        segment[alias_index],
                         segment[alias_index + 1:],
+                        effective_git_aliases,
                     )
                     if contains_release_create(alias_payload, depth + 1):
                         return True
                 if git_push_release_tag_command(segment, start):
                     return True
-            if command_name == "curl" and curl_release_write_command(segment, start):
+            if command_name == "curl" and curl_release_write_command(segment, start, generated_files):
                 return True
-            if command_name == "wget" and wget_release_write_command(segment, start):
+            if command_name == "wget" and wget_release_write_command(segment, start, generated_files):
                 return True
             if expand_aliases and segment[start] in aliases:
                 alias_payload = " ".join(
@@ -3536,7 +3727,7 @@ def contains_release_create(command, depth=0):
                 if contains_release_create(alias_payload, depth + 1):
                     return True
             for payload, interpreter_args in interpreter_payloads_with_args(segment, start):
-                if language_payload_with_args_mentions_release_command(payload, interpreter_args):
+                if language_payload_with_args_mentions_release_command(payload, interpreter_args, scoped_env):
                     return True
                 if contains_release_create(payload, depth + 1):
                     return True
@@ -3550,7 +3741,7 @@ def contains_release_create(command, depth=0):
             if xargs_replacement_can_complete_release(segment, start):
                 return True
             for stdin_candidate in stdin_payload(segment, start):
-                if command_name in INTERPRETER_PAYLOAD_OPTIONS and language_payload_mentions_release_command(stdin_candidate):
+                if command_name in INTERPRETER_PAYLOAD_OPTIONS and language_payload_mentions_release_command(stdin_candidate, scoped_env):
                     return True
                 if contains_release_create(stdin_candidate, depth + 1):
                     return True
@@ -3567,7 +3758,7 @@ def contains_release_create(command, depth=0):
             if payload and contains_release_create(payload, depth + 1):
                 return True
             for payload in process_substitution_script_payloads(segment, start):
-                if command_name in INTERPRETER_PAYLOAD_OPTIONS and language_payload_mentions_release_command(payload):
+                if command_name in INTERPRETER_PAYLOAD_OPTIONS and language_payload_mentions_release_command(payload, scoped_env):
                     return True
                 if contains_release_create(payload, depth + 1):
                     return True
@@ -3611,6 +3802,208 @@ fi
 
 [ "$release_match" -eq 1 ] || exit 0
 
+release_git_c_target_dir() {
+  python3 - "$1" <<'PY'
+from pathlib import Path
+import re
+import shlex
+import sys
+
+CONTROL = {";", "&&", "||", "|", "&"}
+GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--super-prefix"}
+GIT_FLAG_GLOBALS = {"--bare", "--no-pager", "--paginate", "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs", "--icase-pathspecs"}
+GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
+RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
+
+def tokenize(command):
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
+    lexer.whitespace_split = True
+    return list(lexer)
+
+def segments(tokens):
+    segment = []
+    for token in tokens:
+        if token in CONTROL:
+            if segment:
+                yield segment
+                segment = []
+            continue
+        segment.append(token)
+    if segment:
+        yield segment
+
+def token_is_release_tag_ref(token):
+    token = token.lstrip("+")
+    return token.startswith("refs/tags/") or bool(RELEASE_TAG_RE.match(token))
+
+def refspec_targets_release_tag(refspec):
+    parts = [part for part in refspec.split(":") if part]
+    return any(token_is_release_tag_ref(part) for part in parts)
+
+def git_c_release_target(segment):
+    for git_index, token in enumerate(segment):
+        if Path(token).name != "git":
+            continue
+        index = git_index + 1
+        target_dir = None
+        while index < len(segment):
+            current = segment[index]
+            if current == "-C":
+                if index + 1 >= len(segment):
+                    return "__UNRESOLVABLE__"
+                target_dir = segment[index + 1]
+                index += 2
+                continue
+            if current.startswith("-C") and current != "-C":
+                target_dir = current[2:]
+                index += 1
+                continue
+            if current == "--":
+                index += 1
+                break
+            if current in GIT_VALUE_GLOBALS:
+                index += 2
+                continue
+            if current.startswith("--") and any(
+                current.startswith(option + "=")
+                for option in GIT_VALUE_GLOBALS
+                if option.startswith("--")
+            ):
+                index += 1
+                continue
+            if current in GIT_FLAG_GLOBALS:
+                index += 1
+                continue
+            break
+        if target_dir is None:
+            continue
+        if "$" in target_dir or "`" in target_dir or target_dir.startswith("<("):
+            return "__UNRESOLVABLE__"
+        if index >= len(segment) or segment[index] != "push":
+            continue
+        operands = []
+        cursor = index + 1
+        while cursor < len(segment):
+            current = segment[cursor]
+            if current == "--":
+                operands.extend(segment[cursor + 1:])
+                break
+            if current in GIT_PUSH_RELEASE_TAG_OPTIONS:
+                return target_dir
+            if current.startswith("-"):
+                cursor += 1
+                continue
+            operands.append(current)
+            cursor += 1
+        refspecs = operands[1:] if len(operands) > 1 else []
+        if any(ref == "tag" or refspec_targets_release_tag(ref) for ref in refspecs):
+            return target_dir
+    return None
+
+try:
+    tokens = tokenize(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+for segment in segments(tokens):
+    target = git_c_release_target(segment)
+    if target:
+        print(target)
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
+release_gh_target_ref() {
+  python3 - "$1" <<'PY'
+from pathlib import Path
+import shlex
+import sys
+
+CONTROL = {";", "&&", "||", "|", "&"}
+GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
+GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
+
+def tokenize(command):
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
+    lexer.whitespace_split = True
+    return list(lexer)
+
+def segments(tokens):
+    segment = []
+    for token in tokens:
+        if token in CONTROL:
+            if segment:
+                yield segment
+                segment = []
+            continue
+        segment.append(token)
+    if segment:
+        yield segment
+
+def skip_gh_globals(segment, index):
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return index + 1
+        if token in GH_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("-R") and token != "-R":
+            index += 1
+            continue
+        if token.startswith("--") and any(
+            token.startswith(option + "=")
+            for option in GH_VALUE_GLOBALS
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        if token in GH_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return index
+
+def gh_release_target(segment):
+    for gh_index, token in enumerate(segment):
+        if Path(token).name != "gh":
+            continue
+        subcommand_index = skip_gh_globals(segment, gh_index + 1)
+        if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
+            continue
+        action_index = skip_gh_globals(segment, subcommand_index + 1)
+        if action_index >= len(segment) or segment[action_index] != "create":
+            continue
+        index = action_index + 1
+        while index < len(segment):
+            current = segment[index]
+            if current == "--":
+                break
+            if current == "--target":
+                if index + 1 >= len(segment):
+                    return "__UNRESOLVABLE__"
+                return segment[index + 1]
+            if current.startswith("--target="):
+                return current.split("=", 1)[1]
+            index += 1
+    return None
+
+try:
+    tokens = tokenize(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+for segment in segments(tokens):
+    target = gh_release_target(segment)
+    if target:
+        if "$" in target or "`" in target or target.startswith("<("):
+            print("__UNRESOLVABLE__")
+        else:
+            print(target)
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
 if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
   reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, CLAUDE_SESSION_ID, or SESSION_ID and rerun the gate in the current session."
   jq -cn --arg reason "$reason" '{
@@ -3624,7 +4017,27 @@ if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
 fi
 
 current_release_sha() {
-  local candidate
+  local candidate git_c_target gh_target_ref
+  gh_target_ref="$(release_gh_target_ref "$COMMAND" 2>/dev/null || true)"
+  if [ "${gh_target_ref}" = "__UNRESOLVABLE__" ]; then
+    return 1
+  fi
+  if [ -n "${gh_target_ref}" ]; then
+    for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
+      if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 "${gh_target_ref}^{commit}" 2>/dev/null; then
+        return 0
+      fi
+    done
+    return 1
+  fi
+  git_c_target="$(release_git_c_target_dir "$COMMAND" 2>/dev/null || true)"
+  if [ "${git_c_target}" = "__UNRESOLVABLE__" ]; then
+    return 1
+  fi
+  if [ -n "${git_c_target}" ]; then
+    git -C "${git_c_target}" rev-parse --short=12 HEAD 2>/dev/null && return 0
+    return 1
+  fi
   for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
     if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 HEAD 2>/dev/null; then
       return 0

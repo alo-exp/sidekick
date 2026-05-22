@@ -1551,6 +1551,10 @@ assert_denied_command "Scenario 49c: static shell stdin after prior semicolon co
   "echo ok; printf \"gh release create v1.2.1\" | bash"
 assert_denied_command "Scenario 49d: static shell stdin after prior && command is denied" \
   "true && printf \"gh release create v1.2.1\" | bash"
+assert_denied_command "Scenario 49d2: same-command generated release script is denied" \
+  "printf 'gh release create v1.2.1' > /tmp/sidekick-generated-release; bash /tmp/sidekick-generated-release"
+assert_denied_command "Scenario 49d3: dynamic generated script file fails closed" \
+  'printf "$UNKNOWN_PAYLOAD" > /tmp/sidekick-generated-release; bash /tmp/sidekick-generated-release'
 assert_denied_command "Scenario 49e: shell positional args complete gh release create" \
   "bash -c 'gh \"\$@\"' sh release create v1.2.1"
 assert_denied_command "Scenario 49f: function positional args complete gh release create" \
@@ -1627,6 +1631,8 @@ assert_denied_command "Scenario 49aj4: declared array expansion completes releas
   "declare -a arr=(release create); gh \${arr[@]} v1.2.1"
 assert_denied_command "Scenario 49ak: multiword command variable completes release command" \
   "cmd=\"gh release create\"; \$cmd v1.2.1"
+assert_denied_command "Scenario 49ak2: multiline command variable completes release command" \
+  $'cmd="gh release create"\n$cmd v1.2.1'
 assert_denied_command "Scenario 49al: embedded literal variable assembles command word" \
   "h=h; g\$h release create v1.2.1"
 assert_denied_command "Scenario 49am: default parameter expansion without colon assembles command word" \
@@ -1639,6 +1645,8 @@ assert_denied_command "Scenario 49ap: gh api POST tag ref endpoint is denied" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=abc123"
 assert_denied_command "Scenario 49ap0b: gh api escaped tag ref field is denied" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f 'ref=refs\\/tags\\/v1.2.1' -f sha=abc123"
+assert_denied_command "Scenario 49ap0c: gh api dynamic ref field fails closed" \
+  'gh api -X POST repos/alo-exp/sidekick/git/refs -f ref="$x" -f sha=abc123'
 assert_passthrough_command "Scenario 49ap1: gh api POST branch ref endpoint passes through" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/heads/release-hardening -f sha=abc123"
 assert_denied_command "Scenario 49ap2: curl POST release endpoint is denied" \
@@ -1649,6 +1657,8 @@ assert_denied_command "Scenario 49ap2c: curl attached short form flag release en
   "curl -sS -Ftag_name=v1.2.1 https://api.github.com/repos/alo-exp/sidekick/releases"
 assert_denied_command "Scenario 49ap3: curl data-implied POST tag ref endpoint is denied" \
   "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs/tags/v1.2.1\",\"sha\":\"abc123\"}'"
+assert_denied_command "Scenario 49ap3a0: curl dynamic tag ref payload fails closed" \
+  'x=$(cat VERSION); curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data "{\"ref\":\"$x\",\"sha\":\"abc123\"}"'
 assert_denied_command "Scenario 49ap3a: curl escaped tag ref endpoint is denied" \
   "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs\\/tags\\/v1.2.1\",\"sha\":\"abc123\"}'"
 assert_denied_command "Scenario 49ap3a2: curl unicode-escaped tag ref endpoint is denied" \
@@ -1723,6 +1733,8 @@ assert_passthrough_command "Scenario 49ap6h4: gh api GraphQL read-only query fil
 rm -f "${_graphql_query}" "${_graphql_read_query}"
 assert_denied_command "Scenario 49ap6i: wget GraphQL createRelease mutation is denied" \
   "wget --method=POST --body-data '{\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}' https://api.github.com/graphql"
+assert_denied_command "Scenario 49ap6j: GHES /api/graphql createRelease mutation is denied" \
+  "curl -sS -X POST https://ghe.example.test/api/graphql -d '{\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}'"
 _curl_config="$(mktemp)"
 _curl_implicit_post_config="$(mktemp)"
 cat > "${_curl_config}" <<'EOF'
@@ -1742,6 +1754,14 @@ assert_denied_command "Scenario 49ap7b: curl stdin config source is denied" \
   "curl -K -"
 assert_denied_command "Scenario 49ap7c: curl attached stdin config source is denied" \
   "curl -K-"
+assert_denied_command "Scenario 49ap7d: curl same-command generated config file is denied" \
+  "printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > /tmp/sidekick-release-curl.cfg; curl -K /tmp/sidekick-release-curl.cfg"
+assert_denied_command "Scenario 49ap7e: curl generated config through variable path is denied" \
+  "cfg=/tmp/sidekick-release-curl-var.cfg; printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > \"\$cfg\"; curl -K \"\$cfg\""
+assert_denied_command "Scenario 49ap7f: curl process-substitution config is denied" \
+  "curl -K <(printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n')"
+assert_denied_command "Scenario 49ap7g: curl config write semantics combine with CLI release URL" \
+  "curl -K <(printf 'request = POST\\ndata = \"{}\"\\n') https://api.github.com/repos/alo-exp/sidekick/releases"
 _wget_urls="$(mktemp)"
 printf '%s\n' "https://api.github.com/repos/alo-exp/sidekick/releases" > "${_wget_urls}"
 assert_denied_command "Scenario 49ap8: wget input file release endpoint is denied" \
@@ -1767,6 +1787,10 @@ assert_denied_command_with_env_var "Scenario 49ap9f: wget inherited env release 
 assert_denied_command_with_env_var "Scenario 49ap9g: python inherited env release URL is denied" \
   'python3 -c "import os,requests; requests.post(os.environ[\"RELEASE_URL\"], json={\"tag_name\":\"v1.2.1\"})"' \
   "RELEASE_URL" "https://api.github.com/repos/alo-exp/sidekick/releases"
+assert_denied_command "Scenario 49ap9h: curl command-scoped generic env release URL is denied" \
+  'env URL=https://api.github.com/repos/alo-exp/sidekick/releases sh -c '\''curl -X POST "$URL" -d "{\"tag_name\":\"v1.2.1\"}"'\'''
+assert_denied_command "Scenario 49ap9i: python command-scoped generic env release URL is denied" \
+  'env URL=https://api.github.com/repos/alo-exp/sidekick/releases python3 -c "import os,requests; requests.post(os.environ[\"URL\"], json={\"tag_name\":\"v1.2.1\"})"'
 echo "Scenario 49ap9b: curl missing config on example.com passes through"
 H="$(setup_home)"
 OUT="$(run_hook "${H}" '{"tool_name":"Bash","tool_input":{"command":"curl -K /tmp/sidekick-missing.cfg https://example.com"}}')"; RC=$?
@@ -1787,6 +1811,8 @@ fi
 rm -rf "${H}"
 assert_denied_command "Scenario 49aq: alias expansion release command is denied" \
   "shopt -s expand_aliases; alias r='gh release create'; r v1.2.1"
+assert_denied_command "Scenario 49aq2: multiline alias expansion release command is denied" \
+  $'shopt -s expand_aliases\nalias r="gh release create"\nr v1.2.1'
 assert_denied_command "Scenario 49ar: case branch release command is denied" \
   "case x in x) gh release create v1.2.1;; esac"
 assert_denied_command "Scenario 49as: python static interpreter payload release command is denied" \
@@ -1813,6 +1839,11 @@ EOF
 cat > "${_local_script_dir}/tag.sh" <<'EOF'
 git push origin v1.2.1
 EOF
+cat > "${_local_script_dir}/deploy" <<'EOF'
+#!/usr/bin/env bash
+gh release create v1.2.1
+EOF
+chmod +x "${_local_script_dir}/deploy"
 assert_denied_command "Scenario 49av1: bash local release script is denied" \
   "bash ${_local_script_dir}/release.sh"
 assert_denied_command "Scenario 49av2: sh local tag script is denied" \
@@ -1825,6 +1856,8 @@ assert_denied_command "Scenario 49av5: direct local release script is denied" \
   "${_local_script_dir}/release.sh"
 assert_denied_command "Scenario 49av6: source local release script is denied" \
   "source ${_local_script_dir}/release.sh"
+assert_denied_command "Scenario 49av7: direct executable script without release hint is denied" \
+  "${_local_script_dir}/deploy"
 rm -rf "${_local_script_dir}"
 assert_denied_command "Scenario 49aw: gh api GraphQL createRelease mutation is denied" \
   "gh api graphql -f query='mutation { createRelease(input:{repositoryId:\"R\", tagName:\"v1\"}) { release { id } } }'"
@@ -1960,6 +1993,8 @@ assert_denied_command "Scenario 49cp: git push follow-tags is denied" \
   "git push --follow-tags origin main"
 assert_denied_command "Scenario 49cq: git push dynamic release tag variable is denied" \
   'git push origin "$TAG"'
+assert_denied_command "Scenario 49cq2: git push generic dynamic refspec fails closed" \
+  'git push origin "$x"'
 assert_denied_command "Scenario 49cr: git push dynamic release tag ref is denied" \
   'git push origin refs/tags/$TAG'
 assert_denied_command "Scenario 49cs: git push command-substitution refspec is denied" \
@@ -1976,6 +2011,8 @@ assert_denied_command "Scenario 49cs5b: git push bare numeric semver tag is deni
   "git push origin 0.6.0"
 assert_denied_command "Scenario 49cs6: git command-scoped release tag alias is denied" \
   'git -c alias.sidekickreleasepush="push origin v1.2.1" sidekickreleasepush'
+assert_denied_command "Scenario 49cs6b: chained git command-scoped release tag aliases are denied" \
+  'git -c alias.releasepush="push origin v1.2.1" -c alias.r=releasepush r'
 assert_denied_command "Scenario 49cs7: git command-scoped shell release tag alias is denied" \
   'git -c alias.sidekickshellreleasepush="!git push origin v1.2.1" sidekickshellreleasepush'
 assert_denied_command_with_git_alias_config "Scenario 49cs8: persistent git release tag alias is denied" \
@@ -1996,6 +2033,63 @@ if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
   assert_pass "git push release tag passes after gate markers"
 else
   assert_fail "git push release tag passes after gate markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+
+echo "Scenario 49cu: git -C release tag push requires target repository markers"
+GIT_C_RELEASE_CWD="$(mktemp -d)"
+git -C "${GIT_C_RELEASE_CWD}" init -q
+printf '%s\n' "release target" > "${GIT_C_RELEASE_CWD}/README.md"
+git -C "${GIT_C_RELEASE_CWD}" add README.md
+git -C "${GIT_C_RELEASE_CWD}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m release-target
+git_c_release_sha="$(git -C "${GIT_C_RELEASE_CWD}" rev-parse --short=12 HEAD)"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD="$(jq -cn --arg cmd "git -C ${GIT_C_RELEASE_CWD} push origin v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git -C release tag push with wrong repo markers is denied"
+else
+  assert_fail "git -C release tag push with wrong repo markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${git_c_release_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${git_c_release_sha}" 2
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "git -C release tag push passes with target repo markers"
+else
+  assert_fail "git -C release tag push with target repo markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${GIT_C_RELEASE_CWD}"
+
+echo "Scenario 49cv: gh release --target requires target ref markers"
+target_ref_sha="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD~1)"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh release create v1.2.1 --target ${target_ref_sha}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "gh release --target with current HEAD markers is denied"
+else
+  assert_fail "gh release --target with current HEAD markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${target_ref_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${target_ref_sha}" 2
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "gh release --target passes with target ref markers"
+else
+  assert_fail "gh release --target with target ref markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 
