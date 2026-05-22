@@ -648,6 +648,8 @@ def is_release_api_endpoint(endpoint):
 
 
 def is_graphql_endpoint(endpoint):
+    endpoint = endpoint.strip()
+    endpoint = re.sub(r"^https?://api\.github\.com/?", "", endpoint, flags=re.I)
     return endpoint.split("?", 1)[0].strip("/") == "graphql"
 
 
@@ -674,6 +676,24 @@ def graphql_dynamic_query(value):
         return False
     _, _, query_value = value.partition("=")
     return bool(EXPANSION_RE.search(query_value))
+
+
+def graphql_payload_needs_gate(value):
+    if graphql_dynamic_query(value) or graphql_release_mutation_text(value):
+        return True
+    if graphql_file_backed_query(value):
+        return True
+    if value in {"-", "@-"}:
+        return True
+    source = value[1:] if value.startswith("@") else None
+    if source:
+        if release_source_is_uninspectable(source):
+            return True
+        source_text = read_release_source_text(source)
+        if source_text is None:
+            return True
+        return graphql_release_mutation_text(source_text)
+    return False
 
 
 def gh_api_release_write_command(segment, gh_index):
@@ -823,6 +843,7 @@ def curl_release_write_command(segment, start):
     has_write_body = False
     urls = []
     config_files = []
+    body_payloads = []
     index = start + 1
     while index < len(segment):
         token = segment[index]
@@ -847,18 +868,23 @@ def curl_release_write_command(segment, start):
             "--json", "-F", "--form", "--form-string",
         }:
             has_write_body = True
+            if index + 1 < len(segment):
+                body_payloads.append(segment[index + 1])
             index += 2
             continue
         if token.startswith("-d") and token != "-d":
             has_write_body = True
+            body_payloads.append(token[2:])
             index += 1
             continue
         if token.startswith("-F") and token != "-F":
             has_write_body = True
+            body_payloads.append(token[2:])
             index += 1
             continue
         if token.startswith(("--data=", "--data-raw=", "--data-binary=", "--data-urlencode=", "--json=", "--form=", "--form-string=")):
             has_write_body = True
+            body_payloads.append(token.split("=", 1)[1])
             index += 1
             continue
         if token in {"--url"}:
@@ -894,6 +920,10 @@ def curl_release_write_command(segment, start):
     if any(direct_github_release_api_url(url) for url in urls):
         return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
     command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
+        if not body_payloads:
+            return False
+        return any(graphql_payload_needs_gate(payload) for payload in body_payloads)
     for config_file in config_files:
         config_text = read_release_source_text(config_file)
         if config_text is None:
@@ -910,6 +940,7 @@ def wget_release_write_command(segment, start):
     has_write_body = False
     urls = []
     input_files = []
+    body_payloads = []
     index = start + 1
     while index < len(segment):
         token = segment[index]
@@ -925,12 +956,26 @@ def wget_release_write_command(segment, start):
             method = token.split("=", 1)[1].upper()
             index += 1
             continue
-        if token in {"--post-data", "--post-file", "--body-data", "--body-file"}:
+        if token in {"--post-data", "--body-data"}:
             has_write_body = True
+            if index + 1 < len(segment):
+                body_payloads.append(segment[index + 1])
             index += 2
             continue
-        if token.startswith("--post-data=") or token.startswith("--post-file=") or token.startswith("--body-data=") or token.startswith("--body-file="):
+        if token in {"--post-file", "--body-file"}:
             has_write_body = True
+            if index + 1 < len(segment):
+                body_payloads.append("@" + segment[index + 1])
+            index += 2
+            continue
+        if token.startswith("--post-data=") or token.startswith("--body-data="):
+            has_write_body = True
+            body_payloads.append(token.split("=", 1)[1])
+            index += 1
+            continue
+        if token.startswith("--post-file=") or token.startswith("--body-file="):
+            has_write_body = True
+            body_payloads.append("@" + token.split("=", 1)[1])
             index += 1
             continue
         if token in {"-i", "--input-file"}:
@@ -957,6 +1002,10 @@ def wget_release_write_command(segment, start):
     if any(direct_github_release_api_url(url) for url in urls):
         return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
     command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
+        if not body_payloads:
+            return False
+        return any(graphql_payload_needs_gate(payload) for payload in body_payloads)
     for input_file in input_files:
         file_text = read_release_source_text(input_file)
         if file_text is None:

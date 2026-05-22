@@ -37,12 +37,22 @@ detect_install_host() {
     return 0
   fi
 
-  if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] || [ -n "${CODEX_PROJECT_DIR:-}" ]; then
+  if [ -n "${CODEX_PLUGIN_ROOT:-}" ]; then
     printf '%s' "codex"
     return 0
   fi
 
-  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || [ -n "${CLAUDE_SESSION_ID:-}" ] || [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+    printf '%s' "claude"
+    return 0
+  fi
+
+  if [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] || [ -n "${CODEX_PROJECT_DIR:-}" ]; then
+    printf '%s' "codex"
+    return 0
+  fi
+
+  if [ -n "${CLAUDE_SESSION_ID:-}" ] || [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
     printf '%s' "claude"
     return 0
   fi
@@ -68,6 +78,46 @@ host = sys.argv[2]
 
 if host not in {"codex", "claude"}:
     raise SystemExit(0)
+
+def rewrite_registry_helper(text: str, selected_host: str) -> str:
+    marker = "\nsidekick_normalize_codex_path() {"
+    start = text.find("sidekick_plugin_root() {")
+    end = text.find(marker, start)
+    if start == -1 or end == -1:
+        return text
+
+    if selected_host == "codex":
+        body = """sidekick_plugin_root() {
+  if [[ -n "${CODEX_PLUGIN_ROOT:-}" ]]; then
+    sidekick_normalize_codex_path "${CODEX_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
+    sidekick_normalize_codex_path "${SIDEKICK_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
+}
+"""
+    else:
+        body = """sidekick_plugin_root() {
+  if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${CLAUDE_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${SIDEKICK_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
+}
+"""
+
+    return text[:start] + body + text[end:]
 
 replacements = {
     "codex": [
@@ -119,6 +169,8 @@ for rel in [
     original = text
     for old, new in replacements[host]:
         text = text.replace(old, new)
+    if rel == "hooks/lib/sidekick-registry.sh":
+        text = rewrite_registry_helper(text, host)
     if host == "codex":
         text = text.replace(
             "${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}}",
