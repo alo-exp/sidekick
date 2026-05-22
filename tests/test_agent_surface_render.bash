@@ -112,6 +112,10 @@ for agent in claude codex; do
   expect_contains "agents/${agent}/kay:delegate/SKILL.md" "agents/${agent}/codex-delegate/SKILL.md" "${agent} Kay alias names generated skill surface"
   expect_not_contains "agents/${agent}/forge:delegate/SKILL.md" 'skills/forge/SKILL.md' "${agent} Forge alias does not point at canonical skills tree"
   expect_not_contains "agents/${agent}/kay:delegate/SKILL.md" 'skills/codex-delegate/SKILL.md' "${agent} Kay alias does not point at canonical skills tree"
+  expect_contains "agents/${agent}/forge.md" "generated host skill at forge/SKILL.md" "${agent} flat Forge wrapper names generated skill surface"
+  expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Kay wrapper names generated skill surface"
+  expect_not_contains "agents/${agent}/forge.md" 'skills/forge/SKILL.md' "${agent} flat Forge wrapper does not point at canonical skills tree"
+  expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Kay wrapper does not point at canonical skills tree"
 done
 
 echo "=== T6: generated bundles are in sync with renderer ==="
