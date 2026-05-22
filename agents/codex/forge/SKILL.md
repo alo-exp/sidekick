@@ -8,9 +8,9 @@ description: >
 
 # /forge -- Forge Delegation Mode
 
-This skill adds explicit activation/deactivation mode switching on top of the existing
-`forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) orchestration protocol. It does NOT replace `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) -- it
-wraps it with a persistent session state mechanism via a marker file.
+This is the canonical Forge delegation workflow. The hidden flat file at
+`forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) is retained only as a legacy setup reference for older loaders;
+it is not the source of truth.
 
 The stop workflow lives canonically in `forge-stop/SKILL.md` in this generated codex skill root (`agents/codex/forge-stop/SKILL.md` in the repository).
 
@@ -18,7 +18,21 @@ The stop workflow lives canonically in `forge-stop/SKILL.md` in this generated c
 
 ## Runtime Readiness
 
-Forge readiness is checked when `/forge` is invoked for the current session. SessionStart does not update or repair Forge; if the health check fails, direct the user to `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) STEP 0A for setup or repair.
+Forge readiness is checked when `/forge` is invoked for the current session. SessionStart does not update or repair Forge; if the health check fails, use `## Runtime Setup / Repair` below.
+
+---
+
+## Runtime Setup / Repair
+
+Use this section only when `/forge` reports that the runtime is missing or not configured.
+
+1. **Install or repair the Forge binary.** Prefer rerunning the packaged Sidekick install path, which downloads the pinned Forge installer, verifies the manifest SHA-256, and then runs it. Do not pipe a remote installer directly into a shell.
+2. **Create MiniMax API access.** Use the current MiniMax token path documented by Sidekick. Keep the token out of shell history, prompts, logs, and terminal output.
+3. **Write credentials to `~/forge/.credentials.json`.** The file must be a JSON array of `{id, auth_details}` entries, and permissions must be owner-only (`chmod 600 ~/forge/.credentials.json`).
+4. **Write provider config to `~/forge/.forge.toml`.** Runtime provider/model selection belongs in the global Forge config, not the project `.forge.toml`. Current guidance uses provider `minimax` with model `MiniMax-M2.7`.
+5. **Recheck with `forge info`.** Continue activation only after the binary exists, credentials parse as the current array schema, and Forge reports the configured provider.
+
+Never print, echo, paste, or include credential values in prompts. Only verify that the expected credential shape exists.
 
 ---
 
@@ -33,7 +47,7 @@ All 4 criteria must pass before activation proceeds:
 3. **Credentials present:** Run `jq -e 'type == "array" and length > 0 and all(.[]; (.id | type == "string" and length > 0) and (.auth_details | type == "object" and (keys | length > 0)))' ~/forge/.credentials.json > /dev/null 2>&1` — exits 0 if credentials are present. Uses the current Forge schema: an array of `{id, auth_details}` entries with non-empty `id` values and non-empty `auth_details` objects. Returns false (not a jq error) on malformed files or any legacy shape. Never read, display, or include credential values in any output or context.
 4. **Config valid:** `~/forge/.forge.toml` contains non-empty `provider_id` and `model_id`
 
-If ANY check fails: print which check failed and direct the user to `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) STEP 0A for setup instructions. Stop activation.
+If ANY check fails: print which check failed and direct the user to `## Runtime Setup / Repair` for setup instructions. Stop activation.
 
 ### 2. Bootstrap Config (first invocation only)
 
@@ -96,11 +110,29 @@ SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"
 test -f "${HOME}/.codex/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
 ```
 
-- **If active:** follow `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) STEP 1 through STEP 9 for task execution.
+- **If active:** follow the delegation, failure-recovery, skill-injection, and mentoring procedures in this `SKILL.md`.
 - **DLGT-04 enforcement:** while the marker exists, the host AI MUST NOT directly use Write, Edit, or Bash tools for implementation work. Exception: Level 3 fallback (Phase 2).
 - **Task prompt format:** compose prompts per the spec (section 4):
   OBJECTIVE, CONTEXT, DESIRED STATE, SUCCESS CRITERIA, INJECTED SKILLS.
-- **Communication:** The host AI reports progress and outcomes to the user in plain language (per `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) STEP 6).
+- **Communication:** The host AI reports progress and outcomes to the user in plain language using the structured Forge output format described below.
+
+---
+
+## Delegation Output Format
+
+After every delegated task, require Forge to return:
+
+```text
+STATUS: success | partial | failed
+FILES_CHANGED:
+- path/to/file
+ASSUMPTIONS:
+- ...
+PATTERNS_DISCOVERED:
+- ...
+```
+
+The host AI verifies this block against the task success criteria before reporting completion to the user.
 
 ---
 
@@ -120,7 +152,7 @@ After each Forge output, the host AI runs three checks:
 2. **Wrong output check:** Forge output does not satisfy SUCCESS CRITERIA from the task prompt. If the SAME failure mode appears on retry -> failure confirmed, trigger next level.
 3. **Stall check:** Forge asks a clarifying question back without making progress (behavioral stall in interactive ZSH). Treat as Level 1 trigger -- reframe with more specifics.
 
-Reference: `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) STEP 5 for contextual failure recovery patterns.
+Use the fallback ladder below for contextual failure recovery.
 
 ---
 
@@ -282,10 +314,10 @@ After extraction and deduplication, write to all applicable tiers:
 On first `/forge` invocation when `./AGENTS.md` is empty or absent:
 
 1. Check if `./AGENTS.md` exists and has content (file size > 0). If it does, skip bootstrap entirely.
-2. Read `forge.md` in this generated codex skill root (`agents/codex/forge.md` in the repository) for key conventions:
+2. Read this `SKILL.md` for key conventions:
    - Output format expectations: STATUS, FILES_CHANGED, ASSUMPTIONS, PATTERNS_DISCOVERED
    - Delegation principles: Host AI = Brain (plan, communicate, review), Forge = Hands (write, edit, run)
-   - Structured response requirements from STEP 6
+   - Structured response requirements in `## Delegation Output Format`
 3. Write these as the initial content of `./AGENTS.md` under "## Project Conventions" and "## Forge Output Format".
 4. Include empty "## Task Patterns" and "## Forge Corrections" sections for future population by the mentoring loop.
 

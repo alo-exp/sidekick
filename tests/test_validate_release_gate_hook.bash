@@ -158,12 +158,41 @@ assert_denied_command() {
   rm -rf "${h}"
 }
 
+assert_passthrough_command() {
+  local label="$1" command="$2" h payload out rc
+  echo "${label}"
+  h="$(setup_home)"
+  payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+  out="$(run_hook "${h}" "${payload}")"; rc=$?
+  if [ "${rc}" -eq 0 ] && [ -z "${out}" ]; then
+    assert_pass "${label}: exit 0, no JSON decision"
+  else
+    assert_fail "${label}" "rc=${rc} out=${out}"
+  fi
+  rm -rf "${h}"
+}
+
 assert_denied_command_with_gh_aliases() {
   local label="$1" command="$2" alias_list="$3" h payload out rc decision
   echo "${label}"
   h="$(setup_home)"
   payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
   out="$(SIDEKICK_GH_ALIAS_LIST="${alias_list}" run_hook "${h}" "${payload}")"; rc=$?
+  decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
+    assert_pass "${label}: permissionDecision=deny"
+  else
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"
+  fi
+  rm -rf "${h}"
+}
+
+assert_denied_command_with_git_alias_config() {
+  local label="$1" command="$2" alias_config="$3" h payload out rc decision
+  echo "${label}"
+  h="$(setup_home)"
+  payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+  out="$(SIDEKICK_GIT_ALIAS_CONFIG="${alias_config}" run_hook "${h}" "${payload}")"; rc=$?
   decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
   if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
     assert_pass "${label}: permissionDecision=deny"
@@ -1758,6 +1787,24 @@ assert_denied_command "Scenario 49cr: git push dynamic release tag ref is denied
   'git push origin refs/tags/$TAG'
 assert_denied_command "Scenario 49cs: git push command-substitution refspec is denied" \
   'git push origin "$(cat VERSION)"'
+assert_denied_command "Scenario 49cs2: git push explicit non-v tag ref is denied" \
+  "git push origin refs/tags/release-candidate"
+assert_denied_command "Scenario 49cs3: git push explicit numeric tag ref is denied" \
+  "git push origin refs/tags/0.6.0"
+assert_denied_command "Scenario 49cs4: git push explicit tag deletion refspec is denied" \
+  "git push origin :refs/tags/release-candidate"
+assert_denied_command "Scenario 49cs5: git push tag operand with dynamic tag is denied" \
+  'git push origin tag "$TAG"'
+assert_denied_command "Scenario 49cs6: git command-scoped release tag alias is denied" \
+  'git -c alias.sidekickreleasepush="push origin v1.2.1" sidekickreleasepush'
+assert_denied_command "Scenario 49cs7: git command-scoped shell release tag alias is denied" \
+  'git -c alias.sidekickshellreleasepush="!git push origin v1.2.1" sidekickshellreleasepush'
+assert_denied_command_with_git_alias_config "Scenario 49cs8: persistent git release tag alias is denied" \
+  "git sidekickreleasepush" \
+  "[alias]
+  sidekickreleasepush = push origin v1.2.1"
+assert_passthrough_command "Scenario 49cs9: dynamic branch refspec passes through" \
+  'git push origin "$BRANCH"'
 
 echo "Scenario 49ct: git push release tag passes after gate markers"
 H="$(setup_home)"

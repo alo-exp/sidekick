@@ -16,7 +16,7 @@ Sidekick now keeps canonical host-agnostic workflows under `skills/` while gener
 - **`.claude-plugin/plugin.json`**, **`.codex-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**: version bumped to `0.6.0`, with plugin manifests pointing at the generated host-specific skill bundles.
 - **`tests/run_all.bash`**, **`tests/run_release.bash`**, **`.github/workflows/ci.yml`**, **`README.md`**, **`context.md`**, **`site/CICD.md`**, **`site/TESTING.md`**, **`site/pre-release-quality-gate.md`**: testing docs and automation now distinguish strict local validation, skip-safe local sweeps, and live release authorization.
 - **`hooks/validate-release-gate.sh`**, **`site/pre-release-quality-gate.md`**: release-gate stage markers now include the current git SHA, preventing stale stage evidence from satisfying a release after final code changes.
-- **`hooks/validate-release-gate.sh`**: release authorization now blocks release tag pushes, including `git push origin vX.Y.Z`, `refs/tags/*`, `--tags`, `--follow-tags`, `--mirror`, and dynamic refspecs, until all required gate evidence is present.
+- **`hooks/validate-release-gate.sh`**: release authorization now blocks release tag pushes, including `git push origin vX.Y.Z`, `refs/tags/*`, `--tags`, `--follow-tags`, `--mirror`, dynamic tag refspecs, and git aliases that expand to tag pushes, until all required gate evidence is present.
 - **Kay visual prompt routing**: visual and screenshot-style prompts now route to `mimo-v2.5`, the native multimodal MiMo path, while `mimo-v2.5-pro` remains the non-trivial text/code/review workhorse.
 
 **Fixed:**
