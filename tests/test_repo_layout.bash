@@ -40,24 +40,6 @@ expect_valid_json() {
   fi
 }
 
-remove_known_external_hook_cache() {
-  local artifact="${ROOT}/~"
-
-  [ -e "${artifact}" ] || return 0
-  [ -d "${artifact}/.codex/.silver-bullet" ] || return 0
-
-  if find "${artifact}" -mindepth 1 \
-    ! -path "${artifact}/.codex" \
-    ! -path "${artifact}/.codex/.silver-bullet" \
-    ! -path "${artifact}/.codex/.silver-bullet/config-cache-*" \
-    ! -path "${artifact}/.codex/.silver-bullet/state.loaded" \
-    -print -quit | grep -q .; then
-    return 0
-  fi
-
-  rm -rf "${artifact}"
-}
-
 echo "=== T1: Top-level project shape ==="
 for dir in .claude .claude-plugin .codex-plugin .forge .github .planning agents agents/claude agents/codex hooks output-styles scripts sidekicks site skills tests; do
   expect_dir "${dir}"
@@ -74,7 +56,6 @@ for file in .forge.toml .gitignore .silver-bullet.json AGENTS.md CHANGELOG.md CL
 done
 
 echo "=== T2: No transient root artifacts ==="
-remove_known_external_hook_cache
 for dir in .tmp .cache target build dist coverage .pytest_cache node_modules '~'; do
   if [ -e "${ROOT}/${dir}" ]; then
     assert_fail "transient artifact absent: ${dir}" "unexpected root artifact present"
