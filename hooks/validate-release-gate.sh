@@ -138,7 +138,7 @@ GIT_PUSH_VALUE_OPTIONS = {
     "--recurse-submodules",
 }
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
-RELEASE_TAG_RE = re.compile(r"^v[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
+RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 DYNAMIC_RELEASE_TAG_HINT_RE = re.compile(r"(?:TAG|VERSION|RELEASE)", re.IGNORECASE)
 INTERPRETER_PAYLOAD_OPTIONS = {
     "python": {"-c"},

@@ -22,7 +22,7 @@ Sidekick now keeps canonical host-agnostic workflows under `skills/` while gener
 **Fixed:**
 
 - **`hooks/validate-release-gate.sh`**, **`tests/run_release.bash`**: release authorization now fails closed when no current git SHA can be resolved, and live-pyramid marker recording aborts on state-file write failures.
-- **`install.sh`**, **`scripts/render-agent-bundle.py`**, **`tests/run_unit.bash`**, **`tests/test_repo_layout.bash`**: host install rewrites now prefer the active host plugin root, Kay-disabled installs no longer read Kay registry metadata, generated skills no longer point users back at canonical `skills/` paths, renderer temp deletion is guarded, and strict unit runs no longer execute repo-local post-release cleanup or silently remove transient repo artifacts.
+- **`install.sh`**, **`scripts/render-agent-bundle.py`**, **`tests/run_unit.bash`**, **`tests/test_repo_layout.bash`**: host install rewrites now prefer the active host plugin root, Kay-disabled installs no longer read Kay registry metadata, generated skills no longer point users back at canonical `skills/` paths, renderer temp deletion is guarded, and strict unit runs clean only known transient root artifacts immediately before repository layout validation.
 
 ## v0.5.8 — 2026-05-21
 
