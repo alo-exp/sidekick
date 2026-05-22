@@ -279,6 +279,14 @@ sidekick_kay_model_for_prompt() {
   prompt="${1:-}"
   normalized="$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')"
 
+  # Vision and visual-reasoning prompts stay on MiMo.
+  case "$normalized" in
+    *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*picture*|*diagram*|*chart*|*graph*|*ocr*|*mockup*|*wireframe*)
+      printf '%s' 'mimo-v2.5-pro'
+      return 0
+      ;;
+  esac
+
   case "$normalized" in
     *run\ tests*|*rerun\ tests*|*test\ run*|*test\ running*|*test\ results*|*test\ report*|*issue\ reporting*|*report\ issues*|*issue\ report*|*issue\ triage*|*failure\ report*|*bug\ report*|*find\ issues*|*verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)
       printf '%s' 'deepseek-v4-flash'
