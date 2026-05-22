@@ -123,18 +123,19 @@ The host configures Forge automatically and delegates coding work from that poin
 
 ## Testing
 
-`tests/run_release.bash` chains the unit suites plus the live Forge/Kay install, smoke, E2E, and Kay marketplace-install gates.
+`tests/run_release.bash` chains the strict non-live suites plus the live Forge/Kay install, smoke, E2E, and Kay marketplace-install gates.
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 31 suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
+| **Strict unit + integration** | `tests/run_unit.bash` | ✅ | 30 non-live suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, runner contract, and Forge/Kay coverage gaps. |
+| **Skip-safe local sweep** | `tests/run_all.bash` | ✅ | Delegates to `run_unit.bash`, then runs the skip-safe live-gated Forge E2E and Codex plugin/read probes. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full host→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
 | **Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | Installs Sidekick through the Codex marketplace path and verifies the installed Kay and Forge surfaces. |
 | **Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `kay --version` + trivial `kay exec` round-trip against the real binary, with legacy names kept as compatibility aliases. |
 | **Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full host→Kay delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
 
-The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Before tagging a new version:
+The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. CI runs the strict non-live runner. Before tagging a new version:
 
 ```bash
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
@@ -145,7 +146,7 @@ Before any release, complete the 4-stage pre-release quality gate until it passe
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.
 
-Without those env vars the gate still runs stage 1 and cleanly skips the live stages (exit 0), so it's safe to wire into CI.
+Without those env vars the release gate still runs strict stage 1 and cleanly skips the live stages, but CI uses `tests/run_unit.bash` directly.
 
 ---
 

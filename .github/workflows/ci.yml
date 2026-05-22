@@ -12,5 +12,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run test suite
-        run: bash tests/run_all.bash
+      - name: Run strict non-live test suite
+        run: bash tests/run_unit.bash

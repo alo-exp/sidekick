@@ -76,7 +76,13 @@ sidekick/
 
 ## Verification
 
-Primary local verification:
+Strict non-live verification:
+
+```bash
+bash tests/run_unit.bash
+```
+
+Skip-safe local sweep:
 
 ```bash
 bash tests/run_all.bash

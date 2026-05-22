@@ -10,9 +10,9 @@
 
 **Trigger:** every `push` and every `pull_request`.
 **Runner:** `ubuntu-latest`.
-**Step:** `bash tests/run_all.bash` (tier 1 of the test pyramid — see `site/TESTING.md`).
+**Step:** `bash tests/run_unit.bash` (tier 1 of the release pyramid — see `site/TESTING.md`).
 
-Always-green for anything merged to `main`. Live-Forge tiers (smoke + E2E) are NOT run in CI — they're gated on `SIDEKICK_LIVE_FORGE=1` and exit 0 cleanly when unset, so the CI runner wouldn't exercise them even if called.
+Always-green for anything merged to `main`. Live-Forge and live-Kay tiers are NOT run in CI; they are gated on `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1`.
 
 ### 2. `pages.yml` — site deployment
 
@@ -37,7 +37,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    ```bash
    SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    ```
-   This chains tier 1 (`run_all.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Each live Codex run records a current-session `quality-gate-live-pyramid` marker; the release hook requires two of those markers before it allows `gh release create`. Forge live stages can be added when available, but they are not required when Forge testing is intentionally skipped.
+   This chains tier 1 (`run_unit.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Each live Codex run records a current-session `quality-gate-live-pyramid` marker; the release hook requires two of those markers before it allows `gh release create`. Forge live stages can be added when available, but they are not required when Forge testing is intentionally skipped.
 
 3. **Update artifacts** — `CHANGELOG.md` (root) appended with the version entry, `README.md` version badge bumped, `.planning/STATE.md` flipped to `shipped`, `_integrity` SHA-256 hashes in `plugin.json` refreshed for any changed hook / command / skill / output-style file.
 
@@ -77,7 +77,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
 
 1. Read the failing assertion in the GitHub Actions log — each suite prints suite name + assertion name + expected vs actual.
 2. Reproduce locally: `bash tests/<failing-suite>.bash`.
-3. If it's a classifier gap (a new Bash command shape that the enforcer doesn't handle): add a case in `is_read_only()` / `decide_bash()`, add an assertion in `test_v12_coverage.bash`, re-run `run_all.bash`.
+3. If it's a classifier gap (a new Bash command shape that the enforcer doesn't handle): add a case in `is_read_only()` / `decide_bash()`, add an assertion in `test_v12_coverage.bash`, re-run `run_unit.bash`.
 4. If it's a manifest integrity drift: run `plugin.json`'s `_integrity` update (SHA-256 of the changed file) and re-commit.
 
 ---
