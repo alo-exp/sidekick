@@ -8,6 +8,7 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+MANIFEST_VERSION="$(python3 -c "import json; print(json.load(open('${ROOT}/.claude-plugin/plugin.json'))['version'])")"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -110,6 +111,13 @@ expect_contains "context.md" 'Kay activates through `kay-delegate` / `sidekick:k
 expect_contains "context.md" 'Active Forge delegation markers live under the active host session root (`.claude/sessions/...` for Claude Code, `.codex/sessions/...` for Codex).' "context documents Claude and Codex Forge marker roots"
 expect_contains "context.md" 'Kay markers live under `.kay/sessions/...`.' "context documents Kay marker root"
 expect_not_contains "context.md" 'Active delegation markers live under `.claude/sessions/...` for Forge and `.kay/sessions/...` for Kay.' "context removes stale single-host Forge marker copy"
+
+echo "=== T8: Public docs version references match manifest ==="
+expect_contains "site/PRD-Overview.md" "**Current milestone:** v${MANIFEST_VERSION}" "PRD overview current milestone matches manifest"
+expect_contains "site/PRD-Overview.md" "Current release metadata remains \`v${MANIFEST_VERSION}\`" "PRD overview manifest row matches manifest"
+expect_contains "site/PRD-Overview.md" "v${MANIFEST_VERSION} test suite" "PRD overview test-suite row matches manifest"
+expect_contains "site/PRD-Overview.md" "validated as of v${MANIFEST_VERSION}" "PRD overview source-of-truth row matches manifest"
+expect_not_contains "site/PRD-Overview.md" "v0.5.6" "PRD overview removes stale v0.5.6 references"
 
 echo ""
 echo "======================================="

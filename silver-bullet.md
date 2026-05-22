@@ -720,16 +720,18 @@ Release order:
    `site/pre-release-quality-gate.md`.
 2. Invoke `/superpowers:verification-before-completion` before writing each
    stage marker.
-3. Write stage markers with the current host session id to the host-specific
-   Sidekick state file:
+3. Write stage markers with the current host session id and current git SHA to
+   the host-specific Sidekick state file:
    - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
    - Codex installs: `~/.codex/.sidekick/quality-gate-state`
+   - Stage format: `quality-gate-stage-N session=<current-host-session-id> sha=<git-sha>`
 4. Run the Codex live release pyramid twice:
    `SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`.
    Add `SIDEKICK_LIVE_FORGE=1` when Forge live coverage is available. Codex-only
-   live runs are release-authorizing in this repo and record the required
-   `quality-gate-live-pyramid session=<current-host-session-id> ...` markers.
-5. Only then invoke the release command.
+   live runs are release-authorizing in this repo and record required
+   live-pyramid markers with `session=<current-host-session-id>`,
+   `sha=<git-sha>`, and `at=<utc-timestamp>` tokens.
+5. Only then publish the release tag or invoke the release command.
 
 Each stage has its own completion criteria:
 
@@ -742,22 +744,27 @@ Each stage has its own completion criteria:
 - Stage 4: SENTINEL security audit reruns until there are no blocking security
   findings.
 
-The release hook (`hooks/validate-release-gate.sh`) blocks `gh release create`
-until the current session has all four `quality-gate-stage-N
-session=<current-host-session-id>` markers and two distinct current-session
-`quality-gate-live-pyramid` markers written by successful live
-`tests/run_release.bash` runs. Marker-only shortcuts are invalid: the verification
-skill invocation and the underlying checks are both required.
+The release hook (`hooks/validate-release-gate.sh`) blocks release tag
+publication and `gh release create` until the current session and current git SHA
+have all four stage markers with `quality-gate-stage-N`,
+`session=<current-host-session-id>`, and `sha=<git-sha>` tokens, plus two
+distinct live-pyramid markers with `quality-gate-live-pyramid`,
+`session=<current-host-session-id>`, `sha=<git-sha>`, and
+`at=<utc-timestamp>` tokens written by successful live `tests/run_release.bash`
+runs. Marker-only shortcuts are invalid: the verification skill invocation and
+the underlying checks are both required.
 
 If any stage surfaces a blocker that cannot be resolved (for example, upstream
 dependency failure or ambiguous design decision), log it under "Needs human
 review" and surface it to the user before proceeding to the next stage.
 
-> **Anti-Skip:** You are violating this rule if you attempt `/silver-release` or
-> `/create-release` without all four current-session stage markers and two
-> current-session live-pyramid markers in the host-specific Sidekick quality gate
-> state file. The stage marker alone is insufficient unless the documented checks
-> and `/superpowers:verification-before-completion` invocation happened first.
+> **Anti-Skip:** You are violating this rule if you publish the release tag,
+> attempt `/silver-release`, or attempt `/create-release` without all four
+> current-session, current-commit stage markers and two current-session,
+> current-commit live-pyramid markers in the host-specific Sidekick quality gate
+> state file. The stage marker alone is insufficient unless the documented
+> checks and `/superpowers:verification-before-completion` invocation happened
+> first.
 
 **Post-release cleanup:** Immediately after `/silver-release` or `/create-release`
 completes, run `bash tests/post_release_cleanup.bash` to remove transient repo-local
