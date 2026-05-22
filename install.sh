@@ -31,6 +31,34 @@ CLEAN_REINSTALL="${SIDEKICK_CLEAN_REINSTALL:-0}"
 # shellcheck source=hooks/lib/sidekick-registry.sh
 source "${PLUGIN_ROOT}/hooks/lib/sidekick-registry.sh"
 
+sidekick_source_registry_get() {
+  local sidekick="${1:-}"
+  local field_path="${2:-}"
+
+  [ -n "${sidekick}" ] || return 1
+  [ -n "${field_path}" ] || return 1
+
+  python3 - "${SOURCE_PLUGIN_ROOT}/sidekicks/registry.json" "${sidekick}" "${field_path}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+registry_path = Path(sys.argv[1])
+sidekick = sys.argv[2]
+field_path = sys.argv[3]
+
+data = json.loads(registry_path.read_text(encoding="utf-8"))
+value = data[sidekick]
+for part in field_path.split("."):
+    value = value[part]
+
+if isinstance(value, str):
+    print(value)
+else:
+    print(json.dumps(value, separators=(",", ":")))
+PY
+}
+
 detect_install_host() {
   if [ -n "${SIDEKICK_INSTALL_HOST:-}" ]; then
     printf '%s' "${SIDEKICK_INSTALL_HOST}"
@@ -626,6 +654,55 @@ for registry_path in registry_paths:
 PY
 }
 
+validate_clean_reinstall_cache_target() {
+  local host="${1:-}"
+  local target_root="${2:-}"
+  local plugin_root_dir="${3:-}"
+  local target_leaf plugin_leaf expected_cache_segment
+
+  case "${host}" in
+    codex)
+      expected_cache_segment="/.codex/plugins/cache/"
+      ;;
+    claude)
+      expected_cache_segment="/.claude/plugins/cache/"
+      ;;
+    *)
+      echo "[forge-plugin] ERROR: Refusing clean reinstall for unknown host '${host}'." >&2
+      return 1
+      ;;
+  esac
+
+  case "${target_root}" in
+    /*) ;;
+    *)
+      echo "[forge-plugin] ERROR: Refusing clean reinstall for non-absolute plugin root: ${target_root}" >&2
+      return 1
+      ;;
+  esac
+
+  case "${plugin_root_dir}" in
+    *"${expected_cache_segment}"*/sidekick) ;;
+    *)
+      echo "[forge-plugin] ERROR: Refusing clean reinstall outside the ${host} sidekick cache: ${plugin_root_dir}" >&2
+      return 1
+      ;;
+  esac
+
+  target_leaf="$(basename "${target_root}")"
+  plugin_leaf="$(basename "${plugin_root_dir}")"
+
+  if [ "${plugin_leaf}" != "sidekick" ]; then
+    echo "[forge-plugin] ERROR: Refusing clean reinstall because cache parent is not the sidekick package root: ${plugin_root_dir}" >&2
+    return 1
+  fi
+
+  if [[ ! "${target_leaf}" =~ ^v?[0-9]+[.][0-9]+[.][0-9]+([-+][A-Za-z0-9._-]+)?$ ]]; then
+    echo "[forge-plugin] ERROR: Refusing clean reinstall for non-versioned plugin root: ${target_root}" >&2
+    return 1
+  fi
+}
+
 bootstrap_sidekick_cache_tree() {
   local host="${1:-}"
   local source_root="${2:-}"
@@ -641,6 +718,7 @@ bootstrap_sidekick_cache_tree() {
   plugin_root_dir="$(dirname "${target_root}")"
 
   if [ "${CLEAN_REINSTALL}" = "1" ]; then
+    validate_clean_reinstall_cache_target "${host}" "${target_root}" "${plugin_root_dir}"
     case "${host}" in
       codex)
         purge_legacy_codex_sidekick_state
@@ -699,9 +777,9 @@ trap cleanup_install_tmps EXIT
 # Leave blank ("") only if you intentionally want display-only verification.
 # (SENTINEL FINDING-R7-7/R8-3/R10-1: supply chain hardening)
 EXPECTED_FORGE_SHA="e77cc415c254dede4553b87ba4a0361a44d41b59c576e34b44d81ea48b34ce62"
-CODEX_INSTALL_URL="$(sidekick_registry_get kay '.[$sidekick].install.url')"
-CODEX_INSTALL_SHA="$(sidekick_registry_get kay '.[$sidekick].install.sha256')"
-CODEX_INSTALL_VERSION="$(sidekick_registry_get kay '.[$sidekick].install.version')"
+CODEX_INSTALL_URL="$(sidekick_source_registry_get kay 'install.url')"
+CODEX_INSTALL_SHA="$(sidekick_source_registry_get kay 'install.sha256')"
+CODEX_INSTALL_VERSION="$(sidekick_source_registry_get kay 'install.version')"
 
 if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
   if bootstrap_target_root="$(resolve_bootstrap_target_root "${bootstrap_host}")"; then

@@ -39,7 +39,7 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_v12_coverage.bash` | Coverage-gap suite: `sed -i` / `awk -i inplace` denial, `>>` append, `> /dev/null` passthroughs, env-var prefix, 80-char task-hint truncation, unknown tool_name passthrough, stdout-only summary fallback |
 | `test_v13_coverage.bash` | Forge v1.3 coverage gaps: helper extraction, path allowlist, SRI, and sentinel-related regressions |
 | `test_agent_surface_render.bash` | Generated Claude/Codex host skill surfaces render from the canonical skills tree and reject unsafe render destinations |
-| `test_validate_release_gate_hook.bash` | Release-gate hook: blocks `gh release create` until all four quality-gate markers are present |
+| `test_validate_release_gate_hook.bash` | Release-gate hook: blocks release tag publication and `gh release create` until all four quality-gate markers are present |
 | `test_legacy_hook_scrub.bash` | One-time scrub/rollback of stale Sidekick user-hook entries in `~/.codex/hooks.json`; legacy `~/.Codex/hooks.json` mirrors are cleaned only as migration artifacts |
 | `test_post_release_cleanup.bash` | Post-release cleanup script: removes transient repo-local artifacts and is idempotent |
 | `test_repo_layout.bash` | Repository layout guard: expected top-level files/directories and docs structure stay organized |

@@ -262,6 +262,33 @@ else
   assert_fail "stable reinstall state" "one or more checks failed after the second pass"
 fi
 
+echo "=== T3: clean reinstall refuses malformed cache targets ==="
+DANGER_SOURCE="${WORKDIR}/danger-source"
+DANGER_HOME="${WORKDIR}/danger-home"
+copy_snapshot "${DANGER_SOURCE}"
+mkdir -p "${DANGER_HOME}/.codex"
+printf 'keep\n' > "${DANGER_HOME}/keep.txt"
+printf 'keep\n' > "${DANGER_HOME}/.codex/keep.txt"
+if env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUDE_THREAD_ID \
+  HOME="${DANGER_HOME}" \
+  SIDEKICK_PLUGIN_ROOT="${DANGER_SOURCE}" \
+  CODEX_PLUGIN_ROOT="${DANGER_HOME}/.codex" \
+  SIDEKICK_CLEAN_REINSTALL=1 \
+  SIDEKICK_INSTALL_FORGE=0 \
+  SIDEKICK_INSTALL_CODE=0 \
+  bash "${DANGER_SOURCE}/install.sh" >/tmp/sidekick-clean-reinstall-danger.out 2>/tmp/sidekick-clean-reinstall-danger.err
+then
+  assert_fail "dangerous clean reinstall target" "installer accepted a non-versioned cache root"
+else
+  if [ -f "${DANGER_HOME}/keep.txt" ] \
+    && [ -f "${DANGER_HOME}/.codex/keep.txt" ] \
+    && grep -q 'Refusing clean reinstall' /tmp/sidekick-clean-reinstall-danger.err; then
+    assert_pass "clean reinstall fails closed before deleting malformed host roots"
+  else
+    assert_fail "dangerous clean reinstall target" "expected keep files or refusal message were missing"
+  fi
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"

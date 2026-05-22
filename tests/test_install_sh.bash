@@ -9,6 +9,7 @@ PASS=0; FAIL=0; SKIP=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
 INSTALL_SH="${PLUGIN_DIR}/install.sh"
+PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${PLUGIN_DIR}/.claude-plugin/plugin.json'))['version'])")"
 
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -137,7 +138,7 @@ grep -q 'Added by sidekick/forge plugin' "${INSTALL_SH}" && assert_pass "PATH ma
 
 echo "=== T12: Kay bootstrap ==="
 if grep -q 'install_codex_runtime' "${INSTALL_SH}" \
-  && grep -q 'sidekick_registry_get kay' "${INSTALL_SH}" \
+  && grep -q 'sidekick_source_registry_get kay' "${INSTALL_SH}" \
   && grep -q 'CODEX_INSTALL_TMP' "${INSTALL_SH}" \
   && grep -q 'KAY_BIN' "${INSTALL_SH}" \
   && grep -q 'CODEX_CODE_ALIAS' "${INSTALL_SH}" \
@@ -296,6 +297,7 @@ if grep -q 'SIDEKICK_CLEAN_REINSTALL' "${INSTALL_SH}" \
   && grep -q 'purge_legacy_codex_sidekick_state' "${INSTALL_SH}" \
   && grep -q 'normalize_codex_path' "${INSTALL_SH}" \
   && grep -q 'resolve_bootstrap_target_root' "${INSTALL_SH}" \
+  && grep -q 'validate_clean_reinstall_cache_target' "${INSTALL_SH}" \
   && grep -q 'retire_legacy_codex_uppercase_state' "${INSTALL_SH}" \
   && grep -q 'bootstrap_sidekick_cache_tree' "${INSTALL_SH}" \
   && grep -q 'rm -rf "${plugin_root_dir}"' "${INSTALL_SH}" \
@@ -481,6 +483,101 @@ else
   assert_fail "custom Kay install dir" "$(cat /tmp/sidekick-install-custom-bin.out 2>/dev/null || true)"
 fi
 rm -rf "${_custom_root}" "${_custom_home}" "${_custom_toolbox}" /tmp/sidekick-install-custom-bin.out
+
+echo "=== T25: Kay installer metadata comes from source snapshot ==="
+_fresh_root="$(mktemp -d)"
+_stale_root="$(mktemp -d)"
+_fresh_home="$(mktemp -d)"
+_fresh_toolbox="$(mktemp -d)"
+_fresh_bin="${_fresh_home}/bin"
+_curl_log="${_fresh_home}/curl-url.log"
+prepare_install_sandbox "${_fresh_root}"
+prepare_install_sandbox "${_stale_root}"
+make_install_toolbox "${_fresh_toolbox}" "1"
+cat > "${_fresh_toolbox}/curl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+out=""
+url=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o)
+      out="$2"
+      shift 2
+      ;;
+    http://*|https://*)
+      url="$1"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+printf '%s\n' "${url}" > "${SIDEKICK_TEST_CURL_LOG}"
+cat > "${out}" <<'INSTALLER'
+#!/usr/bin/env bash
+set -euo pipefail
+bin_dir="${CODEX_INSTALL_DIR:-${HOME}/.local/bin}"
+mkdir -p "${bin_dir}"
+cat > "${bin_dir}/kay" <<'KAY'
+#!/usr/bin/env bash
+if [ "${1:-}" = "exec" ]; then
+  exit 0
+fi
+if [ "${1:-}" = "--version" ]; then
+  printf 'kay 0.9.4\n'
+  exit 0
+fi
+exit 0
+KAY
+chmod +x "${bin_dir}/kay"
+INSTALLER
+chmod +x "${out}"
+EOF
+chmod +x "${_fresh_toolbox}/curl"
+_fake_installer="$(mktemp)"
+SIDEKICK_TEST_CURL_LOG="${_curl_log}" "${_fresh_toolbox}/curl" -o "${_fake_installer}" "https://example.invalid/fresh-kay-install.sh"
+_fake_sha="$(shasum -a 256 "${_fake_installer}" | awk '{print $1}')"
+rm -f "${_fake_installer}" "${_curl_log}"
+python3 - "${_fresh_root}/sidekicks/registry.json" "${_stale_root}/sidekicks/registry.json" "${_fake_sha}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+fresh_path = Path(sys.argv[1])
+stale_path = Path(sys.argv[2])
+sha = sys.argv[3]
+
+for path, url in [
+    (fresh_path, "https://example.invalid/fresh-kay-install.sh"),
+    (stale_path, "https://example.invalid/stale-kay-install.sh"),
+]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["kay"]["install"]["url"] = url
+    data["kay"]["install"]["sha256"] = sha
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+PY
+mkdir -p "${_fresh_bin}"
+if HOME="${_fresh_home}" \
+  SIDEKICK_PLUGIN_ROOT="${_stale_root}" \
+  CODEX_PLUGIN_ROOT="${_fresh_home}/.codex/plugins/cache/alo-labs-codex/sidekick/${PLUGIN_VERSION}" \
+  BIN_DIR="${_fresh_bin}" \
+  PATH="${_fresh_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  SIDEKICK_TEST_CURL_LOG="${_curl_log}" \
+  SIDEKICK_INSTALL_FORGE=0 \
+  SIDEKICK_INSTALL_KAY=1 \
+  bash "${_fresh_root}/install.sh" >/tmp/sidekick-install-source-registry.out 2>&1; then
+  if [ -x "${_fresh_bin}/kay" ] \
+    && [ "$(cat "${_curl_log}" 2>/dev/null || true)" = "https://example.invalid/fresh-kay-install.sh" ]; then
+    assert_pass "Kay installer URL is pinned to the source snapshot despite stale SIDEKICK_PLUGIN_ROOT"
+  else
+    assert_fail "source snapshot Kay metadata" "unexpected URL: $(cat "${_curl_log}" 2>/dev/null || true)"
+  fi
+else
+  assert_fail "source snapshot Kay metadata" "$(cat /tmp/sidekick-install-source-registry.out 2>/dev/null || true)"
+fi
+rm -rf "${_fresh_root}" "${_stale_root}" "${_fresh_home}" "${_fresh_toolbox}" /tmp/sidekick-install-source-registry.out
 
 echo ""
 echo "======================================="

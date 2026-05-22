@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Unit tests for hooks/validate-release-gate.sh
 #
-# The hook blocks `gh release create` commands via Claude Code's PreToolUse
-# permissionDecision=deny mechanism unless all current-session quality-gate stage
-# current-commit markers and two current-session live-pyramid run markers are
-# present in the active host quality-gate state file.
+# The hook blocks GitHub release and release-tag publication commands via
+# Claude Code's PreToolUse permissionDecision=deny mechanism unless all
+# current-session quality-gate stage current-commit markers and two
+# current-session live-pyramid run markers are present in the active host
+# quality-gate state file.
 #
 # We override HOME to a temp directory for each scenario so we can
 # write marker files deterministically without touching the real state.
@@ -1725,6 +1726,30 @@ for _ in 1 2 3 4 5 6; do
 done
 assert_denied_command "Scenario 49ck: deeply nested shell wrappers are denied" \
   "${NESTED_RELEASE_COMMAND}"
+assert_denied_command "Scenario 49cl: git push release tag shorthand is denied" \
+  "git push origin v1.2.1"
+assert_denied_command "Scenario 49cm: git push release tag ref is denied" \
+  "git push origin refs/tags/v1.2.1"
+assert_denied_command "Scenario 49cn: git push release tag destination is denied" \
+  "git push origin HEAD:refs/tags/v1.2.1"
+assert_denied_command "Scenario 49co: git push all tags is denied" \
+  "git push --tags origin"
+assert_denied_command "Scenario 49cp: git push follow-tags is denied" \
+  "git push --follow-tags origin main"
+
+echo "Scenario 49cq: git push release tag passes after gate markers"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git push origin v1.2.1"}}'
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "git push release tag passes after gate markers"
+else
+  assert_fail "git push release tag passes after gate markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
 # Scenario 50: Codex host state path satisfies release gate

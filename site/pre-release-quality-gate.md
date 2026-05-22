@@ -400,7 +400,8 @@ count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1 ~ /^qual
 live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $0}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 [ "$live_count" -ge 2 ] || { echo "Live pyramid incomplete: $live_count/2 runs present"; exit 1; }
 
-# Create the GitHub release
+# Publish the release tag and create the GitHub release
+git push origin v<version>
 gh release create v<version> \
   --repo alo-exp/sidekick \
   --title "Sidekick v<version>" \
