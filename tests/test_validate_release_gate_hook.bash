@@ -1577,6 +1577,8 @@ assert_denied_command "Scenario 49ao: gh api implicit POST release endpoint is d
   "gh api repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f name=v1.2.1"
 assert_denied_command "Scenario 49ap: gh api POST tag ref endpoint is denied" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=abc123"
+assert_passthrough_command "Scenario 49ap1: gh api POST branch ref endpoint passes through" \
+  "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/heads/release-hardening -f sha=abc123"
 assert_denied_command "Scenario 49ap2: curl POST release endpoint is denied" \
   "curl -sS -X POST https://api.github.com/repos/alo-exp/sidekick/releases -d '{\"tag_name\":\"v1.2.1\"}'"
 assert_denied_command "Scenario 49ap2b: curl attached short data flag release endpoint is denied" \
@@ -1585,6 +1587,8 @@ assert_denied_command "Scenario 49ap2c: curl attached short form flag release en
   "curl -sS -Ftag_name=v1.2.1 https://api.github.com/repos/alo-exp/sidekick/releases"
 assert_denied_command "Scenario 49ap3: curl data-implied POST tag ref endpoint is denied" \
   "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs/tags/v1.2.1\",\"sha\":\"abc123\"}'"
+assert_passthrough_command "Scenario 49ap3b: curl data-implied POST branch ref endpoint passes through" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs/heads/release-hardening\",\"sha\":\"abc123\"}'"
 assert_denied_command "Scenario 49ap4: wget POST release endpoint is denied" \
   "wget --method=POST --body-data '{\"tag_name\":\"v1.2.1\"}' https://api.github.com/repos/alo-exp/sidekick/releases"
 assert_denied_command "Scenario 49ap5: python direct GitHub release API write is denied" \
@@ -1605,6 +1609,11 @@ assert_denied_command "Scenario 49ap6g: curl GraphQL createRef JSON body is deni
   "curl -sS --json '{\"query\":\"mutation { createRef(input:{ref:\\\"refs/tags/v1\\\", oid:\\\"abc\\\"}) { ref { id } } }\"}' https://api.github.com/graphql"
 assert_denied_command "Scenario 49ap6h: curl GraphQL file-backed query field is denied" \
   "curl -sS -F query=@release-mutation.graphql https://api.github.com/graphql"
+_graphql_query="$(mktemp)"
+printf '%s\n' 'mutation { createRelease(input:{repositoryId:"R", tagName:"v1"}) { release { id } } }' > "${_graphql_query}"
+assert_denied_command "Scenario 49ap6h2: curl GraphQL data-urlencode query file is denied" \
+  "curl -sS --data-urlencode query@${_graphql_query} https://api.github.com/graphql"
+rm -f "${_graphql_query}"
 assert_denied_command "Scenario 49ap6i: wget GraphQL createRelease mutation is denied" \
   "wget --method=POST --body-data '{\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}' https://api.github.com/graphql"
 _curl_config="$(mktemp)"
@@ -1629,7 +1638,9 @@ assert_denied_command "Scenario 49ap8c: wget attached stdin input source is deni
   "wget -i-"
 rm -f "${_curl_config}" "${_wget_urls}"
 assert_denied_command "Scenario 49ap9: node direct GitHub release API write is denied" \
-  "node -e 'fetch(\"https://api.github.com/repos/alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{}\"})'"
+  "node -e 'fetch(\"https://api.github.com/repos/alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{\\\"ref\\\":\\\"refs/tags/v1.2.1\\\"}\"})'"
+assert_passthrough_command "Scenario 49ap9a: node direct branch ref API write passes through" \
+  "node -e 'fetch(\"https://api.github.com/repos/alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{\\\"ref\\\":\\\"refs/heads/release-hardening\\\"}\"})'"
 echo "Scenario 49ap9b: curl missing config on example.com passes through"
 H="$(setup_home)"
 OUT="$(run_hook "${H}" '{"tool_name":"Bash","tool_input":{"command":"curl -K /tmp/sidekick-missing.cfg https://example.com"}}')"; RC=$?
@@ -1660,6 +1671,35 @@ assert_denied_command "Scenario 49au: ruby static interpreter payload release co
   "ruby -e 'system(\"gh release create v1.2.1\")'"
 assert_denied_command "Scenario 49av: node static interpreter payload release command is denied" \
   "node -e 'require(\"child_process\").execSync(\"gh release create v1.2.1\")'"
+_local_script_dir="$(mktemp -d)"
+cat > "${_local_script_dir}/release.sh" <<'EOF'
+#!/usr/bin/env bash
+gh release create v1.2.1
+EOF
+chmod +x "${_local_script_dir}/release.sh"
+cat > "${_local_script_dir}/publish.py" <<'EOF'
+import subprocess
+subprocess.run(["gh", "release", "create", "v1.2.1"])
+EOF
+cat > "${_local_script_dir}/publish.js" <<'EOF'
+require("child_process").execSync("gh release create v1.2.1")
+EOF
+cat > "${_local_script_dir}/tag.sh" <<'EOF'
+git push origin v1.2.1
+EOF
+assert_denied_command "Scenario 49av1: bash local release script is denied" \
+  "bash ${_local_script_dir}/release.sh"
+assert_denied_command "Scenario 49av2: sh local tag script is denied" \
+  "sh ${_local_script_dir}/tag.sh"
+assert_denied_command "Scenario 49av3: python local release script is denied" \
+  "python3 ${_local_script_dir}/publish.py"
+assert_denied_command "Scenario 49av4: node local release script is denied" \
+  "node ${_local_script_dir}/publish.js"
+assert_denied_command "Scenario 49av5: direct local release script is denied" \
+  "${_local_script_dir}/release.sh"
+assert_denied_command "Scenario 49av6: source local release script is denied" \
+  "source ${_local_script_dir}/release.sh"
+rm -rf "${_local_script_dir}"
 assert_denied_command "Scenario 49aw: gh api GraphQL createRelease mutation is denied" \
   "gh api graphql -f query='mutation { createRelease(input:{repositoryId:\"R\", tagName:\"v1\"}) { release { id } } }'"
 assert_denied_command "Scenario 49aw2: gh api full GraphQL URL createRelease mutation is denied" \
