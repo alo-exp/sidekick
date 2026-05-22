@@ -298,7 +298,7 @@ Run the full test suite and confirm clean:
    bash tests/run_unit.bash
 ```
 
-All suites in `tests/run_unit.bash` must pass with 0 failures. Optionally run `bash tests/run_all.bash` for the skip-safe local sweep. Then push to main and wait for CI green before proceeding.
+All suites in `tests/run_unit.bash` must pass with 0 failures. Run `bash tests/run_all.bash` for the skip-safe local sweep. If release commits intentionally include `[skip ci]`, CI is skipped by design; substitute local evidence is `git diff --check`, the clean `bash tests/run_all.bash` result, and any targeted suites used to verify review fixes. If `[skip ci]` is not used, push to main and wait for CI green before proceeding.
 
 ### Completion
 

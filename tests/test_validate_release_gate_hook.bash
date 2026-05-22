@@ -1736,8 +1736,14 @@ assert_denied_command "Scenario 49co: git push all tags is denied" \
   "git push --tags origin"
 assert_denied_command "Scenario 49cp: git push follow-tags is denied" \
   "git push --follow-tags origin main"
+assert_denied_command "Scenario 49cq: git push dynamic release tag variable is denied" \
+  'git push origin "$TAG"'
+assert_denied_command "Scenario 49cr: git push dynamic release tag ref is denied" \
+  'git push origin refs/tags/$TAG'
+assert_denied_command "Scenario 49cs: git push command-substitution refspec is denied" \
+  'git push origin "$(cat VERSION)"'
 
-echo "Scenario 49cq: git push release tag passes after gate markers"
+echo "Scenario 49ct: git push release tag passes after gate markers"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2

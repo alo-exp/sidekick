@@ -688,9 +688,15 @@ def token_is_release_tag_ref(token):
     return bool(RELEASE_TAG_RE.match(token))
 
 
+def refspec_is_dynamic(refspec):
+    return "$" in refspec or "`" in refspec or bool(EXPANSION_RE.search(refspec))
+
+
 def refspec_targets_release_tag(refspec):
     if not refspec:
         return False
+    if refspec_is_dynamic(refspec):
+        return True
     return any(token_is_release_tag_ref(part) for part in refspec.split(":") if part)
 
 
