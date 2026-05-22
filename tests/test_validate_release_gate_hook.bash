@@ -49,6 +49,11 @@ run_hook_no_git_from_cwd() {
   (cd "$4" && HOME="$1" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2")
 }
 
+run_hook_from_cwd() {
+  # $1 = temp HOME, $2 = JSON payload, $3 = caller cwd
+  (cd "$3" && HOME="$1" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2")
+}
+
 run_hook_without_python() {
   # $1 = temp HOME, $2 = JSON payload. PATH deliberately contains jq/cat but
   # not python3, proving the release gate fails closed when its parser runtime is
@@ -84,6 +89,10 @@ write_markers() {
 
 current_head_sha() {
   git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || printf 'unknown'
+}
+
+current_head_release_command() {
+  printf 'gh release create v1.2.1 --target %s --generate-notes' "$(current_head_sha)"
 }
 
 write_markers_for_sha() {
@@ -168,6 +177,40 @@ assert_passthrough_command() {
     assert_pass "${label}: exit 0, no JSON decision"
   else
     assert_fail "${label}" "rc=${rc} out=${out}"
+  fi
+  rm -rf "${h}"
+}
+
+assert_denied_release_command_with_current_markers() {
+  local label="$1" command="$2" h payload out rc decision
+  echo "${label}"
+  h="$(setup_home)"
+  write_markers "${h}" 1 2 3 4
+  write_live_pyramid_markers "${h}" 2
+  payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+  out="$(run_hook "${h}" "${payload}")"; rc=$?
+  decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
+    assert_pass "${label}: permissionDecision=deny"
+  else
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"
+  fi
+  rm -rf "${h}"
+}
+
+assert_passthrough_release_command_with_sha_markers() {
+  local label="$1" command="$2" sha="$3" h payload out rc decision
+  echo "${label}"
+  h="$(setup_home)"
+  write_markers_for_sha "${h}" "${sha}" 1 2 3 4
+  write_live_pyramid_markers_for_sha "${h}" "${sha}" 2
+  payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+  out="$(run_hook "${h}" "${payload}")"; rc=$?
+  decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+  if [ "${rc}" -eq 0 ] && [ -z "${decision}" ] && [ -z "${out}" ]; then
+    assert_pass "${label}: exit 0, no JSON decision"
+  else
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"
   fi
   rm -rf "${h}"
 }
@@ -345,7 +388,7 @@ echo "Scenario 4: release command with all markers and live pyramid passes"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
   assert_pass "all 4 markers plus live pyramid: exit 0, no deny"
@@ -364,7 +407,7 @@ mkdir -p "${NO_GIT_ROOT}/hooks"
 cp "${HOOK}" "${NO_GIT_ROOT}/hooks/validate-release-gate.sh"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook_no_git "${H}" "${PAYLOAD}" "${NO_GIT_ROOT}")"; RC=$?
 if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
   assert_pass "package tree without .git: caller git cwd SHA authorizes current-session live pyramid"
@@ -392,7 +435,7 @@ git -C "${RELEASE_CWD}" -c user.email=sidekick@example.invalid -c user.name=Side
 release_cwd_sha="$(git -C "${RELEASE_CWD}" rev-parse --short=12 HEAD)"
 write_markers_for_sha "${H}" "${release_cwd_sha}" 1 2 3 4
 write_live_pyramid_markers_for_sha "${H}" "${release_cwd_sha}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "gh release create v1.2.1 --target ${release_cwd_sha} --generate-notes" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook_no_git_from_cwd "${H}" "${PAYLOAD}" "${HOOK_GIT_ROOT}" "${RELEASE_CWD}")"; RC=$?
 if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
   assert_pass "hook root git SHA does not preempt caller release cwd SHA"
@@ -412,7 +455,7 @@ mkdir -p "${NO_GIT_ROOT}/hooks"
 cp "${HOOK}" "${NO_GIT_ROOT}/hooks/validate-release-gate.sh"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook_no_git_from_cwd "${H}" "${PAYLOAD}" "${NO_GIT_ROOT}" "${NO_GIT_CWD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
@@ -428,7 +471,7 @@ rm -rf "${H}" "${NO_GIT_ROOT}" "${NO_GIT_CWD}"
 # ---------------------------------------------------------------------------
 echo "Scenario 4b2: missing host session guidance names Claude session variable"
 H="$(setup_home)"
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(HOME="${H}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID= CLAUDE_SESSION_ID= SESSION_ID= bash "${HOOK}" <<<"${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
@@ -445,7 +488,7 @@ rm -rf "${H}"
 echo "Scenario 4c: stage markers without live pyramid are denied"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
@@ -463,7 +506,7 @@ echo "Scenario 4d: one live-pyramid marker is denied"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 1
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
@@ -484,7 +527,7 @@ echo "Scenario 4e: stale stage marker SHA is denied"
 H="$(setup_home)"
 write_markers_for_sha "${H}" "stale-stage-sha" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
@@ -502,7 +545,7 @@ echo "Scenario 4f: legacy session-only stage markers are denied"
 H="$(setup_home)"
 write_legacy_session_only_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
@@ -1551,10 +1594,22 @@ assert_denied_command "Scenario 49c: static shell stdin after prior semicolon co
   "echo ok; printf \"gh release create v1.2.1\" | bash"
 assert_denied_command "Scenario 49d: static shell stdin after prior && command is denied" \
   "true && printf \"gh release create v1.2.1\" | bash"
+_generated_release_script="$(mktemp)"
 assert_denied_command "Scenario 49d2: same-command generated release script is denied" \
-  "printf 'gh release create v1.2.1' > /tmp/sidekick-generated-release; bash /tmp/sidekick-generated-release"
+  "printf 'gh release create v1.2.1' > ${_generated_release_script}; bash ${_generated_release_script}"
 assert_denied_command "Scenario 49d3: dynamic generated script file fails closed" \
-  'printf "$UNKNOWN_PAYLOAD" > /tmp/sidekick-generated-release; bash /tmp/sidekick-generated-release'
+  "printf \"\$UNKNOWN_PAYLOAD\" > ${_generated_release_script}; bash ${_generated_release_script}"
+rm -f "${_generated_release_script}"
+assert_denied_command "Scenario 49d4: dynamic generated bash script path is denied" \
+  "p=\$(mktemp); printf 'gh release create v1.2.1' > \"\$p\"; bash \"\$p\""
+assert_denied_command "Scenario 49d5: dynamic generated sourced script path is denied" \
+  "p=\$(mktemp); printf 'gh release create v1.2.1' > \"\$p\"; source \"\$p\""
+assert_denied_command "Scenario 49d6: dynamic generated python script path is denied" \
+  "p=\$(mktemp); printf 'import os; os.system(\"gh release create v1.2.1\")' > \"\$p\"; python3 \"\$p\""
+assert_denied_command "Scenario 49d7: dynamic generated executable script path is denied" \
+  "p=\$(mktemp); printf '#!/usr/bin/env bash\ngh release create v1.2.1\n' > \"\$p\"; chmod +x \"\$p\"; \"\$p\""
+assert_denied_command "Scenario 49d8: generated script path normalization is denied" \
+  "printf 'gh release create v1.2.1' > ./sidekick-generated-release-test; bash sidekick-generated-release-test"
 assert_denied_command "Scenario 49e: shell positional args complete gh release create" \
   "bash -c 'gh \"\$@\"' sh release create v1.2.1"
 assert_denied_command "Scenario 49f: function positional args complete gh release create" \
@@ -1718,6 +1773,10 @@ assert_denied_command "Scenario 49ap6f: curl GraphQL createRelease mutation is d
   "curl -sS -X POST https://api.github.com/graphql -d '{\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}'"
 assert_denied_command "Scenario 49ap6g: curl GraphQL createRef JSON body is denied" \
   "curl -sS --json '{\"query\":\"mutation { createRef(input:{ref:\\\"refs/tags/v1\\\", oid:\\\"abc\\\"}) { ref { id } } }\"}' https://api.github.com/graphql"
+assert_denied_command "Scenario 49ap6g2: curl GraphQL unicode-escaped createRelease mutation name is denied" \
+  "curl -sS -X POST https://api.github.com/graphql -d '{\"query\":\"mutation { \\u0063reateRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}'"
+assert_denied_command "Scenario 49ap6g3: curl GraphQL unicode-escaped createRef mutation name is denied" \
+  "curl -sS --json '{\"query\":\"mutation { \\u0063reateRef(input:{ref:\\\"refs/tags/v1\\\", oid:\\\"abc\\\"}) { ref { id } } }\"}' https://api.github.com/graphql"
 assert_denied_command "Scenario 49ap6h: curl GraphQL file-backed query field is denied" \
   "curl -sS -F query=@release-mutation.graphql https://api.github.com/graphql"
 _graphql_query="$(mktemp)"
@@ -1754,10 +1813,19 @@ assert_denied_command "Scenario 49ap7b: curl stdin config source is denied" \
   "curl -K -"
 assert_denied_command "Scenario 49ap7c: curl attached stdin config source is denied" \
   "curl -K-"
+_generated_curl_config="$(mktemp)"
+_generated_curl_var_config="$(mktemp)"
 assert_denied_command "Scenario 49ap7d: curl same-command generated config file is denied" \
-  "printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > /tmp/sidekick-release-curl.cfg; curl -K /tmp/sidekick-release-curl.cfg"
+  "printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > ${_generated_curl_config}; curl -K ${_generated_curl_config}"
 assert_denied_command "Scenario 49ap7e: curl generated config through variable path is denied" \
-  "cfg=/tmp/sidekick-release-curl-var.cfg; printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > \"\$cfg\"; curl -K \"\$cfg\""
+  "cfg=${_generated_curl_var_config}; printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > \"\$cfg\"; curl -K \"\$cfg\""
+rm -f "${_generated_curl_config}" "${_generated_curl_var_config}"
+assert_denied_command "Scenario 49ap7e2: curl generated config path normalization is denied" \
+  "printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n' > ./sidekick-release-curl.cfg; curl -K sidekick-release-curl.cfg"
+assert_denied_command "Scenario 49ap7e3: heredoc-generated curl config is denied" \
+  $'cat > sidekick-release-curl.cfg <<\'EOF\'\nurl = "https://api.github.com/repos/alo-exp/sidekick/releases"\nrequest = POST\nEOF\ncurl -K sidekick-release-curl.cfg'
+assert_denied_command "Scenario 49ap7e4: tee heredoc-generated curl config is denied" \
+  $'tee ./sidekick-release-curl.cfg <<\'EOF\'\nurl = "https://api.github.com/repos/alo-exp/sidekick/releases"\nrequest = POST\nEOF\ncurl -K sidekick-release-curl.cfg'
 assert_denied_command "Scenario 49ap7f: curl process-substitution config is denied" \
   "curl -K <(printf 'url = \"https://api.github.com/repos/alo-exp/sidekick/releases\"\\nrequest = POST\\n')"
 assert_denied_command "Scenario 49ap7g: curl config write semantics combine with CLI release URL" \
@@ -1865,10 +1933,14 @@ assert_denied_command "Scenario 49aw2: gh api full GraphQL URL createRelease mut
   "gh api https://api.github.com/graphql -f query='mutation { createRelease(input:{repositoryId:\"R\", tagName:\"v1\"}) { release { id } } }'"
 assert_denied_command "Scenario 49aw3: gh api GHE full release URL is denied" \
   "gh api https://github.example.com/api/v3/repos/acme/sidekick/releases -X POST -f tag_name=v1.2.1"
+assert_denied_command "Scenario 49aw4: gh api GraphQL unicode-escaped createRelease mutation name is denied" \
+  "gh api graphql -f query='mutation { \\u0063reateRelease(input:{repositoryId:\"R\", tagName:\"v1\"}) { release { id } } }'"
 assert_denied_command "Scenario 49ax: gh api GraphQL createRef tag mutation is denied" \
   "gh api -X POST graphql -f query='mutation { createRef(input:{ref:\"refs/tags/v1\"}) { ref { id } } }'"
 assert_denied_command "Scenario 49ax2: gh api GraphQL unicode-escaped createRef tag mutation is denied" \
   "gh api -X POST graphql -f query='mutation { createRef(input:{ref:\"refs\\u002ftags\\u002fv1\"}) { ref { id } } }'"
+assert_denied_command "Scenario 49ax3: gh api GraphQL unicode-escaped createRef mutation name is denied" \
+  "gh api -X POST graphql -f query='mutation { \\u0063reateRef(input:{ref:\"refs/tags/v1\", oid:\"abc\"}) { ref { id } } }'"
 assert_denied_command "Scenario 49ay: gh api GraphQL input file write is denied" \
   "gh api graphql --input release-mutation.json"
 assert_denied_command "Scenario 49az: gh CLI release alias definition is denied" \
@@ -2021,12 +2093,101 @@ assert_denied_command_with_git_alias_config "Scenario 49cs8: persistent git rele
   sidekickreleasepush = push origin v1.2.1"
 assert_passthrough_command "Scenario 49cs9: dynamic branch refspec passes through" \
   'git push origin "$BRANCH"'
+assert_denied_command_with_env_var "Scenario 49cs9b: inherited BRANCH semver tag is denied" \
+  'git push origin "$BRANCH"' "BRANCH" "v1.2.1"
+
+echo "Scenario 49cs10: release tag pushes require local tag target markers"
+STALE_TAG_REPO="$(mktemp -d)"
+git -C "${STALE_TAG_REPO}" init -q
+printf '%s\n' "old target" > "${STALE_TAG_REPO}/README.md"
+git -C "${STALE_TAG_REPO}" add README.md
+git -C "${STALE_TAG_REPO}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m old-target
+stale_tag_sha="$(git -C "${STALE_TAG_REPO}" rev-parse --short=12 HEAD)"
+git -C "${STALE_TAG_REPO}" update-ref refs/tags/v7.7.7 HEAD
+printf '%s\n' "new head" > "${STALE_TAG_REPO}/README.md"
+git -C "${STALE_TAG_REPO}" add README.md
+git -C "${STALE_TAG_REPO}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m new-head
+stale_repo_head_sha="$(git -C "${STALE_TAG_REPO}" rev-parse --short=12 HEAD)"
+stale_git_push_command="git -C ${STALE_TAG_REPO} push origin v7.7.7"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_repo_head_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_repo_head_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "${stale_git_push_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git push stale tag with HEAD markers is denied"
+else
+  assert_fail "git push stale tag with HEAD markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_tag_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_tag_sha}" 2
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "git push stale tag passes with tag target markers"
+else
+  assert_fail "git push stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+stale_git_alias_command="git -C ${STALE_TAG_REPO} -c alias.releasepush=\"push origin v7.7.7\" -c alias.r=releasepush r"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_repo_head_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_repo_head_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "${stale_git_alias_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git alias stale tag with HEAD markers is denied"
+else
+  assert_fail "git alias stale tag with HEAD markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_tag_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_tag_sha}" 2
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "git alias stale tag passes with tag target markers"
+else
+  assert_fail "git alias stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+stale_gh_release_command="gh release create v7.7.7"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_repo_head_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_repo_head_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "${stale_gh_release_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${STALE_TAG_REPO}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "gh release stale tag with HEAD markers is denied"
+else
+  assert_fail "gh release stale tag with HEAD markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_tag_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_tag_sha}" 2
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${STALE_TAG_REPO}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "gh release stale tag passes with tag target markers"
+else
+  assert_fail "gh release stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${STALE_TAG_REPO}"
 
 echo "Scenario 49ct: git push release tag passes after gate markers"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"git push origin v1.2.1"}}'
+release_gate_test_tag="v987.654.321"
+git -C "${REPO_ROOT}" update-ref "refs/tags/${release_gate_test_tag}" HEAD
+PAYLOAD="$(jq -cn --arg cmd "git push origin ${release_gate_test_tag}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
@@ -2035,6 +2196,7 @@ else
   assert_fail "git push release tag passes after gate markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+git -C "${REPO_ROOT}" update-ref -d "refs/tags/${release_gate_test_tag}" >/dev/null 2>&1 || true
 
 echo "Scenario 49cu: git -C release tag push requires target repository markers"
 GIT_C_RELEASE_CWD="$(mktemp -d)"
@@ -2042,6 +2204,7 @@ git -C "${GIT_C_RELEASE_CWD}" init -q
 printf '%s\n' "release target" > "${GIT_C_RELEASE_CWD}/README.md"
 git -C "${GIT_C_RELEASE_CWD}" add README.md
 git -C "${GIT_C_RELEASE_CWD}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m release-target
+git -C "${GIT_C_RELEASE_CWD}" update-ref refs/tags/v1.2.1 HEAD
 git_c_release_sha="$(git -C "${GIT_C_RELEASE_CWD}" rev-parse --short=12 HEAD)"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
@@ -2065,7 +2228,46 @@ if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
 else
   assert_fail "git -C release tag push with target repo markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
-rm -rf "${H}" "${GIT_C_RELEASE_CWD}"
+rm -rf "${H}"
+wrapped_git_c_release_command="bash -lc 'git -C ${GIT_C_RELEASE_CWD} push origin v1.2.1'"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cu2: shell-wrapped git -C release tag push with wrong repo markers is denied" \
+  "${wrapped_git_c_release_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cu3: shell-wrapped git -C release tag push passes with target repo markers" \
+  "${wrapped_git_c_release_command}" "${git_c_release_sha}"
+git_c_shell_alias_release_command="git -c alias.r=\"!git -C ${GIT_C_RELEASE_CWD} push origin v1.2.1\" r"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cu4: git -C shell alias release tag push with wrong repo markers is denied" \
+  "${git_c_shell_alias_release_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cu5: git -C shell alias release tag push passes with target repo markers" \
+  "${git_c_shell_alias_release_command}" "${git_c_release_sha}"
+git_c_chained_alias_release_command="git -C ${GIT_C_RELEASE_CWD} -c alias.releasepush=\"push origin v1.2.1\" -c alias.r=releasepush r"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cu6: git -C chained alias release tag push with wrong repo markers is denied" \
+  "${git_c_chained_alias_release_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cu7: git -C chained alias release tag push passes with target repo markers" \
+  "${git_c_chained_alias_release_command}" "${git_c_release_sha}"
+GIT_C_OUTER="$(mktemp -d)"
+GIT_C_INNER="${GIT_C_OUTER}/inner"
+mkdir -p "${GIT_C_INNER}"
+git -C "${GIT_C_INNER}" init -q
+printf '%s\n' "nested release target" > "${GIT_C_INNER}/README.md"
+git -C "${GIT_C_INNER}" add README.md
+git -C "${GIT_C_INNER}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m nested-release-target
+git -C "${GIT_C_INNER}" update-ref refs/tags/v1.2.1 HEAD
+git_c_nested_sha="$(git -C "${GIT_C_INNER}" rev-parse --short=12 HEAD)"
+git_c_nested_command="git -C ${GIT_C_OUTER} -C inner push origin v1.2.1"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cu8: composed git -C release tag push with wrong repo markers is denied" \
+  "${git_c_nested_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cu9: composed git -C release tag push passes with target repo markers" \
+  "${git_c_nested_command}" "${git_c_nested_sha}"
+rm -rf "${GIT_C_OUTER}"
+rm -rf "${GIT_C_RELEASE_CWD}"
 
 echo "Scenario 49cv: gh release --target requires target ref markers"
 target_ref_sha="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD~1)"
@@ -2092,6 +2294,53 @@ else
   assert_fail "gh release --target with target ref markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+wrapped_gh_target_command="bash -lc 'gh release create v1.2.1 --target ${target_ref_sha}'"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv2: shell-wrapped gh release --target with current HEAD markers is denied" \
+  "${wrapped_gh_target_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv3: shell-wrapped gh release --target passes with target ref markers" \
+  "${wrapped_gh_target_command}" "${target_ref_sha}"
+gh_target_alias_config="$(mktemp -d)"
+cat > "${gh_target_alias_config}/aliases.yml" <<YAML
+r: release create --target ${target_ref_sha}
+YAML
+gh_target_alias_command="gh --config-dir ${gh_target_alias_config} r v1.2.1"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv4: gh --config-dir release target alias with current HEAD markers is denied" \
+  "${gh_target_alias_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv5: gh --config-dir release target alias passes with target ref markers" \
+  "${gh_target_alias_command}" "${target_ref_sha}"
+rm -rf "${gh_target_alias_config}"
+gh_same_command_target_alias="gh alias set rc 'release create --target ${target_ref_sha}' && gh rc v1.2.1"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv5b: same-command gh target alias with current HEAD markers is denied" \
+  "${gh_same_command_target_alias}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv5c: same-command gh target alias passes with target ref markers" \
+  "${gh_same_command_target_alias}" "${target_ref_sha}"
+gh_api_release_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=${target_ref_sha}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv6: gh api release target_commitish with current HEAD markers is denied" \
+  "${gh_api_release_target_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv7: gh api release target_commitish passes with target ref markers" \
+  "${gh_api_release_target_command}" "${target_ref_sha}"
+gh_api_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=${target_ref_sha}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv8: gh api tag ref sha with current HEAD markers is denied" \
+  "${gh_api_tag_ref_target_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv9: gh api tag ref sha passes with target ref markers" \
+  "${gh_api_tag_ref_target_command}" "${target_ref_sha}"
+gh_api_graphql_target_command="gh api graphql -f query='mutation { createRef(input:{ref:\"refs/tags/v1.2.1\", oid:\"${target_ref_sha}\"}) { ref { id } } }'"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv10: gh api GraphQL createRef oid with current HEAD markers is denied" \
+  "${gh_api_graphql_target_command}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv11: gh api GraphQL createRef oid passes with target ref markers" \
+  "${gh_api_graphql_target_command}" "${target_ref_sha}"
 
 # ---------------------------------------------------------------------------
 # Scenario 50: Codex host state path satisfies release gate
@@ -2100,7 +2349,7 @@ echo "Scenario 50: Codex host markers satisfy release command"
 H="$(setup_home)"
 write_codex_markers "${H}" 1 2 3 4
 write_codex_live_pyramid_markers "${H}" 2
-PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook_codex "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
