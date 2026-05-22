@@ -51,11 +51,141 @@ If ANY check fails: print which check failed and direct the user to `## Runtime 
 
 ### 2. Bootstrap Config (first invocation only)
 
-Per the non-destructive rule, create only if absent -- never overwrite existing files:
+Per the non-destructive rule, create only if absent -- never overwrite existing files. Prefer copying the packaged files from the installed Sidekick plugin root when they exist; otherwise create the files from the templates below.
 
-- `.forge/agents/forge.md` -- project-level agent override (content defined in plan 01-03)
-- `.forge.toml` -- compaction defaults only; runtime provider/model settings stay in `~/forge/.forge.toml` (content defined in plan 01-03)
-- `.forge/skills/` -- bootstrap skill set: quality-gates, security, testing-strategy, code-review (content defined in plan 01-03)
+`.forge/agents/forge.md`:
+
+```markdown
+---
+id: forge
+title: Forge (Sidekick-Orchestrated)
+description: Default Forge agent with Sidekick delegation awareness
+tools: ["*"]
+---
+
+# Forge Agent -- Sidekick Project Override
+
+You are being orchestrated by the host AI through Sidekick. The host AI is the planner
+and communicator; you are the implementer.
+
+## Standing Instructions
+
+1. Read `./AGENTS.md` for project-specific conventions before starting any task
+2. Produce structured output: start with what you did, end with what changed
+3. If you discover a reusable pattern, note it at the end of your response so
+   the host AI can add it to AGENTS.md
+4. Do not ask questions -- execute the task as specified. If ambiguous, make a
+   reasonable choice and document your assumption
+
+## Output Format
+
+At the end of every task, include a block with these exact fields:
+
+`STATUS: SUCCESS | PARTIAL | FAILED`
+`FILES_CHANGED: [list]`
+`ASSUMPTIONS: [any assumptions made]`
+`PATTERNS_DISCOVERED: [reusable patterns for AGENTS.md]`
+```
+
+`.forge.toml`:
+
+Project `.forge.toml` is for compaction defaults only; runtime provider/model settings stay in `~/forge/.forge.toml`.
+
+```toml
+"$schema" = "https://forgecode.dev/schema.json"
+max_tokens = 16384
+
+[compact]
+token_threshold = 80000
+eviction_window = 0.20
+retention_window = 6
+```
+
+`.forge/skills/quality-gates/SKILL.md`:
+
+```markdown
+---
+id: quality-gates
+title: Quality Gates
+description: Enforce code quality standards before committing changes
+trigger: test lint commit quality review push
+---
+
+# Quality Gates
+
+1. Run the full test suite before declaring any task complete. Do not skip tests even for "trivial" changes.
+2. Run the project linter if configured. Fix all warnings and errors before committing.
+3. Search for TODO and FIXME comments in changed files. Resolve them or document why they must remain.
+4. Verify no debug statements exist in committed code.
+5. Confirm all functions, variables, and files use descriptive names consistent with the project's existing conventions.
+6. Run the full test suite one final time before pushing. All tests must pass with zero failures.
+7. Verify commit messages follow the project's convention.
+```
+
+`.forge/skills/security/SKILL.md`:
+
+```markdown
+---
+id: security
+title: Security Review
+description: Check for common security issues in code changes
+trigger: security auth credential secret password token api-key encrypt
+---
+
+# Security Review
+
+1. Never hardcode secrets, API keys, passwords, or tokens in source files. Use environment variables or dedicated credential stores.
+2. Store all sensitive configuration values in environment variables. Reference them by name, never by value.
+3. Verify `.gitignore` includes credential files, `.env` files, key files, and any other sensitive artifacts.
+4. Validate and sanitize all external input before processing. Assume all user-provided data is untrusted.
+5. Ensure error messages and logs do not leak internal details such as stack traces, file paths, database schemas, or credentials.
+6. Restrict file permissions on credential files to owner-only access.
+7. Never log sensitive data including API keys, passwords, tokens, or personally identifiable information.
+```
+
+`.forge/skills/testing-strategy/SKILL.md`:
+
+```markdown
+---
+id: testing-strategy
+title: Testing Strategy
+description: Guide test creation and ensure adequate coverage
+trigger: test spec coverage unit integration assert expect
+---
+
+# Testing Strategy
+
+1. Write tests before implementing the feature. Define expected behavior first, then write the code to satisfy it.
+2. Test one behavior per test case. Each test should have a single reason to fail.
+3. Cover edge cases: empty input, null values, boundary conditions, maximum lengths, and unexpected types.
+4. Verify exit codes for all shell scripts and command-line tools. Non-zero exit codes must indicate failure.
+5. Test file operation error cases: missing files, permission denied, disk full, and invalid paths.
+6. Keep tests independent. No test should depend on the outcome or side effects of another.
+7. Run the full test suite after every change. A single failing test blocks the commit.
+8. Write clear assertion messages that describe what was expected and what was received.
+```
+
+`.forge/skills/code-review/SKILL.md`:
+
+```markdown
+---
+id: code-review
+title: Code Review
+description: Review code changes for quality consistency and correctness
+trigger: review refactor cleanup improve optimize pr
+---
+
+# Code Review
+
+1. Verify every change directly serves the stated objective. Remove unrelated modifications.
+2. Check consistency with existing project patterns, naming conventions, and architectural decisions.
+3. Identify and eliminate duplicated logic. Extract shared behavior into reusable functions or modules.
+4. Confirm all error paths are handled. Functions that can fail must have explicit error handling.
+5. Use clear, descriptive names for all variables, functions, and files.
+6. Watch for unintended side effects: global state mutations, file system changes, or network calls that are not part of the task.
+7. Ensure comments explain why, not what.
+8. Verify no existing interfaces are broken.
+```
 
 ### 3. Set Session State
 
