@@ -49,7 +49,7 @@
     "codex_installer_sha256": "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555",
     "verify_at": "https://forgecode.dev/releases",
     "source": "https://github.com/alo-exp/sidekick",
-  "sidekick_registry_lib_sha256": "e05e5769aa9a6047b71264633380ab3285f700b63f3586033a0aa53df8d7ddd8",
+    "sidekick_registry_lib_sha256": "642054a66eb7b9f11156011ebad2cd90f00f448dc70b0e90b5e254ae680c3638",
     "safe_runner_sha256": "0fd1eea86c83bfa15b3dae99837227cd2c3b0f11586491d9dea05d81d147c241"
   }
 }

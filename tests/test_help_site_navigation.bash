@@ -42,6 +42,7 @@ echo "=== T2: Help center exposes task-first navigation ==="
 for needle in 'Start Here' 'Audience' 'Glossary' 'Compatibility' 'Choose a task or topic' 'Pick the page that matches your role or your task' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go remains Kay' '/forge:delegate' '/kay:delegate' 'kay-delegate' 'sidekick:kay-delegate' 'legacy code alias'; do
 expect_contains "site/help/index.html" "${needle}" "help index contains ${needle}"
 done
+expect_contains "site/help/index.html" 'vision / visual reasoning' "help index contains vision / visual reasoning routing"
 for path in site/help/index.html site/help/getting-started/index.html site/help/concepts/index.html site/help/workflows/index.html site/help/reference/index.html site/help/troubleshooting/index.html; do
   expect_contains "${path}" "sidekick-theme-v2" "${path} uses versioned theme storage"
   expect_not_contains "${path}" "localStorage.getItem('sidekick-theme')" "${path} ignores legacy light theme preference on first load"
@@ -68,7 +69,7 @@ expect_not_contains "site/help/search.js" "Primary path is kay exec --full-auto"
 expect_not_contains "site/help/search.js" "Kay through kay exec" "help search removes stale Kay-through-exec support copy"
 
 echo "=== T3: Help search indexes the new docs pages ==="
-for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude Code, Codex, Forge, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' '/forge:delegate' '/kay:delegate' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto' 'MiniMax M2.7' "anchor:'support'"; do
+ for needle in '../START-HERE.md' '../AUDIENCE.md' '../GLOSSARY.md' '../COMPATIBILITY.md' '../ADR/README.md' 'Start Here — pick the right doc' 'Compatibility — Claude Code, Codex, Forge, and Kay' 'Sidekick ships Forge and Kay' 'Claude Code and Codex can both route work to either agent' 'OpenCode Go' '/forge:delegate' '/kay:delegate' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto' 'MiniMax M2.7' 'vision / visual reasoning' "anchor:'support'"; do
   expect_contains "site/help/search.js" "${needle}" "help search contains ${needle}"
 done
 expect_not_contains "site/help/search.js" "Claude Code users delegate to Forge" "help search removes stale host-specific Forge copy"
@@ -84,7 +85,7 @@ for path in site/help/getting-started/index.html site/help/concepts/index.html s
 done
 
 echo "=== T5: Getting Started is host-aware ==="
-for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto'; do
+for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto' 'vision / visual reasoning'; do
   expect_contains "site/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
 done
 for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-labs-codex/sidekick' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
@@ -100,7 +101,7 @@ for needle in 'SessionStart no longer updates or repairs Forge/Kay runtimes afte
 done
 
 echo "=== T7: Concepts and troubleshooting match current runtime behavior ==="
-for needle in 'per-session health check; SessionStart does not update or repair runtimes' 'quality-gates + code-review' 'Forge output is treated as untrusted task output' '[<span class="key">compact</span>]'; do
+for needle in 'per-session health check; SessionStart does not update or repair runtimes' 'quality-gates + code-review' 'Forge output is treated as untrusted task output' '[<span class="key">compact</span>]' 'vision / visual reasoning'; do
   expect_contains "site/help/concepts/index.html" "${needle}" "concepts current model contains ${needle}"
 done
 for needle in 'Forge Provider Configuration' 'Direct edits are denied after /forge or Kay mode starts' 'conversation database is not writable' 'AGENTS_UPDATE field will propose instructions'; do
