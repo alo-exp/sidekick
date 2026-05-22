@@ -229,6 +229,10 @@ When composing a `Bash` tool call to invoke `forge -p "..."`:
 - **For short tasks (<10 s)** or when the host is Bedrock / Vertex / Foundry (where `Monitor` may be unavailable): fall back to foreground `Bash({ command: "forge -p '...'" })`. The user sees the completed safe output, and the PostToolUse hook still emits a `[FORGE-SUMMARY]` block.
 - **Do NOT manually add** `--conversation-id` or `--verbose` to new task commands — the PreToolUse enforcer injects both automatically. **Exception**: to resume a prior conversation, you may pass `--conversation-id <existing-uuid>` before `-p`; the hook validates and preserves that UUID while still normalizing the command with `--verbose`, safe output handling, tail validation, and audit indexing. A `--conversation-id` token after `-p` is treated as prompt text.
 
+### Prompt Transport
+
+Use `forge -p "..."` only for simple prompts that do not contain shell-sensitive text. If a task prompt contains `$N` positional references, em dashes, backticks, nested quotes, heredocs, or substantial code blocks, send the prompt through stdin or a tempfile instead of inline shell quoting. This avoids zsh and shell expansion corrupting the 5-field prompt before Forge receives it.
+
 ---
 
 ## Delegation Protocol (while active)

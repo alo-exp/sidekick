@@ -226,6 +226,27 @@ else
   assert_fail "Forge session resolver" "activation/stop marker paths do not mirror hook session id precedence"
 fi
 
+echo "=== T21: Forge skill documents safe prompt transport ==="
+transport_missing=()
+for surface in \
+  "${SKILL_FILE}" \
+  "${PLUGIN_DIR}/agents/claude/forge/SKILL.md" \
+  "${PLUGIN_DIR}/agents/codex/forge/SKILL.md"; do
+  if [ ! -f "${surface}" ]; then
+    transport_missing+=("${surface}:missing")
+  elif ! grep -q '### Prompt Transport' "${surface}" \
+    || ! grep -q 'contains `$N` positional references' "${surface}" \
+    || ! grep -q 'send the prompt through stdin or a tempfile' "${surface}" \
+    || ! grep -q 'shell expansion corrupting the 5-field prompt' "${surface}"; then
+    transport_missing+=("${surface}")
+  fi
+done
+if [ "${#transport_missing[@]}" -eq 0 ]; then
+  assert_pass "Forge prompt transport warning is present in canonical and generated surfaces"
+else
+  assert_fail "Forge prompt transport warning" "missing or incomplete in: ${transport_missing[*]}"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped"
