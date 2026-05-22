@@ -25,8 +25,10 @@ SANDBOX="$(mktemp -d)"
 trap 'rm -rf "${SANDBOX}"' EXIT
 cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules '~')
 preserve_dirs=(.planning site/specs site/design)
-mkdir -p "${SANDBOX}/.claude-plugin" "${SANDBOX}/tests"
-touch "${SANDBOX}/.claude-plugin/plugin.json" "${SANDBOX}/tests/post_release_cleanup.bash"
+git -C "${SANDBOX}" init -q
+mkdir -p "${SANDBOX}/.claude-plugin" "${SANDBOX}/tests" "${SANDBOX}/skills/forge" "${SANDBOX}/hooks"
+printf '{"name":"sidekick"}\n' > "${SANDBOX}/.claude-plugin/plugin.json"
+touch "${SANDBOX}/tests/post_release_cleanup.bash" "${SANDBOX}/skills/forge/SKILL.md" "${SANDBOX}/hooks/hooks.json"
 for dir in "${cleanup_dirs[@]}"; do
   mkdir -p "${SANDBOX}/${dir}"
 done
@@ -92,6 +94,52 @@ if [ -d "${UNSAFE_ROOT}/.tmp" ]; then
   assert_pass "Unsafe root artifact preserved after marker rejection"
 else
   assert_fail "Unsafe root artifact preserved" "artifact was removed"
+fi
+
+MARKER_ONLY_ROOT="${SANDBOX}/marker-only-root"
+mkdir -p "${MARKER_ONLY_ROOT}/.claude-plugin" "${MARKER_ONLY_ROOT}/tests" "${MARKER_ONLY_ROOT}/skills/forge" "${MARKER_ONLY_ROOT}/hooks" "${MARKER_ONLY_ROOT}/.tmp"
+printf '{"name":"sidekick"}\n' > "${MARKER_ONLY_ROOT}/.claude-plugin/plugin.json"
+touch "${MARKER_ONLY_ROOT}/tests/post_release_cleanup.bash" "${MARKER_ONLY_ROOT}/skills/forge/SKILL.md" "${MARKER_ONLY_ROOT}/hooks/hooks.json"
+if SIDEKICK_REPO_ROOT="${MARKER_ONLY_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
+  assert_fail "Cleanup rejects marker-only roots" "command succeeded"
+else
+  assert_pass "Cleanup rejects marker-only roots"
+fi
+if [ -d "${MARKER_ONLY_ROOT}/.tmp" ]; then
+  assert_pass "Marker-only root artifact preserved after rejection"
+else
+  assert_fail "Marker-only root artifact preserved" "artifact was removed"
+fi
+
+WRONG_NAME_ROOT="${SANDBOX}/wrong-name-root"
+mkdir -p "${WRONG_NAME_ROOT}"
+git -C "${WRONG_NAME_ROOT}" init -q
+mkdir -p "${WRONG_NAME_ROOT}/.claude-plugin" "${WRONG_NAME_ROOT}/tests" "${WRONG_NAME_ROOT}/skills/forge" "${WRONG_NAME_ROOT}/hooks" "${WRONG_NAME_ROOT}/.tmp"
+printf '{"name":"not-sidekick"}\n' > "${WRONG_NAME_ROOT}/.claude-plugin/plugin.json"
+touch "${WRONG_NAME_ROOT}/tests/post_release_cleanup.bash" "${WRONG_NAME_ROOT}/skills/forge/SKILL.md" "${WRONG_NAME_ROOT}/hooks/hooks.json"
+if SIDEKICK_REPO_ROOT="${WRONG_NAME_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
+  assert_fail "Cleanup rejects non-Sidekick plugin roots" "command succeeded"
+else
+  assert_pass "Cleanup rejects non-Sidekick plugin roots"
+fi
+
+SYMLINK_ROOT="${SANDBOX}/symlink-root"
+mkdir -p "${SYMLINK_ROOT}"
+git -C "${SYMLINK_ROOT}" init -q
+OUTSIDE_ARTIFACT="${SANDBOX}/outside-artifact"
+mkdir -p "${SYMLINK_ROOT}/.claude-plugin" "${SYMLINK_ROOT}/tests" "${SYMLINK_ROOT}/skills/forge" "${SYMLINK_ROOT}/hooks" "${OUTSIDE_ARTIFACT}"
+printf '{"name":"sidekick"}\n' > "${SYMLINK_ROOT}/.claude-plugin/plugin.json"
+touch "${SYMLINK_ROOT}/tests/post_release_cleanup.bash" "${SYMLINK_ROOT}/skills/forge/SKILL.md" "${SYMLINK_ROOT}/hooks/hooks.json"
+ln -s "${OUTSIDE_ARTIFACT}" "${SYMLINK_ROOT}/.tmp"
+if SIDEKICK_REPO_ROOT="${SYMLINK_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
+  assert_fail "Cleanup rejects symlinked cleanup paths outside root" "command succeeded"
+else
+  assert_pass "Cleanup rejects symlinked cleanup paths outside root"
+fi
+if [ -d "${OUTSIDE_ARTIFACT}" ]; then
+  assert_pass "Outside symlink target preserved after rejection"
+else
+  assert_fail "Outside symlink target preserved" "target was removed"
 fi
 
 if SIDEKICK_REPO_ROOT="${HOME}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
