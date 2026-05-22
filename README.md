@@ -6,8 +6,8 @@
 
 | Sidekick | Activation surface | Agent | Status |
 |----------|--------------------|-------|--------|
-| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.5.8 |
-| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial and vision / visual reasoning work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.5.8 |
+| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.6.0 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial and vision / visual reasoning work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.0 |
 
 More sidekicks planned.
 

@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.5.8",
+  "version": "0.6.0",
   "description": "Sidekick \u2014 a collection of AI coding agents as Claude sidekicks. Forge and Kay are the first two: each sidekick auto-installs, configures itself, and lets Claude delegate coding work while Claude focuses on planning and communication. The Claude-facing workflow bodies are generated from skills into agents/claude.",
   "author": {
     "name": "\u0100lo Labs",
