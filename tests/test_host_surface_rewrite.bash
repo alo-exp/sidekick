@@ -18,6 +18,7 @@ prepare_surface_sandbox() {
   local root="$1"
   cp "${INSTALL_SH}" "${root}/install.sh"
   mkdir -p "${root}/hooks/lib" "${root}/skills/forge" "${root}/skills/forge-stop" "${root}/skills/codex-stop" "${root}/sidekicks"
+  cp -R "${PLUGIN_DIR}/agents" "${root}/agents"
   cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
   cp "${PLUGIN_DIR}/hooks/hooks.json" "${root}/hooks/hooks.json"
   cp "${PLUGIN_DIR}/hooks/validate-release-gate.sh" "${root}/hooks/validate-release-gate.sh"
@@ -80,9 +81,10 @@ run_case() {
   local registry="${root}/sidekicks/registry.json"
   local registry_helper="${root}/hooks/lib/sidekick-registry.sh"
   local release_gate="${root}/hooks/validate-release-gate.sh"
-  local forge_skill="${root}/skills/forge/SKILL.md"
-  local forge_stop_skill="${root}/skills/forge-stop/SKILL.md"
-  local kay_stop_skill="${root}/skills/codex-stop/SKILL.md"
+  local canonical_forge_skill="${root}/skills/forge/SKILL.md"
+  local generated_forge_skill="${root}/agents/${host}/forge/SKILL.md"
+  local generated_forge_stop_skill="${root}/agents/${host}/forge-stop/SKILL.md"
+  local generated_kay_stop_skill="${root}/agents/${host}/codex-stop/SKILL.md"
   local host_project_var
   local other_project_var
 
@@ -114,18 +116,22 @@ run_case() {
   assert_absent "${registry}" "${other_env_var}" "${host}: registry excludes the other host root"
   assert_absent "${registry}" "${other_session_var}" "${host}: registry excludes the other host session var"
 
-  assert_contains "${forge_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: forge skill rewrites to the host session path"
-  assert_contains "${forge_skill}" "${host_session_var}" "${host}: forge skill resolver uses the host session var"
-  assert_contains "${forge_skill}" "${host_project_var}" "${host}: forge skill uses the host project var"
-  assert_absent "${forge_skill}" "${other_env_var}" "${host}: forge skill excludes the other host root"
-  assert_absent "${forge_skill}" "${other_session_var}" "${host}: forge skill excludes the other host session var"
-  assert_absent "${forge_skill}" "${other_project_var}" "${host}: forge skill excludes the other host project var"
+  assert_contains "${canonical_forge_skill}" "SIDEKICK_HOST_SESSION_ID" "${host}: canonical skill remains host-placeholder based"
+  assert_absent "${canonical_forge_skill}" "${host_session_var}" "${host}: install no longer mutates canonical skill to host session var"
+  assert_absent "${canonical_forge_skill}" "${other_session_var}" "${host}: canonical skill excludes the other host session var"
 
-  assert_contains "${forge_stop_skill}" "${host_session_var}" "${host}: forge stop skill uses the host session var"
-  assert_contains "${forge_stop_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: forge stop skill rewrites to the host session path"
-  assert_absent "${forge_stop_skill}" "${other_session_var}" "${host}: forge stop skill excludes the other host session var"
-  assert_contains "${kay_stop_skill}" "${host_session_var}" "${host}: Kay stop skill uses the host session var"
-  assert_absent "${kay_stop_skill}" "${other_session_var}" "${host}: Kay stop skill excludes the other host session var"
+  assert_contains "${generated_forge_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated forge skill uses the host session path"
+  assert_contains "${generated_forge_skill}" "${host_session_var}" "${host}: generated forge skill resolver uses the host session var"
+  assert_contains "${generated_forge_skill}" "${host_project_var}" "${host}: generated forge skill uses the host project var"
+  assert_absent "${generated_forge_skill}" "${other_env_var}" "${host}: generated forge skill excludes the other host root"
+  assert_absent "${generated_forge_skill}" "${other_session_var}" "${host}: generated forge skill excludes the other host session var"
+  assert_absent "${generated_forge_skill}" "${other_project_var}" "${host}: generated forge skill excludes the other host project var"
+
+  assert_contains "${generated_forge_stop_skill}" "${host_session_var}" "${host}: generated forge stop skill uses the host session var"
+  assert_contains "${generated_forge_stop_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated forge stop skill uses the host session path"
+  assert_absent "${generated_forge_stop_skill}" "${other_session_var}" "${host}: generated forge stop skill excludes the other host session var"
+  assert_contains "${generated_kay_stop_skill}" "${host_session_var}" "${host}: generated Kay stop skill uses the host session var"
+  assert_absent "${generated_kay_stop_skill}" "${other_session_var}" "${host}: generated Kay stop skill excludes the other host session var"
 }
 
 echo "=== T1: Codex install rewrites host-specific paths ==="

@@ -109,13 +109,14 @@ Use the checklists below as review guidance for the parallel reviewers in step 1
    ```
    Any mismatch, missing file, or untracked integrity target = manifest or release surface must be fixed before release.
 
-2. **Skills directory**: Every directory under `skills/` contains a `SKILL.md`. No orphaned `.md` files at the `skills/` root that aren't referenced.
+2. **Skills directory**: Every directory under `skills/` contains a `SKILL.md`. No orphaned `.md` files at the `skills/` root that aren't referenced. Host-specific skill bundles under `agents/claude/` and `agents/codex/` must be regenerated with `bash scripts/sync-host-surfaces.sh`, then verified with `bash tests/test_agent_surface_render.bash`.
 
 3. **Docs directory structure**: Verify `site/` contains: `ARCHITECTURE.md`, `CICD.md`, `TESTING.md`, `PRD-Overview.md`, `pre-release-quality-gate.md`, and the root contains `CHANGELOG.md`. Flag any missing or orphaned docs.
 
 4. **Naming consistency**: Verify consistent spelling and casing across `skills/forge/SKILL.md`, `README.md`, `CHANGELOG.md`, and `.claude-plugin/plugin.json`. Check: skill names (`/forge`, `sidekick:forge-delegate`, `sidekick:kay-delegate`), Forge binary name (`forge`), config paths (`.forge/conversations.idx`, `~/forge/.forge.toml`).
 
-5. **Test file coverage**: Verify every hook and canonical skill has a corresponding test file in `tests/`:
+5. **Test file coverage**: Verify every hook, generated host surface, and canonical skill has a corresponding test file in `tests/`:
+   - `agents/claude/*` + `agents/codex/*` → `tests/test_agent_surface_render.bash`
    - `hooks/forge-delegation-enforcer.sh` → `tests/test_forge_enforcer_hook.bash`
    - `hooks/forge-progress-surface.sh` → `tests/test_forge_progress_surface.bash`
    - `skills/forge-stop/SKILL.md` → `tests/test_forge_skill.bash`
@@ -206,7 +207,7 @@ Audit `.claude-plugin/plugin.json` and `install.sh`:
 
 - **Version field**: Matches the release version being cut
 - **SHA-256 accuracy**: Every hash in `_integrity` matches the live file (`tests/test_plugin_integrity.bash` must pass green)
-- **Skill paths**: `"skills": "./skills/"` resolves correctly; `skills/forge/SKILL.md` exists at that path
+- **Skill paths**: Claude manifest `"skills": "./agents/claude/"` and Codex manifest `"skills": "./agents/codex/"` resolve correctly; generated Forge and Kay lifecycle skills exist at those paths and match `bash scripts/sync-host-surfaces.sh`
 - **Output styles**: `"outputStyles": "./output-styles/"` resolves correctly; all referenced files exist
 - **Hook registration**: Both `PreToolUse` (enforcer) and `PostToolUse` (progress-surface) hooks are registered in `plugin.json` with correct matchers and paths
 - **`install.sh`**: Forge install flow is correct for the current Forge version (binary path, agent config, `.forge.toml` defaults); no references to deprecated install steps
