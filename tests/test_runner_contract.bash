@@ -66,6 +66,7 @@ for live_script in \
   run_live_codex_e2e.bash; do
   expect_absent "tests/run_unit.bash" "${live_script}" "run_unit excludes live-gated ${live_script}"
 done
+expect_absent "tests/run_unit.bash" "SIDEKICK_REPO_ROOT=" "run_unit does not mutate the checkout with release cleanup"
 
 echo "=== T3: run_all is skip-safe everything ==="
 expect_contains "tests/run_all.bash" "run_unit.bash" "run_all delegates strict suites to run_unit"
