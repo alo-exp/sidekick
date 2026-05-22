@@ -56,7 +56,7 @@ for file in .forge.toml .gitignore .silver-bullet.json AGENTS.md CHANGELOG.md CL
 done
 
 echo "=== T2: No transient root artifacts ==="
-for dir in .tmp .cache target build dist coverage .pytest_cache node_modules; do
+for dir in .tmp .cache target build dist coverage .pytest_cache node_modules '~'; do
   if [ -e "${ROOT}/${dir}" ]; then
     assert_fail "transient artifact absent: ${dir}" "unexpected root artifact present"
   else

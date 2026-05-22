@@ -198,6 +198,43 @@ else
   assert_fail "test_route_vision_tasks_to_mimo_v2_5" "dec='${_dec}' cmd='${_cmd}'"
 fi
 
+echo "=== test_route_graph_word_tasks_to_mimo_v2_5 ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Draw a graph of release readiness\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -Eq -- '(^| )-c model=mimo-v2\.5( |$)' \
+    && ! echo "${_cmd}" | grep -q -- '-c model=mimo-v2.5-pro'; then
+  assert_pass "test_route_graph_word_tasks_to_mimo_v2_5"
+else
+  assert_fail "test_route_graph_word_tasks_to_mimo_v2_5" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+echo "=== test_route_graphql_tasks_to_mimo_v2_5_pro ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Implement a GraphQL resolver\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -q -- '-c model=mimo-v2.5-pro'; then
+  assert_pass "test_route_graphql_tasks_to_mimo_v2_5_pro"
+else
+  assert_fail "test_route_graphql_tasks_to_mimo_v2_5_pro" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
+echo "=== test_route_paragraph_tasks_to_mimo_v2_5_pro ==="
+_out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Write a paragraph about the release\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
+_dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
+_cmd="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null)"
+if [ "${_dec}" = "allow" ] \
+    && echo "${_cmd}" | grep -q -- '-c model_provider=opencode-go' \
+    && echo "${_cmd}" | grep -q -- '-c model=mimo-v2.5-pro'; then
+  assert_pass "test_route_paragraph_tasks_to_mimo_v2_5_pro"
+else
+  assert_fail "test_route_paragraph_tasks_to_mimo_v2_5_pro" "dec='${_dec}' cmd='${_cmd}'"
+fi
+
 echo "=== test_route_test_running_and_issue_reporting_to_deepseek_v4_flash ==="
 _out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Run the tests and report issues found\""}}' 'SIDEKICK_TEST_UUID_OVERRIDE=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')"
 _dec="$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"

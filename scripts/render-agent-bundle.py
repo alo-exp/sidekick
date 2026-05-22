@@ -26,6 +26,21 @@ HOST_REPLACEMENTS = {
 }
 
 
+def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
+    return [
+        (
+            "`skills/forge/SKILL.md`",
+            f"`forge/SKILL.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/forge/SKILL.md` in the repository)",
+        ),
+        (
+            "`skills/codex-delegate/SKILL.md`",
+            f"`codex-delegate/SKILL.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/codex-delegate/SKILL.md` in the repository)",
+        ),
+    ]
+
+
 def rewrite_file(path: pathlib.Path, agent: str) -> bool:
     try:
         text = path.read_text(encoding="utf-8")
@@ -35,6 +50,9 @@ def rewrite_file(path: pathlib.Path, agent: str) -> bool:
     updated = text
     for old, new in HOST_REPLACEMENTS[agent]:
         updated = updated.replace(old, new)
+    if path.name == "SKILL.md" and path.parent.name in {"forge:delegate", "kay:delegate"}:
+        for old, new in host_alias_replacements(agent):
+            updated = updated.replace(old, new)
 
     if updated == text:
         return False
@@ -57,28 +75,41 @@ def is_relative_to(path: pathlib.Path, parent: pathlib.Path) -> bool:
     return True
 
 
-def validate_render_destination(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
+def validate_host_bundle_root(
+    target_root: pathlib.Path,
+    agent: str,
+    purpose: str,
+    source_root: pathlib.Path | None = None,
+) -> None:
     repo_root = pathlib.Path(__file__).resolve().parents[1]
     home_root = pathlib.Path.home().resolve(strict=False)
     cwd = pathlib.Path.cwd().resolve(strict=False)
     temp_root = pathlib.Path(tempfile.gettempdir()).resolve(strict=False)
-    source = source_root.resolve(strict=True)
-    dest = dest_root.resolve(strict=False)
+    source = source_root.resolve(strict=True) if source_root else None
+    target = target_root.resolve(strict=False)
 
     allowed_repo_dest = (repo_root / "agents" / agent).resolve(strict=False)
-    allowed_temp_dest = dest.name == agent and is_relative_to(dest.parent, temp_root)
-    if dest != allowed_repo_dest and not allowed_temp_dest:
+    allowed_temp_dest = target.name == agent and is_relative_to(target.parent, temp_root)
+    if target != allowed_repo_dest and not allowed_temp_dest:
         raise SystemExit(
-            "refusing unsafe render destination: "
-            f"{dest_root} (expected {allowed_repo_dest} or a temp dir ending in /{agent})"
+            f"refusing unsafe {purpose} root: "
+            f"{target_root} (expected {allowed_repo_dest} or a temp dir ending in /{agent})"
         )
 
-    dangerous_exact = {pathlib.Path("/").resolve(strict=False), repo_root, home_root, cwd, source}
-    if dest in dangerous_exact:
-        raise SystemExit(f"refusing unsafe render destination: {dest_root}")
+    dangerous_exact = {pathlib.Path("/").resolve(strict=False), repo_root, home_root, cwd}
+    if source is not None:
+        dangerous_exact.add(source)
+    if target in dangerous_exact:
+        raise SystemExit(f"refusing unsafe {purpose} root: {target_root}")
 
-    if is_relative_to(repo_root, dest) or is_relative_to(source, dest) or is_relative_to(home_root, dest):
-        raise SystemExit(f"refusing ancestor render destination: {dest_root}")
+    if is_relative_to(repo_root, target) or is_relative_to(home_root, target):
+        raise SystemExit(f"refusing ancestor {purpose} root: {target_root}")
+    if source is not None and is_relative_to(source, target):
+        raise SystemExit(f"refusing ancestor {purpose} root: {target_root}")
+
+
+def validate_render_destination(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
+    validate_host_bundle_root(dest_root, agent, "render destination", source_root=source_root)
 
 
 def render_bundle(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
@@ -114,7 +145,9 @@ def main() -> int:
 
     if not args.root:
         parser.error("sanitize mode requires --root")
-    sanitize_root(pathlib.Path(args.root), args.agent)
+    root = pathlib.Path(args.root)
+    validate_host_bundle_root(root, args.agent, "sanitize")
+    sanitize_root(root, args.agent)
     return 0
 
 
