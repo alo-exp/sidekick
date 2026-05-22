@@ -40,7 +40,9 @@ import sys
 print(json.load(open(sys.argv[1]))["version"])
 PY
 )"
-MARKETPLACE_FILE="${TMP_ROOT}/marketplace.json"
+MARKETPLACE_REPO="${TMP_ROOT}/marketplace-repo"
+MARKETPLACE_FILE="${MARKETPLACE_REPO}/.agents/plugins/marketplace.json"
+mkdir -p "$(dirname "${MARKETPLACE_FILE}")"
 python3 - "${MARKETPLACE_FILE}" "${FIXTURE_REF}" "${FIXTURE_VERSION}" <<'PY'
 import json
 import sys
@@ -65,6 +67,11 @@ data = {
 }
 open(path, "w", encoding="utf-8").write(json.dumps(data, indent=2) + "\n")
 PY
+git -C "${MARKETPLACE_REPO}" init -q
+git -C "${MARKETPLACE_REPO}" config user.email "sidekick-tests@example.invalid"
+git -C "${MARKETPLACE_REPO}" config user.name "Sidekick Tests"
+git -C "${MARKETPLACE_REPO}" add .
+git -C "${MARKETPLACE_REPO}" commit -qm "test marketplace fixture"
 
 echo "=== T1: release mode passes with clean committed fixture ==="
 if CODEX_MARKETPLACE_FILE="${MARKETPLACE_FILE}" SIDEKICK_RELEASE_GATE=1 bash "${FIXTURE_REPO}/tests/test_codex_marketplace_manifest.bash" >/tmp/sidekick-marketplace-clean.out 2>&1; then
@@ -90,6 +97,25 @@ elif grep -Fq "release metadata clean" /tmp/sidekick-marketplace-dirty.out; then
   assert_pass "dirty marketplace release gate fails closed"
 else
   assert_fail "dirty marketplace release gate" "$(cat /tmp/sidekick-marketplace-dirty.out)"
+fi
+
+echo "=== T4: release mode fails when marketplace file is dirty ==="
+git -C "${FIXTURE_REPO}" checkout -- README.md
+python3 - "${MARKETPLACE_FILE}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+data = json.load(open(path))
+data["plugins"][0]["version"] = data["plugins"][0]["version"] + "-dirty"
+open(path, "w", encoding="utf-8").write(json.dumps(data, indent=2) + "\n")
+PY
+if CODEX_MARKETPLACE_FILE="${MARKETPLACE_FILE}" SIDEKICK_RELEASE_GATE=1 bash "${FIXTURE_REPO}/tests/test_codex_marketplace_manifest.bash" >/tmp/sidekick-marketplace-dirty-file.out 2>&1; then
+  assert_fail "dirty marketplace file release gate" "dirty marketplace file unexpectedly passed"
+elif grep -Fq "marketplace metadata clean" /tmp/sidekick-marketplace-dirty-file.out; then
+  assert_pass "dirty marketplace file release gate fails closed"
+else
+  assert_fail "dirty marketplace file release gate" "$(cat /tmp/sidekick-marketplace-dirty-file.out)"
 fi
 
 echo ""

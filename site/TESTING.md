@@ -100,7 +100,7 @@ Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model cal
 ```bash
 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash                        # Codex live pyramid — maintainer pre-tag
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full pyramid when Forge live is available
-bash tests/run_release.bash                                              # strict stage 1 only, stages 2-6 skip cleanly — safe, not release-authorizing
+bash tests/run_release.bash                                              # non-live release check; still requires clean committed release metadata and marketplace pin
 ```
 
 Every release must first pass the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md`, including each stage's own clean-pass loop, then pass the live Kay pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Only live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
