@@ -41,6 +41,27 @@ On the next host session, Sidekick performs the first-run bootstrap. Runtime rea
 
 ---
 
+## Development Layout
+
+Sidekick keeps host-agnostic workflow sources under `skills/`. Host-facing skill bundles are generated from that source tree:
+
+```text
+skills/           Canonical Forge and Kay workflow sources
+agents/claude/    Generated Claude Code skill surface
+agents/codex/     Generated Codex skill surface
+scripts/          Host-surface renderer and maintenance helpers
+```
+
+Edit `skills/` first, then run:
+
+```bash
+bash scripts/sync-host-surfaces.sh
+```
+
+The plugin manifests point at the generated host bundle for each runtime, while tests keep the generated bundles synchronized with the renderer.
+
+---
+
 ## Forge — ForgeCode Sidekick
 
 ### What it does
@@ -106,7 +127,7 @@ The host configures Forge automatically and delegates coding work from that poin
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Unit + integration** | `tests/run_all.bash` | ✅ | 30 suites — hook classifiers, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
+| **Unit + integration** | `tests/run_all.bash` | ✅ | 31 suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, and Forge/Kay coverage gaps. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full host→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
 | **Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | Installs Sidekick through the Codex marketplace path and verifies the installed Kay and Forge surfaces. |

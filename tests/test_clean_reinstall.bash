@@ -33,6 +33,8 @@ copy_snapshot() {
   cp "${PLUGIN_DIR}/output-styles/codex.md" "${dest}/output-styles/codex.md"
   cp "${PLUGIN_DIR}/.claude-plugin/plugin.json" "${dest}/.claude-plugin/plugin.json"
   cp "${PLUGIN_DIR}/.codex-plugin/plugin.json" "${dest}/.codex-plugin/plugin.json"
+  cp -R "${PLUGIN_DIR}/agents" "${dest}/agents"
+  cp -R "${PLUGIN_DIR}/scripts" "${dest}/scripts"
 }
 
 seed_host_state() {
@@ -175,8 +177,10 @@ PY
     && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${target_root}/hooks/lib/sidekick-registry.sh" \
     && grep -Fq '.codex/' "${target_root}/sidekicks/registry.json" \
     && ! grep -Fq '.claude/' "${target_root}/sidekicks/registry.json" \
-    && grep -Fq '${HOME}/.kay/sessions' "${target_root}/skills/codex-stop/SKILL.md" \
-    && ! grep -Fq '~/.claude' "${target_root}/skills/codex-stop/SKILL.md" \
+    && grep -Fq 'SIDEKICK_HOST_SESSION_ID' "${target_root}/skills/codex-stop/SKILL.md" \
+    && grep -Fq 'CODEX_THREAD_ID' "${target_root}/agents/codex/codex-stop/SKILL.md" \
+    && ! grep -Fq 'CLAUDE_SESSION_ID' "${target_root}/agents/codex/codex-stop/SKILL.md" \
+    && grep -Fq '"skills": "./agents/codex/"' "${target_root}/.codex-plugin/plugin.json" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/config.toml" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/plugins/installed_plugins.json" \
     && grep -Fq 'topgun@alo-labs-codex' "${home}/.codex/config.toml" \

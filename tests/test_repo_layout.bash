@@ -41,7 +41,7 @@ expect_valid_json() {
 }
 
 echo "=== T1: Top-level project shape ==="
-for dir in .claude .claude-plugin .codex-plugin .forge .github .planning hooks output-styles sidekicks site skills tests; do
+for dir in .claude .claude-plugin .codex-plugin .forge .github .planning agents agents/claude agents/codex hooks output-styles scripts sidekicks site skills tests; do
   expect_dir "${dir}"
 done
 
