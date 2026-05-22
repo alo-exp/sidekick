@@ -5,7 +5,7 @@
 # Runs the full pre-release test pyramid in order and aborts on the first
 # failure. Intended to be run by the maintainer before tagging a new version.
 #
-#   1. run_all.bash          — unit + integration suites (always runs)
+#   1. run_unit.bash         — strict non-live unit + integration suites
 #   2. smoke/run_smoke.bash   — live `forge --version` + trivial forge -p
 #                              (requires SIDEKICK_LIVE_FORGE=1)
 #   3. run_live_e2e.bash      — full host→Forge delegation on seeded testapp
@@ -108,7 +108,7 @@ else
 fi
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 
-run_stage "Unit + integration suites"  "${SCRIPT_DIR}/run_all.bash"
+run_stage "Strict non-live unit + integration suites" "${SCRIPT_DIR}/run_unit.bash"
 run_stage "Live-Forge smoke harness"   "${SCRIPT_DIR}/smoke/run_smoke.bash"
 run_stage "Live-Forge E2E testapp"     "${SCRIPT_DIR}/run_live_e2e.bash"
 run_stage "Live-Codex marketplace install" "${SCRIPT_DIR}/run_live_codex_marketplace_install.bash"

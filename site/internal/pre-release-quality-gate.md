@@ -99,7 +99,7 @@ Audit `tests/` against README claims and SKILL.md behavior:
 - Count the test files and verify the count matches any claim in `README.md` about test coverage
 - Verify every major SKILL.md section has at least one corresponding test: activation, fallback ladder (L1, L2, L3), skill injection, AGENTS.md write, token optimization
 - Check for orphaned test files — tests that reference functions, commands, or files that no longer exist in the codebase
-- Verify the test runner command documented in `README.md` (`bash tests/run_all.bash` or equivalent) actually works on a clean checkout
+- Verify the strict test runner command documented in `README.md` (`bash tests/run_unit.bash`) actually works on a clean checkout
 - Verify the CI workflow at `.github/workflows/ci.yml` runs the same test command as `README.md` documents
 
 ### Dimension C — Config Files Consistency
