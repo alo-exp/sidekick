@@ -86,12 +86,12 @@ GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
 GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
 GITHUB_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 GITHUB_RELEASE_API_RE = re.compile(
-    r"(?:https?://api\.github\.com)?/?repos/[^/\s\"']+/[^/\s\"']+/"
+    r"(?:https?://[^/\s\"']+/)?(?:api/v3/)?repos/[^/\s\"']+/[^/\s\"']+/"
     r"(?:releases(?:[/\?#\"'\s]|$)|git/refs/tags(?:[/\?#\"'\s]|$))",
     re.I,
 )
 GITHUB_REFS_API_RE = re.compile(
-    r"(?:https?://api\.github\.com)?/?repos/[^/\s\"']+/[^/\s\"']+/git/refs(?:[/\?#\"'\s]|$)",
+    r"(?:https?://[^/\s\"']+/)?(?:api/v3/)?repos/[^/\s\"']+/[^/\s\"']+/git/refs(?:[/\?#\"'\s]|$)",
     re.I,
 )
 SUDO_VALUE_OPTIONS = {
@@ -115,6 +115,7 @@ POSITIONAL_FRAGMENT_RE = re.compile(r"\$(?:([0-9])|([@*])|\{([0-9]+|[@*])\})")
 ARRAY_EXPANSION_RE = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\[[*@]\]\}$")
 EXPANSION_RE = re.compile(r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{|\$\(|`)")
 VARIABLE_TOKEN_RE = re.compile(r"^\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)\})$")
+ENV_REFERENCE_RE = re.compile(r"\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)\})")
 PRINTF_SPEC_RE = re.compile(r"%(?:[-+#0 ']*\d*(?:\.\d+)?[hlLzjt]*)?([A-Za-z%])")
 SHELL_VALUE_OPTIONS = {"--init-file", "--rcfile"}
 GH_API_VALUE_OPTIONS = {
@@ -144,7 +145,9 @@ GIT_PUSH_VALUE_OPTIONS = {
 }
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
 RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
+RELEASE_TAG_TEXT_RE = re.compile(r"\bv?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?\b")
 DYNAMIC_RELEASE_TAG_HINT_RE = re.compile(r"(?:TAG|VERSION|RELEASE)", re.IGNORECASE)
+DYNAMIC_RELEASE_ENDPOINT_HINT_RE = re.compile(r"(?:RELEASE|TAG|VERSION).*(?:URL|ENDPOINT|API)|(?:URL|ENDPOINT|API).*(?:RELEASE|TAG|VERSION)", re.IGNORECASE)
 TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
 SCRIPT_PATH_HINT_RE = re.compile(r"(?:release|tag|publish)", re.IGNORECASE)
 SCRIPT_READ_MAX_BYTES = 256 * 1024
@@ -174,6 +177,10 @@ GRAPHQL_REF_MUTATION_RE = re.compile(
     re.IGNORECASE,
 )
 GRAPHQL_RELEASE_ENDPOINT_RE = re.compile(r"api\.github\.com/graphql", re.IGNORECASE)
+GIT_PUSH_RELEASE_TEXT_RE = re.compile(
+    r"\bgit\s+push\b[^\n;&|`]*?(?:refs/tags/|(?:^|[\s'\"=:/])v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?(?:$|[\s'\";,&|)]))",
+    re.IGNORECASE,
+)
 GH_RELEASE_MUTATING_RE = re.compile(
     r"\bgh\s+release\s+(?:create|edit|delete|delete-asset|upload)\b",
     re.IGNORECASE,
@@ -816,32 +823,81 @@ def git_push_release_tag_command(segment, git_index):
     return git_push_refspecs_target_release_tag(refspecs)
 
 
+def referenced_env_names(value):
+    return [
+        match.group(1) or match.group(2)
+        for match in ENV_REFERENCE_RE.finditer(str(value))
+    ]
+
+
+def expand_inherited_env_refs(value):
+    text = str(value)
+
+    def replace(match):
+        name = match.group(1) or match.group(2)
+        return os.environ.get(name, match.group(0))
+
+    return ENV_REFERENCE_RE.sub(replace, text)
+
+
+def dynamic_release_endpoint_hint(value):
+    return any(
+        DYNAMIC_RELEASE_ENDPOINT_HINT_RE.search(name)
+        for name in referenced_env_names(value)
+    )
+
+
+def endpoint_variants(endpoint):
+    text = str(endpoint).strip()
+    variants = {text}
+    expanded = expand_inherited_env_refs(text)
+    if expanded != text:
+        variants.add(expanded)
+    return variants
+
+
 def github_api_path_parts(endpoint):
     endpoint = endpoint.strip()
-    endpoint = re.sub(r"^https?://api\.github\.com/?", "", endpoint, flags=re.I)
-    path = endpoint.split("?", 1)[0].strip("/")
+    parsed = urllib.parse.urlparse(endpoint)
+    if parsed.scheme and parsed.netloc:
+        path = parsed.path
+    else:
+        endpoint = re.sub(r"^https?://api\.github\.com/?", "", endpoint, flags=re.I)
+        path = endpoint.split("?", 1)[0]
+    path = path.strip("/")
+    if path.startswith("api/v3/"):
+        path = path[len("api/v3/"):]
     return [part for part in path.split("/") if part]
 
 
 def is_releases_api_endpoint(endpoint):
-    parts = github_api_path_parts(endpoint)
-    if len(parts) < 4 or parts[0] != "repos":
-        return False
-    return parts[3] == "releases"
+    if dynamic_release_endpoint_hint(endpoint):
+        return True
+    for candidate in endpoint_variants(endpoint):
+        parts = github_api_path_parts(candidate)
+        if len(parts) >= 4 and parts[0] == "repos" and parts[3] == "releases":
+            return True
+    return False
 
 
 def is_git_refs_api_endpoint(endpoint):
-    parts = github_api_path_parts(endpoint)
-    if len(parts) < 5 or parts[0] != "repos":
-        return False
-    return parts[3:5] == ["git", "refs"]
+    if dynamic_release_endpoint_hint(endpoint):
+        return True
+    for candidate in endpoint_variants(endpoint):
+        parts = github_api_path_parts(candidate)
+        if len(parts) >= 5 and parts[0] == "repos" and parts[3:5] == ["git", "refs"]:
+            return True
+    return False
 
 
 def is_git_tag_refs_api_endpoint(endpoint):
-    parts = github_api_path_parts(endpoint)
-    if len(parts) < 6 or parts[0] != "repos":
-        return False
-    return parts[3:6] == ["git", "refs", "tags"]
+    if dynamic_release_endpoint_hint(endpoint):
+        return True
+    for candidate in endpoint_variants(endpoint):
+        parts = github_api_path_parts(candidate)
+        if len(parts) >= 6 and parts[0] == "repos" and parts[3:6] == ["git", "refs", "tags"]:
+            return True
+    return False
 
 
 def normalized_payload_text(payload):
@@ -850,6 +906,16 @@ def normalized_payload_text(payload):
     text = str(payload)
     decoded = urllib.parse.unquote_plus(text)
     variants = {text, decoded}
+    for value in list(variants):
+        variants.add(value.replace("\\/", "/"))
+    for value in list(variants):
+        variants.add(
+            re.sub(
+                r"\\u([0-9a-fA-F]{4})",
+                lambda match: chr(int(match.group(1), 16)),
+                value,
+            )
+        )
     for value in list(variants):
         variants.add(value.replace("\\/", "/"))
     return "\n".join(variants)
@@ -864,9 +930,11 @@ def is_release_api_endpoint(endpoint):
 
 
 def is_graphql_endpoint(endpoint):
-    endpoint = endpoint.strip()
-    endpoint = re.sub(r"^https?://api\.github\.com/?", "", endpoint, flags=re.I)
-    return endpoint.split("?", 1)[0].strip("/") == "graphql"
+    for candidate in endpoint_variants(endpoint):
+        parts = github_api_path_parts(candidate)
+        if parts == ["graphql"]:
+            return True
+    return False
 
 
 def graphql_release_mutation_text(value):
@@ -880,17 +948,16 @@ def graphql_release_mutation_text(value):
     return False
 
 
+def graphql_query_file_source(value):
+    for prefix in ("query:=@", "query=@", "query:@", "query@"):
+        if value.startswith(prefix):
+            source = value[len(prefix):]
+            return source or "-"
+    return None
+
+
 def graphql_file_backed_query(value):
-    return (
-        value.startswith("query=@")
-        or value.startswith("query:=@")
-        or value.startswith("query@")
-        or value.startswith("query:@")
-        or value.startswith("query=@-")
-        or value.startswith("query:=@-")
-        or value.startswith("query@-")
-        or value.startswith("query:@-")
-    )
+    return graphql_query_file_source(value) is not None
 
 
 def graphql_dynamic_query(value):
@@ -903,8 +970,14 @@ def graphql_dynamic_query(value):
 def graphql_payload_needs_gate(value):
     if graphql_dynamic_query(value) or graphql_release_mutation_text(value):
         return True
-    if graphql_file_backed_query(value):
-        return True
+    query_source = graphql_query_file_source(value)
+    if query_source is not None:
+        if release_source_is_uninspectable(query_source):
+            return True
+        source_text = read_release_source_text(query_source)
+        if source_text is None:
+            return True
+        return graphql_release_mutation_text(source_text)
     if value in {"-", "@-"}:
         return True
     source = value[1:] if value.startswith("@") else None
@@ -925,7 +998,6 @@ def gh_api_release_write_command(segment, gh_index):
     method = None
     has_write_fields = False
     graphql_payloads = []
-    graphql_input_file = False
     endpoint = None
     index = subcommand_index + 1
     while index < len(segment):
@@ -950,13 +1022,10 @@ def gh_api_release_write_command(segment, gh_index):
             has_write_fields = True
             if index + 1 < len(segment):
                 graphql_payloads.append(segment[index + 1])
-                if graphql_file_backed_query(segment[index + 1]):
-                    graphql_input_file = True
             index += 2
             continue
         if token == "--input":
             has_write_fields = True
-            graphql_input_file = True
             if index + 1 < len(segment):
                 graphql_payloads.append("@" + segment[index + 1])
             index += 2
@@ -965,13 +1034,10 @@ def gh_api_release_write_command(segment, gh_index):
             has_write_fields = True
             payload = token.split("=", 1)[1]
             graphql_payloads.append(payload)
-            if graphql_file_backed_query(payload):
-                graphql_input_file = True
             index += 1
             continue
         if token.startswith("--input="):
             has_write_fields = True
-            graphql_input_file = True
             graphql_payloads.append("@" + token.split("=", 1)[1])
             index += 1
             continue
@@ -979,8 +1045,6 @@ def gh_api_release_write_command(segment, gh_index):
             has_write_fields = True
             payload = token[2:]
             graphql_payloads.append(payload)
-            if graphql_file_backed_query(payload):
-                graphql_input_file = True
             index += 1
             continue
         if token in GH_API_VALUE_OPTIONS:
@@ -1001,12 +1065,7 @@ def gh_api_release_write_command(segment, gh_index):
     if is_graphql_endpoint(endpoint):
         if effective_method not in GH_API_WRITE_METHODS and not has_write_fields:
             return False
-        return graphql_input_file or any(
-            graphql_dynamic_query(payload)
-            or
-            graphql_release_mutation_text(payload)
-            for payload in graphql_payloads
-        )
+        return any(graphql_payload_needs_gate(payload) for payload in graphql_payloads)
     command_has_write_semantics = effective_method in GH_API_WRITE_METHODS or has_write_fields
     if is_release_api_endpoint(endpoint):
         return command_has_write_semantics
@@ -1016,10 +1075,18 @@ def gh_api_release_write_command(segment, gh_index):
 
 
 def direct_github_release_api_url(value):
-    return bool(
-        GITHUB_RELEASE_API_RE.search(value)
-        or (GITHUB_REFS_API_RE.search(value) and payload_mentions_tag_ref(value))
-    )
+    if dynamic_release_endpoint_hint(value):
+        return True
+    for candidate in endpoint_variants(value):
+        if (
+            GITHUB_RELEASE_API_RE.search(candidate)
+            or (GITHUB_REFS_API_RE.search(candidate) and payload_mentions_tag_ref(candidate))
+            or is_releases_api_endpoint(candidate)
+            or is_git_tag_refs_api_endpoint(candidate)
+            or (is_git_refs_api_endpoint(candidate) and payload_mentions_tag_ref(candidate))
+        ):
+            return True
+    return False
 
 
 def file_text_mentions_release_write(text, command_has_write_semantics=False):
@@ -1030,6 +1097,36 @@ def file_text_mentions_release_write(text, command_has_write_semantics=False):
     if command_has_write_semantics and direct_github_release_api_url(text):
         return True
     return False
+
+
+def curl_config_has_write_semantics(text):
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        key, separator, value = stripped.partition("=")
+        if separator:
+            key = key.strip().lstrip("-").lower().replace("_", "-")
+            value = value.strip().strip("'\"")
+        else:
+            parts = stripped.split(None, 1)
+            key = parts[0].strip().lstrip("-").lower().replace("_", "-")
+            value = parts[1].strip().strip("'\"") if len(parts) > 1 else ""
+        if key in {
+            "data", "data-raw", "data-binary", "data-urlencode",
+            "json", "form", "form-string", "upload-file",
+        }:
+            return True
+        if key in {"request", "custom-request"} and value.upper() in GITHUB_API_WRITE_METHODS:
+            return True
+    return False
+
+
+def curl_config_mentions_release_write(text, command_has_write_semantics=False):
+    return file_text_mentions_release_write(
+        text,
+        command_has_write_semantics or curl_config_has_write_semantics(text),
+    )
 
 
 def read_release_source_text(source):
@@ -1048,8 +1145,13 @@ def read_release_source_text(source):
 def payload_file_source(payload):
     if payload in {"-", "@-"}:
         return "-"
-    if payload.startswith("@"):
-        return payload[1:]
+    value = payload
+    if "=" in value:
+        _, _, value = value.partition("=")
+    if value in {"-", "@-"}:
+        return "-"
+    if value.startswith("@"):
+        return value[1:]
     return None
 
 
@@ -1212,7 +1314,7 @@ def curl_release_write_command(segment, start):
             if release_source_is_uninspectable(config_file):
                 return True
             continue
-        if file_text_mentions_release_write(config_text, command_has_write_semantics):
+        if curl_config_mentions_release_write(config_text, command_has_write_semantics):
             return True
     return False
 
@@ -2180,6 +2282,18 @@ def split_expansion_words(value):
     return words or [value]
 
 
+def inherited_env_value_needs_resolution(name, value):
+    if DYNAMIC_RELEASE_ENDPOINT_HINT_RE.search(name):
+        return True
+    lowered = value.lower()
+    return (
+        "api.github.com" in lowered
+        or "repos/" in lowered
+        or "refs/tags/" in lowered
+        or "graphql" in lowered
+    )
+
+
 def combine_braced_expansion_tokens(segment):
     combined = []
     index = 0
@@ -2227,6 +2341,12 @@ def resolve_variables(segment, variables, positionals=None, arrays=None):
         name = variable_name(token)
         if name and name in variables:
             resolved.extend(split_expansion_words(variables[name]))
+        elif (
+            name
+            and name in os.environ
+            and inherited_env_value_needs_resolution(name, os.environ[name])
+        ):
+            resolved.extend(split_expansion_words(os.environ[name]))
         else:
             resolved.append(embedded_variable_substitution(token, variables))
     return resolved
@@ -2878,6 +2998,12 @@ def literal_argv_mentions_release_command(payload):
     for index, literal in enumerate(literals):
         if GH_RELEASE_MUTATING_RE.search(literal):
             return True
+        if GIT_PUSH_RELEASE_TEXT_RE.search(literal):
+            return True
+        if literal == "git":
+            args = literals[index + 1:]
+            if args and args[0] == "push" and git_push_release_tag_command(["git"] + args, 0):
+                return True
         if literal != "gh":
             continue
         args = literals[index + 1:]
@@ -2892,10 +3018,8 @@ def literal_argv_mentions_release_command(payload):
     return False
 
 
-def language_payload_mentions_release_command(payload):
-    if GH_RELEASE_MUTATING_RE.search(payload):
-        return True
-    if direct_github_release_api_url(payload) and (
+def language_payload_has_write_semantics(payload):
+    return bool(
         re.search(r"\b(?:POST|PUT|PATCH|DELETE)\b", payload, re.I)
         or re.search(r"\b(?:requests|httpx)\.(?:post|put|patch|delete)\s*\(", payload, re.I)
         or re.search(r"\b(?:requests|httpx)\.request\s*\(", payload, re.I)
@@ -2907,7 +3031,48 @@ def language_payload_mentions_release_command(payload):
         or re.search(r"\b(?:aiohttp|urllib3)\b", payload, re.I)
         or re.search(r"\bfetch\s*\(", payload)
         or re.search(r"\b(?:curl|wget)\b", payload)
+    )
+
+
+def referenced_environment_names_in_payload(payload):
+    names = set(referenced_env_names(payload))
+    for pattern in (
+        r"os\.environ\[\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]\s*\]",
+        r"os\.getenv\(\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]",
+        r"environ\.get\(\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]",
+        r"process\.env\.([A-Za-z_][A-Za-z0-9_]*)",
+        r"process\.env\[\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]\s*\]",
+        r"ENV\[\s*['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]\s*\]",
     ):
+        names.update(re.findall(pattern, payload))
+    return names
+
+
+def payload_env_endpoint_needs_gate(payload, command_has_write_semantics):
+    if not command_has_write_semantics:
+        return False
+    for name in referenced_environment_names_in_payload(payload):
+        value = os.environ.get(name)
+        if value:
+            if direct_github_release_api_url(value):
+                return True
+            if is_graphql_endpoint(value) and graphql_release_mutation_text(payload):
+                return True
+            continue
+        if DYNAMIC_RELEASE_ENDPOINT_HINT_RE.search(name):
+            return True
+    return False
+
+
+def language_payload_mentions_release_command(payload):
+    if GH_RELEASE_MUTATING_RE.search(payload):
+        return True
+    if GIT_PUSH_RELEASE_TEXT_RE.search(payload):
+        return True
+    command_has_write_semantics = language_payload_has_write_semantics(payload)
+    if payload_env_endpoint_needs_gate(payload, command_has_write_semantics):
+        return True
+    if direct_github_release_api_url(payload) and command_has_write_semantics:
         return True
     if GRAPHQL_RELEASE_ENDPOINT_RE.search(payload) and graphql_release_mutation_text(payload):
         return True
