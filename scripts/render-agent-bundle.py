@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import shutil
+import tempfile
 
 HOST_REPLACEMENTS = {
     "claude": [
@@ -48,9 +49,42 @@ def sanitize_root(root: pathlib.Path, agent: str) -> None:
             rewrite_file(path, agent)
 
 
+def is_relative_to(path: pathlib.Path, parent: pathlib.Path) -> bool:
+    try:
+        path.relative_to(parent)
+    except ValueError:
+        return False
+    return True
+
+
+def validate_render_destination(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
+    home_root = pathlib.Path.home().resolve(strict=False)
+    cwd = pathlib.Path.cwd().resolve(strict=False)
+    temp_root = pathlib.Path(tempfile.gettempdir()).resolve(strict=False)
+    source = source_root.resolve(strict=True)
+    dest = dest_root.resolve(strict=False)
+
+    allowed_repo_dest = (repo_root / "agents" / agent).resolve(strict=False)
+    allowed_temp_dest = dest.name == agent and is_relative_to(dest.parent, temp_root)
+    if dest != allowed_repo_dest and not allowed_temp_dest:
+        raise SystemExit(
+            "refusing unsafe render destination: "
+            f"{dest_root} (expected {allowed_repo_dest} or a temp dir ending in /{agent})"
+        )
+
+    dangerous_exact = {pathlib.Path("/").resolve(strict=False), repo_root, home_root, cwd, source}
+    if dest in dangerous_exact:
+        raise SystemExit(f"refusing unsafe render destination: {dest_root}")
+
+    if is_relative_to(repo_root, dest) or is_relative_to(source, dest) or is_relative_to(home_root, dest):
+        raise SystemExit(f"refusing ancestor render destination: {dest_root}")
+
+
 def render_bundle(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
     if not source_root.is_dir():
         raise SystemExit(f"source root missing: {source_root}")
+    validate_render_destination(source_root, dest_root, agent)
 
     if dest_root.exists() or dest_root.is_symlink():
         if dest_root.is_dir() and not dest_root.is_symlink():

@@ -45,6 +45,7 @@ Then verify Kay config:
 - provider should be `opencode-go` for Sidekick's Kay delegation path
 - Sidekick routes Kay models automatically by task type:
   - planning, main workhorse, and reviewing tasks -> `mimo-v2.5-pro`
+  - vision and visual reasoning tasks -> `mimo-v2.5`
   - trivial technical work -> `minimax-m2.7`
   - work completion verification, not review -> `deepseek-v4-flash`
 

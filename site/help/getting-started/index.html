@@ -145,7 +145,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="what-is-sidekick">What is Sidekick?</h2>
-      <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. <strong>Forge</strong> packages ForgeCode for delegated terminal work. <strong>Kay</strong> packages the Every Code agent line with the primary <code>kay</code> binary, legacy <code>code</code> / <code>codex</code> / <code>coder</code> compatibility aliases, and the OpenCode Go multi-AI path. Claude Code and Codex can both route work to Forge or Kay, with Kay using MiMo-V2.5-Pro for planning, implementation, reviewing, vision / visual reasoning, and other non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification.</p>
+      <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation agents. <strong>Forge</strong> packages ForgeCode for delegated terminal work. <strong>Kay</strong> packages the Every Code agent line with the primary <code>kay</code> binary, legacy <code>code</code> / <code>codex</code> / <code>coder</code> compatibility aliases, and the OpenCode Go multi-AI path. Claude Code and Codex can both route work to Forge or Kay, with Kay using MiMo-V2.5-Pro for planning, implementation, reviewing, and other non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification.</p>
       <p>When you activate Forge delegation mode, the host stops writing code directly and instead composes structured task prompts, submits them to Forge, monitors the output, and handles failures through the fallback ladder. Kay uses its native execution workflow for implementation while Sidekick keeps packaging, hook enforcement, summaries, and task lookup metadata aligned.</p>
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="zap"></i></span>
@@ -157,7 +157,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <ul>
         <li><strong>Claude Code or Codex host</strong> — required to run the Sidekick plugin surface.</li>
         <li><strong>Forge or Kay agent path</strong> — choose the agent that fits the task.</li>
-        <li><strong>Provider access</strong> — Forge needs a valid Forge provider config and credential entry. Kay uses OpenCode Go provider routing through <code>~/.kay/config.toml</code>, with MiMo-V2.5-Pro for non-trivial work, vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification. Legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> remain compatibility paths.</li>
+        <li><strong>Provider access</strong> — Forge needs a valid Forge provider config and credential entry. Kay uses OpenCode Go provider routing through <code>~/.kay/config.toml</code>, with MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification. Legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> remain compatibility paths.</li>
         <li><strong>Node.js 18+</strong> — required by Claude Code.</li>
       </ul>
       <div class="callout callout-info">
@@ -198,7 +198,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-label">Kay runtime</div>
       <div class="code-block"><span class="cmd">kay --version</span> <span class="comment"># legacy aliases may also exist</span>
 <span class="cmd">kay exec --help</span>
-<span class="cmd">kay login --provider minimax --with-api-key</span> <span class="comment"># if login is missing</span></div>
+<span class="cmd">kay login --provider opencode-go --with-api-key</span> <span class="comment"># if login is missing</span></div>
 
       <h2 id="first-forge">Your First /forge Task</h2>
       <p>Once the health check passes, the host is in Forge delegation mode. Every implementation task you give the host is delegated to Forge via a structured 5-field task prompt.</p>

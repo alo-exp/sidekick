@@ -279,10 +279,10 @@ sidekick_kay_model_for_prompt() {
   prompt="${1:-}"
   normalized="$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')"
 
-  # Vision and visual-reasoning prompts stay on MiMo.
+  # Vision and visual-reasoning prompts use MiMo-V2.5's native multimodal path.
   case "$normalized" in
     *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*picture*|*diagram*|*chart*|*graph*|*ocr*|*mockup*|*wireframe*)
-      printf '%s' 'mimo-v2.5-pro'
+      printf '%s' 'mimo-v2.5'
       return 0
       ;;
   esac
