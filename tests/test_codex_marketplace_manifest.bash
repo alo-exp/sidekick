@@ -8,7 +8,7 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(dirname "${SCRIPT_DIR}")"
-DEFAULT_MARKETPLACE_FILE="/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json"
+DEFAULT_MARKETPLACE_FILE="${HOME}/projects/codex-plugins/.agents/plugins/marketplace.json"
 MARKETPLACE_FILE="${CODEX_MARKETPLACE_FILE:-}"
 CHECK_EXTERNAL_MARKETPLACE=0
 if [ -n "${MARKETPLACE_FILE}" ]; then
@@ -17,14 +17,6 @@ elif [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
   MARKETPLACE_FILE="${DEFAULT_MARKETPLACE_FILE}"
   CHECK_EXTERNAL_MARKETPLACE=1
 fi
-SIDEKICK_REF="$(git -C "${SIDEKICK_DIR}" rev-parse HEAD)"
-SIDEKICK_VERSION="$(python3 - "${SIDEKICK_DIR}/.codex-plugin/plugin.json" <<'PY'
-import json
-import sys
-
-print(json.load(open(sys.argv[1]))["version"])
-PY
-)"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -36,9 +28,40 @@ if [ "${CHECK_EXTERNAL_MARKETPLACE}" -ne 1 ]; then
 fi
 
 if [ ! -f "${MARKETPLACE_FILE}" ]; then
-  echo -e "${green}SKIP${reset} marketplace manifest test: ${MARKETPLACE_FILE} missing"
-  exit 0
+  if [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
+    assert_fail "marketplace manifest present" "${MARKETPLACE_FILE} missing in release-gate mode"
+    echo ""
+    echo "======================================="
+    echo "Results: ${PASS} passed, ${FAIL} failed"
+    echo "======================================="
+    exit 1
+  else
+    echo -e "${green}SKIP${reset} marketplace manifest test: ${MARKETPLACE_FILE} missing"
+    exit 0
+  fi
 fi
+
+echo "=== release_metadata_clean ==="
+if [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
+  if ! DIRTY_RELEASE_FILES="$(git -C "${SIDEKICK_DIR}" status --porcelain 2>&1 | sed -n '1,20p')"; then
+    assert_fail "release metadata clean" "git status failed:\n${DIRTY_RELEASE_FILES}"
+  elif [ -z "${DIRTY_RELEASE_FILES}" ]; then
+    assert_pass "release metadata and package surfaces are committed before release gate"
+  else
+    assert_fail "release metadata clean" "dirty files:\n${DIRTY_RELEASE_FILES}"
+  fi
+else
+  echo "SKIP release metadata clean check (set SIDEKICK_RELEASE_GATE=1)"
+fi
+
+SIDEKICK_REF="$(git -C "${SIDEKICK_DIR}" rev-parse HEAD)"
+SIDEKICK_VERSION="$(python3 - "${SIDEKICK_DIR}/.codex-plugin/plugin.json" <<'PY'
+import json
+import sys
+
+print(json.load(open(sys.argv[1]))["version"])
+PY
+)"
 
 echo "=== marketplace_name ==="
 MARKETPLACE_NAME="$(python3 - "${MARKETPLACE_FILE}" <<'PY'
@@ -107,18 +130,6 @@ if [ "${REF_VERSION}" = "${MARKETPLACE_VERSION}" ]; then
   assert_pass "Sidekick marketplace ref content version matches the advertised version"
 else
   assert_fail "sidekick ref content" "ref=${MARKETPLACE_REF} advertises=${MARKETPLACE_VERSION} contains=${REF_VERSION:-unreadable}"
-fi
-
-echo "=== release_metadata_clean ==="
-if [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
-  DIRTY_RELEASE_FILES="$(git -C "${SIDEKICK_DIR}" status --porcelain -- .claude-plugin .codex-plugin CHANGELOG.md README.md context.md docs hooks install.sh sidekicks skills tests | sed -n '1,20p')"
-  if [ -z "${DIRTY_RELEASE_FILES}" ]; then
-    assert_pass "release metadata and package surfaces are committed before release gate"
-  else
-    assert_fail "release metadata clean" "dirty files:\n${DIRTY_RELEASE_FILES}"
-  fi
-else
-  echo "SKIP release metadata clean check (set SIDEKICK_RELEASE_GATE=1)"
 fi
 
 echo "=== marketplace_interface ==="

@@ -7,7 +7,7 @@
 | Sidekick | Activation surface | Agent | Status |
 |----------|--------------------|-------|--------|
 | **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.6.0 |
-| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial and vision / visual reasoning work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.0 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.0 |
 
 More sidekicks planned.
 
@@ -115,7 +115,8 @@ The host configures Forge automatically and delegates coding work from that poin
 ### Providers & Models
 | Provider | Model | Notes |
 |----------|-------|-------|
-| **OpenCode Go** | **MiMo-V2.5-Pro** `mimo-v2.5-pro` | Main workhorse path for planning, implementation, reviewing, vision / visual reasoning, and other non-trivial tasks |
+| **OpenCode Go** | **MiMo-V2.5-Pro** `mimo-v2.5-pro` | Main workhorse path for planning, implementation, reviewing, and other non-trivial tasks |
+| **OpenCode Go** | **MiMo-V2.5** `mimo-v2.5` | Vision / visual reasoning work that needs image, diagram, screenshot, or other multimodal input |
 | **OpenCode Go** | **MiniMax M2.7** `minimax-m2.7` | Trivial technical work |
 | **OpenCode Go** | **DeepSeek V4 Flash** `deepseek-v4-flash` | Test running, issue reporting, and work completion verification, not review |
 
@@ -127,7 +128,7 @@ The host configures Forge automatically and delegates coding work from that poin
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Strict unit + integration** | `tests/run_unit.bash` | ✅ | 30 non-live suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, runner contract, and Forge/Kay coverage gaps. |
+| **Strict unit + integration** | `tests/run_unit.bash` | ✅ | 31 non-live suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup, clean reinstall bootstrap, runner contract, marketplace release-gate regressions, and Forge/Kay coverage gaps. |
 | **Skip-safe local sweep** | `tests/run_all.bash` | ✅ | Delegates to `run_unit.bash`, then runs the skip-safe live-gated Forge E2E and Codex plugin/read probes. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full host→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |
@@ -135,13 +136,14 @@ The host configures Forge automatically and delegates coding work from that poin
 | **Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | `kay --version` + trivial `kay exec` round-trip against the real binary, with legacy names kept as compatibility aliases. |
 | **Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | Full host→Kay delegation on the same seeded-buggy testapp — proves the 5-field prompt shape, edit, and verification loop work end-to-end. |
 
-The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. CI runs the strict non-live runner. Before tagging a new version:
+The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. CI runs the strict non-live runner. Before tagging a new version, run the Codex live release pyramid twice; add the Forge live flag when Forge provider testing is available:
 
 ```bash
+SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
 
-Before any release, complete the 4-stage pre-release quality gate until it passes twice in a row, then run the full live Forge/Kay pyramid twice with both live env vars. Each full live run records a current-session `quality-gate-live-pyramid` marker; the release hook requires two markers before publishing.
+Before any release, complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Each Codex live run records a `quality-gate-live-pyramid` marker; the release hook requires two markers before publishing.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.

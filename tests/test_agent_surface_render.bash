@@ -122,6 +122,15 @@ else
   assert_fail "generated host bundles in sync" "renderer missing"
 fi
 
+echo "=== T6: renderer refuses unsafe destinations ==="
+if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${PLUGIN_DIR}" >/tmp/sidekick-render-unsafe.out 2>&1; then
+  assert_fail "renderer destination guard" "repo root destination unexpectedly accepted"
+elif grep -Fq "refusing unsafe render destination" /tmp/sidekick-render-unsafe.out; then
+  assert_pass "renderer destination guard rejects repo root"
+else
+  assert_fail "renderer destination guard" "$(cat /tmp/sidekick-render-unsafe.out)"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"

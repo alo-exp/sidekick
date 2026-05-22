@@ -205,7 +205,7 @@ state — never from the SB state file.
 2. `.planning/ROADMAP.md` — identify current phase name, its goal, and how many plans it contains
 
 **SB state file (`~/.claude/.silver-bullet/state`) is ONLY for:**
-- Quality gate stage markers live in `~/.claude/.sidekick/quality-gate-state` (`quality-gate-stage-1` through `quality-gate-stage-4`)
+- Sidekick release quality gate markers live in the host-specific Sidekick state file (`~/.claude/.sidekick/quality-gate-state` for Claude/source installs, `~/.codex/.sidekick/quality-gate-state` for Codex installs) and are scoped by the current host session id
 - Skill invocation markers (recorded by `record-skill.sh`)
 - Session mode (`~/.claude/.silver-bullet/mode`)
 - Session init sentinel (`~/.claude/.silver-bullet/session-init`)
@@ -401,7 +401,7 @@ GSD steps MUST be invoked as slash commands in the correct phase order.
 > **Anti-Skip:** You are violating this rule if:
 > - You produce source code without a skill invocation recorded in the state file (dev-cycle-check.sh will block you)
 > - You claim "I already covered X" instead of invoking the skill (record-skill.sh tracks invocations, not claims)
-> - You skip /gsd:verify-work at the end (completion-audit.sh will block your commit/push)
+> - You skip /gsd:verify-work at the end (the relevant release/completion hook will block publish actions)
 > - You proceed past a review loop with fewer than 2 consecutive approvals
 
 ## 3a. Review Loop Enforcement
@@ -551,10 +551,10 @@ PREVIOUS phase's artifacts exist. If they do not exist, STOP and either:
 1. Run the missing step to produce the artifacts, OR
 2. Explain to the user why the artifacts are missing and get explicit approval to skip
 
-**Hook support:** The completion-audit hook (completion-audit.sh) performs artifact
-existence checks at commit/PR/deploy time. But artifact checks at phase boundaries
-are instruction-enforced because hooks cannot intercept GSD skill invocations
-at the workflow level.
+**Hook support:** Release/completion hooks perform artifact existence checks at
+commit/PR/deploy time. But artifact checks at phase boundaries are
+instruction-enforced because hooks cannot intercept GSD skill invocations at the
+workflow level.
 
 > **Anti-Skip:** You are violating this rule if you invoke /gsd:execute-phase
 > without a PLAN.md existing, or invoke /gsd:verify-work without SUMMARY.md
@@ -709,121 +709,55 @@ If a third-party skill's behavior needs adjustment, implement the change as:
 
 ## 9. Pre-Release Quality Gate
 
-Before ANY release (`/silver-release` or `/create-release`), the following release
-sequence is mandatory:
+Before ANY release (`/silver-release` or `/create-release`), complete the
+canonical Sidekick gate in `site/pre-release-quality-gate.md`. That file is the
+source of truth for stage scope, clean-pass counts, state paths, marker formats,
+and live-test requirements.
 
-1. Complete the four-stage quality gate in `site/pre-release-quality-gate.md`
-   until it records two consecutive clean passes.
-2. Run the full Forge/Codex live pyramid twice locally with
-   `SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`.
-3. Only then invoke the release command.
+Release order:
 
-Each stage has its own completion criteria. Skipping a stage or declaring it
-complete without meeting the criteria violates Section 3.
+1. Complete Stage 1 through Stage 4 exactly as documented in
+   `site/pre-release-quality-gate.md`.
+2. Invoke `/superpowers:verification-before-completion` before writing each
+   stage marker.
+3. Write stage markers with the current host session id to the host-specific
+   Sidekick state file:
+   - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
+   - Codex installs: `~/.codex/.sidekick/quality-gate-state`
+4. Run the Codex live release pyramid twice:
+   `SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`.
+   Add `SIDEKICK_LIVE_FORGE=1` when Forge live coverage is available. Codex-only
+   live runs are release-authorizing in this repo and record the required
+   `quality-gate-live-pyramid session=<current-host-session-id> ...` markers.
+5. Only then invoke the release command.
 
-**IMPORTANT**: This gate runs AFTER the normal workflow finalization steps
-(testing, documentation, branch cleanup, deploy checklist) and BEFORE
-`/silver-release` or `/create-release`. The release command will not be invoked
-until all four stages pass, the gate has cleanly repeated twice, and the full
-Forge/Codex live pyramid has been run twice.
+Each stage has its own completion criteria:
 
-### Stage 1 — Code Review Triad
+- Stage 1: code review triad loops until zero accepted items on two consecutive
+  passes.
+- Stage 2: big-picture consistency audit loops until all five dimensions are
+  clean on two consecutive passes.
+- Stage 3: public-facing content refresh verifies GitHub metadata, README, help
+  site, changelog, and `tests/run_unit.bash`.
+- Stage 4: SENTINEL security audit reruns until there are no blocking security
+  findings.
 
-Run all three review skills in sequence, then fix all issues. Repeat until clean.
+The release hook (`hooks/validate-release-gate.sh`) blocks `gh release create`
+until the current session has all four `quality-gate-stage-N
+session=<current-host-session-id>` markers and two distinct current-session
+`quality-gate-live-pyramid` markers written by successful live
+`tests/run_release.bash` runs. Marker-only shortcuts are invalid: the verification
+skill invocation and the underlying checks are both required.
 
-1. Invoke `/code-review` (Engineering) — structured quality review: security, performance, correctness, maintainability
-2. Invoke `/requesting-code-review` — dispatches `superpowers:code-reviewer` automated reviewer
-3. Invoke `/receiving-code-review` — triage combined feedback from steps 1-2
-4. Fix all accepted issues
-5. **Loop**: repeat steps 1-4 until `/receiving-code-review` produces zero accepted items
-6. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
-   Running verification commands manually is NOT a substitute for invoking this skill.
-   You need BOTH: (a) run the actual verification commands, AND (b) invoke the skill so
-   `record-skill.sh` tracks it. If you ran tests/CI/checks but did not invoke the skill,
-   you have NOT completed this step. Do NOT record the stage marker until BOTH are done.
-7. Record stage completion: `echo "quality-gate-stage-1" >> ~/.claude/.sidekick/quality-gate-state`
+If any stage surfaces a blocker that cannot be resolved (for example, upstream
+dependency failure or ambiguous design decision), log it under "Needs human
+review" and surface it to the user before proceeding to the next stage.
 
-### Stage 2 — Big-Picture Consistency Audit
-
-Review the entire plugin for cross-file inconsistencies, redundancies, and contradictions.
-
-1. Dispatch parallel Explore agents across five dimensions:
-   - Workflows (full-dev-cycle.md vs devops-cycle.md vs CLAUDE.md vs silver-bullet.md)
-   - Skills (all SKILL.md files — obsolete references, redundant work, contradictions)
-   - Hooks + config (.sh files, hooks.json, .silver-bullet.json, templates)
-   - Help site + README (HTML pages, search.js, README.md — step counts, paths, versions) **+ New-Feature Documentation Inventory:** for each workflow, skill, enforcement layer, or major feature added in this release, verify: (a) a dedicated help page exists under `site/help/`, (b) the page is linked from `site/help/index.html` or the appropriate section hub, (c) the page appears in `site/help/reference/index.html` or the relevant concept page. Missing pages = this dimension fails and Stage 2 loops.
-   - Cross-plugin consistency (read 100% of skill content from all 4 dependency plugins — GSD: ~/.claude/get-shit-done/ workflows/references/templates; Superpowers: ~/.claude/plugins/cache/*/superpowers/*/skills/*/SKILL.md; Engineering: ~/.claude/plugins/cache/*/knowledge-work-plugins/*/engineering/skills/*/SKILL.md; Design: ~/.claude/plugins/cache/*/knowledge-work-plugins/*/design/skills/*/SKILL.md — check for contradictions, conflicts, inconsistencies, or redundancies between Silver Bullet instructions and upstream plugin skills)
-2. Fix all genuine issues found
-3. **Loop**: repeat until two consecutive audit passes find zero issues
-4. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
-   Do NOT record the stage marker without invoking this skill first.
-5. Record stage completion: `echo "quality-gate-stage-2" >> ~/.claude/.sidekick/quality-gate-state`
-
-### Stage 3 — Public-Facing Content Refresh
-
-Verify and update all user-visible surfaces to reflect the current state.
-
-1. Build a **Feature-to-Documentation Coverage Matrix** before touching any files:
-
-   | Feature | Type | Added in v{N} | Help page exists | Linked from nav | Linked from reference | Status |
-   |---------|------|---------------|------------------|-----------------|-----------------------|--------|
-   | [feature] | Workflow/Skill/Enforcement | ✓ | ✓ | ✓ | ✓ | PASS |
-
-   Every feature added in this release needs a row. Any blank cell or FAIL = Stage 3 is not complete until fixed.
-
-2. Audit for factual accuracy:
-   - GitHub repo description and topics (`gh repo edit`)
-   - README.md (version, step counts, enforcement layers, state paths, architecture)
-   - Landing page (`site/index.html`) — **both visible content AND `<head>` metadata:**
-     - Visible: hero section, workflow section, pills, feature cards all reflect current product state
-     - Meta tags: `grep 'og:description\|twitter:description\|meta.*description' site/index.html` — verify no stale references (e.g. old workflow counts, old version numbers)
-     - Consistency: if visible content says "7 workflows", meta tags must too — contradictions between `<head>` and `<body>` are a failure
-   - All help pages (`site/help/*/index.html`)
-   - Search index (`site/help/search.js`)
-   - Compare page (`site/compare/index.html`) if it exists
-4. Fix all discrepancies
-5. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
-   Do NOT record the stage marker without invoking this skill first.
-6. Push and confirm CI green
-7. Record stage completion: `echo "quality-gate-stage-3" >> ~/.claude/.sidekick/quality-gate-state`
-
-### Stage 4 — Security Audit (SENTINEL)
-
-Run the SENTINEL v2.3 adversarial security audit against the full plugin.
-
-1. Invoke `/anthropic-skills:audit-security-of-skill` targeting the plugin root
-2. Fix all findings (Critical, High, Medium; Low at discretion)
-3. Re-run the audit
-4. **Loop**: repeat until two consecutive audit passes find zero issues
-5. **MANDATORY — invoke `/superpowers:verification-before-completion`** via the Skill tool.
-   Do NOT record the stage marker without invoking this skill first.
-6. Record stage completion: `echo "quality-gate-stage-4" >> ~/.claude/.sidekick/quality-gate-state`
-
-### Pre-Release Gate Enforcement
-
-The completion audit hook (`hooks/completion-audit.sh`) blocks `gh release create`
-until all required workflow skills AND quality gate stage markers are recorded in
-the Sidekick state file (`~/.claude/.sidekick/quality-gate-state`). Required markers:
-- Stage 1: `quality-gate-stage-1` (recorded per instructions above)
-- Stage 2: `quality-gate-stage-2` (recorded per instructions above)
-- Stage 3: `quality-gate-stage-3` (recorded per instructions above)
-- Stage 4: `quality-gate-stage-4` (recorded per instructions above)
-
-**Session reset:** The `session-start` hook clears all quality-gate-stage-* markers
-from `~/.claude/.sidekick/quality-gate-state` and gsd-* markers from
-`~/.claude/.silver-bullet/state` at the beginning of every session. This ensures
-each release cycle must earn its own quality gate pass — stale markers from a
-previous release cannot satisfy the gate for a new release.
-
-> **Anti-Skip:** You are violating this rule if you release without running all 4 stages
-> in the CURRENT session and then running the full Forge/Codex live pyramid twice.
-> Stale markers from a prior session are automatically cleared.
-
-If any stage surfaces a blocker that cannot be resolved (e.g., upstream dependency
-issue, ambiguous design decision), log it under "Needs human review" and surface
-to the user before proceeding to the next stage.
-
-> **Anti-Skip:** You are violating this rule if you attempt /silver-release or /create-release without all four quality-gate-stage-N markers in `~/.claude/.sidekick/quality-gate-state` and two clean runs of the full Forge/Codex live pyramid. completion-audit.sh will block the release. Each stage requires explicit /superpowers:verification-before-completion invocation — the marker alone is insufficient.
+> **Anti-Skip:** You are violating this rule if you attempt `/silver-release` or
+> `/create-release` without all four current-session stage markers and two
+> current-session live-pyramid markers in the host-specific Sidekick quality gate
+> state file. The stage marker alone is insufficient unless the documented checks
+> and `/superpowers:verification-before-completion` invocation happened first.
 
 **Post-release cleanup:** Immediately after `/silver-release` or `/create-release`
 completes, run `bash tests/post_release_cleanup.bash` to remove transient repo-local
@@ -837,12 +771,12 @@ not considered finished until the working tree is clean again.
 This section is written and committed by SB whenever the user expresses a workflow preference.
 Initially empty — all workflow defaults apply. Read at every relevant decision point.
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 ### 10a. Routing Preferences
 | Work type | Override route | Since |
 |-----------|---------------|-------|
-| Vision / visual reasoning | Use MiMo-V2.5-Pro for screenshots, images, diagrams, and other visual analysis | 2026-05-22 |
+| Vision / visual reasoning | Use MiMo-V2.5 for screenshots, images, diagrams, and other visual analysis | 2026-05-23 |
 | MiniMax-backed Kay work | Use OpenCode Go as the provider path for MiniMax model routing | 2026-05-21 |
 | Test running / issue reporting | Use DeepSeek V4 Flash for verification runs and issue summaries | 2026-05-21 |
 

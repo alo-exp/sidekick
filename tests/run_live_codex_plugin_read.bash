@@ -8,8 +8,8 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(dirname "${SCRIPT_DIR}")"
-CODEX_REPO="/Users/shafqat/projects/codex-cli/kay"
-CODEX_BIN="${CODEX_REPO}/codex-rs/target/debug/codex"
+CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOME}/projects/codex-cli/kay}"
+CODEX_BIN="${SIDEKICK_CODEX_BIN:-${CODEX_REPO}/codex-rs/target/debug/codex}"
 
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
 pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -21,7 +21,7 @@ if [[ "${SIDEKICK_LIVE_CODEX:-}" != "1" ]]; then
 fi
 
 if [ ! -x "${CODEX_BIN}" ]; then
-  fail "codex binary" "expected ${CODEX_BIN} to exist and be executable"
+  fail "codex binary" "expected ${CODEX_BIN} to exist and be executable; set SIDEKICK_CODEX_BIN or SIDEKICK_CODEX_REPO to override"
   exit 1
 fi
 
@@ -80,7 +80,9 @@ plugin_root.symlink_to(sidekick_dir)
 
 env = os.environ.copy()
 env["CODEX_HOME"] = str(code_home)
-env["PATH"] = f"{pathlib.Path('/Users/shafqat/.cargo/bin')}:{env.get('PATH', '')}"
+cargo_bin = pathlib.Path(os.environ.get("CARGO_HOME", str(pathlib.Path.home() / ".cargo"))) / "bin"
+if cargo_bin.is_dir():
+    env["PATH"] = f"{cargo_bin}:{env.get('PATH', '')}"
 
 proc = subprocess.Popen(
     [str(codex_bin), "app-server", "--listen", "stdio://"],

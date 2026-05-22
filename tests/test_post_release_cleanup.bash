@@ -23,7 +23,7 @@ fi
 echo "=== T2: Cleanup semantics ==="
 SANDBOX="$(mktemp -d)"
 trap 'rm -rf "${SANDBOX}"' EXIT
-cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules)
+cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules '~')
 preserve_dirs=(.planning site/specs site/design)
 for dir in "${cleanup_dirs[@]}"; do
   mkdir -p "${SANDBOX}/${dir}"
@@ -48,6 +48,12 @@ if [ -f "${SANDBOX}/keep/keep.txt" ]; then
   assert_pass "Cleanup leaves non-transient files alone"
 else
   assert_fail "Non-transient files" "keep file was removed"
+fi
+
+if [ -d "${HOME}" ]; then
+  assert_pass "Cleanup sandbox did not target real HOME"
+else
+  assert_fail "Cleanup sandbox real HOME" "real HOME is not accessible after cleanup"
 fi
 
 for dir in "${preserve_dirs[@]}"; do

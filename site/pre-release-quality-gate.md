@@ -376,7 +376,7 @@ After all three targets are clean with no blocking issues:
 ## Release
 
 After all 4 stage markers are written to `$SIDEKICK_QG_STATE`,
-and after the full Forge/Kay live pyramid has been run twice with
+and after the Codex live release pyramid has been run twice with
 `SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`:
 
 ```bash

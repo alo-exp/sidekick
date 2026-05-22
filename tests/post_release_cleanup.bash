@@ -24,6 +24,7 @@ cleanup_paths=(
   "coverage"
   ".pytest_cache"
   "node_modules"
+  "~"
 )
 
 removed=()
