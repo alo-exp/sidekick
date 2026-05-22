@@ -658,17 +658,25 @@ validate_clean_reinstall_cache_target() {
   local host="${1:-}"
   local target_root="${2:-}"
   local plugin_root_dir="${3:-}"
-  local target_leaf plugin_leaf expected_cache_segment
+  local target_leaf plugin_leaf expected_cache_root
 
   case "${host}" in
     codex)
-      expected_cache_segment="/.codex/plugins/cache/"
+      expected_cache_root="${HOME}/.codex/plugins/cache"
       ;;
     claude)
-      expected_cache_segment="/.claude/plugins/cache/"
+      expected_cache_root="${HOME}/.claude/plugins/cache"
       ;;
     *)
       echo "[forge-plugin] ERROR: Refusing clean reinstall for unknown host '${host}'." >&2
+      return 1
+      ;;
+  esac
+
+  case "${HOME:-}" in
+    /*) ;;
+    *)
+      echo "[forge-plugin] ERROR: Refusing clean reinstall because HOME is not absolute: ${HOME:-}" >&2
       return 1
       ;;
   esac
@@ -682,9 +690,16 @@ validate_clean_reinstall_cache_target() {
   esac
 
   case "${plugin_root_dir}" in
-    *"${expected_cache_segment}"*/sidekick) ;;
+    "${expected_cache_root}"/*/sidekick) ;;
     *)
-      echo "[forge-plugin] ERROR: Refusing clean reinstall outside the ${host} sidekick cache: ${plugin_root_dir}" >&2
+      echo "[forge-plugin] ERROR: Refusing clean reinstall outside the active ${host} sidekick cache: ${plugin_root_dir}" >&2
+      return 1
+      ;;
+  esac
+
+  case "${target_root}:${plugin_root_dir}" in
+    *"/../"*|*"/./"*|*"/.."|*"/.")
+      echo "[forge-plugin] ERROR: Refusing clean reinstall for non-canonical cache path: ${target_root}" >&2
       return 1
       ;;
   esac
@@ -699,6 +714,31 @@ validate_clean_reinstall_cache_target() {
 
   if [[ ! "${target_leaf}" =~ ^v?[0-9]+[.][0-9]+[.][0-9]+([-+][A-Za-z0-9._-]+)?$ ]]; then
     echo "[forge-plugin] ERROR: Refusing clean reinstall for non-versioned plugin root: ${target_root}" >&2
+    return 1
+  fi
+
+  if ! python3 - "${HOME}" "${expected_cache_root}" "${plugin_root_dir}" <<'PY'
+from pathlib import Path
+import sys
+
+home = Path(sys.argv[1]).expanduser().resolve(strict=False)
+cache_root = Path(sys.argv[2]).expanduser().resolve(strict=False)
+plugin_root = Path(sys.argv[3]).expanduser().resolve(strict=False)
+
+def is_relative_to(child, parent):
+    try:
+        child.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+if not is_relative_to(cache_root, home):
+    raise SystemExit(1)
+if not is_relative_to(plugin_root, cache_root):
+    raise SystemExit(1)
+PY
+  then
+    echo "[forge-plugin] ERROR: Refusing clean reinstall because the resolved ${host} cache path escapes HOME: ${plugin_root_dir}" >&2
     return 1
   fi
 }

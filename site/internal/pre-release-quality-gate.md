@@ -241,7 +241,7 @@ For each of the 5 help section pages, read the page in full and verify:
 
 Verify the new release entry:
 
-- **Version**: Matches the tag being created (e.g., `## v0.5.6 — 2026-05-15`)
+- **Version**: Matches the tag being created (e.g., `## v<version> — <release-date>`)
 - **Date**: Correct release date
 - **Added**: All new features listed with clear descriptions
 - **Changed**: All breaking changes and behavior changes listed, with migration notes if needed

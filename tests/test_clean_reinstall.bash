@@ -289,6 +289,33 @@ else
   fi
 fi
 
+echo "=== T4: clean reinstall refuses out-of-home cache targets ==="
+OUT_SOURCE="${WORKDIR}/out-source"
+OUT_HOME="${WORKDIR}/out-home"
+OUTSIDE_CACHE="${WORKDIR}/outside-cache/.codex/plugins/cache/alo-labs-codex/sidekick"
+OUT_TARGET="${OUTSIDE_CACHE}/${TARGET_VERSION}"
+copy_snapshot "${OUT_SOURCE}"
+mkdir -p "${OUT_TARGET}" "${OUT_HOME}"
+printf 'keep\n' > "${OUTSIDE_CACHE}/keep.txt"
+if env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUDE_THREAD_ID \
+  HOME="${OUT_HOME}" \
+  SIDEKICK_PLUGIN_ROOT="${OUT_SOURCE}" \
+  CODEX_PLUGIN_ROOT="${OUT_TARGET}" \
+  SIDEKICK_CLEAN_REINSTALL=1 \
+  SIDEKICK_INSTALL_FORGE=0 \
+  SIDEKICK_INSTALL_CODE=0 \
+  bash "${OUT_SOURCE}/install.sh" >/tmp/sidekick-clean-reinstall-outside.out 2>/tmp/sidekick-clean-reinstall-outside.err
+then
+  assert_fail "out-of-home clean reinstall target" "installer accepted a cache root outside HOME"
+else
+  if [ -f "${OUTSIDE_CACHE}/keep.txt" ] \
+    && grep -q 'escapes HOME\|outside the active codex sidekick cache' /tmp/sidekick-clean-reinstall-outside.err; then
+    assert_pass "clean reinstall fails closed outside the active host home"
+  else
+    assert_fail "out-of-home clean reinstall target" "expected keep file or refusal message was missing"
+  fi
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"

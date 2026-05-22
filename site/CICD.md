@@ -32,19 +32,19 @@ The deployed site lives at https://sidekick.alolabs.dev (CNAME set in `site/CNAM
 
 No automated tag-on-push. Releases are cut by the maintainer against a fully-green local gate, then pushed.
 
-1. **Pre-release quality gate** — maintainer completes the 4-stage gate in `site/pre-release-quality-gate.md` exactly as documented, including each stage's own clean-pass loop.
-2. **Pre-tag live gate** — maintainer runs the Codex live release pyramid twice; Forge live stages may be added when available:
+1. **Update artifacts and commit the final release candidate** — `CHANGELOG.md` (root) appended with the version entry, `README.md` version badge bumped, `.planning/STATE.md` flipped to `shipped`, `_integrity` SHA-256 hashes in `plugin.json` refreshed for any changed hook / command / skill / output-style file, then commit the exact release candidate that will be tagged.
+
+2. **Pre-release quality gate** — maintainer completes the 4-stage gate in `site/pre-release-quality-gate.md` exactly as documented, including each stage's own clean-pass loop. Because markers are current-commit scoped, run this only after the final release-candidate commit exists.
+
+3. **Pre-tag live gate** — maintainer runs the Codex live release pyramid twice against that same commit; Forge live stages may be added when available:
    ```bash
    SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    ```
    This chains tier 1 (`run_unit.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Each live Codex run records a current-session, current-commit `quality-gate-live-pyramid` marker; the release hook requires two of those markers before it allows release tag publication or `gh release create`. Forge live stages can be added when available, but they are not required when Forge testing is intentionally skipped.
 
-3. **Update artifacts** — `CHANGELOG.md` (root) appended with the version entry, `README.md` version badge bumped, `.planning/STATE.md` flipped to `shipped`, `_integrity` SHA-256 hashes in `plugin.json` refreshed for any changed hook / command / skill / output-style file.
-
 4. **Commit + tag + push:**
    ```bash
-   git commit -m "…"
    git tag vX.Y.Z
    git push origin main
    git push origin vX.Y.Z

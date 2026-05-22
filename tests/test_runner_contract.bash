@@ -70,8 +70,16 @@ expect_absent "tests/run_unit.bash" "SIDEKICK_REPO_ROOT=" "run_unit does not mut
 
 echo "=== T3: run_all is skip-safe everything ==="
 expect_contains "tests/run_all.bash" "run_unit.bash" "run_all delegates strict suites to run_unit"
-expect_contains "tests/run_all.bash" "test_forge_e2e.bash" "run_all includes skip-safe Forge E2E probe"
-expect_contains "tests/run_all.bash" "run_live_codex_plugin_read.bash" "run_all includes skip-safe Codex plugin/read probe"
+for live_script in \
+  test_forge_e2e.bash \
+  smoke/run_smoke.bash \
+  run_live_e2e.bash \
+  run_live_codex_plugin_read.bash \
+  run_live_codex_marketplace_install.bash \
+  smoke/run_codex_smoke.bash \
+  run_live_codex_e2e.bash; do
+  expect_contains "tests/run_all.bash" "${live_script}" "run_all includes skip-safe ${live_script}"
+done
 
 echo "=== T4: release runner authorizes from strict then live stages ==="
 expect_contains "tests/run_release.bash" "run_unit.bash" "run_release uses strict non-live runner for tier 1"
