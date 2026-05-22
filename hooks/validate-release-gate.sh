@@ -86,7 +86,11 @@ GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
 GITHUB_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 GITHUB_RELEASE_API_RE = re.compile(
     r"(?:https?://api\.github\.com)?/?repos/[^/\s\"']+/[^/\s\"']+/"
-    r"(?:releases(?:[/\?#\"'\s]|$)|git/refs(?:[/\?#\"'\s]|$))",
+    r"(?:releases(?:[/\?#\"'\s]|$)|git/refs/tags(?:[/\?#\"'\s]|$))",
+    re.I,
+)
+GITHUB_REFS_API_RE = re.compile(
+    r"(?:https?://api\.github\.com)?/?repos/[^/\s\"']+/[^/\s\"']+/git/refs(?:[/\?#\"'\s]|$)",
     re.I,
 )
 SUDO_VALUE_OPTIONS = {
@@ -140,6 +144,15 @@ GIT_PUSH_VALUE_OPTIONS = {
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
 RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 DYNAMIC_RELEASE_TAG_HINT_RE = re.compile(r"(?:TAG|VERSION|RELEASE)", re.IGNORECASE)
+TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
+SCRIPT_PATH_HINT_RE = re.compile(r"(?:release|tag|publish)", re.IGNORECASE)
+SCRIPT_READ_MAX_BYTES = 256 * 1024
+SCRIPT_EXTENSIONS = {
+    ".sh", ".bash", ".zsh",
+    ".py", ".pyw",
+    ".js", ".mjs", ".cjs",
+    ".rb", ".pl",
+}
 INTERPRETER_PAYLOAD_OPTIONS = {
     "python": {"-c"},
     "python3": {"-c"},
@@ -152,9 +165,11 @@ INTERPRETER_PAYLOAD_OPTIONS = {
     "bun": {"-e"},
 }
 GRAPHQL_RELEASE_MUTATION_RE = re.compile(
-    r"\b(?:create|update|delete)Release\b|"
-    r"\b(?:create|update|delete)Ref\b|"
-    r"refs/tags/",
+    r"\b(?:create|update|delete)Release\b",
+    re.IGNORECASE,
+)
+GRAPHQL_REF_MUTATION_RE = re.compile(
+    r"\b(?:create|update|delete)Ref\b",
     re.IGNORECASE,
 )
 GRAPHQL_RELEASE_ENDPOINT_RE = re.compile(r"api\.github\.com/graphql", re.IGNORECASE)
@@ -791,14 +806,40 @@ def git_push_release_tag_command(segment, git_index):
     return git_push_refspecs_target_release_tag(refspecs)
 
 
-def is_release_api_endpoint(endpoint):
+def github_api_path_parts(endpoint):
     endpoint = endpoint.strip()
     endpoint = re.sub(r"^https?://api\.github\.com/?", "", endpoint, flags=re.I)
     path = endpoint.split("?", 1)[0].strip("/")
-    parts = [part for part in path.split("/") if part]
+    return [part for part in path.split("/") if part]
+
+
+def is_releases_api_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
     if len(parts) < 4 or parts[0] != "repos":
         return False
-    return parts[3] == "releases" or parts[3:5] == ["git", "refs"]
+    return parts[3] == "releases"
+
+
+def is_git_refs_api_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    if len(parts) < 5 or parts[0] != "repos":
+        return False
+    return parts[3:5] == ["git", "refs"]
+
+
+def is_git_tag_refs_api_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    if len(parts) < 6 or parts[0] != "repos":
+        return False
+    return parts[3:6] == ["git", "refs", "tags"]
+
+
+def payload_mentions_tag_ref(payload):
+    return bool(TAG_REF_TEXT_RE.search(payload or ""))
+
+
+def is_release_api_endpoint(endpoint):
+    return is_releases_api_endpoint(endpoint) or is_git_tag_refs_api_endpoint(endpoint)
 
 
 def is_graphql_endpoint(endpoint):
@@ -810,9 +851,11 @@ def is_graphql_endpoint(endpoint):
 def graphql_release_mutation_text(value):
     if GRAPHQL_RELEASE_MUTATION_RE.search(value):
         return True
+    if GRAPHQL_REF_MUTATION_RE.search(value) and payload_mentions_tag_ref(value):
+        return True
     if "=" in value:
         _, _, tail = value.partition("=")
-        return GRAPHQL_RELEASE_MUTATION_RE.search(tail) is not None
+        return graphql_release_mutation_text(tail)
     return False
 
 
@@ -820,8 +863,12 @@ def graphql_file_backed_query(value):
     return (
         value.startswith("query=@")
         or value.startswith("query:=@")
+        or value.startswith("query@")
+        or value.startswith("query:@")
         or value.startswith("query=@-")
         or value.startswith("query:=@-")
+        or value.startswith("query@-")
+        or value.startswith("query:@-")
     )
 
 
@@ -939,13 +986,19 @@ def gh_api_release_write_command(segment, gh_index):
             graphql_release_mutation_text(payload)
             for payload in graphql_payloads
         )
-    if not is_release_api_endpoint(endpoint):
+    command_has_write_semantics = effective_method in GH_API_WRITE_METHODS or has_write_fields
+    if is_release_api_endpoint(endpoint):
+        return command_has_write_semantics
+    if not is_git_refs_api_endpoint(endpoint) or not command_has_write_semantics:
         return False
-    return effective_method in GH_API_WRITE_METHODS or has_write_fields
+    return any(payload_mentions_tag_ref(payload) for payload in graphql_payloads)
 
 
 def direct_github_release_api_url(value):
-    return bool(GITHUB_RELEASE_API_RE.search(value))
+    return bool(
+        GITHUB_RELEASE_API_RE.search(value)
+        or (GITHUB_REFS_API_RE.search(value) and payload_mentions_tag_ref(value))
+    )
 
 
 def file_text_mentions_release_write(text, command_has_write_semantics=False):
@@ -971,6 +1024,20 @@ def read_release_source_text(source):
         return None
 
 
+def read_bounded_script_text(source):
+    try:
+        path = Path(source).expanduser()
+    except Exception:
+        return None
+    if not path.is_file():
+        return None
+    try:
+        with path.open("r", encoding="utf-8", errors="ignore") as handle:
+            return handle.read(SCRIPT_READ_MAX_BYTES)
+    except OSError:
+        return None
+
+
 def release_source_is_uninspectable(source):
     return source == "-" or source.startswith("<(") or source.startswith("/dev/fd/")
 
@@ -979,8 +1046,13 @@ def release_payload_matches_git_endpoint(payload):
     return bool(
         re.search(r"api\.github\.com", payload, re.IGNORECASE)
         and (
-            re.search(r"repos/[^/\s\"']+/[^/\s\"']+/(?:releases|git/refs)\b", payload)
-            or GRAPHQL_RELEASE_MUTATION_RE.search(payload)
+            re.search(r"repos/[^/\s\"']+/[^/\s\"']+/releases\b", payload)
+            or re.search(r"repos/[^/\s\"']+/[^/\s\"']+/git/refs/tags\b", payload)
+            or (
+                re.search(r"repos/[^/\s\"']+/[^/\s\"']+/git/refs\b", payload)
+                and payload_mentions_tag_ref(payload)
+            )
+            or graphql_release_mutation_text(payload)
         )
     )
 
@@ -1074,6 +1146,11 @@ def curl_release_write_command(segment, start):
     if any(direct_github_release_api_url(url) for url in urls):
         return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
     command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    if any(is_git_refs_api_endpoint(url) for url in urls) and command_has_write_semantics:
+        if any(is_git_tag_refs_api_endpoint(url) for url in urls):
+            return True
+        if any(payload_mentions_tag_ref(payload) for payload in body_payloads):
+            return True
     if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
         if not body_payloads:
             return False
@@ -1156,6 +1233,11 @@ def wget_release_write_command(segment, start):
     if any(direct_github_release_api_url(url) for url in urls):
         return (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
     command_has_write_semantics = (method or ("POST" if has_write_body else "GET")) in GITHUB_API_WRITE_METHODS or has_write_body
+    if any(is_git_refs_api_endpoint(url) for url in urls) and command_has_write_semantics:
+        if any(is_git_tag_refs_api_endpoint(url) for url in urls):
+            return True
+        if any(payload_mentions_tag_ref(payload) for payload in body_payloads):
+            return True
     if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
         if not body_payloads:
             return False
@@ -2545,6 +2627,136 @@ def interpreter_reads_stdin(segment, start):
     return True
 
 
+def script_operand_has_release_hint(token):
+    return bool(SCRIPT_PATH_HINT_RE.search(token or "") or DYNAMIC_RELEASE_TAG_HINT_RE.search(token or ""))
+
+
+def script_operand_needs_gate(token, depth):
+    if not token or token == "-":
+        return script_operand_has_release_hint(token)
+    if release_source_is_uninspectable(token) or EXPANSION_RE.search(token):
+        return script_operand_has_release_hint(token)
+    text = read_bounded_script_text(token)
+    if text is None:
+        return script_operand_has_release_hint(token)
+    return language_payload_mentions_release_command(text) or contains_release_create(text, depth + 1)
+
+
+def shell_script_operand(segment, start):
+    if start >= len(segment) or Path(segment[start]).name not in SHELLS:
+        return None
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            break
+        if token == "-c" or token.startswith("-c"):
+            return None
+        if token.startswith("-") and not token.startswith("--") and "c" in token[1:]:
+            return None
+        if token in SHELL_VALUE_OPTIONS:
+            index += 2
+            continue
+        if any(token.startswith(option + "=") for option in SHELL_VALUE_OPTIONS):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    if index < len(segment):
+        return segment[index]
+    return None
+
+
+def interpreter_script_operand(segment, start):
+    if start >= len(segment):
+        return None
+    command_name = Path(segment[start]).name
+    payload_options = INTERPRETER_PAYLOAD_OPTIONS.get(command_name)
+    if not payload_options:
+        return None
+    value_options = {
+        "python": {"-m", "-W", "-X"},
+        "python3": {"-m", "-W", "-X"},
+        "pypy": {"-m", "-W", "-X"},
+        "pypy3": {"-m", "-W", "-X"},
+        "node": {"-r", "--require", "--loader", "--import"},
+        "bun": {"--preload"},
+        "ruby": {"-I", "-r"},
+        "perl": {"-I", "-M"},
+    }.get(command_name, set())
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            break
+        if token in payload_options:
+            return None
+        for option in payload_options:
+            if option.startswith("-") and token.startswith(option) and token != option:
+                return None
+            if option.startswith("--") and token.startswith(option + "="):
+                return None
+        if command_name == "deno" and token == "eval":
+            return None
+        if token in value_options:
+            if command_name in {"python", "python3", "pypy", "pypy3"} and token == "-m":
+                return None
+            index += 2
+            continue
+        if any(token.startswith(option + "=") for option in value_options if option.startswith("--")):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    if index < len(segment):
+        return segment[index]
+    return None
+
+
+def source_script_operand(segment, start):
+    if start >= len(segment) or Path(segment[start]).name not in SOURCE_LOADERS:
+        return None
+    if start + 1 < len(segment):
+        return segment[start + 1]
+    return None
+
+
+def direct_script_operand(segment, start):
+    if start >= len(segment):
+        return None
+    token = segment[start]
+    if token in CONTROL or token in GROUP_PREFIXES:
+        return None
+    try:
+        path = Path(token).expanduser()
+    except Exception:
+        return token if script_operand_has_release_hint(token) else None
+    if path.is_file() and (path.suffix in SCRIPT_EXTENSIONS or script_operand_has_release_hint(token)):
+        return token
+    if "/" in token and script_operand_has_release_hint(token):
+        return token
+    return None
+
+
+def local_script_operand_needs_gate(segment, start, depth):
+    operands = []
+    for probe in (
+        source_script_operand(segment, start),
+        shell_script_operand(segment, start),
+        interpreter_script_operand(segment, start),
+        direct_script_operand(segment, start),
+    ):
+        if probe:
+            operands.append(probe)
+    return any(script_operand_needs_gate(operand, depth) for operand in operands)
+
+
 def static_interpreter_stdin_payload(previous_segment, incoming_control, interpreter_segment):
     start = command_index_from(interpreter_segment)
     if start >= len(interpreter_segment) or not interpreter_reads_stdin(interpreter_segment, start):
@@ -2622,9 +2834,9 @@ def literal_argv_mentions_release_command(payload):
             return True
         if args and args[0] == "api":
             command_text = " ".join(["gh"] + args)
-            if re.search(r"repos/[^/]+/[^/]+/(?:releases|git/refs)\b", command_text):
+            if direct_github_release_api_url(command_text):
                 return True
-            if GRAPHQL_RELEASE_MUTATION_RE.search(command_text):
+            if graphql_release_mutation_text(command_text):
                 return True
     return False
 
@@ -2646,7 +2858,7 @@ def language_payload_mentions_release_command(payload):
         or re.search(r"\b(?:curl|wget)\b", payload)
     ):
         return True
-    if GRAPHQL_RELEASE_ENDPOINT_RE.search(payload) and GRAPHQL_RELEASE_MUTATION_RE.search(payload):
+    if GRAPHQL_RELEASE_ENDPOINT_RE.search(payload) and graphql_release_mutation_text(payload):
         return True
     if release_payload_matches_git_endpoint(payload) and (
         REQUESTS_SESSION_WRITE_RE.search(payload)
@@ -2660,8 +2872,8 @@ def language_payload_mentions_release_command(payload):
     ):
         return True
     if re.search(r"\bgh\s+api\b", payload) and (
-        re.search(r"repos/[^/]+/[^/]+/(?:releases|git/refs)\b", payload)
-        or GRAPHQL_RELEASE_MUTATION_RE.search(payload)
+        direct_github_release_api_url(payload)
+        or graphql_release_mutation_text(payload)
     ):
         return True
     if literal_argv_mentions_release_command(payload):
@@ -2673,11 +2885,16 @@ def language_payload_mentions_release_command(payload):
         marker in compact
         for marker in {
             "releases",
-            "gitrefs",
-            "refstags",
             "createrelease",
             "updaterelease",
             "deleterelease",
+        }
+    ):
+        return True
+    if "ghapi" in compact and "refstags" in compact and any(
+        marker in compact
+        for marker in {
+            "gitrefs",
             "createref",
             "updateref",
             "deleteref",
@@ -3055,6 +3272,8 @@ def contains_release_create(command, depth=0):
             if start >= len(segment):
                 continue
             command_name = Path(segment[start]).name
+            if local_script_operand_needs_gate(segment, start, depth):
+                return True
             if command_name == "gh":
                 command_env = command_scoped_assignments(segment, start)
                 gh_config_dir = gh_config_dir_option(segment, start) or command_env.get("GH_CONFIG_DIR") or literal_vars.get("GH_CONFIG_DIR")
