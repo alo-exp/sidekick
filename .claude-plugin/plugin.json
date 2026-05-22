@@ -25,7 +25,7 @@
   "hooks": "./hooks/hooks.json",
   "_integrity": {
     "_note": "SHA-256 hashes of plugin files \u2014 update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
-    "install_sh_sha256": "4571a740de80e6bb94d6befcea9adf691de54fbc3211da3012f937347c522ae1",
+    "install_sh_sha256": "75a0b0ca14c743d3de0afe74aae38bf2ca686c3c26260ed6714aa91a805c212a",
     "forge_md_sha256": "751fe7961b309118a2757723195dc3c0472fe8343c504558191738c4d971d8e4",
     "forge_skill_md_sha256": "e2309527a531875fd33d62f46a69d335ba2fddbc13d7bc5c9a68dd3fd538cd3a",
     "codex_delegate_skill_md_sha256": "69ddbfc09bc8cae88b7377ae7a2c7a8b6b620b2ff5aba1de845df62c17671ebe",
@@ -38,7 +38,7 @@
     "legacy_hooks_scrub_sha256": "2b0d7237d50a35e8f670bcbb2a33584a3bb589fa72aa6ab74bce36f12feb316a",
     "forge_progress_surface_sha256": "c10b7d9bff59afe87dbbd5e1f33f8149e65a6775ec8f7fe1e453b12b24112827",
     "codex_progress_surface_sha256": "b1ff757686e3d001b9231bf838955c18bba6d9606cf66cb0233bf8744c6d6828",
-    "validate_release_gate_sha256": "d81df8fdac526dba6645ed3559fabdbb59f31d587ea938b856e87bef1b3da4af",
+    "validate_release_gate_sha256": "2dad1a437c64713ae93c631d366b0f692acd5ef9eb6e61fd29617cd16e6fb892",
     "output_style_forge_sha256": "d2e3c593b3bd020aa292e8d9999d8401d3fb68f472ce2b78b348ed78687b9dd7",
     "output_style_codex_sha256": "03882af7d4c7eacd908d09664631eef7675aecdaac83c134fdabf8fa7921bda0",
     "forge_delegate_alias_skill_md_sha256": "c77975d8e2113fff57aa2c0338e3393746d2205130f70ba3ee33578b0a469f1c",

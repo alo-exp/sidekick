@@ -1550,6 +1550,14 @@ assert_denied_command "Scenario 49ap6d: python split-host http.client write is d
   "python3 -c 'import http.client as h; c=h.HTTPSConnection(\"api.github.com\"); c.request(\"POST\", \"/repos/alo-exp/sidekick/releases\", body=\"{}\")'"
 assert_denied_command "Scenario 49ap6e: python GraphQL release mutation is denied" \
   "python3 -c 'import requests; requests.post(\"https://api.github.com/graphql\", json={\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"})'"
+assert_denied_command "Scenario 49ap6f: curl GraphQL createRelease mutation is denied" \
+  "curl -sS -X POST https://api.github.com/graphql -d '{\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}'"
+assert_denied_command "Scenario 49ap6g: curl GraphQL createRef JSON body is denied" \
+  "curl -sS --json '{\"query\":\"mutation { createRef(input:{ref:\\\"refs/tags/v1\\\", oid:\\\"abc\\\"}) { ref { id } } }\"}' https://api.github.com/graphql"
+assert_denied_command "Scenario 49ap6h: curl GraphQL file-backed query field is denied" \
+  "curl -sS -F query=@release-mutation.graphql https://api.github.com/graphql"
+assert_denied_command "Scenario 49ap6i: wget GraphQL createRelease mutation is denied" \
+  "wget --method=POST --body-data '{\"query\":\"mutation { createRelease(input:{repositoryId:\\\"R\\\", tagName:\\\"v1\\\"}) { release { id } } }\"}' https://api.github.com/graphql"
 _curl_config="$(mktemp)"
 cat > "${_curl_config}" <<'EOF'
 url = "https://api.github.com/repos/alo-exp/sidekick/releases"
@@ -1605,6 +1613,8 @@ assert_denied_command "Scenario 49av: node static interpreter payload release co
   "node -e 'require(\"child_process\").execSync(\"gh release create v1.2.1\")'"
 assert_denied_command "Scenario 49aw: gh api GraphQL createRelease mutation is denied" \
   "gh api graphql -f query='mutation { createRelease(input:{repositoryId:\"R\", tagName:\"v1\"}) { release { id } } }'"
+assert_denied_command "Scenario 49aw2: gh api full GraphQL URL createRelease mutation is denied" \
+  "gh api https://api.github.com/graphql -f query='mutation { createRelease(input:{repositoryId:\"R\", tagName:\"v1\"}) { release { id } } }'"
 assert_denied_command "Scenario 49ax: gh api GraphQL createRef tag mutation is denied" \
   "gh api -X POST graphql -f query='mutation { createRef(input:{ref:\"refs/tags/v1\"}) { ref { id } } }'"
 assert_denied_command "Scenario 49ay: gh api GraphQL input file write is denied" \

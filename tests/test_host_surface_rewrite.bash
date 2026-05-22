@@ -46,6 +46,27 @@ assert_absent() {
   fi
 }
 
+assert_order() {
+  local path="$1" first="$2" second="$3" label="$4" first_line second_line
+  first_line="$(grep -nF "$first" "$path" | head -1 | cut -d: -f1 || true)"
+  second_line="$(grep -nF "$second" "$path" | head -1 | cut -d: -f1 || true)"
+  if [ -n "${first_line}" ] && [ -n "${second_line}" ] && [ "${first_line}" -lt "${second_line}" ]; then
+    assert_pass "$label"
+  else
+    assert_fail "$label" "order not found: ${first} before ${second}"
+  fi
+}
+
+assert_count() {
+  local path="$1" needle="$2" expected="$3" label="$4" actual
+  actual="$( { grep -F "$needle" "$path" || true; } | wc -l | tr -d ' ')"
+  if [ "${actual}" = "${expected}" ]; then
+    assert_pass "$label"
+  else
+    assert_fail "$label" "expected ${expected}, found ${actual}: ${needle}"
+  fi
+}
+
 run_case() {
   local host="$1"
   local host_env_var="$2"
@@ -105,6 +126,8 @@ run_case() {
   assert_contains "${registry_helper}" "${host_session_var}" "${host}: registry helper uses the host session var"
   assert_absent "${registry_helper}" "${other_env_var}" "${host}: registry helper excludes the other host root"
   assert_absent "${registry_helper}" "${other_session_var}" "${host}: registry helper excludes the other host session var"
+  assert_order "${registry_helper}" "if [[ -n \"\${${host_env_var}:-}\" ]]; then" "if [[ -n \"\${SIDEKICK_PLUGIN_ROOT:-}\" ]]; then" "${host}: registry helper prefers the active host plugin root"
+  assert_count "${registry_helper}" "if [[ -n \"\${${host_env_var}:-}\" ]]; then" "1" "${host}: registry helper has one active host root branch"
 
   assert_contains "${release_gate}" "SIDEKICK_QG_DIR=\"\$HOME/${marker_prefix}/.sidekick\"" "${host}: release gate defaults to the host quality-gate state path"
   assert_contains "${release_gate}" 'STATE_FILE="${SIDEKICK_QG_STATE:-${SIDEKICK_QG_DIR}/quality-gate-state}"' "${host}: release gate resolves quality-gate state from the host dir"
@@ -136,11 +159,55 @@ run_case() {
   assert_absent "${generated_kay_stop_skill}" "${other_session_var}" "${host}: generated Kay stop skill excludes the other host session var"
 }
 
+run_mixed_detection_case() {
+  local host="$1"
+  local root hooks
+
+  root="$(mktemp -d)"
+  trap 'rm -rf "${root}" 2>/dev/null || true' RETURN
+  prepare_surface_sandbox "${root}"
+  mkdir -p "${root}/home"
+
+  if [ "${host}" = "codex" ]; then
+    env -u SIDEKICK_INSTALL_HOST \
+      HOME="${root}/home" \
+      SIDEKICK_INSTALL_FORGE=0 \
+      SIDEKICK_INSTALL_CODE=0 \
+      CODEX_PLUGIN_ROOT="${root}" \
+      CLAUDE_SESSION_ID="claude-session-from-parent" \
+      bash "${root}/install.sh" >/dev/null 2>&1
+  else
+    env -u SIDEKICK_INSTALL_HOST \
+      HOME="${root}/home" \
+      SIDEKICK_INSTALL_FORGE=0 \
+      SIDEKICK_INSTALL_CODE=0 \
+      CLAUDE_PLUGIN_ROOT="${root}" \
+      CODEX_HOME="${root}/home/.codex" \
+      bash "${root}/install.sh" >/dev/null 2>&1
+  fi
+
+  hooks="${root}/hooks/hooks.json"
+  case "${host}" in
+    codex)
+      assert_contains "${hooks}" "\${CODEX_PLUGIN_ROOT:-\${SIDEKICK_PLUGIN_ROOT:-}}" "mixed env: CODEX_PLUGIN_ROOT beats generic Claude session env"
+      assert_absent "${hooks}" "CLAUDE_PLUGIN_ROOT" "mixed env: Codex explicit root does not render Claude hooks"
+      ;;
+    claude)
+      assert_contains "${hooks}" "\${CLAUDE_PLUGIN_ROOT:-\${SIDEKICK_PLUGIN_ROOT:-}}" "mixed env: CLAUDE_PLUGIN_ROOT beats generic Codex env"
+      assert_absent "${hooks}" "CODEX_PLUGIN_ROOT" "mixed env: Claude explicit root does not render Codex hooks"
+      ;;
+  esac
+}
+
 echo "=== T1: Codex install rewrites host-specific paths ==="
 run_case "codex" "CODEX_PLUGIN_ROOT" "CODEX_THREAD_ID" "CLAUDE_PLUGIN_ROOT" "CLAUDE_SESSION_ID" ".codex" "~/.codex"
 
 echo "=== T2: Claude install rewrites host-specific paths ==="
 run_case "claude" "CLAUDE_PLUGIN_ROOT" "CLAUDE_SESSION_ID" "CODEX_PLUGIN_ROOT" "CODEX_THREAD_ID" ".claude" "~/.claude"
+
+echo "=== T3: Explicit plugin roots win mixed host detection ==="
+run_mixed_detection_case "claude"
+run_mixed_detection_case "codex"
 
 echo ""
 echo "======================================="
