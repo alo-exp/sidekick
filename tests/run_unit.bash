@@ -20,6 +20,14 @@ run_suite() {
   fi
 }
 
+cleanup_transient_repo_artifacts() {
+  echo ""
+  echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
+  echo -e "${bold}Step: Remove transient repo artifacts before layout check${reset}"
+  echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
+  bash "${SCRIPT_DIR}/post_release_cleanup.bash"
+}
+
 run_suite "install.sh unit tests"         "test_install_sh.bash"
 run_suite "Generated host skill surface tests" "test_agent_surface_render.bash"
 run_suite "Host surface rewrite tests"    "test_host_surface_rewrite.bash"
@@ -49,6 +57,7 @@ run_suite "Help-site navigation tests"           "test_help_site_navigation.bash
 run_suite "Release gate hook tests"              "test_validate_release_gate_hook.bash"
 run_suite "Legacy hook scrub tests"              "test_legacy_hook_scrub.bash"
 run_suite "Post-release cleanup script tests"    "test_post_release_cleanup.bash"
+cleanup_transient_repo_artifacts
 run_suite "Repository layout tests"              "test_repo_layout.bash"
 run_suite "Runner contract tests"                "test_runner_contract.bash"
 

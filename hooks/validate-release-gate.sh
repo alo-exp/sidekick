@@ -3,7 +3,8 @@
 # Intercepts Bash tool calls that publish GitHub releases or release tags and
 # denies them (via the Claude Code PreToolUse permissionDecision envelope)
 # unless all current-session, current-commit quality-gate stage markers and two
-# live-pyramid run markers are present in Sidekick's state file.
+# current-session, current-commit live-pyramid run markers are present in
+# Sidekick's state file.
 #
 # Stage count and marker names are defined in site/pre-release-quality-gate.md.
 # Each stage in that document resolves host-specific state, invokes
@@ -3258,7 +3259,7 @@ if [ ${#missing[@]} -eq 0 ]; then
     exit 0
   fi
 
-  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session ${LIVE_PYRAMID_MARKER} marker(s). Run SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
+  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session, current-commit ${LIVE_PYRAMID_MARKER} marker(s). Run SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",

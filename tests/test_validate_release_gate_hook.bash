@@ -4,7 +4,7 @@
 # The hook blocks GitHub release and release-tag publication commands via
 # Claude Code's PreToolUse permissionDecision=deny mechanism unless all
 # current-session quality-gate stage current-commit markers and two
-# current-session live-pyramid run markers are present in the active host
+# current-session, current-commit live-pyramid run markers are present in the active host
 # quality-gate state file.
 #
 # We override HOME to a temp directory for each scenario so we can
@@ -424,8 +424,11 @@ PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 -
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
-if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"1/2"* ]]; then
-  assert_pass "one live-pyramid marker: permissionDecision=deny"
+if [ "${RC}" -eq 0 ] \
+  && [ "${DECISION}" = "deny" ] \
+  && [[ "${REASON}" == *"1/2"* ]] \
+  && [[ "${REASON}" == *"current-session, current-commit"* ]]; then
+  assert_pass "one live-pyramid marker: permissionDecision=deny with current-commit guidance"
 else
   assert_fail "one live-pyramid marker deny" "rc=${RC} decision=${DECISION} reason=${REASON}"
 fi
