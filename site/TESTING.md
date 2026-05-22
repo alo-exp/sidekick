@@ -1,16 +1,16 @@
 # Testing Strategy
 
-> How the Sidekick plugin is tested. All six tiers are chained by `tests/run_release.bash`, which is the gate every release must pass. After publishing, `tests/post_release_cleanup.bash` returns the local repo to a clean state.
+> How the Sidekick plugin is tested. Release authorization is handled by `tests/run_release.bash`, which chains the strict non-live suites and live gates. After publishing, `tests/post_release_cleanup.bash` returns the local repo to a clean state.
 
 ---
 
 ## Test pyramid
 
-Six tiers, each with a distinct purpose. Tier 1 runs every local suite and aggregates failures; the release gate aborts on the first failed tier.
+Six release tiers, each with a distinct purpose. Tier 1 runs every strict non-live suite and aggregates failures; the release gate aborts on the first failed tier.
 
 | Tier | Script | Runs in CI | Exercises real agent | Purpose |
 |------|--------|:---:|:---:|---|
-| **1. Unit + integration** | `tests/run_all.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, skills-only packaging, Forge/Kay coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup, repository layout. |
+| **1. Strict unit + integration** | `tests/run_unit.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, generated host skill surfaces, runner contract, Forge/Kay coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup, repository layout. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full host→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 | **4. Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Kay | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
@@ -19,9 +19,11 @@ Six tiers, each with a distinct purpose. Tier 1 runs every local suite and aggre
 
 Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
 
+`tests/run_all.bash` is the skip-safe local sweep: it delegates to `tests/run_unit.bash`, then runs the live-gated Forge E2E and Codex plugin/read probes, which skip cleanly unless their env vars are set.
+
 ---
 
-## Unit + integration suites (tier 1)
+## Strict Unit + Integration Suites (Tier 1)
 
 Core suites in `tests/`. Each suite is an independent Bash script with a pass/fail counter.
 
@@ -46,7 +48,6 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_codex_progress_surface.bash` | Kay PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, stop hint |
 | `test_codex_plugin_manifest.bash` | Kay plugin manifest structure, interface metadata, and path wiring |
 | `test_codex_marketplace_manifest.bash` | Kay marketplace entry, source pinning, and install-packaging expectations |
-| `run_live_codex_plugin_read.bash` | Live marketplace plugin-read path for the packaged Kay surface |
 | `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact; Kay bootstrap source stays pinned to the installer that creates the `kay` binary |
 | `test_install_sh.bash` | Installer idempotency, sentinel behavior, SessionStart hook scope, selective install env flags, credentials schema validation |
 | `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
@@ -54,8 +55,9 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_hook_trust_state.bash` | Source-specific hook trust seeding: package-local manifest vs lowercase mirrored host hook files, stable reinstall trust table, no stale alias residue, legacy uppercase retirement |
 | `test_docs_contract.bash` | Public docs and canonical help pages stay in sync with the shipped workflows |
 | `test_help_site_navigation.bash` | Help-site links, anchors, and navigation order stay valid |
+| `test_runner_contract.bash` | Runner split stays explicit: `run_unit` strict non-live, `run_all` skip-safe, `run_release` authoritative |
 
-All listed suites are invoked by `tests/run_all.bash` with combined reporting.
+All listed suites are invoked by `tests/run_unit.bash` with combined reporting. `tests/run_all.bash` invokes `run_unit.bash` plus `test_forge_e2e.bash` and `run_live_codex_plugin_read.bash`.
 
 ---
 
@@ -92,12 +94,12 @@ Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model cal
 
 ## Release gate
 
-`tests/run_release.bash` chains all six tiers with fail-fast stage aborts:
+`tests/run_release.bash` chains all six release tiers with fail-fast stage aborts:
 
 ```bash
 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash                        # Codex live pyramid — maintainer pre-tag
 SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # full pyramid when Forge live is available
-bash tests/run_release.bash                                              # stage 1 only, stages 2-6 skip cleanly — safe for CI, not release-authorizing
+bash tests/run_release.bash                                              # strict stage 1 only, stages 2-6 skip cleanly — safe, not release-authorizing
 ```
 
 Every release must first pass the 4-stage pre-release quality gate twice in a row, then pass the live Kay pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Only live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
@@ -124,7 +126,10 @@ Not covered today (accepted gaps, documented in `.planning/`):
 ## Running tests locally
 
 ```bash
-# Tier 1 only (fast, ~5s):
+# Strict non-live suites (CI path):
+bash tests/run_unit.bash
+
+# Skip-safe local sweep:
 bash tests/run_all.bash
 
 # Pre-release gate (~2 min when both live env vars are set):

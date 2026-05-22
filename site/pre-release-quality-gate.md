@@ -181,8 +181,9 @@ Audit the full Forge delegation chain: `SKILL.md → enforcer hook → progress-
 
 Audit test coverage across all test files:
 
-- `tests/run_all.bash` runs all non-live suites and exits non-zero on any failure
-- `tests/run_release.bash` chains all six tiers (unit + integration → Forge smoke → Forge live E2E → Kay marketplace install → Kay smoke → Kay live E2E) with fail-fast stage aborts, and records a live-pyramid marker for Codex live runs even when Forge live is intentionally skipped
+- `tests/run_unit.bash` runs all strict non-live suites and exits non-zero on any failure
+- `tests/run_all.bash` delegates to `run_unit.bash`, then runs skip-safe live-gated probes that exit 0 when their env vars are unset
+- `tests/run_release.bash` chains all six tiers (strict unit + integration → Forge smoke → Forge live E2E → Kay marketplace install → Kay smoke → Kay live E2E) with fail-fast stage aborts, and records a live-pyramid marker for Codex live runs even when Forge live is intentionally skipped
 - Every material branch in `forge-delegation-enforcer.sh` is exercised by `test_forge_enforcer_hook.bash` and/or `test_v12_coverage.bash`
   - Verify: `sed -i` / `awk -i inplace` rejection, `>> append` pass/deny, `> /dev/null` passthrough, env-var prefix before `forge -p`, unclassified mutating deny
 - Every `STATUS:` block parsing path in `forge-progress-surface.sh` is exercised by `test_forge_progress_surface.bash`
@@ -288,10 +289,10 @@ Verify the new release entry:
 Run the full test suite and confirm clean:
 
 ```bash
-bash tests/run_all.bash
+   bash tests/run_unit.bash
 ```
 
-All suites in `tests/run_all.bash` must pass with 0 failures. Then push to main and wait for CI green before proceeding.
+All suites in `tests/run_unit.bash` must pass with 0 failures. Optionally run `bash tests/run_all.bash` for the skip-safe local sweep. Then push to main and wait for CI green before proceeding.
 
 ### Completion
 
@@ -304,7 +305,7 @@ All suites in `tests/run_all.bash` must pass with 0 failures. Then push to main 
    printf 'quality-gate-stage-3 session=%s\n' "$SIDEKICK_QG_SESSION" >> "$SIDEKICK_QG_STATE"
    ```
 
-**Exit criteria**: All public-facing content accurate and current, `run_all.bash` passes, CI green on main, marker written.
+**Exit criteria**: All public-facing content accurate and current, `run_unit.bash` passes, CI green on main, marker written.
 
 ---
 
