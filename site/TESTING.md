@@ -10,7 +10,7 @@ Six release tiers, each with a distinct purpose. Tier 1 runs every strict non-li
 
 | Tier | Script | Runs in CI | Exercises real agent | Purpose |
 |------|--------|:---:|:---:|---|
-| **1. Strict unit + integration** | `tests/run_unit.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, generated host skill surfaces, runner contract, Forge/Kay coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup, repository layout. The runner removes transient root artifacts immediately before the layout guard. |
+| **1. Strict unit + integration** | `tests/run_unit.bash` | ✅ | ✗ (mocked / static inspection) | Classifier correctness, idx audit-row shape, plugin manifest integrity, generated host skill surfaces, runner contract, Forge/Kay coverage gaps, docs contract, help-site navigation, SessionStart hook scope, clean reinstall bootstrap, post-release cleanup guard tests, repository layout. The runner does not delete developer artifacts; release cleanup is an explicit post-release step. |
 | **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
 | **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full host→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
 | **4. Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Kay | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |

@@ -361,6 +361,34 @@ rm -rf "${H}" "${NO_GIT_ROOT}"
 # ---------------------------------------------------------------------------
 # Scenario 4b: packaged hook with no git metadata anywhere → deny
 # ---------------------------------------------------------------------------
+echo "Scenario 4a2: package hook git root does not override caller release cwd SHA"
+H="$(setup_home)"
+HOOK_GIT_ROOT="$(mktemp -d)"
+RELEASE_CWD="$(mktemp -d)"
+mkdir -p "${HOOK_GIT_ROOT}/hooks"
+cp "${HOOK}" "${HOOK_GIT_ROOT}/hooks/validate-release-gate.sh"
+git -C "${HOOK_GIT_ROOT}" init -q
+git -C "${HOOK_GIT_ROOT}" add hooks/validate-release-gate.sh
+git -C "${HOOK_GIT_ROOT}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m hook-root
+git -C "${RELEASE_CWD}" init -q
+printf 'release cwd\n' > "${RELEASE_CWD}/README.md"
+git -C "${RELEASE_CWD}" add README.md
+git -C "${RELEASE_CWD}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m release-cwd
+release_cwd_sha="$(git -C "${RELEASE_CWD}" rev-parse --short=12 HEAD)"
+write_markers_for_sha "${H}" "${release_cwd_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${release_cwd_sha}" 2
+PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"gh release create v1.2.1 --generate-notes"}}'
+OUT="$(run_hook_no_git_from_cwd "${H}" "${PAYLOAD}" "${HOOK_GIT_ROOT}" "${RELEASE_CWD}")"; RC=$?
+if [ "${RC}" -eq 0 ] && [ -z "${OUT}" ]; then
+  assert_pass "hook root git SHA does not preempt caller release cwd SHA"
+else
+  assert_fail "hook root git SHA preemption" "rc=${RC} out=${OUT}"
+fi
+rm -rf "${H}" "${HOOK_GIT_ROOT}" "${RELEASE_CWD}"
+
+# ---------------------------------------------------------------------------
+# Scenario 4b: packaged hook with no git metadata anywhere → deny
+# ---------------------------------------------------------------------------
 echo "Scenario 4b: release command is denied when no current git SHA is available"
 H="$(setup_home)"
 NO_GIT_ROOT="$(mktemp -d)"
@@ -1480,6 +1508,23 @@ else
 fi
 rm -rf "${H}"
 
+assert_denied_command "Scenario 48a: gh release upload command is denied" \
+  "gh release upload v1.2.1 dist/sidekick.zip"
+assert_denied_command "Scenario 48b: gh release edit publish command is denied" \
+  "gh release edit v1.2.1 --draft=false"
+assert_denied_command "Scenario 48c: gh release delete command is denied" \
+  "gh release delete v1.2.1 --yes"
+assert_denied_command "Scenario 48d: gh release delete-asset command is denied" \
+  "gh release delete-asset v1.2.1 asset.zip --yes"
+assert_denied_command "Scenario 48e: unknown gh release subcommand fails closed" \
+  "gh release publish v1.2.1"
+assert_passthrough_command "Scenario 48f: gh release view passes through" \
+  "gh release view v1.2.1"
+assert_passthrough_command "Scenario 48g: gh release list passes through" \
+  "gh release list"
+assert_passthrough_command "Scenario 48h: gh release download passes through" \
+  "gh release download v1.2.1"
+
 # ---------------------------------------------------------------------------
 # Scenario 49: accepted review bypass regressions are denied
 # ---------------------------------------------------------------------------
@@ -1577,6 +1622,8 @@ assert_denied_command "Scenario 49ao: gh api implicit POST release endpoint is d
   "gh api repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f name=v1.2.1"
 assert_denied_command "Scenario 49ap: gh api POST tag ref endpoint is denied" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=abc123"
+assert_denied_command "Scenario 49ap0b: gh api escaped tag ref field is denied" \
+  "gh api -X POST repos/alo-exp/sidekick/git/refs -f 'ref=refs\\/tags\\/v1.2.1' -f sha=abc123"
 assert_passthrough_command "Scenario 49ap1: gh api POST branch ref endpoint passes through" \
   "gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/heads/release-hardening -f sha=abc123"
 assert_denied_command "Scenario 49ap2: curl POST release endpoint is denied" \
@@ -1587,8 +1634,31 @@ assert_denied_command "Scenario 49ap2c: curl attached short form flag release en
   "curl -sS -Ftag_name=v1.2.1 https://api.github.com/repos/alo-exp/sidekick/releases"
 assert_denied_command "Scenario 49ap3: curl data-implied POST tag ref endpoint is denied" \
   "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs/tags/v1.2.1\",\"sha\":\"abc123\"}'"
+assert_denied_command "Scenario 49ap3a: curl escaped tag ref endpoint is denied" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs\\/tags\\/v1.2.1\",\"sha\":\"abc123\"}'"
 assert_passthrough_command "Scenario 49ap3b: curl data-implied POST branch ref endpoint passes through" \
   "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data '{\"ref\":\"refs/heads/release-hardening\",\"sha\":\"abc123\"}'"
+_tag_ref_body="$(mktemp)"
+_branch_ref_body="$(mktemp)"
+printf '%s\n' '{"ref":"refs/tags/v1.2.1","sha":"abc123"}' > "${_tag_ref_body}"
+printf '%s\n' '{"ref":"refs/heads/release-hardening","sha":"abc123"}' > "${_branch_ref_body}"
+assert_denied_command "Scenario 49ap3c: gh api input file tag ref is denied" \
+  "gh api -X POST repos/alo-exp/sidekick/git/refs --input ${_tag_ref_body}"
+assert_passthrough_command "Scenario 49ap3d: gh api input file branch ref passes through" \
+  "gh api -X POST repos/alo-exp/sidekick/git/refs --input ${_branch_ref_body}"
+assert_denied_command "Scenario 49ap3e: curl data file tag ref is denied" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data @${_tag_ref_body}"
+assert_passthrough_command "Scenario 49ap3f: curl data file branch ref passes through" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data @${_branch_ref_body}"
+assert_denied_command "Scenario 49ap3g: curl JSON file tag ref is denied" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --json @${_tag_ref_body}"
+assert_denied_command "Scenario 49ap3h: wget body file tag ref is denied" \
+  "wget --method=POST --body-file=${_tag_ref_body} https://api.github.com/repos/alo-exp/sidekick/git/refs"
+assert_passthrough_command "Scenario 49ap3i: wget body file branch ref passes through" \
+  "wget --method=POST --body-file=${_branch_ref_body} https://api.github.com/repos/alo-exp/sidekick/git/refs"
+assert_denied_command "Scenario 49ap3j: curl stdin body for git refs fails closed" \
+  "curl --url https://api.github.com/repos/alo-exp/sidekick/git/refs --data @-"
+rm -f "${_tag_ref_body}" "${_branch_ref_body}"
 assert_denied_command "Scenario 49ap4: wget POST release endpoint is denied" \
   "wget --method=POST --body-data '{\"tag_name\":\"v1.2.1\"}' https://api.github.com/repos/alo-exp/sidekick/releases"
 assert_denied_command "Scenario 49ap5: python direct GitHub release API write is denied" \

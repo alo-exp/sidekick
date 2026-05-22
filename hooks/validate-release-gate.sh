@@ -66,6 +66,7 @@ import os
 import re
 import shlex
 import sys
+import urllib.parse
 
 CONTROL = {";", "&&", "||", "|", "&"}
 CONTROL_PREFIXES = {"if", "then", "elif", "while", "until", "do", "else"}
@@ -173,6 +174,10 @@ GRAPHQL_REF_MUTATION_RE = re.compile(
     re.IGNORECASE,
 )
 GRAPHQL_RELEASE_ENDPOINT_RE = re.compile(r"api\.github\.com/graphql", re.IGNORECASE)
+GH_RELEASE_MUTATING_RE = re.compile(
+    r"\bgh\s+release\s+(?:create|edit|delete|delete-asset|upload)\b",
+    re.IGNORECASE,
+)
 REQUESTS_SESSION_WRITE_RE = re.compile(
     r"\b(?:requests|httpx)\.Session\(\)\.(?:request|post|put|patch|delete)\s*\(",
     re.IGNORECASE,
@@ -664,12 +669,17 @@ def gh_config_dir_option(segment, gh_index):
     return None
 
 
-def gh_release_create_command(segment, gh_index):
+def gh_release_mutating_command(segment, gh_index):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
         return False
-    create_index = skip_gh_globals(segment, subcommand_index + 1)
-    return create_index < len(segment) and segment[create_index] == "create"
+    release_action_index = skip_gh_globals(segment, subcommand_index + 1)
+    if release_action_index >= len(segment):
+        return False
+    action = segment[release_action_index]
+    if action in {"view", "list", "download", "verify-asset"}:
+        return False
+    return True
 
 
 def git_subcommand_index(segment, git_index):
@@ -834,8 +844,19 @@ def is_git_tag_refs_api_endpoint(endpoint):
     return parts[3:6] == ["git", "refs", "tags"]
 
 
+def normalized_payload_text(payload):
+    if not payload:
+        return ""
+    text = str(payload)
+    decoded = urllib.parse.unquote_plus(text)
+    variants = {text, decoded}
+    for value in list(variants):
+        variants.add(value.replace("\\/", "/"))
+    return "\n".join(variants)
+
+
 def payload_mentions_tag_ref(payload):
-    return bool(TAG_REF_TEXT_RE.search(payload or ""))
+    return bool(TAG_REF_TEXT_RE.search(normalized_payload_text(payload)))
 
 
 def is_release_api_endpoint(endpoint):
@@ -937,7 +958,7 @@ def gh_api_release_write_command(segment, gh_index):
             has_write_fields = True
             graphql_input_file = True
             if index + 1 < len(segment):
-                graphql_payloads.append(segment[index + 1])
+                graphql_payloads.append("@" + segment[index + 1])
             index += 2
             continue
         if token.startswith("--field=") or token.startswith("--raw-field="):
@@ -951,7 +972,7 @@ def gh_api_release_write_command(segment, gh_index):
         if token.startswith("--input="):
             has_write_fields = True
             graphql_input_file = True
-            graphql_payloads.append(token.split("=", 1)[1])
+            graphql_payloads.append("@" + token.split("=", 1)[1])
             index += 1
             continue
         if (token.startswith("-f") or token.startswith("-F")) and token not in {"-f", "-F"}:
@@ -991,7 +1012,7 @@ def gh_api_release_write_command(segment, gh_index):
         return command_has_write_semantics
     if not is_git_refs_api_endpoint(endpoint) or not command_has_write_semantics:
         return False
-    return any(payload_mentions_tag_ref(payload) for payload in graphql_payloads)
+    return rest_tag_ref_payloads_need_gate(graphql_payloads)
 
 
 def direct_github_release_api_url(value):
@@ -1022,6 +1043,36 @@ def read_release_source_text(source):
         return path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return None
+
+
+def payload_file_source(payload):
+    if payload in {"-", "@-"}:
+        return "-"
+    if payload.startswith("@"):
+        return payload[1:]
+    return None
+
+
+def payload_or_source_mentions_tag_ref(payload):
+    if payload_mentions_tag_ref(payload):
+        return True
+    source = payload_file_source(payload)
+    if source is None:
+        return False
+    if release_source_is_uninspectable(source):
+        return None
+    source_text = read_release_source_text(source)
+    if source_text is None:
+        return None
+    return payload_mentions_tag_ref(source_text)
+
+
+def rest_tag_ref_payloads_need_gate(payloads):
+    for payload in payloads:
+        result = payload_or_source_mentions_tag_ref(payload)
+        if result is True or result is None:
+            return True
+    return False
 
 
 def read_bounded_script_text(source):
@@ -1149,7 +1200,7 @@ def curl_release_write_command(segment, start):
     if any(is_git_refs_api_endpoint(url) for url in urls) and command_has_write_semantics:
         if any(is_git_tag_refs_api_endpoint(url) for url in urls):
             return True
-        if any(payload_mentions_tag_ref(payload) for payload in body_payloads):
+        if rest_tag_ref_payloads_need_gate(body_payloads):
             return True
     if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
         if not body_payloads:
@@ -1236,7 +1287,7 @@ def wget_release_write_command(segment, start):
     if any(is_git_refs_api_endpoint(url) for url in urls) and command_has_write_semantics:
         if any(is_git_tag_refs_api_endpoint(url) for url in urls):
             return True
-        if any(payload_mentions_tag_ref(payload) for payload in body_payloads):
+        if rest_tag_ref_payloads_need_gate(body_payloads):
             return True
     if any(is_graphql_endpoint(url) for url in urls) and command_has_write_semantics:
         if not body_payloads:
@@ -2825,12 +2876,12 @@ def quoted_string_literals(value):
 def literal_argv_mentions_release_command(payload):
     literals = [literal.strip() for literal in quoted_string_literals(payload) if literal.strip()]
     for index, literal in enumerate(literals):
-        if re.search(r"\bgh\s+release\s+create\b", literal):
+        if GH_RELEASE_MUTATING_RE.search(literal):
             return True
         if literal != "gh":
             continue
         args = literals[index + 1:]
-        if len(args) >= 2 and args[0] == "release" and args[1] == "create":
+        if len(args) >= 2 and args[0] == "release" and args[1] not in {"view", "list", "download", "verify-asset"}:
             return True
         if args and args[0] == "api":
             command_text = " ".join(["gh"] + args)
@@ -2842,7 +2893,7 @@ def literal_argv_mentions_release_command(payload):
 
 
 def language_payload_mentions_release_command(payload):
-    if re.search(r"\bgh\s+release\s+create\b", payload):
+    if GH_RELEASE_MUTATING_RE.search(payload):
         return True
     if direct_github_release_api_url(payload) and (
         re.search(r"\b(?:POST|PUT|PATCH|DELETE)\b", payload, re.I)
@@ -3289,7 +3340,7 @@ def contains_release_create(command, depth=0):
                     continue
                 if gh_alias_import_command(segment, start):
                     return True
-                if gh_release_create_command(segment, start) or gh_api_release_write_command(segment, start):
+                if gh_release_mutating_command(segment, start) or gh_api_release_write_command(segment, start):
                     return True
                 alias_index = gh_subcommand_index(segment, start)
                 if alias_index < len(segment) and segment[alias_index] in effective_gh_aliases:
@@ -3408,8 +3459,12 @@ if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
 fi
 
 current_release_sha() {
-  git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null && return 0
-  git -C "${PWD:-.}" rev-parse --short=12 HEAD 2>/dev/null && return 0
+  local candidate
+  for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
+    if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 HEAD 2>/dev/null; then
+      return 0
+    fi
+  done
   return 1
 }
 

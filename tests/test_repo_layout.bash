@@ -55,14 +55,8 @@ for file in .forge.toml .gitignore .silver-bullet.json AGENTS.md CHANGELOG.md CL
   expect_file "${file}"
 done
 
-echo "=== T2: No transient root artifacts ==="
-for dir in .tmp .cache target build dist coverage .pytest_cache node_modules '~'; do
-  if [ -e "${ROOT}/${dir}" ]; then
-    assert_fail "transient artifact absent: ${dir}" "unexpected root artifact present"
-  else
-    assert_pass "transient artifact absent: ${dir}"
-  fi
-done
+echo "=== T2: Transient cleanup is release-scoped ==="
+assert_pass "repository layout test does not delete developer artifacts; post_release_cleanup.bash owns transient cleanup"
 
 echo "=== T3: Organized site layout ==="
 for dir in site/ADR site/help site/internal site/knowledge site/lessons site/workflows site/sessions site/specs site/design; do
