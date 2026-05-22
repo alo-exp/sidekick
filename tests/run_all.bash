@@ -21,6 +21,7 @@ run_suite() {
 }
 
 run_suite "install.sh unit tests"         "test_install_sh.bash"
+run_suite "Generated host skill surface tests" "test_agent_surface_render.bash"
 run_suite "Host surface rewrite tests"    "test_host_surface_rewrite.bash"
 run_suite "Plugin integrity verification" "test_plugin_integrity.bash"
 run_suite "Fresh install simulation"      "test_fresh_install_sim.bash"

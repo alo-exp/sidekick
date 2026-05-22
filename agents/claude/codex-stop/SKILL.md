@@ -11,7 +11,7 @@ Stop Kay mode and restore normal direct-host behavior.
 
 1. Resolve the active host session id, then check whether the matching Kay marker exists:
    ```bash
-   SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"
+   SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"
    test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Kay mode"; exit 1; }
    test -f "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
    ```

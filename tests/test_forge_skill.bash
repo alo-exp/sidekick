@@ -70,7 +70,7 @@ else
 fi
 
 echo "=== T12: Level 3 fallback uses host project boundary ==="
-if grep -q '\$CLAUDE_PROJECT_DIR' "${SKILL_FILE}" \
+if grep -q '\$SIDEKICK_HOST_PROJECT_DIR' "${SKILL_FILE}" \
   && grep -q 'active host project directory' "${SKILL_FILE}" \
   && grep -q 'sidekick forge-level3 start' "${SKILL_FILE}" \
   && grep -q 'sidekick forge-level3 stop' "${SKILL_FILE}" \
@@ -182,11 +182,11 @@ else
 fi
 
 echo "=== T20: Forge skill marker paths use shared session resolver ==="
-if grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"' "${SKILL_FILE}" \
-  && grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"' "${STOP_SKILL}" \
-	  && grep -q '\${HOME}/.claude/sessions/\${SIDEKICK_SESSION}/.forge-delegation-active' "${SKILL_FILE}" \
-	  && grep -q '\${HOME}/.claude/sessions/\${SIDEKICK_SESSION}/.forge-delegation-active' "${STOP_SKILL}" \
-	  && grep -q '\${HOME}/.claude/sessions/\${SIDEKICK_SESSION}/.forge-level3-active' "${STOP_SKILL}" \
+if grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"' "${SKILL_FILE}" \
+  && grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"' "${STOP_SKILL}" \
+	  && grep -q '\${SIDEKICK_HOST_HOME}/sessions/\${SIDEKICK_SESSION}/.forge-delegation-active' "${SKILL_FILE}" \
+	  && grep -q '\${SIDEKICK_HOST_HOME}/sessions/\${SIDEKICK_SESSION}/.forge-delegation-active' "${STOP_SKILL}" \
+	  && grep -q '\${SIDEKICK_HOST_HOME}/sessions/\${SIDEKICK_SESSION}/.forge-level3-active' "${STOP_SKILL}" \
 	  && grep -q '\${HOME}/.sidekick/sessions/\${SIDEKICK_SESSION}/active-sidekick' "${SKILL_FILE}" \
 	  && grep -q '\${HOME}/.kay/sessions/\${SIDEKICK_SESSION}/.kay-delegation-active' "${SKILL_FILE}" \
 	  && ! grep -q 'sessions/${CLAUDE_SESSION_ID}/.forge-delegation-active' "${SKILL_FILE}" \

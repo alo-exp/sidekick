@@ -67,8 +67,9 @@ fi
 
 echo "=== T5: kay-delegate activates the session marker ==="
 if grep -q 'SIDEKICK_SESSION_ID' "${DELEGATE_FILE}" \
-  && grep -q 'CODEX_THREAD_ID' "${DELEGATE_FILE}" \
-	  && grep -q 'CLAUDE_SESSION_ID' "${DELEGATE_FILE}" \
+  && grep -q 'SIDEKICK_HOST_SESSION_ID' "${DELEGATE_FILE}" \
+	  && ! grep -q 'CODEX_THREAD_ID' "${DELEGATE_FILE}" \
+	  && ! grep -q 'CLAUDE_SESSION_ID' "${DELEGATE_FILE}" \
 	  && grep -q '\.kay/sessions' "${DELEGATE_FILE}" \
 	  && grep -q '\.kay-delegation-active' "${DELEGATE_FILE}" \
 	  && grep -q '\.sidekick/sessions' "${DELEGATE_FILE}" \
@@ -83,8 +84,9 @@ echo "=== T6: kay-stop frontmatter and marker handling ==="
 if grep -q '^---$' "${STOP_FILE}" \
   && grep -q '^name: kay-stop' "${STOP_FILE}" \
   && grep -q 'SIDEKICK_SESSION_ID' "${STOP_FILE}" \
-  && grep -q 'CODEX_THREAD_ID' "${STOP_FILE}" \
-	  && grep -q 'CLAUDE_SESSION_ID' "${STOP_FILE}" \
+  && grep -q 'SIDEKICK_HOST_SESSION_ID' "${STOP_FILE}" \
+	  && ! grep -q 'CODEX_THREAD_ID' "${STOP_FILE}" \
+	  && ! grep -q 'CLAUDE_SESSION_ID' "${STOP_FILE}" \
 	  && grep -q '\.kay/sessions' "${STOP_FILE}" \
 	  && grep -q '\.kay-delegation-active' "${STOP_FILE}" \
 	  && grep -q 'active-sidekick' "${STOP_FILE}"; then

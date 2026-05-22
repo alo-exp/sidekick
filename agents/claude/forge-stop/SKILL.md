@@ -11,14 +11,14 @@ Stop Forge-first mode and restore normal direct-host behavior.
 
 1. Resolve the active host session id, then check whether the matching Forge marker exists:
    ```bash
-   SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"
+   SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"
    test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Forge mode"; exit 1; }
-   test -f "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
+   test -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
    ```
    - **If yes:** delete it and the sibling Level 3 marker with:
      ```bash
-     rm -f "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
-       "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
+     rm -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
+       "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
      ACTIVE_FILE="${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
      if [ -f "${ACTIVE_FILE}" ] && [ "$(cat "${ACTIVE_FILE}")" = "forge" ]; then
        rm -f "${ACTIVE_FILE}"

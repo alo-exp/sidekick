@@ -46,7 +46,9 @@ sidekick/
 ├── hooks/                   # SessionStart, PreToolUse, and PostToolUse hook scripts
 ├── output-styles/           # Forge/Kay narration contracts
 ├── sidekicks/registry.json  # Runtime metadata and pinned installer hashes
-├── skills/                  # Canonical Forge and Kay workflow skills
+├── skills/                  # Canonical host-agnostic Forge and Kay workflow skills
+├── agents/                  # Generated Claude/Codex host skill bundles
+├── scripts/                 # Host surface renderer and maintenance helpers
 ├── tests/                   # Bash test suite
 ├── install.sh               # First-run bootstrap and clean reinstall support
 └── README.md

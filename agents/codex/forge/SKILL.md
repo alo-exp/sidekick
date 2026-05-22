@@ -48,15 +48,15 @@ Per the non-destructive rule, create only if absent -- never overwrite existing 
 Resolve the same host session id the hooks use, then create or refresh the marker with a fresh activation token:
 
 ```bash
-SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Forge mode"; exit 1; }
-mkdir -p "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}" \
+mkdir -p "${HOME}/.codex/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.kay/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
 rm -f "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active" \
-  "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
+  "${HOME}/.codex/sessions/${SIDEKICK_SESSION}/.forge-level3-active"
 printf '%s\n' "forge" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
-printf '%s\n' "$(uuidgen | tr 'A-Z' 'a-z')" > "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
+printf '%s\n' "$(uuidgen | tr 'A-Z' 'a-z')" > "${HOME}/.codex/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
 ```
 
 - Before writing the marker, remove any stale sibling `.forge-level3-active` marker for the same resolved session. Level 3 must be re-entered explicitly through the fallback ladder after each fresh `/forge` activation.
@@ -92,8 +92,8 @@ When composing a `Bash` tool call to invoke `forge -p "..."`:
 Before every implementation task, check the marker under the resolved session id:
 
 ```bash
-SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"
-test -f "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"
+test -f "${HOME}/.codex/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
 ```
 
 - **If active:** follow `skills/forge.md` STEP 1 through STEP 9 for task execution.
@@ -145,7 +145,7 @@ Maximum 3 subtask attempts total. If all 3 fail -> escalate to Level 3.
 
 ### Level 3 -- Take over
 
-DLGT-04 restriction is temporarily lifted through an explicit session marker. The host AI runs `sidekick forge-level3 start`, then uses Write/Edit/Bash tools directly to complete only the failing subtask. **Scope constraint**: Write/Edit/Bash operations are limited to the active host project directory (`$SIDEKICK_HOST_PROJECT_DIR`). Operations targeting any path outside this boundary are not permitted. After completion, run `sidekick forge-level3 stop` and produce a structured debrief:
+DLGT-04 restriction is temporarily lifted through an explicit session marker. The host AI runs `sidekick forge-level3 start`, then uses Write/Edit/Bash tools directly to complete only the failing subtask. **Scope constraint**: Write/Edit/Bash operations are limited to the active host project directory (`$CODEX_PROJECT_DIR`). Operations targeting any path outside this boundary are not permitted. After completion, run `sidekick forge-level3 stop` and produce a structured debrief:
 
 ```
 DEBRIEF:
