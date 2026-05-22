@@ -390,7 +390,7 @@ and after the Codex live release pyramid has been run twice with
 `SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`:
 
 ```bash
-# Verify all 4 distinct current-session/current-commit stage markers and 2 live-pyramid markers are present
+# Verify all 4 distinct current-session/current-commit stage markers and 2 current-session/current-commit live-pyramid markers are present
 SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
 SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
@@ -398,7 +398,7 @@ test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
 count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1 ~ /^quality-gate-stage-[1-4]$/ { has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $1 }' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 [ "$count" -eq 4 ] || { echo "Quality gate incomplete: $count/4 stages present"; exit 1; }
 live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $0}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
-[ "$live_count" -ge 2 ] || { echo "Live pyramid incomplete: $live_count/2 runs present"; exit 1; }
+[ "$live_count" -ge 2 ] || { echo "Live pyramid incomplete for current session/current commit: $live_count/2 runs present"; exit 1; }
 
 # Publish the release tag and create the GitHub release
 git push origin v<version>

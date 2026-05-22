@@ -21,12 +21,13 @@
 #                             — full host→Kay delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
-# The live stages skip cleanly (exit 0) when the env vars are unset, so this
-# script is still useful in CI. A Codex live run is release-authorizing: a run
-# with SIDEKICK_LIVE_CODEX=1 records a current-session live-pyramid marker.
-# Forge live stages may also be run when available, but they are not required
-# when Forge testing is intentionally skipped. The release hook requires two
-# such markers before it allows a GitHub release command.
+# CI should run tests/run_unit.bash. This runner is for release operators: the
+# live stages skip cleanly when env vars are unset, and Codex live runs are
+# release-authorizing. A run with SIDEKICK_LIVE_CODEX=1 records a current-session,
+# current-commit live-pyramid marker. Forge live stages may also be run when
+# available, but they are not required when Forge testing is intentionally
+# skipped. The release hook requires two such markers before it allows release
+# tag publication or a GitHub release command.
 #
 # Usage
 #   bash tests/run_release.bash
