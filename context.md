@@ -14,7 +14,7 @@ Sidekick is a Claude Code and Codex plugin that gives the host AI two execution 
 | Sidekick | Runtime | Role |
 |---|---|---|
 | Forge | `forge` | ForgeCode execution agent with fallback ladder, progress surface, and mentoring loop |
-| Kay | `kay` | OSS Codex-lineage execution agent with OpenCode Go default-provider routing and task-based model selection for MiMo-V2.5-Pro non-trivial work, MiniMax M2.7 trivial work, and DeepSeek V4 Flash test running / issue reporting / completion verification |
+| Kay | `kay` | OSS Codex-lineage execution agent with OpenCode Go default-provider routing and task-based model selection for MiMo-V2.5-Pro non-trivial and vision / visual reasoning work, MiniMax M2.7 trivial work, and DeepSeek V4 Flash test running / issue reporting / completion verification |
 
 The host AI stays in the planning, review, communication, and mentoring role. Forge or Kay performs implementation work.
 

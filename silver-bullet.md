@@ -837,11 +837,12 @@ not considered finished until the working tree is clean again.
 This section is written and committed by SB whenever the user expresses a workflow preference.
 Initially empty — all workflow defaults apply. Read at every relevant decision point.
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ### 10a. Routing Preferences
 | Work type | Override route | Since |
 |-----------|---------------|-------|
+| Vision / visual reasoning | Use MiMo-V2.5-Pro for screenshots, images, diagrams, and other visual analysis | 2026-05-22 |
 | MiniMax-backed Kay work | Use OpenCode Go as the provider path for MiniMax model routing | 2026-05-21 |
 | Test running / issue reporting | Use DeepSeek V4 Flash for verification runs and issue summaries | 2026-05-21 |
 
