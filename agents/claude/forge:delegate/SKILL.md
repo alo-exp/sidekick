@@ -6,7 +6,7 @@ description: Alias activation surface for Forge delegation mode. Use when the us
 # /forge:delegate
 
 This is a user-facing alias for the canonical Forge activation skill at
-`skills/forge/SKILL.md`.
+`forge/SKILL.md` in this generated claude skill root (`agents/claude/forge/SKILL.md` in the repository).
 
 When invoked, follow the canonical `/forge` workflow exactly:
 

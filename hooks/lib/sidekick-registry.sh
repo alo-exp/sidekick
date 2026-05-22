@@ -281,11 +281,15 @@ sidekick_kay_model_for_prompt() {
 
   # Vision and visual-reasoning prompts use MiMo-V2.5's native multimodal path.
   case "$normalized" in
-    *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*picture*|*diagram*|*chart*|*graph*|*ocr*|*mockup*|*wireframe*)
+    *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*picture*|*diagram*|*chart*|*ocr*|*mockup*|*wireframe*)
       printf '%s' 'mimo-v2.5'
       return 0
       ;;
   esac
+  if [[ "$normalized" =~ (^|[^[:alnum:]_])graph([^[:alnum:]_]|$) ]]; then
+    printf '%s' 'mimo-v2.5'
+    return 0
+  fi
 
   case "$normalized" in
     *run\ tests*|*rerun\ tests*|*test\ run*|*test\ running*|*test\ results*|*test\ report*|*issue\ reporting*|*report\ issues*|*issue\ report*|*issue\ triage*|*failure\ report*|*bug\ report*|*find\ issues*|*verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)

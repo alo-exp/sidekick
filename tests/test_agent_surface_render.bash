@@ -106,7 +106,15 @@ for path in \
   expect_contains "$path" ".codex/sessions" "Codex generated ${path} uses Codex session path"
 done
 
-echo "=== T5: generated bundles are in sync with renderer ==="
+echo "=== T5: generated aliases point at host-specific surfaces ==="
+for agent in claude codex; do
+  expect_contains "agents/${agent}/forge:delegate/SKILL.md" "agents/${agent}/forge/SKILL.md" "${agent} Forge alias names generated skill surface"
+  expect_contains "agents/${agent}/kay:delegate/SKILL.md" "agents/${agent}/codex-delegate/SKILL.md" "${agent} Kay alias names generated skill surface"
+  expect_not_contains "agents/${agent}/forge:delegate/SKILL.md" 'skills/forge/SKILL.md' "${agent} Forge alias does not point at canonical skills tree"
+  expect_not_contains "agents/${agent}/kay:delegate/SKILL.md" 'skills/codex-delegate/SKILL.md' "${agent} Kay alias does not point at canonical skills tree"
+done
+
+echo "=== T6: generated bundles are in sync with renderer ==="
 if [ -f "${RENDERER}" ]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "${tmp}" 2>/dev/null || true' EXIT
@@ -122,13 +130,22 @@ else
   assert_fail "generated host bundles in sync" "renderer missing"
 fi
 
-echo "=== T6: renderer refuses unsafe destinations ==="
+echo "=== T7: renderer refuses unsafe destinations ==="
 if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${PLUGIN_DIR}" >/tmp/sidekick-render-unsafe.out 2>&1; then
   assert_fail "renderer destination guard" "repo root destination unexpectedly accepted"
 elif grep -Fq "refusing unsafe render destination" /tmp/sidekick-render-unsafe.out; then
   assert_pass "renderer destination guard rejects repo root"
 else
   assert_fail "renderer destination guard" "$(cat /tmp/sidekick-render-unsafe.out)"
+fi
+
+echo "=== T8: renderer refuses unsafe sanitize roots ==="
+if python3 "${RENDERER}" sanitize --agent codex --root "${PLUGIN_DIR}" >/tmp/sidekick-sanitize-unsafe.out 2>&1; then
+  assert_fail "renderer sanitize guard" "repo root sanitize unexpectedly accepted"
+elif grep -Fq "refusing unsafe sanitize root" /tmp/sidekick-sanitize-unsafe.out; then
+  assert_pass "renderer sanitize guard rejects repo root"
+else
+  assert_fail "renderer sanitize guard" "$(cat /tmp/sidekick-sanitize-unsafe.out)"
 fi
 
 echo ""
