@@ -253,7 +253,7 @@ Verify the new release entry:
 
 After all five steps are complete and verified:
 
-1. Push to main and wait for CI to pass:
+1. Verify the test gate. If release commits intentionally include `[skip ci]`, CI is skipped by design; substitute local evidence is `git diff --check`, the clean `bash tests/run_all.bash` result, and any targeted suites used to verify review fixes. If `[skip ci]` is not used, push to main and wait for CI to pass:
    ```bash
    git push origin main
    gh run watch

@@ -50,6 +50,7 @@ remove_known_external_hook_cache() {
     ! -path "${artifact}/.codex" \
     ! -path "${artifact}/.codex/.silver-bullet" \
     ! -path "${artifact}/.codex/.silver-bullet/config-cache-*" \
+    ! -path "${artifact}/.codex/.silver-bullet/state.loaded" \
     -print -quit | grep -q .; then
     return 0
   fi
