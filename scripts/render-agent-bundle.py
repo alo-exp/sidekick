@@ -29,9 +29,26 @@ HOST_REPLACEMENTS = {
 def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
     return [
         (
+            "New installs invoke /forge from skills/forge/SKILL.md.",
+            "New installs invoke /forge from the generated host skill at "
+            "forge/SKILL.md.",
+        ),
+        (
+            "[`skills/forge/SKILL.md`](./forge/SKILL.md)",
+            "[`forge/SKILL.md`](./forge/SKILL.md)",
+        ),
+        (
             "`skills/forge/SKILL.md`",
             f"`forge/SKILL.md` in this generated {agent} skill root "
             f"(`agents/{agent}/forge/SKILL.md` in the repository)",
+        ),
+        (
+            "Prefer skills/codex-delegate/SKILL.md.",
+            "Prefer the generated host skill at codex-delegate/SKILL.md.",
+        ),
+        (
+            "[`skills/codex-delegate/SKILL.md`](./codex-delegate/SKILL.md)",
+            "[`codex-delegate/SKILL.md`](./codex-delegate/SKILL.md)",
         ),
         (
             "`skills/codex-delegate/SKILL.md`",
@@ -50,7 +67,10 @@ def rewrite_file(path: pathlib.Path, agent: str) -> bool:
     updated = text
     for old, new in HOST_REPLACEMENTS[agent]:
         updated = updated.replace(old, new)
-    if path.name == "SKILL.md" and path.parent.name in {"forge:delegate", "kay:delegate"}:
+    if (
+        path.name == "SKILL.md"
+        and path.parent.name in {"forge:delegate", "kay:delegate"}
+    ) or path.name in {"forge.md", "codex-delegate.md"}:
         for old, new in host_alias_replacements(agent):
             updated = updated.replace(old, new)
 

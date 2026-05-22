@@ -65,6 +65,21 @@ BLOCK_SIGNATURES = (
 )
 
 
+def path_aliases(path: Path) -> set[str]:
+    aliases = {str(path).replace("\\", "/")}
+    real = os.path.realpath(path)
+    aliases.add(real.replace("\\", "/"))
+    for value in tuple(aliases):
+        if value.startswith("/private/var/"):
+            aliases.add(f"/var/{value[len('/private/var/'):]}")
+        elif value.startswith("/var/"):
+            aliases.add(f"/private/var/{value[len('/var/'):]}")
+    return aliases
+
+
+PLUGIN_ROOT_ALIASES = path_aliases(PLUGIN_ROOT)
+
+
 @dataclass
 class TargetResult:
     path: str
@@ -136,7 +151,7 @@ def command_matches_script(command: str, script_name: str) -> bool:
 
 def command_has_sidekick_owner(command: str) -> bool:
     normalized = command.replace("\\", "/")
-    if str(PLUGIN_ROOT) in normalized:
+    if any(alias in normalized for alias in PLUGIN_ROOT_ALIASES):
         return True
     if any(marker in command for marker in HOST_ROOT_MARKERS):
         return True

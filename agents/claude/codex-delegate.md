@@ -1,10 +1,10 @@
 ---
 name: kay-delegate
-description: Legacy flat alias for the Kay sidekick orchestration skill. Prefer skills/codex-delegate/SKILL.md.
+description: Legacy flat alias for the Kay sidekick orchestration skill. Prefer the generated host skill at codex-delegate/SKILL.md.
 user-invocable: false
 ---
 
-> Deprecated in favor of [`skills/codex-delegate/SKILL.md`](./codex-delegate/SKILL.md).
+> Deprecated in favor of [`codex-delegate/SKILL.md`](./codex-delegate/SKILL.md).
 
 # Kay
 
