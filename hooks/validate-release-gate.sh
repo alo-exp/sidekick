@@ -138,6 +138,7 @@ GIT_PUSH_VALUE_OPTIONS = {
 }
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
 RELEASE_TAG_RE = re.compile(r"^v[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
+DYNAMIC_RELEASE_TAG_HINT_RE = re.compile(r"(?:TAG|VERSION|RELEASE)", re.IGNORECASE)
 INTERPRETER_PAYLOAD_OPTIONS = {
     "python": {"-c"},
     "python3": {"-c"},
@@ -166,6 +167,7 @@ REQUESTS_IMPORTED_WRITE_RE = re.compile(
     re.IGNORECASE,
 )
 PERSISTENT_GH_ALIASES = {}
+PERSISTENT_GIT_ALIASES = {}
 
 
 def tokenize(command):
@@ -681,10 +683,48 @@ def git_subcommand_index(segment, git_index):
     return index
 
 
+def git_global_alias_assignments(segment, git_index):
+    aliases = {}
+    index = git_index + 1
+    while index < len(segment):
+        token = segment[index]
+        config_value = None
+        if token == "--":
+            break
+        if token == "-c":
+            if index + 1 < len(segment):
+                config_value = segment[index + 1]
+            index += 2
+        elif token.startswith("-c") and token != "-c":
+            config_value = token[2:]
+            index += 1
+        elif token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        elif token.startswith("--") and any(
+            token.startswith(option + "=")
+            for option in GIT_VALUE_GLOBALS
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        elif token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        else:
+            break
+
+        if config_value:
+            match = re.match(r"^alias\.([A-Za-z0-9_.-]+)=(.*)$", config_value)
+            if match and match.group(2).strip():
+                aliases[match.group(1)] = match.group(2).strip()
+    return aliases
+
+
 def token_is_release_tag_ref(token):
     token = token.lstrip("+")
     if token.startswith("refs/tags/"):
-        token = token[len("refs/tags/"):]
+        return True
     return bool(RELEASE_TAG_RE.match(token))
 
 
@@ -695,9 +735,19 @@ def refspec_is_dynamic(refspec):
 def refspec_targets_release_tag(refspec):
     if not refspec:
         return False
-    if refspec_is_dynamic(refspec):
+    parts = [part for part in refspec.split(":") if part]
+    if any(token_is_release_tag_ref(part) for part in parts):
         return True
-    return any(token_is_release_tag_ref(part) for part in refspec.split(":") if part)
+    return refspec_is_dynamic(refspec) and bool(DYNAMIC_RELEASE_TAG_HINT_RE.search(refspec))
+
+
+def git_push_refspecs_target_release_tag(refspecs):
+    for token in refspecs:
+        if token == "tag":
+            return True
+        if refspec_targets_release_tag(token):
+            return True
+    return False
 
 
 def git_push_release_tag_command(segment, git_index):
@@ -737,7 +787,7 @@ def git_push_release_tag_command(segment, git_index):
         return False
 
     refspecs = operands[1:] if len(operands) > 1 else []
-    return any(refspec_targets_release_tag(refspec) for refspec in refspecs)
+    return git_push_refspecs_target_release_tag(refspecs)
 
 
 def is_release_api_endpoint(endpoint):
@@ -2308,6 +2358,109 @@ def persistent_gh_aliases(gh_config_dir=None):
     return PERSISTENT_GH_ALIASES[cache_key]
 
 
+def unquote_git_alias_expansion(expansion):
+    expansion = expansion.strip()
+    if len(expansion) < 2 or expansion[0] not in {"'", '"'} or expansion[-1] != expansion[0]:
+        return expansion
+    try:
+        parts = shlex.split(expansion)
+    except ValueError:
+        return expansion
+    return parts[0] if len(parts) == 1 else expansion
+
+
+def parse_git_alias_config(output):
+    aliases = {}
+    in_alias_block = False
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or line.startswith(";"):
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            in_alias_block = line.lower() == "[alias]"
+            continue
+        if not in_alias_block:
+            continue
+        if "=" in line:
+            name, expansion = line.split("=", 1)
+        else:
+            parts = line.split(None, 1)
+            if len(parts) != 2:
+                continue
+            name, expansion = parts
+        name = name.strip()
+        expansion = unquote_git_alias_expansion(expansion)
+        if re.match(r"^[A-Za-z0-9_.-]+$", name) and expansion:
+            aliases[name] = expansion
+    return aliases
+
+
+def git_alias_config_paths():
+    paths = []
+    global_config = os.environ.get("GIT_CONFIG_GLOBAL")
+    if global_config:
+        paths.append(Path(global_config))
+    home = os.environ.get("HOME")
+    if home:
+        paths.append(Path(home) / ".gitconfig")
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+    if xdg_config_home:
+        paths.append(Path(xdg_config_home) / "git" / "config")
+
+    try:
+        cwd = Path(os.environ.get("PWD") or os.getcwd()).resolve()
+        for parent in (cwd, *cwd.parents):
+            local_config = parent / ".git" / "config"
+            if local_config.is_file():
+                paths.append(local_config)
+                break
+    except OSError:
+        pass
+
+    seen = set()
+    for path in paths:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield path
+
+
+def persistent_git_aliases():
+    cache_key = "__default__"
+    if cache_key in PERSISTENT_GIT_ALIASES:
+        return PERSISTENT_GIT_ALIASES[cache_key]
+    alias_fixture = os.environ.get("SIDEKICK_GIT_ALIAS_CONFIG")
+    if alias_fixture is not None:
+        PERSISTENT_GIT_ALIASES[cache_key] = parse_git_alias_config(alias_fixture)
+        return PERSISTENT_GIT_ALIASES[cache_key]
+
+    aliases = {}
+    for path in git_alias_config_paths():
+        try:
+            if not path.is_file():
+                continue
+            aliases.update(parse_git_alias_config(path.read_text(encoding="utf-8")))
+        except OSError:
+            continue
+    PERSISTENT_GIT_ALIASES[cache_key] = aliases
+    return PERSISTENT_GIT_ALIASES[cache_key]
+
+
+def git_alias_payload(expansion, args=None):
+    args = args or []
+    expansion = expansion.strip()
+    if expansion.startswith("!"):
+        payload = expansion[1:].strip()
+    elif expansion.startswith("git "):
+        payload = expansion
+    else:
+        payload = "git " + expansion
+    if args:
+        payload = " ".join([payload] + [shlex.quote(arg) for arg in args])
+    return payload
+
+
 def enables_alias_expansion(segment):
     start = command_index_from(segment)
     if start >= len(segment) or Path(segment[start]).name != "shopt":
@@ -2923,8 +3076,19 @@ def contains_release_create(command, depth=0):
                     alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
                     if contains_release_create(alias_payload, depth + 1):
                         return True
-            if command_name == "git" and git_push_release_tag_command(segment, start):
-                return True
+            if command_name == "git":
+                effective_git_aliases = dict(persistent_git_aliases())
+                effective_git_aliases.update(git_global_alias_assignments(segment, start))
+                alias_index = git_subcommand_index(segment, start)
+                if alias_index < len(segment) and segment[alias_index] in effective_git_aliases:
+                    alias_payload = git_alias_payload(
+                        effective_git_aliases[segment[alias_index]],
+                        segment[alias_index + 1:],
+                    )
+                    if contains_release_create(alias_payload, depth + 1):
+                        return True
+                if git_push_release_tag_command(segment, start):
+                    return True
             if command_name == "curl" and curl_release_write_command(segment, start):
                 return True
             if command_name == "wget" and wget_release_write_command(segment, start):
