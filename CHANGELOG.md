@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.6.0 — 2026-05-23
+
+### Host-specific skill bundles and release runner split
+
+Sidekick now keeps canonical host-agnostic workflows under `skills/` while generating Claude Code and Codex-facing skill bundles under `agents/claude/` and `agents/codex/`. The test entry points are also split into strict non-live, skip-safe local, and release-authorization runners.
+
+**Added:**
+
+- **`agents/claude/`**, **`agents/codex/`**, **`scripts/render-agent-bundle.py`**, **`scripts/sync-host-surfaces.sh`**: generated host-specific skill surfaces for Claude Code and Codex, with renderer coverage keeping them synchronized with the canonical `skills/` source tree.
+- **`tests/run_unit.bash`** and **`tests/test_runner_contract.bash`**: a strict non-live runner plus regression coverage that locks down the runner contract.
+
+**Changed:**
+
+- **`.claude-plugin/plugin.json`**, **`.codex-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**: version bumped to `0.6.0`, with plugin manifests pointing at the generated host-specific skill bundles.
+- **`tests/run_all.bash`**, **`tests/run_release.bash`**, **`.github/workflows/ci.yml`**, **`README.md`**, **`context.md`**, **`site/CICD.md`**, **`site/TESTING.md`**, **`site/pre-release-quality-gate.md`**: testing docs and automation now distinguish strict local validation, skip-safe local sweeps, and live release authorization.
+- **Kay visual prompt routing**: refreshed Kay routing/docs surfaces for visual and issue-reporting work before the host-surface reorg.
+
 ## v0.5.8 — 2026-05-21
 
 ### Kay DeepSeek routing and docs mirror

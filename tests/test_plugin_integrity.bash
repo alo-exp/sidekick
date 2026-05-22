@@ -153,11 +153,11 @@ else
   echo "SKIP remote Forge installer hash check (set SIDEKICK_VERIFY_REMOTE_INSTALLERS=1)"
 fi
 
-# Verify plugin version major/minor expectation.
+# Verify plugin version remains on the pre-1.0 release line.
 PLUGIN_VERSION="$(python3 -c "import json; d=json.load(open('${MANIFEST}')); print(d.get('version',''))")"
 case "${PLUGIN_VERSION}" in
-  0.5.*) assert_pass "plugin.json version is 0.5.x (${PLUGIN_VERSION})" ;;
-  *)     assert_fail "plugin.json version" "expected 0.5.x, got ${PLUGIN_VERSION}" ;;
+  0.[0-9]*.[0-9]*) assert_pass "plugin.json version is pre-1.0 semver (${PLUGIN_VERSION})" ;;
+  *)                assert_fail "plugin.json version" "expected 0.x.y, got ${PLUGIN_VERSION}" ;;
 esac
 
 echo ""
