@@ -58,7 +58,7 @@ Core suites in `tests/`. Each suite is an independent Bash script with a pass/fa
 | `test_help_site_navigation.bash` | Help-site links, anchors, and navigation order stay valid |
 | `test_runner_contract.bash` | Runner split stays explicit: `run_unit` strict non-live, `run_all` skip-safe, `run_release` authoritative |
 
-All listed suites are invoked by `tests/run_unit.bash` with combined reporting. `tests/run_all.bash` invokes `run_unit.bash` plus `test_forge_e2e.bash` and `run_live_codex_plugin_read.bash`.
+All listed suites are invoked by `tests/run_unit.bash` with combined reporting. `tests/run_all.bash` invokes `run_unit.bash`, then runs every live-gated wrapper in skip-safe mode: Forge E2E, Forge smoke/live E2E, Kay plugin/read, Kay marketplace install, Kay smoke, and Kay live E2E.
 
 ---
 

@@ -99,6 +99,7 @@ done
 for needle in 'SessionStart no longer updates or repairs Forge/Kay runtimes after install' 'rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>' 'rewrites Kay runtime calls to include <code>--full-auto</code>' 'host session marker' '~/.kay/sessions/&lt;session&gt;/.kay-delegation-active'; do
   expect_contains "site/help/reference/index.html" "${needle}" "reference current hooks contain ${needle}"
 done
+expect_contains "site/help/reference/index.html" 'Blocks <code>gh release create</code> commands and release tag pushes' "reference documents release tag push guard"
 
 echo "=== T7: Concepts and troubleshooting match current runtime behavior ==="
 for needle in 'per-session health check; SessionStart does not update or repair runtimes' 'quality-gates + code-review' 'Forge output is treated as untrusted task output' '[<span class="key">compact</span>]' 'vision / visual reasoning'; do
