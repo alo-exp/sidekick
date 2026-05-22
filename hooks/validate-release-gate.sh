@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Pre-release quality gate enforcer
-# Intercepts Bash tool calls containing "gh release create" and denies them
-# (via the Claude Code PreToolUse permissionDecision envelope) unless all
-# current-session, current-commit quality-gate stage markers and two
+# Intercepts Bash tool calls that publish GitHub releases or release tags and
+# denies them (via the Claude Code PreToolUse permissionDecision envelope)
+# unless all current-session, current-commit quality-gate stage markers and two
 # live-pyramid run markers are present in Sidekick's state file.
 #
 # Stage count and marker names are defined in site/pre-release-quality-gate.md.
@@ -121,6 +121,23 @@ GH_API_VALUE_OPTIONS = {
     "--cache",
 }
 GH_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+GIT_VALUE_GLOBALS = {
+    "-C", "-c",
+    "--git-dir", "--work-tree", "--namespace",
+    "--exec-path", "--super-prefix",
+}
+GIT_FLAG_GLOBALS = {
+    "--bare", "--no-pager", "--paginate",
+    "--literal-pathspecs", "--glob-pathspecs",
+    "--noglob-pathspecs", "--icase-pathspecs",
+}
+GIT_PUSH_VALUE_OPTIONS = {
+    "-o", "--push-option",
+    "--receive-pack", "--exec",
+    "--recurse-submodules",
+}
+GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
+RELEASE_TAG_RE = re.compile(r"^v[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 INTERPRETER_PAYLOAD_OPTIONS = {
     "python": {"-c"},
     "python3": {"-c"},
@@ -635,6 +652,86 @@ def gh_release_create_command(segment, gh_index):
         return False
     create_index = skip_gh_globals(segment, subcommand_index + 1)
     return create_index < len(segment) and segment[create_index] == "create"
+
+
+def git_subcommand_index(segment, git_index):
+    index = git_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            break
+        if token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("-c") and token != "-c":
+            index += 1
+            continue
+        if token.startswith("--") and any(
+            token.startswith(option + "=")
+            for option in GIT_VALUE_GLOBALS
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        if token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return index
+
+
+def token_is_release_tag_ref(token):
+    token = token.lstrip("+")
+    if token.startswith("refs/tags/"):
+        token = token[len("refs/tags/"):]
+    return bool(RELEASE_TAG_RE.match(token))
+
+
+def refspec_targets_release_tag(refspec):
+    if not refspec:
+        return False
+    return any(token_is_release_tag_ref(part) for part in refspec.split(":") if part)
+
+
+def git_push_release_tag_command(segment, git_index):
+    subcommand_index = git_subcommand_index(segment, git_index)
+    if subcommand_index >= len(segment) or segment[subcommand_index] != "push":
+        return False
+
+    index = subcommand_index + 1
+    operands = []
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            operands.extend(segment[index + 1:])
+            break
+        if token in GIT_PUSH_RELEASE_TAG_OPTIONS:
+            return True
+        if token in GIT_PUSH_VALUE_OPTIONS:
+            index += 2
+            continue
+        if token.startswith("--") and any(
+            token.startswith(option + "=")
+            for option in GIT_PUSH_VALUE_OPTIONS
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        if token.startswith("-o") and token != "-o":
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        operands.append(token)
+        index += 1
+
+    if not operands:
+        return False
+
+    refspecs = operands[1:] if len(operands) > 1 else []
+    return any(refspec_targets_release_tag(refspec) for refspec in refspecs)
 
 
 def is_release_api_endpoint(endpoint):
@@ -2820,6 +2917,8 @@ def contains_release_create(command, depth=0):
                     alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
                     if contains_release_create(alias_payload, depth + 1):
                         return True
+            if command_name == "git" and git_push_release_tag_command(segment, start):
+                return True
             if command_name == "curl" and curl_release_write_command(segment, start):
                 return True
             if command_name == "wget" and wget_release_write_command(segment, start):

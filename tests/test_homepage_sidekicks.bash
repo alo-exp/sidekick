@@ -8,6 +8,7 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+MANIFEST_VERSION="$(python3 -c "import json; print(json.load(open('${ROOT}/.claude-plugin/plugin.json'))['version'])")"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -40,6 +41,13 @@ extract_sidekick_section() {
 }
 
 echo "=== T1: Homepage copy highlights current Sidekick support ==="
+badge_count="$(grep -F "Available · v${MANIFEST_VERSION}" "${ROOT}/site/index.html" | wc -l | tr -d ' ')"
+if [ "${badge_count}" -ge 2 ]; then
+  pass "homepage sidekick badges match manifest version"
+else
+  fail "homepage sidekick badges match manifest version" "found ${badge_count} badge(s) for v${MANIFEST_VERSION}"
+fi
+expect_not_contains "site/index.html" "Available · v0.5.6" "homepage removes stale v0.5.6 sidekick badges"
 expect_contains "site/index.html" "Reduce Claude Code and Codex Costs by up to" "homepage keeps the cost-focused hero headline"
 expect_contains "site/index.html" "<p class=\"subtitle\"><strong>Give Both Hosts the Sidekick They're Missing.</strong>" "homepage subtitle leads with the shared-host claim"
 expect_contains "site/index.html" "Forge and Kay route implementation through multiple lower-cost AI API backends" "homepage explains low-cost API routing"
