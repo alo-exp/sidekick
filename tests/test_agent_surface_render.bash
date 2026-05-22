@@ -128,11 +128,11 @@ if [ -f "${RENDERER}" ]; then
   trap 'rm -rf "${tmp}" 2>/dev/null || true' EXIT
   if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/claude" \
     && python3 "${RENDERER}" render --agent codex --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/codex" \
-    && diff -qr "${tmp}/claude" "${PLUGIN_DIR}/agents/claude" >/tmp/sidekick-agent-claude.diff 2>&1 \
-    && diff -qr "${tmp}/codex" "${PLUGIN_DIR}/agents/codex" >/tmp/sidekick-agent-codex.diff 2>&1; then
+    && diff -qr "${tmp}/claude" "${PLUGIN_DIR}/agents/claude" >"${tmp}/sidekick-agent-claude.diff" 2>&1 \
+    && diff -qr "${tmp}/codex" "${PLUGIN_DIR}/agents/codex" >"${tmp}/sidekick-agent-codex.diff" 2>&1; then
     assert_pass "generated host bundles match renderer output"
   else
-    assert_fail "generated host bundles in sync" "$(cat /tmp/sidekick-agent-claude.diff /tmp/sidekick-agent-codex.diff 2>/dev/null | head -20)"
+    assert_fail "generated host bundles in sync" "$(cat "${tmp}/sidekick-agent-claude.diff" "${tmp}/sidekick-agent-codex.diff" 2>/dev/null | head -20)"
   fi
 else
   assert_fail "generated host bundles in sync" "renderer missing"

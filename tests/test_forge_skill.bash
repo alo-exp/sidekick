@@ -69,6 +69,17 @@ else
   assert_fail "Canonical stop note" "missing canonical stop-skill note or stale forge-history reference present"
 fi
 
+echo "=== T11b: Forge skill is canonical, not a flat-wrapper dependent body ==="
+if grep -q 'canonical Forge delegation workflow' "${SKILL_FILE}" \
+  && grep -q '## Runtime Setup / Repair' "${SKILL_FILE}" \
+  && ! grep -q 'follow `skills/forge.md` STEP' "${SKILL_FILE}" \
+  && ! grep -q 'direct the user to `skills/forge.md`' "${SKILL_FILE}" \
+  && ! grep -q 'wraps it with a persistent session state mechanism' "${SKILL_FILE}"; then
+  assert_pass "Forge skill is self-contained canonical workflow"
+else
+  assert_fail "Forge canonical workflow" "still depends on the legacy flat wrapper or lacks setup guidance"
+fi
+
 echo "=== T12: Level 3 fallback uses host project boundary ==="
 if grep -q '\$SIDEKICK_HOST_PROJECT_DIR' "${SKILL_FILE}" \
   && grep -q 'active host project directory' "${SKILL_FILE}" \
