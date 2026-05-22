@@ -3012,7 +3012,7 @@ fi
 [ "$release_match" -eq 1 ] || exit 0
 
 if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
-  reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, or SESSION_ID and rerun the gate in the current session."
+  reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, CLAUDE_SESSION_ID, or SESSION_ID and rerun the gate in the current session."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",

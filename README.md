@@ -148,7 +148,7 @@ Before any release, complete the 4-stage pre-release quality gate exactly as doc
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.
 
-Without those env vars the release gate still runs strict stage 1 and cleanly skips the live stages, but CI uses `tests/run_unit.bash` directly.
+Without those env vars `run_release.bash` still runs the strict non-live tier and cleanly skips the live tiers, but CI uses `tests/run_unit.bash` directly.
 
 ---
 

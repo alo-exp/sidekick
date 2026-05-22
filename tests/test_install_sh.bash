@@ -579,6 +579,36 @@ else
 fi
 rm -rf "${_fresh_root}" "${_stale_root}" "${_fresh_home}" "${_fresh_toolbox}" /tmp/sidekick-install-source-registry.out
 
+echo "=== T26: Kay-disabled install does not require python3 registry reads ==="
+_skip_root="$(mktemp -d)"
+_skip_home="$(mktemp -d)"
+_skip_toolbox="$(mktemp -d)"
+prepare_install_sandbox "${_skip_root}"
+make_install_toolbox "${_skip_toolbox}" "1"
+rm -f "${_skip_toolbox}/python3"
+cat > "${_skip_toolbox}/python3" <<'EOF'
+#!/usr/bin/env bash
+echo "unexpected python3 invocation" >&2
+exit 127
+EOF
+chmod +x "${_skip_toolbox}/python3"
+if env -u CODEX_PLUGIN_ROOT -u CODEX_HOME -u CODEX_THREAD_ID \
+  -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u SIDEKICK_PLUGIN_ROOT \
+  HOME="${_skip_home}" \
+  PATH="${_skip_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  SIDEKICK_INSTALL_FORGE=0 \
+  SIDEKICK_INSTALL_KAY=0 \
+  bash "${_skip_root}/install.sh" >/tmp/sidekick-install-no-python-skip.out 2>&1; then
+  if grep -q 'Skipping Kay bootstrap/repair' /tmp/sidekick-install-no-python-skip.out; then
+    assert_pass "Kay-disabled install skips registry metadata reads before python3 is needed"
+  else
+    assert_fail "Kay-disabled python3 skip" "installer did not report Kay skip"
+  fi
+else
+  assert_fail "Kay-disabled python3 skip" "$(cat /tmp/sidekick-install-no-python-skip.out 2>/dev/null || true)"
+fi
+rm -rf "${_skip_root}" "${_skip_home}" "${_skip_toolbox}" /tmp/sidekick-install-no-python-skip.out
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed, ${SKIP} skipped"

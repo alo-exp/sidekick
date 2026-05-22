@@ -19,7 +19,7 @@ Six release tiers, each with a distinct purpose. Tier 1 runs every strict non-li
 
 Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
 
-`tests/run_all.bash` is the skip-safe local sweep: it delegates to `tests/run_unit.bash`, then runs the live-gated Forge E2E and Codex plugin/read probes, which skip cleanly unless their env vars are set.
+`tests/run_all.bash` is the skip-safe local sweep: it delegates to `tests/run_unit.bash`, then runs every live-gated wrapper in skip-safe mode: Forge E2E, Forge smoke/live E2E, Kay plugin/read, Kay marketplace install, Kay smoke, and Kay live E2E.
 
 ---
 
