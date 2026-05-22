@@ -26,9 +26,9 @@ CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOME}/projects/codex-cli/kay}"
 CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
 CODE_RUST_REPO="${CODEX_REPO}/code-rs"
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
-MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-exp/sidekick}"
-MARKETPLACE_NAME="${CODEX_MARKETPLACE_NAME:-alo-labs}"
-EXPECTED_MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_EXPECTED_SOURCE:-https://github.com/alo-exp/sidekick.git}"
+MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-labs-codex/sidekick}"
+MARKETPLACE_NAME="${CODEX_MARKETPLACE_NAME:-alo-labs-codex}"
+EXPECTED_MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_EXPECTED_SOURCE:-https://github.com/alo-labs-codex/sidekick.git}"
 EXPECTED_MARKETPLACE_SOURCE_TYPE="${CODEX_MARKETPLACE_EXPECTED_SOURCE_TYPE:-git}"
 
 resolve_codex_runner() {
@@ -132,26 +132,45 @@ else
   fail "marketplace_install_root" "missing ${INSTALLED_ROOT} or installed plugin version does not match ${PLUGIN_VERSION}"
 fi
 
+SKILL_ROOT="$(python3 - "${INSTALLED_ROOT}" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1]).resolve()
+manifest = json.loads((root / ".codex-plugin" / "plugin.json").read_text())
+skills = manifest["skills"]
+skill_root = (root / skills).resolve()
+try:
+    skill_root.relative_to(root)
+except ValueError:
+    raise SystemExit(f"manifest skills path escapes installed root: {skills}")
+print(skill_root)
+PY
+)"
+
 echo "=== marketplace_skill_surface ==="
-if [ -f "${INSTALLED_ROOT}/skills/codex-delegate/SKILL.md" ] \
-  && [ -f "${INSTALLED_ROOT}/skills/codex-delegate.md" ] \
-  && [ -f "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" ] \
-  && [ -f "${INSTALLED_ROOT}/skills/forge/SKILL.md" ] \
-  && [ -f "${INSTALLED_ROOT}/skills/forge-stop/SKILL.md" ] \
-  && [ ! -f "${INSTALLED_ROOT}/skills/codex/SKILL.md" ] \
-  && [ ! -f "${INSTALLED_ROOT}/skills/codex-history/SKILL.md" ] \
-  && [ ! -f "${INSTALLED_ROOT}/skills/forge-history/SKILL.md" ] \
-  && grep -q '^name: kay-delegate' "${INSTALLED_ROOT}/skills/codex-delegate/SKILL.md" \
-  && grep -q '\.kay-delegation-active' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
-  && grep -q '^name: forge-delegate' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
-  && grep -q '\.forge-delegation-active' "${INSTALLED_ROOT}/skills/forge-stop/SKILL.md" \
-  && grep -q '/forge-stop' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
-  && grep -q '^user-invocable: false' "${INSTALLED_ROOT}/skills/codex-delegate.md" \
-  && grep -q '^user-invocable: false' "${INSTALLED_ROOT}/skills/forge.md"
+if [ -f "${SKILL_ROOT}/codex-delegate/SKILL.md" ] \
+  && [ -f "${SKILL_ROOT}/codex-delegate.md" ] \
+  && [ -f "${SKILL_ROOT}/codex-stop/SKILL.md" ] \
+  && [ -f "${SKILL_ROOT}/forge/SKILL.md" ] \
+  && [ -f "${SKILL_ROOT}/forge-stop/SKILL.md" ] \
+  && [ ! -f "${SKILL_ROOT}/codex/SKILL.md" ] \
+  && [ ! -f "${SKILL_ROOT}/codex-history/SKILL.md" ] \
+  && [ ! -f "${SKILL_ROOT}/forge-history/SKILL.md" ] \
+  && grep -q '^name: kay-delegate' "${SKILL_ROOT}/codex-delegate/SKILL.md" \
+  && grep -q '\.kay-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+  && grep -q '^name: forge-delegate' "${SKILL_ROOT}/forge/SKILL.md" \
+  && grep -q '\.forge-delegation-active' "${SKILL_ROOT}/forge-stop/SKILL.md" \
+  && grep -q '/forge-stop' "${SKILL_ROOT}/forge/SKILL.md" \
+  && grep -q '^user-invocable: false' "${SKILL_ROOT}/codex-delegate.md" \
+  && grep -q '^user-invocable: false' "${SKILL_ROOT}/forge.md" \
+  && ! grep -R -q 'SIDEKICK_HOST_' "${SKILL_ROOT}" \
+  && ! grep -R -q 'CLAUDE_SESSION_ID\|CLAUDE_PLUGIN_ROOT\|CLAUDE_PROJECT_DIR\|~/.claude' "${SKILL_ROOT}"
 then
-  pass "installed marketplace exposes the canonical Sidekick skill surface"
+  pass "installed marketplace exposes the Codex manifest skill surface"
 else
-  fail "marketplace_skill_surface" "canonical Sidekick skill surface is missing or mis-targeted in ${INSTALLED_ROOT}"
+  fail "marketplace_skill_surface" "Codex manifest skill surface is missing or mis-targeted in ${SKILL_ROOT}"
 fi
 
 read -r -d '' TASK_PROMPT <<'EOF' || true
@@ -204,10 +223,10 @@ if [ -d "${INSTALLED_ROOT}" ]; then
     && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${INSTALLED_ROOT}/hooks/lib/sidekick-registry.sh" \
     && grep -Fq '.codex/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
     && ! grep -Fq '.claude/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
-    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/forge/SKILL.md" \
-    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/forge-stop/SKILL.md" \
-    && grep -Fq '${HOME}/.kay/sessions' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
-    && ! grep -Fq '~/.claude' "${INSTALLED_ROOT}/skills/codex-stop/SKILL.md" \
+    && ! grep -Fq '~/.claude' "${SKILL_ROOT}/forge/SKILL.md" \
+    && ! grep -Fq '~/.claude' "${SKILL_ROOT}/forge-stop/SKILL.md" \
+    && grep -Fq '${HOME}/.kay/sessions' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+    && ! grep -Fq '~/.claude' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && python3 - "${CODE_HOME}/.Codex" "${CODE_HOME}/.codex" <<'PY' >/dev/null
 import os
 from pathlib import Path

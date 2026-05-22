@@ -54,6 +54,22 @@ else
   echo "SKIP release metadata clean check (set SIDEKICK_RELEASE_GATE=1)"
 fi
 
+echo "=== marketplace_metadata_clean ==="
+if [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
+  MARKETPLACE_REPO="$(git -C "$(dirname "${MARKETPLACE_FILE}")" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -z "${MARKETPLACE_REPO}" ]; then
+    assert_fail "marketplace metadata clean" "${MARKETPLACE_FILE} is not inside a git repo"
+  elif ! DIRTY_MARKETPLACE_FILES="$(git -C "${MARKETPLACE_REPO}" status --porcelain -- "${MARKETPLACE_FILE}" 2>&1 | sed -n '1,20p')"; then
+    assert_fail "marketplace metadata clean" "git status failed:\n${DIRTY_MARKETPLACE_FILES}"
+  elif [ -z "${DIRTY_MARKETPLACE_FILES}" ]; then
+    assert_pass "marketplace metadata file is committed before release gate"
+  else
+    assert_fail "marketplace metadata clean" "dirty marketplace file:\n${DIRTY_MARKETPLACE_FILES}"
+  fi
+else
+  echo "SKIP marketplace metadata clean check (set SIDEKICK_RELEASE_GATE=1)"
+fi
+
 SIDEKICK_REF="$(git -C "${SIDEKICK_DIR}" rev-parse HEAD)"
 SIDEKICK_VERSION="$(python3 - "${SIDEKICK_DIR}/.codex-plugin/plugin.json" <<'PY'
 import json
