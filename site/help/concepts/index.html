@@ -289,12 +289,12 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 <span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># keep last 6 exchanges always</span></div>
 
       <h2 id="provider-config">Provider Configuration</h2>
-      <p>Sidekick keeps provider ownership with the active runtime. Forge provider and model settings live in <code>~/forge/.forge.toml</code> with API credentials in <code>~/forge/.credentials.json</code>. Kay uses OpenCode Go provider routing in <code>~/.kay/config.toml</code>, with MiMo-V2.5-Pro for planning, implementation, reviewing, vision / visual reasoning, and other non-trivial work, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification. Legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> are retained only as compatibility paths.</p>
+      <p>Sidekick keeps provider ownership with the active runtime. Forge provider and model settings live in <code>~/forge/.forge.toml</code> with API credentials in <code>~/forge/.credentials.json</code>. Kay uses OpenCode Go provider routing in <code>~/.kay/config.toml</code>, with MiMo-V2.5-Pro for planning, implementation, reviewing, and other non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running, issue reporting, and completion verification. Legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> are retained only as compatibility paths.</p>
 
       <h3>Kay MiniMax config</h3>
       <p>For Kay, use Kay's native login flow when credentials are missing:</p>
-      <div class="code-label">Kay MiniMax login</div>
-      <div class="code-block"><span class="key">kay login</span> <span class="val">--provider minimax --with-api-key</span></div>
+      <div class="code-label">Kay OpenCode Go login</div>
+      <div class="code-block"><span class="key">kay login</span> <span class="val">--provider opencode-go --with-api-key</span></div>
 
       <h3>MiniMax Coding</h3>
       <p>Forge can also use MiniMax Coding directly. This is separate from Kay's MiniMax-backed runtime, but both paths use the MiniMax M2.7 model family.</p>

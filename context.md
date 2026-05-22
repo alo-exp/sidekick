@@ -1,9 +1,9 @@
 # Sidekick Plugin — Current Context
 
-**Date:** 2026-05-15
+**Date:** 2026-05-23
 **Repo:** https://github.com/alo-exp/sidekick
 **Local path:** `/Users/shafqat/projects/sidekick/repo`
-**Plugin version:** v0.5.6
+**Plugin version:** v0.6.0
 
 ---
 
@@ -14,7 +14,7 @@ Sidekick is a Claude Code and Codex plugin that gives the host AI two execution 
 | Sidekick | Runtime | Role |
 |---|---|---|
 | Forge | `forge` | ForgeCode execution agent with fallback ladder, progress surface, and mentoring loop |
-| Kay | `kay` | OSS Codex-lineage execution agent with OpenCode Go default-provider routing and task-based model selection for MiMo-V2.5-Pro non-trivial and vision / visual reasoning work, MiniMax M2.7 trivial work, and DeepSeek V4 Flash test running / issue reporting / completion verification |
+| Kay | `kay` | OSS Codex-lineage execution agent with OpenCode Go default-provider routing and task-based model selection for MiMo-V2.5-Pro non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 trivial work, and DeepSeek V4 Flash test running / issue reporting / completion verification |
 
 The host AI stays in the planning, review, communication, and mentoring role. Forge or Kay performs implementation work.
 
@@ -91,7 +91,8 @@ bash tests/run_all.bash
 Release verification:
 
 ```bash
-SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash  # optional Forge live coverage
 ```
 
 The live stages make real model/runtime calls and are intentionally skipped unless the env vars are set.

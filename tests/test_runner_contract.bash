@@ -51,6 +51,7 @@ for script in \
   test_agent_surface_render.bash \
   test_host_surface_rewrite.bash \
   test_plugin_integrity.bash \
+  test_codex_marketplace_release_gate.bash \
   test_runner_contract.bash \
   test_repo_layout.bash; do
   expect_contains "tests/run_unit.bash" "${script}" "run_unit includes ${script}"
@@ -74,6 +75,12 @@ expect_contains "tests/run_all.bash" "run_live_codex_plugin_read.bash" "run_all 
 echo "=== T4: release runner authorizes from strict then live stages ==="
 expect_contains "tests/run_release.bash" "run_unit.bash" "run_release uses strict non-live runner for tier 1"
 expect_absent "tests/run_release.bash" "run_all.bash" "run_release does not use skip-safe aggregate runner as tier 1"
+
+echo "=== T5: live Codex probe is portable ==="
+expect_contains "tests/run_live_codex_plugin_read.bash" "SIDEKICK_CODEX_REPO" "Codex probe exposes repo override"
+expect_contains "tests/run_live_codex_plugin_read.bash" "SIDEKICK_CODEX_BIN" "Codex probe exposes binary override"
+expect_absent "tests/run_live_codex_plugin_read.bash" "/Users/" "Codex probe avoids absolute maintainer home paths"
+expect_absent "tests/run_live_codex_plugin_read.bash" "/.cargo/bin" "Codex probe avoids hard-coded cargo bin path"
 
 echo ""
 echo "======================================="
