@@ -158,10 +158,11 @@ TMP_HOME="$(mktemp -d)"
 CLEAN_HOME="$(mktemp -d)"
 V1_HOME="$(mktemp -d)"
 COLLISION_HOME="$(mktemp -d)"
+PREFIX_HOME="$(mktemp -d)"
 ALIAS_HOME="$(mktemp -d)"
 ALIAS_REAL="$(mktemp -d)"
 ALIAS_LINK="${ALIAS_REAL}-link"
-trap 'rm -rf "${TMP_HOME}" "${CLEAN_HOME}" "${V1_HOME}" "${COLLISION_HOME}" "${ALIAS_HOME}" "${ALIAS_REAL}" "${ALIAS_LINK}"' EXIT
+trap 'rm -rf "${TMP_HOME}" "${CLEAN_HOME}" "${V1_HOME}" "${COLLISION_HOME}" "${PREFIX_HOME}" "${ALIAS_HOME}" "${ALIAS_REAL}" "${ALIAS_LINK}"' EXIT
 
 echo "=== lower_case_scrub ==="
 mkdir -p "${TMP_HOME}/.codex"
@@ -309,6 +310,42 @@ then
   assert_pass "same-basename unowned hooks are preserved"
 else
   assert_fail "same-basename unowned hooks" "unowned hook block was modified or scrubbed"
+fi
+
+echo "=== sibling_prefix_unowned_hooks_preserved ==="
+mkdir -p "${PREFIX_HOME}/.codex"
+seed_fixture "${PREFIX_HOME}/.codex/hooks.json" "${PREFIX_HOME}" "echo keep-prefix" "echo unrelated-prefix" "${REPO_ROOT}-other"
+python3 - "${PREFIX_HOME}/.codex/hooks.json" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace(".claude/.sidekick/.installed", ".claude/.not-sidekick-installed")
+path.write_text(text)
+PY
+cp "${PREFIX_HOME}/.codex/hooks.json" "${PREFIX_HOME}/.codex/hooks.json.original"
+
+if HOME="${PREFIX_HOME}" python3 "${SCRUBBER}" >/tmp/sidekick-scrub-prefix.out 2>/tmp/sidekick-scrub-prefix.err; then
+  assert_pass "sibling-prefix unowned hook scrub exits successfully"
+else
+  assert_fail "sibling-prefix unowned hook scrub" "non-zero exit"
+fi
+
+if python3 - "${PREFIX_HOME}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+home = Path(sys.argv[1])
+state = json.load(open(home / ".sidekick/legacy-hooks-scrub-state.json"))
+assert state["status"] == "clean"
+assert (home / ".codex/hooks.json").read_text() == (home / ".codex/hooks.json.original").read_text()
+PY
+then
+  assert_pass "sibling-prefix unowned hooks are preserved"
+else
+  assert_fail "sibling-prefix unowned hooks" "prefix-matched hook block was modified or scrubbed"
 fi
 
 echo "=== aliased_plugin_root_scrub ==="

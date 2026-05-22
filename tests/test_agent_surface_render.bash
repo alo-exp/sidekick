@@ -116,11 +116,15 @@ for agent in claude codex; do
   expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Kay wrapper names generated skill surface"
   expect_not_contains "agents/${agent}/forge.md" 'skills/forge/SKILL.md' "${agent} flat Forge wrapper does not point at canonical skills tree"
   expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Kay wrapper does not point at canonical skills tree"
+  expect_contains "agents/${agent}/forge/SKILL.md" "agents/${agent}/forge.md" "${agent} Forge skill names generated flat wrapper"
+  expect_contains "agents/${agent}/forge/SKILL.md" "agents/${agent}/forge-stop/SKILL.md" "${agent} Forge skill names generated stop skill"
+  expect_not_contains "agents/${agent}/forge/SKILL.md" 'skills/forge.md' "${agent} Forge skill does not point at canonical flat wrapper"
+  expect_not_contains "agents/${agent}/forge/SKILL.md" 'skills/forge-stop/SKILL.md' "${agent} Forge skill does not point at canonical stop skill"
 done
 
 echo "=== T6: generated bundles are in sync with renderer ==="
 if [ -f "${RENDERER}" ]; then
-  tmp="$(mktemp -d)"
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/sidekick-agent-render.XXXXXX")"
   trap 'rm -rf "${tmp}" 2>/dev/null || true' EXIT
   if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/claude" \
     && python3 "${RENDERER}" render --agent codex --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/codex" \
@@ -151,6 +155,31 @@ elif grep -Fq "refusing unsafe sanitize root" /tmp/sidekick-sanitize-unsafe.out;
 else
   assert_fail "renderer sanitize guard" "$(cat /tmp/sidekick-sanitize-unsafe.out)"
 fi
+
+echo "=== T9: renderer requires Sidekick-owned temp roots and explicit replacement ==="
+unsafe_tmp="$(mktemp -d)"
+safe_tmp="$(mktemp -d "${TMPDIR:-/tmp}/sidekick-agent-render.XXXXXX")"
+mkdir -p "${safe_tmp}/claude"
+if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${unsafe_tmp}/claude" >/tmp/sidekick-render-temp-unsafe.out 2>&1; then
+  assert_fail "renderer temp guard" "generic temp destination unexpectedly accepted"
+elif grep -Fq "Sidekick-owned temp dir" /tmp/sidekick-render-temp-unsafe.out; then
+  assert_pass "renderer rejects generic temp destinations"
+else
+  assert_fail "renderer temp guard" "$(cat /tmp/sidekick-render-temp-unsafe.out)"
+fi
+if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${safe_tmp}/claude" >/tmp/sidekick-render-existing.out 2>&1; then
+  assert_fail "renderer existing destination guard" "existing destination unexpectedly accepted without --force"
+elif grep -Fq "without --force" /tmp/sidekick-render-existing.out; then
+  assert_pass "renderer refuses existing destinations without --force"
+else
+  assert_fail "renderer existing destination guard" "$(cat /tmp/sidekick-render-existing.out)"
+fi
+if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${safe_tmp}/claude" --force >/tmp/sidekick-render-force.out 2>&1; then
+  assert_pass "renderer --force replaces existing Sidekick-owned temp destination"
+else
+  assert_fail "renderer --force temp render" "$(cat /tmp/sidekick-render-force.out)"
+fi
+rm -rf "${unsafe_tmp}" "${safe_tmp}"
 
 echo ""
 echo "======================================="

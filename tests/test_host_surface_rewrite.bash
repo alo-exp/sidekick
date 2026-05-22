@@ -98,6 +98,8 @@ run_case() {
 
   assert_contains "${hooks}" "${host_env_var}" "${host}: hooks.json uses the host plugin root"
   assert_absent "${hooks}" "${other_env_var}" "${host}: hooks.json excludes the other host root"
+  assert_contains "${hooks}" "\${${host_env_var}:-\${SIDEKICK_PLUGIN_ROOT:-}}" "${host}: hooks.json prefers the active host plugin root"
+  assert_absent "${hooks}" "\${SIDEKICK_PLUGIN_ROOT:-\${${host_env_var}" "${host}: hooks.json does not let stale SIDEKICK_PLUGIN_ROOT override host root"
 
   assert_contains "${registry_helper}" "${host_env_var}" "${host}: registry helper uses the host plugin root"
   assert_contains "${registry_helper}" "${host_session_var}" "${host}: registry helper uses the host session var"

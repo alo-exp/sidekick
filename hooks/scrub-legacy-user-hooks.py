@@ -27,8 +27,9 @@ STATE_FILE = STATE_DIR / "legacy-hooks-scrub-state.json"
 BACKUP_DIR = STATE_DIR / "legacy-hooks-scrub-backups"
 TARGETS = (Path.home() / ".codex" / "hooks.json", Path.home() / ".Codex" / "hooks.json")
 MIGRATION_ID = "legacy-hooks-scrub-v2"
-SCRIPT_PATH = Path(__file__).resolve()
-PLUGIN_ROOT = SCRIPT_PATH.parent.parent.resolve()
+SCRIPT_PATH = Path(__file__)
+PLUGIN_ROOT = SCRIPT_PATH.resolve().parent.parent
+PLUGIN_ROOT_INVOKED = SCRIPT_PATH.parent.parent
 HOST_ROOT_MARKERS = ("SIDEKICK_PLUGIN_ROOT", "CODEX_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT")
 
 BLOCK_SIGNATURES = (
@@ -77,7 +78,7 @@ def path_aliases(path: Path) -> set[str]:
     return aliases
 
 
-PLUGIN_ROOT_ALIASES = path_aliases(PLUGIN_ROOT)
+PLUGIN_ROOT_ALIASES = path_aliases(PLUGIN_ROOT) | path_aliases(PLUGIN_ROOT_INVOKED)
 
 
 @dataclass
@@ -151,7 +152,7 @@ def command_matches_script(command: str, script_name: str) -> bool:
 
 def command_has_sidekick_owner(command: str) -> bool:
     normalized = command.replace("\\", "/")
-    if any(alias in normalized for alias in PLUGIN_ROOT_ALIASES):
+    if any(command_contains_path_alias(normalized, alias) for alias in PLUGIN_ROOT_ALIASES):
         return True
     if any(marker in command for marker in HOST_ROOT_MARKERS):
         return True
@@ -161,6 +162,16 @@ def command_has_sidekick_owner(command: str) -> bool:
         return True
     if re.search(r"/sidekick/(?:current|[0-9][^/\"' ;]*|[0-9a-f]{40})/(?:hooks/|install\.sh)", normalized):
         return True
+    return False
+
+
+def command_contains_path_alias(command: str, alias: str) -> bool:
+    start = command.find(alias)
+    while start != -1:
+        end = start + len(alias)
+        if end == len(command) or command[end] in "/\"' ;:)":
+            return True
+        start = command.find(alias, start + 1)
     return False
 
 

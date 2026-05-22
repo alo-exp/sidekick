@@ -55,6 +55,21 @@ def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
             f"`codex-delegate/SKILL.md` in this generated {agent} skill root "
             f"(`agents/{agent}/codex-delegate/SKILL.md` in the repository)",
         ),
+        (
+            "`skills/forge.md`",
+            f"`forge.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/forge.md` in the repository)",
+        ),
+        (
+            "`skills/forge-stop/SKILL.md`",
+            f"`forge-stop/SKILL.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/forge-stop/SKILL.md` in the repository)",
+        ),
+        (
+            "`skills/codex-stop/SKILL.md`",
+            f"`codex-stop/SKILL.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/codex-stop/SKILL.md` in the repository)",
+        ),
     ]
 
 
@@ -67,12 +82,8 @@ def rewrite_file(path: pathlib.Path, agent: str) -> bool:
     updated = text
     for old, new in HOST_REPLACEMENTS[agent]:
         updated = updated.replace(old, new)
-    if (
-        path.name == "SKILL.md"
-        and path.parent.name in {"forge:delegate", "kay:delegate"}
-    ) or path.name in {"forge.md", "codex-delegate.md"}:
-        for old, new in host_alias_replacements(agent):
-            updated = updated.replace(old, new)
+    for old, new in host_alias_replacements(agent):
+        updated = updated.replace(old, new)
 
     if updated == text:
         return False
@@ -109,11 +120,16 @@ def validate_host_bundle_root(
     target = target_root.resolve(strict=False)
 
     allowed_repo_dest = (repo_root / "agents" / agent).resolve(strict=False)
-    allowed_temp_dest = target.name == agent and is_relative_to(target.parent, temp_root)
+    allowed_temp_dest = (
+        target.name == agent
+        and target.parent.name.startswith("sidekick-agent-render.")
+        and target.parent.is_dir()
+        and is_relative_to(target.parent, temp_root)
+    )
     if target != allowed_repo_dest and not allowed_temp_dest:
         raise SystemExit(
             f"refusing unsafe {purpose} root: "
-            f"{target_root} (expected {allowed_repo_dest} or a temp dir ending in /{agent})"
+            f"{target_root} (expected {allowed_repo_dest} or a Sidekick-owned temp dir ending in /{agent})"
         )
 
     dangerous_exact = {pathlib.Path("/").resolve(strict=False), repo_root, home_root, cwd}
@@ -128,14 +144,16 @@ def validate_host_bundle_root(
         raise SystemExit(f"refusing ancestor {purpose} root: {target_root}")
 
 
-def validate_render_destination(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
+def validate_render_destination(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str, force: bool) -> None:
     validate_host_bundle_root(dest_root, agent, "render destination", source_root=source_root)
+    if (dest_root.exists() or dest_root.is_symlink()) and not force:
+        raise SystemExit(f"refusing to replace existing render destination root without --force: {dest_root}")
 
 
-def render_bundle(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str) -> None:
+def render_bundle(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str, force: bool = False) -> None:
     if not source_root.is_dir():
         raise SystemExit(f"source root missing: {source_root}")
-    validate_render_destination(source_root, dest_root, agent)
+    validate_render_destination(source_root, dest_root, agent, force)
 
     if dest_root.exists() or dest_root.is_symlink():
         if dest_root.is_dir() and not dest_root.is_symlink():
@@ -155,12 +173,13 @@ def main() -> int:
     parser.add_argument("--source-root")
     parser.add_argument("--dest-root")
     parser.add_argument("--root")
+    parser.add_argument("--force", action="store_true", help="allow replacing an existing render destination")
     args = parser.parse_args()
 
     if args.mode == "render":
         if not args.source_root or not args.dest_root:
             parser.error("render mode requires --source-root and --dest-root")
-        render_bundle(pathlib.Path(args.source_root), pathlib.Path(args.dest_root), args.agent)
+        render_bundle(pathlib.Path(args.source_root), pathlib.Path(args.dest_root), args.agent, args.force)
         return 0
 
     if not args.root:

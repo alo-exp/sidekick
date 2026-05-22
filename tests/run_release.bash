@@ -34,7 +34,7 @@
 #   SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # when Forge live is available
 # =============================================================================
 
-set -uo pipefail
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIVE_PYRAMID_MARKER="quality-gate-live-pyramid"
@@ -83,10 +83,23 @@ record_live_pyramid_marker() {
     exit 1
   fi
 
-  mkdir -p "$(dirname "${state_file}")"
-  git_sha="$(git -C "${SCRIPT_DIR}/.." rev-parse --short=12 HEAD 2>/dev/null || printf 'unknown')"
+  if ! mkdir -p "$(dirname "${state_file}")"; then
+    echo -e "${red}${bold}Cannot record live-pyramid marker: failed to create state directory.${reset}"
+    exit 1
+  fi
+
+  git_sha="$(git -C "${SCRIPT_DIR}/.." rev-parse --short=12 HEAD 2>/dev/null || true)"
+  if [[ -z "${git_sha}" ]]; then
+    echo -e "${red}${bold}Cannot record live-pyramid marker: no current git SHA found.${reset}"
+    echo "Run the live release gate from a Sidekick git checkout."
+    exit 1
+  fi
+
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  printf '%s session=%s sha=%s at=%s\n' "${LIVE_PYRAMID_MARKER}" "${session_id}" "${git_sha}" "${timestamp}" >> "${state_file}"
+  if ! printf '%s session=%s sha=%s at=%s\n' "${LIVE_PYRAMID_MARKER}" "${session_id}" "${git_sha}" "${timestamp}" >> "${state_file}"; then
+    echo -e "${red}${bold}Cannot record live-pyramid marker: failed to write state file.${reset}"
+    exit 1
+  fi
   echo -e "${green}  → recorded ${LIVE_PYRAMID_MARKER} for this host session${reset}"
 }
 

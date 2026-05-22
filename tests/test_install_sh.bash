@@ -346,6 +346,13 @@ import sys
 root = Path(sys.argv[1])
 manifest = json.loads((root / ".claude-plugin/plugin.json").read_text())
 integrity = manifest.get("_integrity", {})
+hooks_text = (root / "hooks/hooks.json").read_text()
+if "${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}" not in hooks_text:
+    raise SystemExit("hooks.json does not prefer CODEX_PLUGIN_ROOT after Codex host rewrite")
+if "${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT" in hooks_text:
+    raise SystemExit("hooks.json still allows SIDEKICK_PLUGIN_ROOT to override CODEX_PLUGIN_ROOT")
+if "CLAUDE_PLUGIN_ROOT" in hooks_text:
+    raise SystemExit("hooks.json still references CLAUDE_PLUGIN_ROOT after Codex host rewrite")
 targets = {
     "validate_release_gate_sha256": "hooks/validate-release-gate.sh",
     "forge_stop_skill_md_sha256": "skills/forge-stop/SKILL.md",
