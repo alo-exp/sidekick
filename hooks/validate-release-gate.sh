@@ -144,6 +144,16 @@ GH_API_VALUE_OPTIONS = {
     "--cache",
 }
 GH_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+GIT_PROVENANCE_ENV_NAMES = {
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_NAMESPACE",
+    "GIT_CONFIG_COUNT",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_CONFIG_NOSYSTEM",
+}
 GIT_VALUE_GLOBALS = {
     "-C", "-c",
     "--git-dir", "--work-tree", "--namespace",
@@ -4670,6 +4680,16 @@ GH_RELEASE_CREATE_FLAG_OPTIONS = {"--draft", "--generate-notes", "--latest", "--
 GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
 GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
 GH_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+GIT_PROVENANCE_ENV_NAMES = {
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_NAMESPACE",
+    "GIT_CONFIG_COUNT",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_CONFIG_NOSYSTEM",
+}
 RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
 EXPANSION_RE = re.compile(r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{|\$\(|`)")
@@ -4867,6 +4887,19 @@ def repo_allowed(repo, host=None):
     effective_host = normalize_host(host) or repo_host
     return host_allowed(effective_host) and normalized == SIDEKICK_RELEASE_REPO
 
+def git_provenance_env_untrusted(scoped_vars):
+    keys = set(scoped_vars) | set(os.environ)
+    for key in keys:
+        if (
+            key in GIT_PROVENANCE_ENV_NAMES
+            or key.startswith("GIT_CONFIG_KEY_")
+            or key.startswith("GIT_CONFIG_VALUE_")
+        ):
+            value = scoped_vars.get(key, os.environ.get(key, ""))
+            if value != "":
+                return True
+    return False
+
 def gh_repo_option(segment, gh_index):
     index = gh_index + 1
     while index < len(segment):
@@ -4981,6 +5014,8 @@ def gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=False):
         return repo if repo_allowed(repo, host) else UNRESOLVABLE
     if not require_implicit:
         return None
+    if git_provenance_env_untrusted(scoped_vars):
+        return UNRESOLVABLE
     repo = implicit_cwd_repo()
     if repo is None:
         return UNRESOLVABLE
@@ -5764,9 +5799,20 @@ def is_releases_endpoint(endpoint):
     parts = github_api_path_parts(endpoint)
     return len(parts) >= 4 and parts[0] == "repos" and parts[3] == "releases"
 
+def is_release_create_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    return len(parts) == 4 and parts[0] == "repos" and parts[3] == "releases"
+
 def is_git_refs_endpoint(endpoint):
     parts = github_api_path_parts(endpoint)
     return len(parts) >= 5 and parts[0] == "repos" and parts[3:5] == ["git", "refs"]
+
+def is_git_ref_create_endpoint(endpoint):
+    parts = github_api_path_parts(endpoint)
+    return len(parts) == 5 and parts[0] == "repos" and parts[3:5] == ["git", "refs"]
+
+def endpoint_mentions_tag_ref(endpoint):
+    return TAG_REF_TEXT_RE.search(urllib.parse.unquote(str(endpoint))) is not None
 
 def is_graphql_endpoint(endpoint):
     parts = github_api_path_parts(endpoint)
@@ -5860,6 +5906,15 @@ def target_from_key(payloads, keys):
             return UNRESOLVABLE if unsafe_ref(value) else value
     return None
 
+def truthy_payload_key(payloads, keys):
+    for payload in payloads:
+        pair = field_pair(payload)
+        if not pair or pair[0] not in keys:
+            continue
+        value = pair[1].strip().strip("'\"").lower()
+        return value not in {"", "0", "false", "no", "off"}
+    return False
+
 def graphql_target(payloads):
     text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
     if "createRef" in text and TAG_REF_TEXT_RE.search(text):
@@ -5944,10 +5999,25 @@ def gh_api_metadata(segment, gh_index, scoped_vars):
     if not repo_allowed(repo, endpoint_host_name or gh_hostname_option(segment, gh_index) or scoped_vars.get("GH_HOST") or os.environ.get("GH_HOST")):
         return UNRESOLVABLE
     if is_releases_endpoint(endpoint):
+        if not is_release_create_endpoint(endpoint) or effective_method != "POST":
+            return UNRESOLVABLE
+        tag = target_from_key(payloads, {"tag_name", "tagName"})
+        if tag is None or not token_is_release_tag_ref(tag):
+            return UNRESOLVABLE
         target = target_from_key(payloads, {"target_commitish", "targetCommitish"})
         if target is None:
             return UNRESOLVABLE
-    elif is_git_refs_endpoint(endpoint) and payload_mentions_tag_ref(payloads):
+        if target:
+            return ("gh-target", f"{tag}\t{target if explicit_sha(target) else UNRESOLVABLE}")
+    elif is_git_refs_endpoint(endpoint):
+        if (
+            not is_git_ref_create_endpoint(endpoint)
+            or effective_method != "POST"
+            or truthy_payload_key(payloads, {"force"})
+        ):
+            return UNRESOLVABLE if endpoint_mentions_tag_ref(endpoint) or payload_mentions_tag_ref(payloads) else None
+        if not payload_mentions_tag_ref(payloads):
+            return None
         target = target_from_key(payloads, {"sha"}) or UNRESOLVABLE
     elif is_graphql_endpoint(endpoint):
         target = graphql_target(payloads)
@@ -5961,7 +6031,8 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
         return None
-    if gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=True) == UNRESOLVABLE:
+    repo = gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=False)
+    if repo is None or repo == UNRESOLVABLE:
         return ("unresolvable", UNRESOLVABLE)
     action_index = skip_gh_globals(segment, subcommand_index + 1)
     if action_index >= len(segment) or segment[action_index] != "create":
@@ -6013,7 +6084,11 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
     if verify_tag_false:
         return ("unresolvable", UNRESOLVABLE)
     if target is not None:
-        return ("ref", target if explicit_sha(target) else UNRESOLVABLE)
+        if verify_tag:
+            return ("unresolvable", UNRESOLVABLE)
+        if not tag or not token_is_release_tag_ref(tag):
+            return ("unresolvable", UNRESOLVABLE)
+        return ("gh-target", f"{tag}\t{target if explicit_sha(target) else UNRESOLVABLE}")
     if tag:
         return ("unresolvable", UNRESOLVABLE)
     return ("unresolvable", UNRESOLVABLE)
@@ -6193,7 +6268,15 @@ def extract(command, depth=0):
                 continue
             target = gh_api_metadata(segment, start, scoped_vars)
             if target:
-                result = ("unresolvable", UNRESOLVABLE) if target == UNRESOLVABLE or unsafe_ref(target) else ("ref", target)
+                if isinstance(target, tuple):
+                    value_parts = str(target[1]).split("\t")
+                    result = (
+                        ("unresolvable", UNRESOLVABLE)
+                        if target[1] == UNRESOLVABLE or UNRESOLVABLE in value_parts or any(unsafe_ref(part) for part in value_parts)
+                        else target
+                    )
+                else:
+                    result = ("unresolvable", UNRESOLVABLE) if target == UNRESOLVABLE or unsafe_ref(target) else ("ref", target)
                 blocked = record_release_result(result)
                 if blocked:
                     return blocked
@@ -6324,8 +6407,47 @@ release_ref_current_head_sha() {
   printf '%s\n' "${head_sha}"
 }
 
+remote_release_tag_allows_current_head() {
+  local candidate tag head_sha output peeled direct selected
+  candidate="$1"
+  tag="$2"
+  head_sha="$3"
+  [ -n "${tag}" ] || return 1
+  case "${tag}" in
+    *[!A-Za-z0-9._+-]*|'')
+      return 1
+      ;;
+  esac
+  output="$(git -C "${candidate}" ls-remote --tags origin "refs/tags/${tag}" 2>/dev/null)" || return 1
+  [ -n "${output}" ] || return 0
+  peeled="$(awk -v ref="refs/tags/${tag}^{}" '$2 == ref { print substr($1, 1, 12); exit }' <<EOF
+${output}
+EOF
+)"
+  direct="$(awk -v ref="refs/tags/${tag}" '$2 == ref { print substr($1, 1, 12); exit }' <<EOF
+${output}
+EOF
+)"
+  selected="${peeled:-${direct}}"
+  [ -n "${selected}" ] || return 1
+  [ "${selected}" = "${head_sha}" ]
+}
+
+gh_release_target_current_head_sha() {
+  local candidate tag target target_sha head_sha
+  candidate="$1"
+  tag="$2"
+  target="$3"
+  trusted_sidekick_checkout "${candidate}" || return 1
+  target_sha="$(git -C "${candidate}" rev-parse --short=12 "${target}^{commit}" 2>/dev/null)" || return 1
+  head_sha="$(trusted_sidekick_head_sha "${candidate}")" || return 1
+  [ "${target_sha}" = "${head_sha}" ] || return 1
+  remote_release_tag_allows_current_head "${candidate}" "${tag}" "${head_sha}" || return 1
+  printf '%s\n' "${head_sha}"
+}
+
 current_release_sha() {
-  local candidate git_c_ref git_c_target metadata metadata_kind metadata_value
+  local candidate git_c_ref git_c_target gh_tag gh_target metadata metadata_kind metadata_value
   metadata="$(release_target_metadata "$COMMAND" 2>/dev/null || true)"
   if [ -n "${metadata}" ]; then
     metadata_kind="${metadata%%$'\t'*}"
@@ -6341,6 +6463,20 @@ current_release_sha() {
       git_c_target="${metadata_value%%$'\t'*}"
       git_c_ref="${metadata_value#*$'\t'}"
       release_ref_current_head_sha "${git_c_target}" "${git_c_ref}" && return 0
+      return 1
+    fi
+    if [ "${metadata_kind}" = "gh-target" ]; then
+      gh_tag="${metadata_value%%$'\t'*}"
+      gh_target="${metadata_value#*$'\t'}"
+      if inside_git_worktree "${PWD:-.}"; then
+        gh_release_target_current_head_sha "${PWD:-.}" "${gh_tag}" "${gh_target}" && return 0
+        return 1
+      fi
+      for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${REPO_ROOT}"; do
+        if [ -n "${candidate}" ] && gh_release_target_current_head_sha "${candidate}" "${gh_tag}" "${gh_target}"; then
+          return 0
+        fi
+      done
       return 1
     fi
     if [ "${metadata_kind}" = "ref" ]; then

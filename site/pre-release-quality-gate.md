@@ -23,7 +23,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 
 **Session and commit reset**: All four stage markers are scoped to the current host session id and git commit SHA. The gate must be completed in full during the session in which the release is being cut, after the final release commit is present — markers from a previous session or previous commit do not satisfy the release hook.
 
-**Release command scope**: The release hook only authorizes same-repo GitHub.com release transports with resolvable target provenance from a trusted Sidekick checkout and a target that matches that checkout's current `HEAD`: direct `gh release create --target <current-sha>`, `gh api` release/tag-ref writes with an explicit current target SHA, and a single non-forced `git push` tag publication to the canonical Sidekick push destination. Ambiguous hosts/repos/remotes, alternate `pushurl` destinations, persistent or command-scoped Git URL rewrites, command-scoped alias/config/source-context changes, destructive tag pushes, raw `curl`/`wget`, language-level GitHub API writes, and generated-script/config release carriers intentionally fail closed.
+**Release command scope**: The release hook only authorizes same-repo GitHub.com release transports with resolvable target provenance from a trusted Sidekick checkout and a target that matches that checkout's current `HEAD`: direct `gh release create --repo alo-exp/sidekick --target <current-sha>`, exact `gh api` release/tag-ref creation writes with an explicit current target SHA, and a single non-forced `git push` tag publication to the canonical Sidekick push destination. Ambiguous hosts/repos/remotes, alternate `pushurl` destinations, persistent or command-scoped Git URL rewrites, command-scoped alias/config/source-context changes, destructive tag pushes/API edits/deletes, `--verify-tag`, raw `curl`/`wget`, language-level GitHub API writes, and generated-script/config release carriers intentionally fail closed.
 
 Each stage is complete only when:
 1. The work is done and verified
@@ -404,7 +404,8 @@ live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="q
 
 # Resolve the current trusted Sidekick HEAD, then paste that literal SHA as
 # <current-sha>. Do not pass shell substitutions or variables as --target; the
-# release hook intentionally requires a literal SHA token.
+# release hook intentionally requires a literal SHA token and explicit
+# --repo alo-exp/sidekick.
 git rev-parse HEAD
 
 # Create the GitHub release and tag at the current trusted Sidekick HEAD
