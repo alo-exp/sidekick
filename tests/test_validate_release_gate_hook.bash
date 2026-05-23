@@ -65,9 +65,12 @@ sanitize_release_env() {
   if [ "${SIDEKICK_TEST_INHERIT_RELEASE_ENV:-0}" = "1" ]; then
     return 0
   fi
-  unset GH_HOST GH_REPO
+  unset GH_HOST GH_REPO GH_CONFIG_DIR XDG_CONFIG_HOME
   unset GIT_DIR GIT_WORK_TREE GIT_NAMESPACE GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
   unset GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM
+  if [ "${SIDEKICK_TEST_ALLOW_FIXTURE_ENV:-0}" != "1" ]; then
+    unset SIDEKICK_GH_ALIAS_LIST SIDEKICK_GIT_ALIAS_CONFIG
+  fi
   local name
   for name in $(compgen -e); do
     case "${name}" in
@@ -337,7 +340,7 @@ assert_denied_command_with_gh_aliases() {
   echo "${label}"
   h="$(setup_home)"
   payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
-  out="$(SIDEKICK_GH_ALIAS_LIST="${alias_list}" run_hook "${h}" "${payload}")"; rc=$?
+  out="$(SIDEKICK_TEST_ALLOW_FIXTURE_ENV=1 SIDEKICK_GH_ALIAS_LIST="${alias_list}" run_hook "${h}" "${payload}")"; rc=$?
   decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
   if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
     assert_pass "${label}: permissionDecision=deny"
@@ -352,7 +355,7 @@ assert_denied_command_with_git_alias_config() {
   echo "${label}"
   h="$(setup_home)"
   payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
-  out="$(SIDEKICK_GIT_ALIAS_CONFIG="${alias_config}" run_hook "${h}" "${payload}")"; rc=$?
+  out="$(SIDEKICK_TEST_ALLOW_FIXTURE_ENV=1 SIDEKICK_GIT_ALIAS_CONFIG="${alias_config}" run_hook "${h}" "${payload}")"; rc=$?
   decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
   if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
     assert_pass "${label}: permissionDecision=deny"
@@ -2332,6 +2335,51 @@ else
   assert_fail "gh release --target current SHA with stale remote tag" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+stale_gh_api_ref_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v7.7.7 -f sha=${stale_repo_head_sha}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_repo_head_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_repo_head_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "${stale_gh_api_ref_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+SIDEKICK_TEST_LS_REMOTE_OUTPUT="${stale_remote_tag_output}"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${STALE_TAG_REPO}")"; RC=$?
+unset SIDEKICK_TEST_LS_REMOTE_OUTPUT
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "gh api git ref current SHA is denied when remote tag is stale"
+else
+  assert_fail "gh api git ref current SHA with stale remote tag" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+stale_push_refspec_command="git -C ${STALE_TAG_REPO} push origin HEAD:refs/tags/v7.7.7"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_repo_head_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_repo_head_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "${stale_push_refspec_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+SIDEKICK_TEST_LS_REMOTE_OUTPUT="${stale_remote_tag_output}"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+unset SIDEKICK_TEST_LS_REMOTE_OUTPUT
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git push current HEAD refspec is denied when remote tag is stale"
+else
+  assert_fail "git push current HEAD refspec with stale remote tag" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+notes_start_tag_command="gh release create --repo alo-exp/sidekick --notes-start-tag v0.1.0 v7.7.7 --target ${stale_repo_head_sha}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${stale_repo_head_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${stale_repo_head_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "${notes_start_tag_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+SIDEKICK_TEST_LS_REMOTE_OUTPUT="${stale_remote_tag_output}"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${STALE_TAG_REPO}")"; RC=$?
+unset SIDEKICK_TEST_LS_REMOTE_OUTPUT
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "gh release --notes-start-tag does not hide stale release tag"
+else
+  assert_fail "gh release --notes-start-tag with stale remote release tag" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
 same_command_retag_push="git -C ${STALE_TAG_REPO} tag -f v7.7.7 HEAD && git -C ${STALE_TAG_REPO} push origin v7.7.7"
 assert_denied_release_command_with_sha_markers \
   "Scenario 49cs10a: same-command retag before git push is denied with stale tag markers" \
@@ -2583,7 +2631,7 @@ H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
 PAYLOAD="$(jq -cn --arg cmd "git releasepush" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
-OUT="$(SIDEKICK_GIT_ALIAS_CONFIG="[alias]
+OUT="$(SIDEKICK_TEST_ALLOW_FIXTURE_ENV=1 SIDEKICK_GIT_ALIAS_CONFIG="[alias]
   releasepush = -C ${GIT_C_RELEASE_CWD} push origin v1.2.1" run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
@@ -2779,6 +2827,10 @@ gh_api_current_release_target_command="gh api -X POST repos/alo-exp/sidekick/rel
 assert_passthrough_release_command_with_sha_markers \
   "Scenario 49cv7b: gh api release target_commitish current SHA passes with current markers" \
   "${gh_api_current_release_target_command}" "$(current_head_sha)"
+gh_api_duplicate_release_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=$(current_head_sha) -f target_commitish=${target_ref_sha}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv7b1: gh api duplicate release targets are denied" \
+  "${gh_api_duplicate_release_target_command}"
 gh_api_delete_release_target_command="gh api -X DELETE repos/alo-exp/sidekick/releases/123 -f target_commitish=$(current_head_sha)"
 assert_denied_release_command_with_sha_markers \
   "Scenario 49cv7c: gh api release DELETE with current target is denied" \
@@ -2802,6 +2854,10 @@ gh_api_current_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git
 assert_passthrough_release_command_with_sha_markers \
   "Scenario 49cv9b: gh api tag ref current SHA passes with current markers" \
   "${gh_api_current_tag_ref_target_command}" "$(current_head_sha)"
+gh_api_duplicate_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=$(current_head_sha) -f sha=${target_ref_sha}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv9b0a: gh api duplicate tag ref SHAs are denied" \
+  "${gh_api_duplicate_tag_ref_target_command}"
 gh_api_force_true_body="$(mktemp)"
 printf '{"ref":"refs/tags/v1.2.1","sha":"%s","force":true}\n' "$(current_head_sha)" > "${gh_api_force_true_body}"
 gh_api_force_true_input_command="gh api -X POST repos/alo-exp/sidekick/git/refs --input ${gh_api_force_true_body}"
@@ -2816,6 +2872,10 @@ assert_passthrough_release_command_with_sha_markers \
   "Scenario 49cv9b2: gh api tag ref input force false passes with current markers" \
   "${gh_api_force_false_input_command}" "$(current_head_sha)"
 rm -f "${gh_api_force_false_body}"
+gh_api_duplicate_force_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=$(current_head_sha) -f force=false -f force=true"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv9b3: gh api duplicate force field with truthy value is denied" \
+  "${gh_api_duplicate_force_command}"
 gh_api_patch_tag_ref_force_command="gh api -X PATCH repos/alo-exp/sidekick/git/refs/tags/v1.2.1 -f sha=$(current_head_sha) -f force=true"
 assert_denied_release_command_with_sha_markers \
   "Scenario 49cv9c: gh api tag ref PATCH force with current SHA is denied" \
@@ -2859,6 +2919,10 @@ cross_repo_gh_repo_env_command="GH_REPO=attacker/other gh release create v1.2.1 
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv17a: command-scoped GH_REPO different repo release target is denied" \
   "${cross_repo_gh_repo_env_command}"
+cross_repo_terminator_gh_repo_env_command="GH_REPO=attacker/other gh release create v1.2.1 --target $(current_head_sha) -- --repo alo-exp/sidekick"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv17a1: gh release option terminator cannot fake release repo provenance" \
+  "${cross_repo_terminator_gh_repo_env_command}"
 same_repo_gh_repo_env_command="GH_REPO=alo-exp/sidekick gh release create v1.2.1 --target $(current_head_sha)"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv17a2: command-scoped GH_REPO same repo release target is denied" \
@@ -2893,6 +2957,10 @@ cross_host_gh_target_command="gh --hostname ghe.example.invalid --repo alo-exp/s
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv17c: gh release target on non-GitHub host is denied" \
   "${cross_host_gh_target_command}"
+cross_host_terminator_gh_api_command="GH_HOST=ghe.example.invalid gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=$(current_head_sha) -- --hostname github.com"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv17c1: gh api option terminator cannot fake release host provenance" \
+  "${cross_host_terminator_gh_api_command}"
 dynamic_host_gh_target_command='gh --hostname $HOST --repo alo-exp/sidekick release create v1.2.1 --target '"$(current_head_sha)"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv17c2: gh release target with dynamic hostname is denied" \

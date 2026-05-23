@@ -53,7 +53,7 @@ test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
 1. **Dispatch in parallel** — invoke all three reviewers simultaneously as subagents:
    - `/engineering:code-review` — structured quality review: security, performance, correctness, maintainability
    - `/gsd-code-review` — GSD automated code reviewer
-   - `/superpowers:requesting-code-review` — dispatches `superpowers:code-reviewer` automated reviewer
+   - `/superpowers:requesting-code-review` — dispatches the `requesting-code-review/code-reviewer.md` prompt template with a general-purpose reviewer
 2. **Collect all findings** — wait for all three to complete, then aggregate their output
 3. Invoke `/superpowers:receiving-code-review` — triage the combined findings from all three reviewers
 4. Fix all accepted issues
