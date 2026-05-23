@@ -100,6 +100,11 @@ GITHUB_REFS_API_RE = re.compile(
     r"(?:https?://[^/\s\"']+/)?(?:api/v3/)?repos/[^/\s\"']+/[^/\s\"']+/git/refs(?:[/\?#\"'\s]|$)",
     re.I,
 )
+STATIC_STRING_CONCAT_RE = re.compile(
+    r"('(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")\s*\+\s*"
+    r"('(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")",
+    re.DOTALL,
+)
 SUDO_VALUE_OPTIONS = {
     "-u", "--user",
     "-g", "--group",
@@ -270,6 +275,29 @@ def decode_backslash_escapes(value):
         return codecs.decode(value, "unicode_escape")
     except Exception:
         return value
+
+
+def decode_quoted_literal(value):
+    if len(value) < 2 or value[0] not in {"'", '"'} or value[-1] != value[0]:
+        return None
+    return decode_backslash_escapes(value[1:-1])
+
+
+def collapse_static_string_concats(value):
+    text = str(value)
+    for _ in range(16):
+        def replace(match):
+            left = decode_quoted_literal(match.group(1))
+            right = decode_quoted_literal(match.group(2))
+            if left is None or right is None:
+                return match.group(0)
+            return repr(left + right)
+
+        updated = STATIC_STRING_CONCAT_RE.sub(replace, text)
+        if updated == text:
+            return text
+        text = updated
+    return text
 
 
 def render_printf(format_string, args):
@@ -1208,6 +1236,10 @@ def endpoint_variants(endpoint, env_map=None):
     expanded = expand_inherited_env_refs(text, env_map)
     if expanded != text:
         variants.add(expanded)
+    for value in list(variants):
+        collapsed = collapse_static_string_concats(value)
+        if collapsed != value:
+            variants.add(collapsed)
     return variants
 
 
@@ -1261,6 +1293,8 @@ def normalized_payload_text(payload):
     text = str(payload)
     decoded = urllib.parse.unquote_plus(text)
     variants = {text, decoded, expand_inherited_env_refs(text), expand_inherited_env_refs(decoded)}
+    for value in list(variants):
+        variants.add(collapse_static_string_concats(value))
     for value in list(variants):
         variants.add(value.replace("\\/", "/"))
     for value in list(variants):
@@ -1578,16 +1612,17 @@ def release_source_is_uninspectable(source):
 
 
 def release_payload_matches_git_endpoint(payload):
+    text = normalized_payload_text(payload)
     return bool(
-        re.search(r"api\.github\.com", payload, re.IGNORECASE)
+        re.search(r"api\.github\.com", text, re.IGNORECASE)
         and (
-            re.search(r"repos/[^/\s\"']+/[^/\s\"']+/releases\b", payload)
-            or re.search(r"repos/[^/\s\"']+/[^/\s\"']+/git/refs/tags\b", payload)
+            re.search(r"repos/[^/\s\"']+/[^/\s\"']+/releases\b", text)
+            or re.search(r"repos/[^/\s\"']+/[^/\s\"']+/git/refs/tags\b", text)
             or (
-                re.search(r"repos/[^/\s\"']+/[^/\s\"']+/git/refs\b", payload)
-                and payload_mentions_tag_ref(payload)
+                re.search(r"repos/[^/\s\"']+/[^/\s\"']+/git/refs\b", text)
+                and payload_mentions_tag_ref(text)
             )
-            or graphql_release_mutation_text(payload)
+            or graphql_release_mutation_text(text)
         )
     )
 
@@ -4121,6 +4156,7 @@ fi
 release_target_metadata() {
   python3 - "$1" <<'PY'
 from pathlib import Path
+import codecs
 import os
 import re
 import shlex
@@ -4145,10 +4181,42 @@ GH_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
 TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
 EXPANSION_RE = re.compile(r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{|\$\(|`)")
+STATIC_STRING_CONCAT_RE = re.compile(
+    r"('(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")\s*\+\s*"
+    r"('(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")",
+    re.DOTALL,
+)
 UNRESOLVABLE = "__UNRESOLVABLE__"
 SIDEKICK_RELEASE_REPO = "alo-exp/sidekick"
 SIDEKICK_RELEASE_HOSTS = {"github.com", "api.github.com"}
 PERSISTENT_GH_ALIASES = {}
+
+def decode_backslash_escapes(value):
+    try:
+        return codecs.decode(value, "unicode_escape")
+    except Exception:
+        return value
+
+def decode_quoted_literal(value):
+    if len(value) < 2 or value[0] not in {"'", '"'} or value[-1] != value[0]:
+        return None
+    return decode_backslash_escapes(value[1:-1])
+
+def collapse_static_string_concats(value):
+    text = str(value)
+    for _ in range(16):
+        def replace(match):
+            left = decode_quoted_literal(match.group(1))
+            right = decode_quoted_literal(match.group(2))
+            if left is None or right is None:
+                return match.group(0)
+            return repr(left + right)
+
+        updated = STATIC_STRING_CONCAT_RE.sub(replace, text)
+        if updated == text:
+            return text
+        text = updated
+    return text
 
 def tokenize(command):
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
@@ -5007,6 +5075,8 @@ def normalized_payload_text(payload):
     decoded = urllib.parse.unquote_plus(text)
     variants = {text, decoded}
     for value in list(variants):
+        variants.add(collapse_static_string_concats(value))
+    for value in list(variants):
         variants.add(value.replace("\\/", "/"))
     for value in list(variants):
         variants.add(
@@ -5022,6 +5092,8 @@ def normalized_payload_text(payload):
 
 def payload_values(payloads):
     values = []
+    if isinstance(payloads, str):
+        payloads = [payloads]
     for payload in payloads:
         pair = field_pair(payload)
         value = pair[1] if pair else payload
@@ -5040,6 +5112,8 @@ def payload_values(payloads):
     return values
 
 def payload_mentions_tag_ref(payloads):
+    if isinstance(payloads, str):
+        payloads = [payloads]
     text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
     return bool(TAG_REF_TEXT_RE.search(text)) or any(
         (field_pair(payload) or ("", ""))[0] == "ref" and unsafe_ref((field_pair(payload) or ("", ""))[1])
