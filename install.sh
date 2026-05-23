@@ -149,9 +149,9 @@ def rewrite_registry_helper(text: str, selected_host: str) -> str:
 
 replacements = {
     "codex": [
-        ("ROOT=\\\"$(printf '%s' \\\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";", "ROOT=\\\"$(printf '%s' \\\"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";"),
-        ("ROOT=\"$(printf '%s' \"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";", "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";"),
-        ("ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\";", "ROOT=\"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\";"),
+        ("ROOT=\\\"$(printf '%s' \\\"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";", "ROOT=\\\"$(printf '%s' \\\"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";"),
+        ("ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";", "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";"),
+        ("ROOT=\"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\";", "ROOT=\"${CODEX_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\";"),
         ("if [[ -n \"${CLAUDE_PLUGIN_ROOT:-}\" ]]; then\n    printf '%s' \"${CLAUDE_PLUGIN_ROOT}\"\n    return 0\n  fi\n", ""),
         ("if [[ -n \"${CLAUDE_SESSION_ID:-}\" ]]; then\n    printf '%s' \"${CLAUDE_SESSION_ID}\"\n    return 0\n  fi\n", ""),
         ("local root=\"${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}\"", "local root=\"${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-$PWD}}\""),
@@ -165,9 +165,9 @@ replacements = {
         (".claude/sessions/${CODEX_THREAD_ID}", ".codex/sessions/${CODEX_THREAD_ID}"),
     ],
     "claude": [
-        ("ROOT=\\\"$(printf '%s' \\\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";", "ROOT=\\\"$(printf '%s' \\\"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";"),
-        ("ROOT=\"$(printf '%s' \"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";", "ROOT=\"$(printf '%s' \"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";"),
-        ("ROOT=\"${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\";", "ROOT=\"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\";"),
+        ("ROOT=\\\"$(printf '%s' \\\"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";", "ROOT=\\\"$(printf '%s' \\\"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";"),
+        ("ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";", "ROOT=\"$(printf '%s' \"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\";"),
+        ("ROOT=\"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\";", "ROOT=\"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\";"),
         ("if [[ -n \"${CODEX_PLUGIN_ROOT:-}\" ]]; then\n    printf '%s' \"${CODEX_PLUGIN_ROOT}\"\n    return 0\n  fi\n", ""),
         ("if [[ -n \"${CODEX_THREAD_ID:-}\" ]]; then\n    printf '%s' \"${CODEX_THREAD_ID}\"\n    return 0\n  fi\n", ""),
         ("local root=\"${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}\"", "local root=\"${SIDEKICK_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}\""),

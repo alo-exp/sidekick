@@ -4282,10 +4282,12 @@ def command_index_from(segment):
     return index
 
 def writes_file(segment):
+    write_redirects = {">", ">>", ">|", "&>", "&>>", "<>", ">&"}
+    fd_targets = {"/dev/null", "1", "2", "&1", "&2"}
     for index, token in enumerate(segment):
-        if token in {">", ">>"}:
+        if token in write_redirects:
             target = segment[index + 1] if index + 1 < len(segment) else ""
-            return target not in {"/dev/null", "1", "2"}
+            return target not in fd_targets
     start = command_index_from(segment)
     if start < len(segment) and Path(segment[start]).name == "tee":
         index = start + 1
@@ -4434,10 +4436,159 @@ def shell_payload_parts(segment, start):
         break
     return None
 
+def read_balanced_payload(command, start, opener, closer):
+    depth = 1
+    in_single = False
+    in_double = False
+    escaped = False
+    payload = []
+    index = start
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            payload.append(char)
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and not in_single:
+            payload.append(char)
+            escaped = True
+            index += 1
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            payload.append(char)
+            index += 1
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            payload.append(char)
+            index += 1
+            continue
+        if not in_single and not in_double:
+            if char == opener:
+                depth += 1
+            elif char == closer:
+                depth -= 1
+                if depth == 0:
+                    return "".join(payload), index
+        payload.append(char)
+        index += 1
+    return None, len(command)
+
+def backtick_payloads(command):
+    payloads = []
+    in_single = False
+    in_double = False
+    in_backtick = False
+    escaped = False
+    payload = []
+    for char in command:
+        if escaped:
+            if in_backtick:
+                payload.append(char)
+            escaped = False
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            if in_backtick:
+                payload.append(char)
+            continue
+        if in_backtick:
+            if char == "`":
+                payloads.append("".join(payload))
+                payload = []
+                in_backtick = False
+                continue
+            payload.append(char)
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            continue
+        if char == "`" and not in_single:
+            in_backtick = True
+            payload = []
+    return payloads
+
+def command_substitution_payloads(command):
+    payloads = []
+    in_single = False
+    in_double = False
+    escaped = False
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            index += 1
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            index += 1
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            index += 1
+            continue
+        if not in_single and char == "$" and index + 1 < len(command) and command[index + 1] == "(":
+            payload, end = read_balanced_payload(command, index + 2, "(", ")")
+            if payload is not None:
+                payloads.append(payload)
+                index = end + 1
+                continue
+        index += 1
+    return payloads
+
+def process_substitution_payloads(command):
+    payloads = []
+    in_single = False
+    in_double = False
+    escaped = False
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            index += 1
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            index += 1
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            index += 1
+            continue
+        if not in_single and not in_double and char in "<>" and index + 1 < len(command) and command[index + 1] == "(":
+            payload, end = read_balanced_payload(command, index + 2, "(", ")")
+            if payload is not None:
+                payloads.append(payload)
+                index = end + 1
+                continue
+        index += 1
+    return payloads
+
 def emit_units(command, depth=0):
     if depth > 8:
         print(command)
         return
+    for payload in backtick_payloads(command):
+        emit_units(payload, depth + 1)
+    for payload in command_substitution_payloads(command):
+        emit_units(payload, depth + 1)
+    for payload in process_substitution_payloads(command):
+        emit_units(payload, depth + 1)
     try:
         tokens = tokenize(command.replace("\\\n", ""))
     except Exception:
