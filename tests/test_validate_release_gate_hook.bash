@@ -1794,6 +1794,8 @@ assert_denied_command "Scenario 49ap4: wget POST release endpoint is denied" \
   "wget --method=POST --body-data '{\"tag_name\":\"v1.2.1\"}' https://api.github.com/repos/alo-exp/sidekick/releases"
 assert_denied_command "Scenario 49ap5: python direct GitHub release API write is denied" \
   "python3 -c 'import requests; requests.post(\"https://api.github.com/repos/alo-exp/sidekick/releases\", json={\"tag_name\":\"v1.2.1\"})'"
+assert_denied_command "Scenario 49ap5b: python concatenated release API write is denied" \
+  "python3 -c 'import requests; requests.post(\"https://api.github.com/repos/\"+\"alo-exp/sidekick/releases\", json={\"tag_name\":\"v1.2.1\"})'"
 assert_denied_command "Scenario 49ap6: python urllib direct GitHub release API write is denied" \
   "python3 -c 'import urllib.request as u; u.urlopen(u.Request(\"https://api.github.com/repos/alo-exp/sidekick/releases\", data=b\"{}\"))'"
 assert_denied_command "Scenario 49ap6b: python requests import alias write is denied" \
@@ -1876,6 +1878,8 @@ assert_denied_command "Scenario 49ap8c: wget attached stdin input source is deni
 rm -f "${_curl_config}" "${_curl_implicit_post_config}" "${_wget_urls}"
 assert_denied_command "Scenario 49ap9: node direct GitHub release API write is denied" \
   "node -e 'fetch(\"https://api.github.com/repos/alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{\\\"ref\\\":\\\"refs/tags/v1.2.1\\\"}\"})'"
+assert_denied_command "Scenario 49ap9b0: node concatenated tag-ref API write is denied" \
+  "node -e 'fetch(\"https://api.github.com/repos/\"+\"alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{\\\"ref\\\":\\\"refs/tags/v1.2.1\\\"}\"})'"
 assert_passthrough_command "Scenario 49ap9a: node direct branch ref API write passes through" \
   "node -e 'fetch(\"https://api.github.com/repos/alo-exp/sidekick/git/refs\", {method:\"POST\", body:\"{\\\"ref\\\":\\\"refs/heads/release-hardening\\\"}\"})'"
 assert_denied_command_with_env_var "Scenario 49ap9d: gh api inherited env release endpoint is denied" \
