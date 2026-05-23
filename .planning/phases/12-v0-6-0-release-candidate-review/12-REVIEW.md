@@ -90,6 +90,29 @@ status: issues_found
 
 # Phase 12: Code Review Report
 
+## Current Release-Candidate Evidence (2026-05-23)
+
+This follow-up supersedes the stale `4cc412e81c826552f7299e638f8822756610a367` evidence below for current v0.6.0 release preparation. Implementation evidence is current through `35e2b472deed`.
+
+Reviewer follow-up fixes landed:
+
+- Release source provenance now rejects foreign-checkout `gh release`, `gh api`, and `git push` attempts even when the command names a valid Sidekick target SHA.
+- Git tag publication now checks the effective push destination, including persistent `pushInsteadOf` and `insteadOf` URL rewrites, before allowing same-repo release pushes.
+- Public release docs now show two Codex live release-pyramid runs, keep Forge live testing optional, and use a release-notes file placeholder instead of the full changelog.
+
+Verification performed against the tested implementation tree:
+
+- `bash -n hooks/validate-release-gate.sh` passed.
+- `bash -n tests/test_validate_release_gate_hook.bash` passed.
+- `bash tests/test_validate_release_gate_hook.bash` passed with `376 passed, 0 failed`.
+- `bash tests/test_plugin_integrity.bash` passed with `85 passed, 0 failed`.
+- `bash tests/test_docs_contract.bash` passed with `96 passed, 0 failed`.
+- `bash tests/test_runner_contract.bash` passed with `39 passed, 0 failed`.
+- `git diff --check` passed.
+- `bash tests/run_unit.bash` passed with `ALL STRICT NON-LIVE SUITES PASSED`.
+
+Because release markers are scoped to the current session and exact final commit SHA, all four stage markers and both live-pyramid markers must still be regenerated after this planning-only state commit before tag publication.
+
 **Reviewed:** 2026-05-22T19:19:41Z
 **Depth:** deep
 **Files Reviewed:** 76
