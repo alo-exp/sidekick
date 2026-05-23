@@ -180,9 +180,20 @@ try:
     canonical_positions = [names.index(name) for name in canonical_order]
     if canonical_positions != sorted(canonical_positions):
         raise SystemExit("canonical skill order mismatch: " + ", ".join(names))
+    manifest = json.loads((sidekick_dir / ".codex-plugin" / "plugin.json").read_text())
+    if manifest.get("skills") != "./agents/codex/":
+        raise SystemExit("Codex manifest must select ./agents/codex/ as the skill root")
     alias_expectations = {
-        "skills/forge:delegate/SKILL.md": ["name: forge:delegate", "canonical `/forge` workflow"],
-        "skills/kay:delegate/SKILL.md": ["name: kay:delegate", "canonical `kay-delegate` workflow"],
+        "agents/codex/forge:delegate/SKILL.md": [
+            "name: forge:delegate",
+            "generated codex skill root",
+            "canonical `/forge` workflow",
+        ],
+        "agents/codex/kay:delegate/SKILL.md": [
+            "name: kay:delegate",
+            "generated codex skill root",
+            "canonical `kay-delegate` workflow",
+        ],
     }
     for rel, needles in alias_expectations.items():
         text = (sidekick_dir / rel).read_text()

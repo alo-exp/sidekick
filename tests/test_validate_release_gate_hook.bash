@@ -249,6 +249,23 @@ assert_denied_release_command_with_sha_markers() {
   rm -rf "${h}"
 }
 
+assert_denied_release_command_with_sha_markers_from_cwd() {
+  local label="$1" command="$2" sha="$3" cwd="$4" h payload out rc decision
+  echo "${label}"
+  h="$(setup_home)"
+  write_markers_for_sha "${h}" "${sha}" 1 2 3 4
+  write_live_pyramid_markers_for_sha "${h}" "${sha}" 2
+  payload="$(jq -cn --arg cmd "${command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+  out="$(run_hook_from_cwd "${h}" "${payload}" "${cwd}")"; rc=$?
+  decision=$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+  if [ "${rc}" -eq 0 ] && [ "${decision}" = "deny" ]; then
+    assert_pass "${label}: permissionDecision=deny"
+  else
+    assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"
+  fi
+  rm -rf "${h}"
+}
+
 assert_denied_command_with_env_var() {
   local label="$1" command="$2" env_name="$3" env_value="$4" h payload out rc decision
   echo "${label}"
@@ -2243,6 +2260,22 @@ else
   assert_fail "verified gh release stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+same_command_retag_push="git -C ${STALE_TAG_REPO} tag -f v7.7.7 HEAD && git -C ${STALE_TAG_REPO} push origin v7.7.7"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cs10a: same-command retag before git push is denied with stale tag markers" \
+  "${same_command_retag_push}" "${stale_tag_sha}"
+same_command_update_ref_push="git -C ${STALE_TAG_REPO} update-ref refs/tags/v7.7.7 HEAD && git -C ${STALE_TAG_REPO} push origin v7.7.7"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cs10b: same-command update-ref before git push is denied with stale tag markers" \
+  "${same_command_update_ref_push}" "${stale_tag_sha}"
+same_command_retag_gh_release="git tag -f v7.7.7 HEAD && gh release create v7.7.7 --verify-tag"
+assert_denied_release_command_with_sha_markers_from_cwd \
+  "Scenario 49cs10c: same-command retag before verified gh release is denied with stale tag markers" \
+  "${same_command_retag_gh_release}" "${stale_tag_sha}" "${STALE_TAG_REPO}"
+same_command_update_ref_gh_release="git update-ref refs/tags/v7.7.7 HEAD && gh release create v7.7.7 --verify-tag"
+assert_denied_release_command_with_sha_markers_from_cwd \
+  "Scenario 49cs10d: same-command update-ref before verified gh release is denied with stale tag markers" \
+  "${same_command_update_ref_gh_release}" "${stale_tag_sha}" "${STALE_TAG_REPO}"
 stale_gh_false_verified_release_command="gh release create v7.7.7 --verify-tag=false"
 H="$(setup_home)"
 write_markers_for_sha "${H}" "${stale_tag_sha}" 1 2 3 4
