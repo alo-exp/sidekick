@@ -70,6 +70,7 @@ import shlex
 import sys
 import urllib.parse
 
+UNRESOLVABLE = "__UNRESOLVABLE__"
 CONTROL = {";", "&&", "||", "|", "&"}
 CONTROL_PREFIXES = {"if", "then", "elif", "while", "until", "do", "else"}
 GROUP_PREFIXES = {"(", "{"}
@@ -2954,9 +2955,10 @@ def alias_assignments(segment):
 def command_scoped_assignments(segment, start):
     assignments = {}
     for token in segment[:start]:
-        parsed = literal_assignment(token)
-        if parsed is not None:
-            assignments[parsed[0]] = parsed[1]
+        parsed = ASSIGNMENT_FULL_RE.match(token)
+        if parsed:
+            value = parsed.group(2)
+            assignments[parsed.group(1)] = UNRESOLVABLE if re.search(r"[$`]", value) else value
     return assignments
 
 
@@ -4246,6 +4248,84 @@ fi
 
 [ "$release_match" -eq 1 ] || exit 0
 
+release_command_has_same_command_file_write() {
+  python3 - "$1" <<'PY'
+from pathlib import Path
+import re
+import shlex
+import sys
+
+CONTROL = {";", "&&", "||", "|", "&"}
+ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+def tokenize(command):
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
+    lexer.whitespace_split = True
+    return list(lexer)
+
+def segments(tokens):
+    segment = []
+    for token in tokens:
+        if token in CONTROL:
+            if segment:
+                yield segment
+                segment = []
+            continue
+        segment.append(token)
+    if segment:
+        yield segment
+
+def command_index_from(segment):
+    index = 0
+    while index < len(segment) and ASSIGNMENT_RE.match(segment[index]):
+        index += 1
+    return index
+
+def writes_file(segment):
+    for index, token in enumerate(segment):
+        if token in {">", ">>"}:
+            target = segment[index + 1] if index + 1 < len(segment) else ""
+            return target not in {"/dev/null", "1", "2"}
+    start = command_index_from(segment)
+    if start < len(segment) and Path(segment[start]).name == "tee":
+        index = start + 1
+        while index < len(segment):
+            token = segment[index]
+            if token == "--":
+                index += 1
+                break
+            if token in {"-a", "-i", "--append", "--ignore-interrupts"}:
+                index += 1
+                continue
+            if token.startswith("-"):
+                index += 1
+                continue
+            break
+        return any(token != "/dev/null" for token in segment[index:])
+    return False
+
+try:
+    tokens = tokenize(sys.argv[1].replace("\\\n", ""))
+except Exception:
+    print("1")
+    raise SystemExit(0)
+
+print("1" if any(writes_file(segment) for segment in segments(tokens)) else "0")
+PY
+}
+
+if [ "$(release_command_has_same_command_file_write "$COMMAND" 2>/dev/null || printf 1)" = "1" ]; then
+  reason="Pre-release quality gate cannot authorize release publication from a Bash command that also writes files. Run one explicit release publication command at a time from an already-prepared checkout."
+  jq -cn --arg reason "$reason" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: $reason
+    }
+  }'
+  exit 0
+fi
+
 release_command_segment_count() {
   local candidate count parser_rc
   count=0
@@ -4433,6 +4513,7 @@ GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--e
 GIT_FLAG_GLOBALS = {"--bare", "--no-pager", "--paginate", "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs", "--icase-pathspecs"}
 GIT_PUSH_VALUE_OPTIONS = {"-o", "--push-option", "--receive-pack", "--exec", "--recurse-submodules"}
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
+GIT_PUSH_DESTRUCTIVE_TAG_OPTIONS = {"-d", "-f", "--delete", "--force"}
 GH_RELEASE_CREATE_VALUE_OPTIONS = {"--target", "--title", "--notes", "--notes-file", "--discussion-category"}
 GH_RELEASE_CREATE_FLAG_OPTIONS = {"--draft", "--generate-notes", "--latest", "--prerelease", "--verify-tag"}
 GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
@@ -4513,6 +4594,8 @@ def refspec_targets_release_tag(refspec):
 
 def release_ref_from_refspec(refspec):
     if not refspec:
+        return UNRESOLVABLE
+    if refspec.startswith("+"):
         return UNRESOLVABLE
     source = refspec.split(":", 1)[0].lstrip("+")
     if not source:
@@ -4619,8 +4702,10 @@ def normalize_repo(value):
     return repo
 
 def host_allowed(host):
+    if host is None or host == "":
+        return True
     normalized = normalize_host(host)
-    return normalized is None or normalized in SIDEKICK_RELEASE_HOSTS
+    return normalized in SIDEKICK_RELEASE_HOSTS
 
 def repo_allowed(repo, host=None):
     if not host_allowed(host):
@@ -5328,16 +5413,23 @@ def git_push_release_target(operands, release_push):
         return None
     remote = operands[0]
     refspecs = operands[1:]
+    release_refs = []
     index = 0
     while index < len(refspecs):
         refspec = refspecs[index]
         if refspec == "tag":
             if index + 1 >= len(refspecs):
                 return remote, UNRESOLVABLE
-            return remote, release_ref_from_refspec(refspecs[index + 1])
+            release_refs.append(release_ref_from_refspec(refspecs[index + 1]))
+            index += 2
+            continue
         if refspec_targets_release_tag(refspec):
-            return remote, release_ref_from_refspec(refspec)
+            release_refs.append(release_ref_from_refspec(refspec))
         index += 1
+    if len(release_refs) > 1:
+        return remote, UNRESOLVABLE
+    if release_refs:
+        return remote, release_refs[0]
     return None
 
 def git_tag_mutates_release_ref(segment, subcommand_index):
@@ -5501,9 +5593,10 @@ def resolve_segment(segment, variables):
 def command_scoped_assignments(segment, start):
     assignments = {}
     for token in segment[:start]:
-        parsed = literal_assignment(token)
-        if parsed is not None:
-            assignments[parsed[0]] = parsed[1]
+        parsed = ASSIGNMENT_FULL_RE.match(token)
+        if parsed:
+            value = parsed.group(2)
+            assignments[parsed.group(1)] = UNRESOLVABLE if re.search(r"[$`]", value) else value
     return assignments
 
 def github_api_path_parts(endpoint):
@@ -5815,11 +5908,16 @@ def git_metadata(segment, git_index, scoped_vars):
     operands = []
     cursor = index + 1
     release_push = False
+    destructive_push = False
     while cursor < len(segment):
         current = segment[cursor]
         if current == "--":
             operands.extend(segment[cursor + 1:])
             break
+        if current in GIT_PUSH_DESTRUCTIVE_TAG_OPTIONS or current.startswith("--force-with-lease"):
+            destructive_push = True
+            cursor += 1
+            continue
         if current in GIT_PUSH_RELEASE_TAG_OPTIONS:
             release_push = True
             break
@@ -5840,6 +5938,8 @@ def git_metadata(segment, git_index, scoped_vars):
     release_target = git_push_release_target(operands, release_push)
     if release_target:
         remote, release_ref = release_target
+        if destructive_push:
+            return ("unresolvable", UNRESOLVABLE)
         if target_dir == UNRESOLVABLE or (target_dir is not None and unsafe_ref(target_dir)):
             return ("unresolvable", UNRESOLVABLE)
         if not git_remote_allowed(remote, target_dir):
@@ -6056,8 +6156,25 @@ inside_git_worktree() {
   git -C "${candidate}" rev-parse --is-inside-work-tree >/dev/null 2>&1
 }
 
+trusted_sidekick_head_sha() {
+  local candidate
+  candidate="$1"
+  trusted_sidekick_checkout "${candidate}" || return 1
+  git -C "${candidate}" rev-parse --short=12 HEAD 2>/dev/null
+}
+
+release_ref_current_head_sha() {
+  local candidate ref target_sha head_sha
+  candidate="$1"
+  ref="$2"
+  target_sha="$(git -C "${candidate}" rev-parse --short=12 "${ref}^{commit}" 2>/dev/null)" || return 1
+  head_sha="$(trusted_sidekick_head_sha "${candidate}")" || return 1
+  [ "${target_sha}" = "${head_sha}" ] || return 1
+  printf '%s\n' "${head_sha}"
+}
+
 current_release_sha() {
-  local candidate git_c_ref git_c_target gh_target_ref metadata metadata_kind metadata_value
+  local candidate git_c_ref git_c_target metadata metadata_kind metadata_value
   metadata="$(release_target_metadata "$COMMAND" 2>/dev/null || true)"
   if [ -n "${metadata}" ]; then
     metadata_kind="${metadata%%$'\t'*}"
@@ -6066,24 +6183,22 @@ current_release_sha() {
       return 1
     fi
     if [ "${metadata_kind}" = "git-c" ]; then
-      git -C "${metadata_value}" rev-parse --short=12 HEAD 2>/dev/null && return 0
+      trusted_sidekick_head_sha "${metadata_value}" && return 0
       return 1
     fi
     if [ "${metadata_kind}" = "git-c-ref" ]; then
       git_c_target="${metadata_value%%$'\t'*}"
       git_c_ref="${metadata_value#*$'\t'}"
-      trusted_sidekick_checkout "${git_c_target}" || return 1
-      git -C "${git_c_target}" rev-parse --short=12 "${git_c_ref}^{commit}" 2>/dev/null && return 0
+      release_ref_current_head_sha "${git_c_target}" "${git_c_ref}" && return 0
       return 1
     fi
     if [ "${metadata_kind}" = "ref" ]; then
       if inside_git_worktree "${PWD:-.}"; then
-        trusted_sidekick_checkout "${PWD:-.}" || return 1
-        git -C "${PWD:-.}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null && return 0
+        release_ref_current_head_sha "${PWD:-.}" "${metadata_value}" && return 0
         return 1
       fi
       for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${REPO_ROOT}"; do
-        if [ -n "${candidate}" ] && trusted_sidekick_checkout "${candidate}" && git -C "${candidate}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null; then
+        if [ -n "${candidate}" ] && release_ref_current_head_sha "${candidate}" "${metadata_value}"; then
           return 0
         fi
       done
@@ -6096,7 +6211,7 @@ current_release_sha() {
 missing=()
 current_head_sha="$(current_release_sha || true)"
 if [ -z "$current_head_sha" ]; then
-  reason="Pre-release quality gate cannot validate this release command because no current git SHA or release target SHA is available. Use an explicit, resolvable release target such as gh release create --target <sha>, or push a local tag and use gh release create --verify-tag from a git checkout."
+  reason="Pre-release quality gate cannot validate this release command because no current git SHA or release target SHA is available. Use one explicit release operation that targets the current trusted Sidekick checkout HEAD, such as gh release create --target <current-sha>."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
