@@ -222,6 +222,16 @@ else
   assert_fail "shared hook root fallback" "missing CLAUDE fallback or duplicated CODEX fallback remains"
 fi
 
+ROOT_EXPR="${SESSION0_CMD%%; python3*}"
+CODEX_ROOT_RESULT="$(SIDEKICK_PLUGIN_ROOT="/tmp/sidekick-stale" CODEX_PLUGIN_ROOT="/tmp/codex-current" CLAUDE_PLUGIN_ROOT= bash -c "${ROOT_EXPR}; printf '%s' \"\${ROOT}\"")"
+CLAUDE_ROOT_RESULT="$(SIDEKICK_PLUGIN_ROOT="/tmp/sidekick-stale" CODEX_PLUGIN_ROOT= CLAUDE_PLUGIN_ROOT="/tmp/claude-current" bash -c "${ROOT_EXPR}; printf '%s' \"\${ROOT}\"")"
+if [ "${CODEX_ROOT_RESULT}" = "/tmp/codex-current" ] \
+  && [ "${CLAUDE_ROOT_RESULT}" = "/tmp/claude-current" ]; then
+  assert_pass "source hook root fallback prefers active host roots before stale generic root"
+else
+  assert_fail "source hook root fallback precedence" "codex=${CODEX_ROOT_RESULT} claude=${CLAUDE_ROOT_RESULT}"
+fi
+
 if echo "${SESSION0_CMD}" | grep -q 'scrub-legacy-user-hooks.py' \
   && echo "${SESSION0_CMD}" | grep -q 'python3'; then
   assert_pass "legacy scrub hook remains first SessionStart entry"

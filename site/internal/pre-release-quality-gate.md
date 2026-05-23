@@ -378,13 +378,17 @@ test "$count" = "4" || { echo "Expected 4 distinct current-session markers, foun
 live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $0}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 test "$live_count" -ge 2 || { echo "Expected 2 current-session/current-commit live-pyramid markers, found $live_count"; exit 1; }
 
-# Publish the release tag and create the GitHub release
-git push origin v<version>
+# Resolve the current trusted Sidekick HEAD, then paste that literal SHA as
+# <current-sha>. Do not pass shell substitutions or variables as --target; the
+# release hook intentionally requires a literal SHA token.
+git rev-parse HEAD
+
+# Create the GitHub release and tag at the current trusted Sidekick HEAD
 gh release create v<version> \
   --repo alo-exp/sidekick \
   --title "Sidekick v<version>" \
   --notes-file <notes.md> \
-  --verify-tag \
+  --target <current-sha> \
   --latest
 ```
 

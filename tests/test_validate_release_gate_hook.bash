@@ -95,6 +95,10 @@ current_head_release_command() {
   printf 'gh release create v1.2.1 --target %s --generate-notes' "$(current_head_sha)"
 }
 
+substitution_target_release_command() {
+  printf 'gh release create v1.2.1 --target "$(git rev-parse HEAD)" --generate-notes'
+}
+
 write_markers_for_sha() {
   local h="$1" sha="$2"; shift 2
   : > "${h}/.claude/.sidekick/quality-gate-state"
@@ -2586,6 +2590,9 @@ rm -rf "${H}"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0: gh release --target symbolic branch is denied" \
   "gh release create v1.2.1 --target main"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0a0: gh release --target command substitution is denied" \
+  "$(substitution_target_release_command)"
 multi_gh_mixed_target_command="gh release create v1.2.1 --target $(current_head_sha) && gh release create v2.2.2 --target ${target_ref_sha}"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0a: multi-gh release with unauthorized second target is denied" \
@@ -2602,6 +2609,18 @@ generated_script_multi_release_command="printf 'gh release create v2.2.2 --targe
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0c2: generated release script plus visible release is denied" \
   "${generated_script_multi_release_command}"
+hidden_substitution_release_command="gh release create v1.2.1 --target $(current_head_sha) --notes \"\$(gh release create v2.2.2 --target $(current_head_sha))\""
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c3: release command hidden in substitution is denied" \
+  "${hidden_substitution_release_command}"
+same_command_force_redirect_release="printf x >| ./sidekick-review-temp.txt; gh release create v1.2.1 --target $(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c4: same-command force redirection plus release is denied" \
+  "${same_command_force_redirect_release}"
+same_command_read_write_redirect_release=": <> ./sidekick-review-temp.txt; gh release create v1.2.1 --target $(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c5: same-command read-write redirection plus release is denied" \
+  "${same_command_read_write_redirect_release}"
 multi_release_test_tag="v555.555.555"
 git -C "${REPO_ROOT}" update-ref "refs/tags/${multi_release_test_tag}" HEAD
 multi_git_push_then_gh_command="git push origin ${multi_release_test_tag} && gh release create v2.2.2 --target ${target_ref_sha}"
