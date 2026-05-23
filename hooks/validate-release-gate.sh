@@ -4675,7 +4675,7 @@ GIT_FLAG_GLOBALS = {"--bare", "--no-pager", "--paginate", "--literal-pathspecs",
 GIT_PUSH_VALUE_OPTIONS = {"-o", "--push-option", "--receive-pack", "--exec", "--recurse-submodules"}
 GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
 GIT_PUSH_DESTRUCTIVE_TAG_OPTIONS = {"-d", "-f", "--delete", "--force"}
-GH_RELEASE_CREATE_VALUE_OPTIONS = {"--target", "--title", "--notes", "--notes-file", "--discussion-category"}
+GH_RELEASE_CREATE_VALUE_OPTIONS = {"--target", "--title", "--notes", "--notes-file", "--notes-start-tag", "--discussion-category"}
 GH_RELEASE_CREATE_FLAG_OPTIONS = {"--draft", "--generate-notes", "--latest", "--prerelease", "--verify-tag"}
 GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
 GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
@@ -4772,6 +4772,33 @@ def release_ref_from_refspec(refspec):
     if not source:
         return UNRESOLVABLE
     return UNRESOLVABLE if unsafe_ref(source) else source
+
+def release_tag_name(value):
+    if not value:
+        return UNRESOLVABLE
+    tag = str(value).lstrip("+")
+    if tag.startswith("refs/tags/"):
+        tag = tag[len("refs/tags/"):]
+    elif not RELEASE_TAG_RE.match(tag):
+        return UNRESOLVABLE
+    if unsafe_ref(tag) or "/" in tag:
+        return UNRESOLVABLE
+    return tag
+
+def release_ref_target_from_refspec(refspec):
+    if not refspec or refspec.startswith("+"):
+        return UNRESOLVABLE, UNRESOLVABLE
+    source, sep, destination = refspec.partition(":")
+    source = source.lstrip("+")
+    if not source or unsafe_ref(source):
+        return UNRESOLVABLE, UNRESOLVABLE
+    if sep:
+        tag = release_tag_name(destination)
+        if tag == UNRESOLVABLE:
+            return UNRESOLVABLE, UNRESOLVABLE
+    else:
+        tag = release_tag_name(source)
+    return source, tag
 
 def skip_env(segment, index):
     index += 1
@@ -4905,8 +4932,7 @@ def gh_repo_option(segment, gh_index):
     while index < len(segment):
         token = segment[index]
         if token == "--":
-            index += 1
-            continue
+            break
         if token in {"-R", "--repo"}:
             return segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
         if token.startswith("-R") and token != "-R":
@@ -4922,8 +4948,7 @@ def gh_release_create_explicit_repo(segment, gh_index):
     while index < len(segment):
         token = segment[index]
         if token == "--":
-            index += 1
-            continue
+            break
         if token == "--repo":
             value = segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
             if repo is not None:
@@ -4959,8 +4984,7 @@ def gh_hostname_option(segment, gh_index):
     while index < len(segment):
         token = segment[index]
         if token == "--":
-            index += 1
-            continue
+            break
         if token == "--hostname":
             return segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
         if token.startswith("--hostname="):
@@ -5632,28 +5656,29 @@ def git_rewritten_push_url(url, target_dir=None):
 
 def git_push_release_target(operands, release_push):
     if release_push:
-        return ((operands[0] if operands else None), UNRESOLVABLE)
+        return ((operands[0] if operands else None), UNRESOLVABLE, UNRESOLVABLE)
     if len(operands) < 2:
         return None
     remote = operands[0]
     refspecs = operands[1:]
-    release_refs = []
+    release_targets = []
     index = 0
     while index < len(refspecs):
         refspec = refspecs[index]
         if refspec == "tag":
             if index + 1 >= len(refspecs):
-                return remote, UNRESOLVABLE
-            release_refs.append(release_ref_from_refspec(refspecs[index + 1]))
+                return remote, UNRESOLVABLE, UNRESOLVABLE
+            release_targets.append(release_ref_target_from_refspec(refspecs[index + 1]))
             index += 2
             continue
         if refspec_targets_release_tag(refspec):
-            release_refs.append(release_ref_from_refspec(refspec))
+            release_targets.append(release_ref_target_from_refspec(refspec))
         index += 1
-    if len(release_refs) > 1:
-        return remote, UNRESOLVABLE
-    if release_refs:
-        return remote, release_refs[0]
+    if len(release_targets) > 1:
+        return remote, UNRESOLVABLE, UNRESOLVABLE
+    if release_targets:
+        release_ref, release_tag = release_targets[0]
+        return remote, release_ref, release_tag
     return None
 
 def git_tag_mutates_release_ref(segment, subcommand_index):
@@ -5926,7 +5951,8 @@ def payload_mentions_tag_ref(payloads):
         for payload in payloads
     )
 
-def target_from_key(payloads, keys):
+def values_from_keys(payloads, keys):
+    values = []
     for payload in payloads:
         pair = field_pair(payload)
         if pair and pair[0] in keys:
@@ -5934,14 +5960,41 @@ def target_from_key(payloads, keys):
             if value.startswith("@"):
                 text = read_source(value[1:])
                 value = text.strip() if text is not None else UNRESOLVABLE
-            return UNRESOLVABLE if unsafe_ref(value) else value
+            values.append(UNRESOLVABLE if unsafe_ref(value) else value)
+            continue
+        if pair:
+            continue
+        text = "\n".join(value for value in payload_values([payload]) if value != UNRESOLVABLE)
+        for key in keys:
+            pattern = re.compile(rf"[\"']?{re.escape(key)}[\"']?\s*[:=]\s*[\"']?([A-Za-z0-9._:/+-]+)", re.IGNORECASE)
+            for match in pattern.finditer(text):
+                value = match.group(1)
+                values.append(UNRESOLVABLE if unsafe_ref(value) else value)
+    unique_values = []
+    for value in values:
+        if value not in unique_values:
+            unique_values.append(value)
+    return unique_values
+
+def target_from_key(payloads, keys):
+    values = values_from_keys(payloads, keys)
+    if len(values) > 1:
+        return UNRESOLVABLE
+    if len(values) == 1:
+        return values[0]
     text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
     for key in keys:
         pattern = re.compile(rf"[\"']?{re.escape(key)}[\"']?\s*[:=]\s*[\"']?([A-Za-z0-9._:/+-]+)", re.IGNORECASE)
-        match = pattern.search(text)
-        if match:
-            value = match.group(1)
-            return UNRESOLVABLE if unsafe_ref(value) else value
+        matches = pattern.findall(text)
+        unique_matches = []
+        for value in matches:
+            value = UNRESOLVABLE if unsafe_ref(value) else value
+            if value not in unique_matches:
+                unique_matches.append(value)
+        if len(unique_matches) > 1:
+            return UNRESOLVABLE
+        if len(unique_matches) == 1:
+            return unique_matches[0]
     return None
 
 def truthy_payload_key(payloads, keys):
@@ -5950,20 +6003,21 @@ def truthy_payload_key(payloads, keys):
         if not pair or pair[0] not in keys:
             continue
         value = pair[1].strip().strip("'\"").lower()
-        return value not in {"", "0", "false", "no", "off"}
+        if value not in {"", "0", "false", "no", "off"}:
+            return True
     text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
     for key in keys:
         pattern = re.compile(
             rf"[\"']?{re.escape(key)}[\"']?\s*[:=]\s*([\"'][^\"']*[\"']|[A-Za-z0-9_.+-]+)",
             re.IGNORECASE,
         )
-        found = False
+        matched = False
         for match in pattern.finditer(text):
-            found = True
+            matched = True
             value = match.group(1).strip().strip("'\"").lower()
             if value not in {"", "0", "false", "no", "off"}:
                 return True
-        if not found and re.search(rf"[\"']?{re.escape(key)}[\"']?\s*[:=]", text, re.IGNORECASE):
+        if not matched and re.search(rf"[\"']?{re.escape(key)}[\"']?\s*[:=]", text, re.IGNORECASE):
             return True
     return False
 
@@ -6070,7 +6124,11 @@ def gh_api_metadata(segment, gh_index, scoped_vars):
             return UNRESOLVABLE if endpoint_mentions_tag_ref(endpoint) or payload_mentions_tag_ref(payloads) else None
         if not payload_mentions_tag_ref(payloads):
             return None
+        tag = release_tag_name(target_from_key(payloads, {"ref"}))
         target = target_from_key(payloads, {"sha"}) or UNRESOLVABLE
+        if tag == UNRESOLVABLE:
+            return UNRESOLVABLE
+        return ("gh-target", f"{tag}\t{target if explicit_sha(target) else UNRESOLVABLE}")
     elif is_graphql_endpoint(endpoint):
         target = graphql_target(payloads)
         if target:
@@ -6224,18 +6282,18 @@ def git_metadata(segment, git_index, scoped_vars):
         cursor += 1
     release_target = git_push_release_target(operands, release_push)
     if release_target:
-        remote, release_ref = release_target
+        remote, release_ref, release_tag = release_target
         if destructive_push:
             return ("unresolvable", UNRESOLVABLE)
         if target_dir == UNRESOLVABLE or (target_dir is not None and unsafe_ref(target_dir)):
             return ("unresolvable", UNRESOLVABLE)
         if not git_remote_allowed(remote, target_dir):
             return ("unresolvable", UNRESOLVABLE)
-        if release_ref == UNRESOLVABLE:
+        if release_ref == UNRESOLVABLE or release_tag == UNRESOLVABLE:
             return ("unresolvable", UNRESOLVABLE)
         if target_dir is None:
-            return ("ref", release_ref)
-        return ("git-c-ref", f"{target_dir}\t{release_ref}")
+            return ("git-ref-target", f"{remote}\t{release_ref}\t{release_tag}")
+        return ("git-c-ref-target", f"{target_dir}\t{remote}\t{release_ref}\t{release_tag}")
     return None
 
 def extract(command, depth=0):
@@ -6368,7 +6426,7 @@ def extract(command, depth=0):
                     if blocked:
                         return blocked
                     continue
-            if result and result[0] in {"git-c", "git-c-ref", "ref", "unresolvable"}:
+            if result and result[0] in {"git-c", "git-c-ref", "git-c-ref-target", "git-ref-target", "ref", "unresolvable"}:
                 blocked = record_release_result(result)
                 if blocked:
                     return blocked
@@ -6469,17 +6527,19 @@ release_ref_current_head_sha() {
 }
 
 remote_release_tag_allows_current_head() {
-  local candidate tag head_sha output peeled direct selected
+  local candidate remote tag head_sha output peeled direct selected
   candidate="$1"
-  tag="$2"
-  head_sha="$3"
+  remote="$2"
+  tag="$3"
+  head_sha="$4"
+  [ -n "${remote}" ] || return 1
   [ -n "${tag}" ] || return 1
   case "${tag}" in
     *[!A-Za-z0-9._+-]*|'')
       return 1
       ;;
   esac
-  output="$(git -C "${candidate}" ls-remote --tags origin "refs/tags/${tag}" 2>/dev/null)" || return 1
+  output="$(git -C "${candidate}" ls-remote --tags "${remote}" "refs/tags/${tag}" 2>/dev/null)" || return 1
   [ -n "${output}" ] || return 0
   peeled="$(awk -v ref="refs/tags/${tag}^{}" '$2 == ref { print substr($1, 1, 12); exit }' <<EOF
 ${output}
@@ -6503,12 +6563,26 @@ gh_release_target_current_head_sha() {
   target_sha="$(git -C "${candidate}" rev-parse --short=12 "${target}^{commit}" 2>/dev/null)" || return 1
   head_sha="$(trusted_sidekick_head_sha "${candidate}")" || return 1
   [ "${target_sha}" = "${head_sha}" ] || return 1
-  remote_release_tag_allows_current_head "${candidate}" "${tag}" "${head_sha}" || return 1
+  remote_release_tag_allows_current_head "${candidate}" origin "${tag}" "${head_sha}" || return 1
+  printf '%s\n' "${head_sha}"
+}
+
+git_ref_target_current_head_sha() {
+  local candidate remote ref tag target_sha head_sha
+  candidate="$1"
+  remote="$2"
+  ref="$3"
+  tag="$4"
+  trusted_sidekick_checkout "${candidate}" || return 1
+  target_sha="$(git -C "${candidate}" rev-parse --short=12 "${ref}^{commit}" 2>/dev/null)" || return 1
+  head_sha="$(trusted_sidekick_head_sha "${candidate}")" || return 1
+  [ "${target_sha}" = "${head_sha}" ] || return 1
+  remote_release_tag_allows_current_head "${candidate}" "${remote}" "${tag}" "${head_sha}" || return 1
   printf '%s\n' "${head_sha}"
 }
 
 current_release_sha() {
-  local candidate git_c_ref git_c_target gh_tag gh_target metadata metadata_kind metadata_value
+  local candidate git_c_ref git_c_remote git_c_tag git_c_target gh_tag gh_target metadata metadata_kind metadata_value push_ref push_remote push_tag
   metadata="$(release_target_metadata "$COMMAND" 2>/dev/null || true)"
   if [ -n "${metadata}" ]; then
     metadata_kind="${metadata%%$'\t'*}"
@@ -6524,6 +6598,13 @@ current_release_sha() {
       git_c_target="${metadata_value%%$'\t'*}"
       git_c_ref="${metadata_value#*$'\t'}"
       release_ref_current_head_sha "${git_c_target}" "${git_c_ref}" && return 0
+      return 1
+    fi
+    if [ "${metadata_kind}" = "git-c-ref-target" ]; then
+      IFS=$'\t' read -r git_c_target git_c_remote git_c_ref git_c_tag <<EOF
+${metadata_value}
+EOF
+      git_ref_target_current_head_sha "${git_c_target}" "${git_c_remote}" "${git_c_ref}" "${git_c_tag}" && return 0
       return 1
     fi
     if [ "${metadata_kind}" = "gh-target" ]; then
@@ -6547,6 +6628,21 @@ current_release_sha() {
       fi
       for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${REPO_ROOT}"; do
         if [ -n "${candidate}" ] && release_ref_current_head_sha "${candidate}" "${metadata_value}"; then
+          return 0
+        fi
+      done
+      return 1
+    fi
+    if [ "${metadata_kind}" = "git-ref-target" ]; then
+      IFS=$'\t' read -r push_remote push_ref push_tag <<EOF
+${metadata_value}
+EOF
+      if inside_git_worktree "${PWD:-.}"; then
+        git_ref_target_current_head_sha "${PWD:-.}" "${push_remote}" "${push_ref}" "${push_tag}" && return 0
+        return 1
+      fi
+      for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${REPO_ROOT}"; do
+        if [ -n "${candidate}" ] && git_ref_target_current_head_sha "${candidate}" "${push_remote}" "${push_ref}" "${push_tag}"; then
           return 0
         fi
       done
