@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5.0
-milestone_name: "Multi-Sidekick Packaging & Codex Release"
-status: complete
-stopped_at: v1.5.0 release prep complete — Forge/Codex packaging and release gate refresh; GitHub Release pending
-last_updated: "2026-05-07T00:00:00Z"
-last_activity: "2026-05-07 — v1.5.0 release prep completed; Codex marketplace packaging and docs refresh landed"
+milestone: v0.6.0
+milestone_name: "Host-Specific Sidekick Surfaces & Release Runner Split"
+status: release-candidate
+stopped_at: v0.6.0 release candidate prepared; pre-release quality gates and GitHub Release pending
+last_updated: "2026-05-23T02:12:47Z"
+last_activity: "2026-05-23 — v0.6.0 release candidate prepared; host-specific surfaces, runner split, release-gate hardening, and release docs refreshed"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-24)
 
 **Core value:** Forge is the execution engine; Claude is the process orchestrator. When `/forge` is active, delegation is harness-enforced (PreToolUse hook), Forge work is live-visible in the transcript, and every task is durably recorded for replay.
-**Current focus:** v1.3 — Phase 10 (6 enforcer bugs + path allowlist + helper extraction) → Phase 11 (housekeeping, hardening, forge-sb install).
+**Current focus:** v0.6.0 release authorization. The final release candidate is present locally; all four pre-release quality-gate stages and two current-session live release-pyramid passes must be regenerated against the final commit before tagging.
 
 ## Current Position
 
-Milestone: v1.5.0 — Multi-Sidekick Packaging & Codex Release (COMPLETE)
-Phase: N/A — direct release (no formal GSD phases)
-Status: Milestone archived
-Last activity: 2026-05-07 — v1.5.0 release prep completed; Forge/Codex packaging, marketplace metadata, and release docs refreshed
+Milestone: v0.6.0 — Host-Specific Sidekick Surfaces & Release Runner Split
+Phase: 12 — release candidate review and quality gates
+Status: Release candidate, publication pending
+Last activity: 2026-05-23 — release-gate reviewer fixes landed through `35e2b472deed`; final gate markers still need to be written for the eventual release commit.
 
 Progress:
 
@@ -36,6 +36,7 @@ Progress:
 - v1.2: Phases 6-9 shipped as v1.2.0 on 2026-04-18. PreToolUse enforcement + PostToolUse progress surface + /forge:replay + /forge:history + plugin manifest v1.2.0 + full v1.2 test suite (47 new tests, all green).
 - v1.2.1 (2026-04-18): Quality Gate Hardening + Consistency Sweep — 4-stage pre-release gate clean; 1 HIGH + 5 MEDIUM SENTINEL findings resolved.
 - v1.2.2 (2026-04-24): SENTINEL L1/L2/I1 defense-in-depth hardening — anchored env-prefix substitution, UUID validation, secret redaction. 6 new unit tests. Shipped.
+- v0.6.0 (2026-05-23): Host-specific Claude/Codex surfaces generated from canonical `skills/`, runner split into `run_unit.bash` / `run_all.bash` / `run_release.bash`, and release authorization hardened around Sidekick provenance, effective Git push URLs, verified tag targets, and current-session quality-gate markers. Publication pending final gates.
 
 ## Performance Metrics
 
@@ -127,10 +128,10 @@ Key v1.3 Phase 11 Plan 01 decisions:
 
 ## Session Continuity
 
-Last session: 2026-04-25
-Stopped at: Phase 11 Plan 04 complete — HOUSE-01 + FGSB-01 shipped; 14 SENTINEL files relocated, forge-sb install added, all integrity hashes refreshed; ALL SUITES PASSED.
+Last session: 2026-05-23
+Stopped at: v0.6.0 release candidate prepared — implementation evidence is current through `35e2b472deed`; run final pre-release gates and live release-pyramid passes against the final release commit before tag publication.
 Resume file: None
 
 Next likely actions:
 
-- Start next milestone with `/gsd-new-milestone`
+- Complete the four-stage pre-release quality gate, run the Codex live release pyramid twice, tag `v0.6.0`, push, and create the GitHub Release.
