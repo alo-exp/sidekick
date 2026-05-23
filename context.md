@@ -92,7 +92,9 @@ Release verification:
 
 ```bash
 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
-SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash  # optional Forge live coverage
+SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
+
+To include optional Forge live stages when Forge provider testing is available, add `SIDEKICK_LIVE_FORGE=1` to either run.
 
 The live stages make real model/runtime calls and are intentionally skipped unless the env vars are set.

@@ -716,16 +716,18 @@ and live-test requirements.
 
 Release order:
 
-1. Complete Stage 1 through Stage 4 exactly as documented in
+1. Make the final release-candidate commit, including release artifacts,
+   manifests, changelog, docs, and planning state.
+2. Complete Stage 1 through Stage 4 exactly as documented in
    `site/pre-release-quality-gate.md`.
-2. Invoke `/superpowers:verification-before-completion` before writing each
+3. Invoke `/superpowers:verification-before-completion` before writing each
    stage marker.
-3. Write stage markers with the current host session id and current git SHA to
+4. Write stage markers with the current host session id and current git SHA to
    the host-specific Sidekick state file:
    - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
    - Codex installs: `~/.codex/.sidekick/quality-gate-state`
    - Stage format: `quality-gate-stage-N session=<current-host-session-id> sha=<git-sha>`
-4. Run the Codex live release pyramid twice:
+5. Run the Codex live release pyramid twice:
    `SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`.
    Add `SIDEKICK_LIVE_FORGE=1` when Forge live coverage is available. Codex-only
    live runs are release-authorizing in this repo and record required

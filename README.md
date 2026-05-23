@@ -145,7 +145,7 @@ SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 
 To include optional Forge live stages when Forge provider testing is available, add `SIDEKICK_LIVE_FORGE=1` to either run.
 
-Before any release, complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two Codex live markers before publishing.
+Before any release, make the final release-candidate commit first, then complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two Codex live markers before publishing.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.

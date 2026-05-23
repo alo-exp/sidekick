@@ -383,7 +383,7 @@ git push origin v<version>
 gh release create v<version> \
   --repo alo-exp/sidekick \
   --title "Sidekick v<version>" \
-  --notes-file CHANGELOG.md \
+  --notes-file <notes.md> \
   --verify-tag \
   --latest
 ```
