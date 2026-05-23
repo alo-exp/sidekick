@@ -84,6 +84,12 @@ TIME_VALUE_OPTIONS = {"-f", "--format", "-o", "--output"}
 TIME_FLAG_OPTIONS = {"-p", "-a", "--append", "-v", "--verbose"}
 GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
 GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
+GH_KNOWN_SUBCOMMANDS = {
+    "alias", "api", "auth", "browse", "cache", "codespace", "completion",
+    "config", "extension", "gpg-key", "gist", "issue", "label", "org",
+    "pr", "project", "release", "repo", "ruleset", "run", "search",
+    "secret", "ssh-key", "status", "variable", "workflow", "help",
+}
 GITHUB_API_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 GITHUB_RELEASE_API_RE = re.compile(
     r"(?:https?://[^/\s\"']+/)?(?:api/v3/)?repos/[^/\s\"']+/[^/\s\"']+/"
@@ -137,6 +143,15 @@ GIT_FLAG_GLOBALS = {
     "--bare", "--no-pager", "--paginate",
     "--literal-pathspecs", "--glob-pathspecs",
     "--noglob-pathspecs", "--icase-pathspecs",
+}
+GIT_KNOWN_SUBCOMMANDS = {
+    "add", "am", "apply", "archive", "bisect", "blame", "branch", "bundle",
+    "cat-file", "checkout", "cherry", "cherry-pick", "clean", "clone",
+    "commit", "config", "describe", "diff", "fetch", "format-patch", "fsck",
+    "gc", "grep", "init", "log", "merge", "mv", "notes", "pull", "push",
+    "range-diff", "rebase", "reflog", "remote", "reset", "restore", "revert",
+    "rev-list", "rev-parse", "rm", "shortlog", "show", "show-ref", "stash",
+    "status", "submodule", "switch", "tag", "worktree", "help",
 }
 GIT_PUSH_VALUE_OPTIONS = {
     "-o", "--push-option",
@@ -808,6 +823,145 @@ def command_index_from(segment, index=0):
     return index
 
 
+def is_relative_file_source(value):
+    if not value or value in {"-", "@-"}:
+        return False
+    if value.startswith("@"):
+        value = value[1:]
+    if release_source_is_uninspectable(value) or EXPANSION_RE.search(value):
+        return True
+    try:
+        return not Path(value).expanduser().is_absolute()
+    except Exception:
+        return True
+
+
+def segment_has_env_chdir(segment, start):
+    for token in segment[:start]:
+        if token in {"-C", "--chdir"} or token.startswith("--chdir="):
+            return True
+    return False
+
+
+def curl_has_relative_file_operand(segment, start):
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            break
+        if token in {"-K", "--config"}:
+            if index + 1 < len(segment) and is_relative_file_source(segment[index + 1]):
+                return True
+            index += 2
+            continue
+        if token.startswith("--config="):
+            if is_relative_file_source(token.split("=", 1)[1]):
+                return True
+            index += 1
+            continue
+        if token.startswith("-K") and token != "-K":
+            if is_relative_file_source(token[2:]):
+                return True
+            index += 1
+            continue
+        index += 1
+    return False
+
+
+def wget_has_relative_file_operand(segment, start):
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            break
+        if token in {"-i", "--input-file", "--post-file", "--body-file"}:
+            if index + 1 < len(segment) and is_relative_file_source(segment[index + 1]):
+                return True
+            index += 2
+            continue
+        if token.startswith(("--input-file=", "--post-file=", "--body-file=")):
+            if is_relative_file_source(token.split("=", 1)[1]):
+                return True
+            index += 1
+            continue
+        if token.startswith("-i") and token != "-i":
+            if is_relative_file_source(token[2:]):
+                return True
+            index += 1
+            continue
+        index += 1
+    return False
+
+
+def local_script_relative_operand(segment, start, generated_files=None):
+    operands = []
+    for probe in (
+        source_script_operand(segment, start),
+        shell_script_operand(segment, start),
+        interpreter_script_operand(segment, start),
+        direct_script_operand(segment, start),
+    ):
+        if probe:
+            operands.append(probe)
+    if start < len(segment):
+        token = segment[start]
+        found, _ = generated_file_lookup(generated_files, token)
+        if found:
+            operands.append(token)
+        if Path(token).name not in KNOWN_EXECUTABLE_COMMANDS and "/" in token:
+            operands.append(token)
+    return any(is_relative_file_source(operand) for operand in operands)
+
+
+def release_sensitive_relative_file_carrier(segment, start, generated_files=None):
+    command_name = Path(segment[start]).name if start < len(segment) else ""
+    if command_name == "curl":
+        return curl_has_relative_file_operand(segment, start)
+    if command_name == "wget":
+        return wget_has_relative_file_operand(segment, start)
+    return local_script_relative_operand(segment, start, generated_files)
+
+
+def gh_context_switches_alias_source(segment, start, scoped_env):
+    if any(key in scoped_env for key in {"GH_CONFIG_DIR", "XDG_CONFIG_HOME", "HOME"}):
+        return True
+    return gh_config_dir_option(segment, start) is not None
+
+
+def git_context_switches_alias_source(segment, start, scoped_env):
+    if any(key in scoped_env for key in {"GIT_CONFIG_GLOBAL", "XDG_CONFIG_HOME", "HOME"}):
+        return True
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            break
+        if token == "-C" or token in {"--git-dir", "--work-tree"}:
+            return True
+        if token.startswith("-C") and token != "-C":
+            return True
+        if token.startswith(("--git-dir=", "--work-tree=")):
+            return True
+        if token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("-c") and token != "-c":
+            index += 1
+            continue
+        if any(
+            token.startswith(option + "=")
+            for option in GIT_VALUE_GLOBALS
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        if token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return False
+
+
 def skip_gh_globals(segment, index):
     while index < len(segment):
         token = segment[index]
@@ -872,11 +1026,13 @@ def gh_release_mutating_command(segment, gh_index):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
         return False
+    if any(token in {"-h", "--help"} for token in segment[subcommand_index + 1:]):
+        return False
     release_action_index = skip_gh_globals(segment, subcommand_index + 1)
     if release_action_index >= len(segment):
         return False
     action = segment[release_action_index]
-    if action in {"view", "list", "download", "verify-asset"}:
+    if action in {"view", "list", "download", "verify-asset", "help"}:
         return False
     return True
 
@@ -3746,6 +3902,7 @@ def contains_release_create(command, depth=0):
     gh_aliases = {}
     generated_files = {}
     expand_aliases = False
+    cwd_changed = False
     for target, payload in heredoc_generated_file_writes(command):
         record_generated_file(generated_files, target, payload)
     for raw_segment, incoming_control in segments_with_controls(tokens):
@@ -3818,6 +3975,12 @@ def contains_release_create(command, depth=0):
             command_env = command_scoped_assignments(segment, start)
             scoped_env = dict(literal_vars)
             scoped_env.update(command_env)
+            segment_cwd_changed = segment_has_env_chdir(segment, start)
+            if command_name in {"cd", "pushd", "popd"}:
+                cwd_changed = True
+                continue
+            if (cwd_changed or segment_cwd_changed) and release_sensitive_relative_file_carrier(segment, start, generated_files):
+                return True
             if local_script_operand_needs_gate(segment, start, depth, generated_files):
                 return True
             if command_name == "gh":
@@ -3837,6 +4000,13 @@ def contains_release_create(command, depth=0):
                 if gh_release_mutating_command(segment, start) or gh_api_release_write_command(segment, start, generated_files):
                     return True
                 alias_index = gh_subcommand_index(segment, start)
+                if (
+                    gh_context_switches_alias_source(segment, start, scoped_env)
+                    and alias_index < len(segment)
+                    and segment[alias_index] not in GH_KNOWN_SUBCOMMANDS
+                    and segment[alias_index] not in effective_gh_aliases
+                ):
+                    return True
                 if alias_index < len(segment) and segment[alias_index] in effective_gh_aliases:
                     alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
                     if contains_release_create(alias_payload, depth + 1):
@@ -3845,6 +4015,13 @@ def contains_release_create(command, depth=0):
                 effective_git_aliases = dict(persistent_git_aliases())
                 effective_git_aliases.update(git_global_alias_assignments(segment, start))
                 alias_index = git_subcommand_index(segment, start)
+                if (
+                    git_context_switches_alias_source(segment, start, scoped_env)
+                    and alias_index < len(segment)
+                    and segment[alias_index] not in GIT_KNOWN_SUBCOMMANDS
+                    and segment[alias_index] not in effective_git_aliases
+                ):
+                    return True
                 if alias_index < len(segment) and segment[alias_index] in effective_git_aliases:
                     alias_payload = git_alias_payload_with_aliases(
                         segment[alias_index],
@@ -3941,211 +4118,6 @@ fi
 
 [ "$release_match" -eq 1 ] || exit 0
 
-release_git_c_target_dir() {
-  python3 - "$1" <<'PY'
-from pathlib import Path
-import re
-import shlex
-import sys
-
-CONTROL = {";", "&&", "||", "|", "&"}
-GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--super-prefix"}
-GIT_FLAG_GLOBALS = {"--bare", "--no-pager", "--paginate", "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs", "--icase-pathspecs"}
-GIT_PUSH_VALUE_OPTIONS = {"-o", "--push-option", "--receive-pack", "--exec", "--recurse-submodules"}
-GIT_PUSH_RELEASE_TAG_OPTIONS = {"--tags", "--follow-tags", "--mirror"}
-GH_RELEASE_CREATE_VALUE_OPTIONS = {"--target", "--title", "--notes", "--notes-file", "--discussion-category"}
-GH_RELEASE_CREATE_FLAG_OPTIONS = {"--draft", "--generate-notes", "--latest", "--prerelease", "--verify-tag"}
-RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)?$")
-
-def tokenize(command):
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
-    lexer.whitespace_split = True
-    return list(lexer)
-
-def segments(tokens):
-    segment = []
-    for token in tokens:
-        if token in CONTROL:
-            if segment:
-                yield segment
-                segment = []
-            continue
-        segment.append(token)
-    if segment:
-        yield segment
-
-def token_is_release_tag_ref(token):
-    token = token.lstrip("+")
-    return token.startswith("refs/tags/") or bool(RELEASE_TAG_RE.match(token))
-
-def refspec_targets_release_tag(refspec):
-    parts = [part for part in refspec.split(":") if part]
-    return any(token_is_release_tag_ref(part) for part in parts)
-
-def git_c_release_target(segment):
-    for git_index, token in enumerate(segment):
-        if Path(token).name != "git":
-            continue
-        index = git_index + 1
-        target_dir = None
-        while index < len(segment):
-            current = segment[index]
-            if current == "-C":
-                if index + 1 >= len(segment):
-                    return "__UNRESOLVABLE__"
-                target_dir = segment[index + 1]
-                index += 2
-                continue
-            if current.startswith("-C") and current != "-C":
-                target_dir = current[2:]
-                index += 1
-                continue
-            if current == "--":
-                index += 1
-                break
-            if current in GIT_VALUE_GLOBALS:
-                index += 2
-                continue
-            if current.startswith("--") and any(
-                current.startswith(option + "=")
-                for option in GIT_VALUE_GLOBALS
-                if option.startswith("--")
-            ):
-                index += 1
-                continue
-            if current in GIT_FLAG_GLOBALS:
-                index += 1
-                continue
-            break
-        if target_dir is None:
-            continue
-        if "$" in target_dir or "`" in target_dir or target_dir.startswith("<("):
-            return "__UNRESOLVABLE__"
-        if index >= len(segment) or segment[index] != "push":
-            continue
-        operands = []
-        cursor = index + 1
-        while cursor < len(segment):
-            current = segment[cursor]
-            if current == "--":
-                operands.extend(segment[cursor + 1:])
-                break
-            if current in GIT_PUSH_RELEASE_TAG_OPTIONS:
-                return target_dir
-            if current.startswith("-"):
-                cursor += 1
-                continue
-            operands.append(current)
-            cursor += 1
-        refspecs = operands[1:] if len(operands) > 1 else []
-        if any(ref == "tag" or refspec_targets_release_tag(ref) for ref in refspecs):
-            return target_dir
-    return None
-
-try:
-    tokens = tokenize(sys.argv[1])
-except Exception:
-    raise SystemExit(1)
-for segment in segments(tokens):
-    target = git_c_release_target(segment)
-    if target:
-        print(target)
-        raise SystemExit(0)
-raise SystemExit(1)
-PY
-}
-
-release_gh_target_ref() {
-  python3 - "$1" <<'PY'
-from pathlib import Path
-import shlex
-import sys
-
-CONTROL = {";", "&&", "||", "|", "&"}
-GH_VALUE_GLOBALS = {"-R", "--repo", "--hostname", "--config-dir"}
-GH_FLAG_GLOBALS = {"--paginate", "--no-pager"}
-
-def tokenize(command):
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
-    lexer.whitespace_split = True
-    return list(lexer)
-
-def segments(tokens):
-    segment = []
-    for token in tokens:
-        if token in CONTROL:
-            if segment:
-                yield segment
-                segment = []
-            continue
-        segment.append(token)
-    if segment:
-        yield segment
-
-def skip_gh_globals(segment, index):
-    while index < len(segment):
-        token = segment[index]
-        if token == "--":
-            return index + 1
-        if token in GH_VALUE_GLOBALS:
-            index += 2
-            continue
-        if token.startswith("-R") and token != "-R":
-            index += 1
-            continue
-        if token.startswith("--") and any(
-            token.startswith(option + "=")
-            for option in GH_VALUE_GLOBALS
-            if option.startswith("--")
-        ):
-            index += 1
-            continue
-        if token in GH_FLAG_GLOBALS:
-            index += 1
-            continue
-        break
-    return index
-
-def gh_release_target(segment):
-    for gh_index, token in enumerate(segment):
-        if Path(token).name != "gh":
-            continue
-        subcommand_index = skip_gh_globals(segment, gh_index + 1)
-        if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
-            continue
-        action_index = skip_gh_globals(segment, subcommand_index + 1)
-        if action_index >= len(segment) or segment[action_index] != "create":
-            continue
-        index = action_index + 1
-        while index < len(segment):
-            current = segment[index]
-            if current == "--":
-                break
-            if current == "--target":
-                if index + 1 >= len(segment):
-                    return "__UNRESOLVABLE__"
-                return segment[index + 1]
-            if current.startswith("--target="):
-                return current.split("=", 1)[1]
-            index += 1
-    return None
-
-try:
-    tokens = tokenize(sys.argv[1])
-except Exception:
-    raise SystemExit(1)
-for segment in segments(tokens):
-    target = gh_release_target(segment)
-    if target:
-        if "$" in target or "`" in target or target.startswith("<("):
-            print("__UNRESOLVABLE__")
-        else:
-            print(target)
-        raise SystemExit(0)
-raise SystemExit(1)
-PY
-}
-
 release_target_metadata() {
   python3 - "$1" <<'PY'
 from pathlib import Path
@@ -4173,6 +4145,7 @@ RELEASE_TAG_RE = re.compile(r"^v?[0-9]+[.][0-9]+[.][0-9]+(?:[-+][A-Za-z0-9._-]+)
 TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
 EXPANSION_RE = re.compile(r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{|\$\(|`)")
 UNRESOLVABLE = "__UNRESOLVABLE__"
+SIDEKICK_RELEASE_REPO = "alo-exp/sidekick"
 PERSISTENT_GH_ALIASES = {}
 
 def tokenize(command):
@@ -4262,6 +4235,60 @@ def command_index_from(segment, index=0):
             continue
         break
     return index
+
+def segment_has_env_chdir(segment, start):
+    for token in segment[:start]:
+        if token in {"-C", "--chdir"} or token.startswith("--chdir="):
+            return True
+    return False
+
+def normalize_repo(value):
+    if not value or unsafe_ref(value):
+        return None
+    repo = str(value).strip().strip("'\"")
+    if repo.startswith("git@github.com:"):
+        repo = repo.split(":", 1)[1]
+    elif "://" in repo:
+        parsed = urllib.parse.urlparse(repo)
+        path = parsed.path.strip("/")
+        if parsed.netloc.lower() == "api.github.com" and path.startswith("repos/"):
+            path = path[len("repos/"):]
+        repo = path
+    elif repo.startswith("repos/"):
+        repo = repo[len("repos/"):]
+    repo = repo.removesuffix(".git").strip("/")
+    parts = [part for part in repo.split("/") if part]
+    if len(parts) < 2:
+        return None
+    return "/".join(parts[:2]).lower()
+
+def repo_allowed(repo):
+    if repo is None:
+        return True
+    normalized = normalize_repo(repo)
+    return normalized == SIDEKICK_RELEASE_REPO
+
+def gh_repo_option(segment, gh_index):
+    index = gh_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            continue
+        if token in {"-R", "--repo"}:
+            return segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
+        if token.startswith("-R") and token != "-R":
+            return token[2:]
+        if token.startswith("--repo="):
+            return token.split("=", 1)[1]
+        index += 1
+    return None
+
+def endpoint_repo(endpoint):
+    parts = github_api_path_parts(endpoint)
+    if len(parts) >= 3 and parts[0] == "repos":
+        return f"{parts[1]}/{parts[2]}"
+    return None
 
 def skip_gh_globals(segment, index):
     while index < len(segment):
@@ -4826,6 +4853,9 @@ def gh_api_metadata(segment, gh_index):
     if not command_has_write_semantics:
         return None
     target = None
+    repo = gh_repo_option(segment, gh_index) or endpoint_repo(endpoint)
+    if not repo_allowed(repo):
+        return UNRESOLVABLE
     if is_releases_endpoint(endpoint):
         target = target_from_key(payloads, {"target_commitish", "targetCommitish"})
         if target is None:
@@ -4834,6 +4864,8 @@ def gh_api_metadata(segment, gh_index):
         target = target_from_key(payloads, {"sha"}) or UNRESOLVABLE
     elif is_graphql_endpoint(endpoint):
         target = graphql_target(payloads)
+        if target:
+            return UNRESOLVABLE
     if target:
         return target
     return None
@@ -4842,11 +4874,14 @@ def gh_release_metadata(segment, gh_index):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
         return None
+    if not repo_allowed(gh_repo_option(segment, gh_index)):
+        return ("unresolvable", UNRESOLVABLE)
     action_index = skip_gh_globals(segment, subcommand_index + 1)
     if action_index >= len(segment) or segment[action_index] != "create":
         return None
     index = action_index + 1
     tag = None
+    verify_tag = False
     while index < len(segment):
         current = segment[index]
         if current == "--":
@@ -4857,6 +4892,10 @@ def gh_release_metadata(segment, gh_index):
             return ("ref", segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE)
         if current.startswith("--target="):
             return ("ref", current.split("=", 1)[1])
+        if current == "--verify-tag" or current.startswith("--verify-tag="):
+            verify_tag = True
+            index += 1
+            continue
         if current in GH_RELEASE_CREATE_VALUE_OPTIONS:
             index += 2
             continue
@@ -4870,6 +4909,8 @@ def gh_release_metadata(segment, gh_index):
             tag = current
         index += 1
     if tag:
+        if not verify_tag:
+            return ("unresolvable", UNRESOLVABLE)
         return ("ref", tag if not unsafe_ref(tag) else UNRESOLVABLE)
     return ("unresolvable", UNRESOLVABLE)
 
@@ -4954,6 +4995,7 @@ def extract(command, depth=0):
         return ("unresolvable", UNRESOLVABLE)
     variables = {}
     gh_aliases = {}
+    cwd_changed = False
     for raw_segment in segments(tokens):
         if len(raw_segment) == 1:
             parsed = literal_assignment(raw_segment[0])
@@ -4977,6 +5019,11 @@ def extract(command, depth=0):
         command_env = command_scoped_assignments(segment, start)
         scoped_vars = dict(variables)
         scoped_vars.update(command_env)
+        if command_name in {"cd", "pushd", "popd"}:
+            cwd_changed = True
+            continue
+        if cwd_changed or segment_has_env_chdir(segment, start):
+            return ("unresolvable", UNRESOLVABLE)
         if command_name in SHELLS:
             shell_parts = shell_payload_parts(segment, start)
             if shell_parts:
@@ -5073,38 +5120,13 @@ current_release_sha() {
       return 1
     fi
   fi
-  gh_target_ref="$(release_gh_target_ref "$COMMAND" 2>/dev/null || true)"
-  if [ "${gh_target_ref}" = "__UNRESOLVABLE__" ]; then
-    return 1
-  fi
-  if [ -n "${gh_target_ref}" ]; then
-    for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
-      if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 "${gh_target_ref}^{commit}" 2>/dev/null; then
-        return 0
-      fi
-    done
-    return 1
-  fi
-  git_c_target="$(release_git_c_target_dir "$COMMAND" 2>/dev/null || true)"
-  if [ "${git_c_target}" = "__UNRESOLVABLE__" ]; then
-    return 1
-  fi
-  if [ -n "${git_c_target}" ]; then
-    git -C "${git_c_target}" rev-parse --short=12 HEAD 2>/dev/null && return 0
-    return 1
-  fi
-  for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
-    if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 HEAD 2>/dev/null; then
-      return 0
-    fi
-  done
   return 1
 }
 
 missing=()
 current_head_sha="$(current_release_sha || true)"
 if [ -z "$current_head_sha" ]; then
-  reason="Pre-release quality gate cannot validate this release command because no current git SHA is available. Run the release command from the Sidekick source checkout or rerun the quality gate in a git checkout before cutting a release."
+  reason="Pre-release quality gate cannot validate this release command because no current git SHA or release target SHA is available. Use an explicit, resolvable release target such as gh release create --target <sha>, or push a local tag and use gh release create --verify-tag from a git checkout."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
