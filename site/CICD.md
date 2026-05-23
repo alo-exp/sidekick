@@ -39,8 +39,9 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
 3. **Pre-tag live gate** — maintainer runs the Codex live release pyramid twice against that same commit; Forge live stages may be added when available:
    ```bash
    SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
-   SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+   SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
    ```
+   To include optional Forge live stages when Forge provider testing is available, add `SIDEKICK_LIVE_FORGE=1` to either run.
    This chains tier 1 (`run_unit.bash`) → tier 2 (`smoke/run_smoke.bash`) → tier 3 (`run_live_e2e.bash`) → tier 4 (`run_live_codex_marketplace_install.bash`) → tier 5 (`smoke/run_codex_smoke.bash`) → tier 6 (`run_live_codex_e2e.bash`) with fail-fast aborts. Each live Codex run records a current-session, current-commit `quality-gate-live-pyramid` marker; the release hook requires two of those markers before it allows release tag publication or `gh release create`. Forge live stages can be added when available, but they are not required when Forge testing is intentionally skipped.
 
 4. **Commit + tag + push:**
@@ -50,7 +51,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    git push origin vX.Y.Z
    ```
 
-5. **GitHub Release** — `gh release create vX.Y.Z --repo alo-exp/sidekick --verify-tag --notes-file <notes.md>`. The local release hook only authorizes same-repo GitHub.com `gh`/`git` transports with resolvable targets from trusted Sidekick checkouts; raw API write transports, alternate `pushurl` destinations, and ambiguous repo/host/remote/source provenance fail closed.
+5. **GitHub Release** — `gh release create vX.Y.Z --repo alo-exp/sidekick --verify-tag --notes-file <notes.md>`. The local release hook only authorizes same-repo GitHub.com `gh`/`git` transports with resolvable targets from trusted Sidekick checkouts; raw API write transports, alternate `pushurl` destinations, persistent Git URL rewrites away from Sidekick, and ambiguous repo/host/remote/source provenance fail closed.
 
 6. **Post-release cleanup** — remove non-essential repo-local artifacts with:
    ```bash

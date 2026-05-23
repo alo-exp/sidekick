@@ -4362,6 +4362,29 @@ def git_config_get_all(key, target_dir=None):
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
+def git_config_get_regexp(pattern, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "config", "--get-regexp", pattern],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return []
+    if result.returncode != 0:
+        return []
+    pairs = []
+    for line in result.stdout.splitlines():
+        key, _, value = line.partition(" ")
+        key = key.strip()
+        value = value.strip()
+        if key and value:
+            pairs.append((key, value))
+    return pairs
+
 def implicit_cwd_repo():
     return git_config_get("remote.origin.url")
 
@@ -4805,12 +4828,48 @@ def git_remote_allowed(remote, target_dir=None):
         or remote.startswith("repos/")
         or "/" in remote
     ):
-        return repo_allowed(remote)
-    push_urls = git_config_get_all(f"remote.{remote}.pushurl", target_dir)
-    if push_urls:
-        return all(repo_allowed(push_url) for push_url in push_urls)
-    remote_url = git_config_get(f"remote.{remote}.url", target_dir)
-    return repo_allowed(remote_url)
+        return git_direct_push_url_allowed(remote, target_dir)
+    push_urls = git_remote_push_urls(remote, target_dir)
+    return bool(push_urls) and all(repo_allowed(push_url) for push_url in push_urls)
+
+def git_remote_push_urls(remote, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "remote", "get-url", "--push", "--all", remote],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return []
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+def git_direct_push_url_allowed(url, target_dir=None):
+    urls = {url}
+    rewritten = git_rewritten_push_url(url, target_dir)
+    if rewritten:
+        urls.add(rewritten)
+    return all(repo_allowed(candidate) for candidate in urls)
+
+def git_rewritten_push_url(url, target_dir=None):
+    best_prefix = ""
+    best_base = None
+    for key, value in git_config_get_regexp(r"^url\.", target_dir):
+        lowered = key.lower()
+        for suffix in (".pushinsteadof", ".insteadof"):
+            if not lowered.endswith(suffix):
+                continue
+            base = key[4:-len(suffix)]
+            if url.startswith(value) and len(value) > len(best_prefix):
+                best_prefix = value
+                best_base = base
+    if best_base is None:
+        return None
+    return best_base + url[len(best_prefix):]
 
 def git_push_release_target(operands, release_push):
     if release_push:
@@ -5344,6 +5403,13 @@ trusted_sidekick_checkout() {
   sidekick_checkout_remote_allowed "${origin}"
 }
 
+inside_git_worktree() {
+  local candidate
+  candidate="$1"
+  [ -n "${candidate}" ] || return 1
+  git -C "${candidate}" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
 current_release_sha() {
   local candidate git_c_ref git_c_target gh_target_ref metadata metadata_kind metadata_value
   metadata="$(release_target_metadata "$COMMAND" 2>/dev/null || true)"
@@ -5365,7 +5431,12 @@ current_release_sha() {
       return 1
     fi
     if [ "${metadata_kind}" = "ref" ]; then
-      for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
+      if inside_git_worktree "${PWD:-.}"; then
+        trusted_sidekick_checkout "${PWD:-.}" || return 1
+        git -C "${PWD:-.}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null && return 0
+        return 1
+      fi
+      for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${REPO_ROOT}"; do
         if [ -n "${candidate}" ] && trusted_sidekick_checkout "${candidate}" && git -C "${candidate}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null; then
           return 0
         fi

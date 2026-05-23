@@ -2306,6 +2306,52 @@ else
   assert_fail "git push release tag honors attacker pushurl" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}" "${PUSHURL_RELEASE_CWD}"
+PERSISTENT_REWRITE_CWD="$(mktemp -d)"
+git -C "${PERSISTENT_REWRITE_CWD}" init -q
+git -C "${PERSISTENT_REWRITE_CWD}" remote add origin https://github.com/alo-exp/sidekick.git
+printf '%s\n' "release target" > "${PERSISTENT_REWRITE_CWD}/README.md"
+git -C "${PERSISTENT_REWRITE_CWD}" add README.md
+git -C "${PERSISTENT_REWRITE_CWD}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m release-target
+persistent_rewrite_sha="$(git -C "${PERSISTENT_REWRITE_CWD}" rev-parse --short=12 HEAD)"
+git -C "${PERSISTENT_REWRITE_CWD}" config url.https://attacker.example/alo-exp/sidekick/.pushInsteadOf https://github.com/alo-exp/sidekick
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${persistent_rewrite_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${persistent_rewrite_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "git -C ${PERSISTENT_REWRITE_CWD} push origin HEAD:refs/tags/v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git push release tag honors persistent pushInsteadOf rewrite and is denied"
+else
+  assert_fail "git push release tag honors persistent pushInsteadOf rewrite" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${persistent_rewrite_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${persistent_rewrite_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "git -C ${PERSISTENT_REWRITE_CWD} push https://github.com/alo-exp/sidekick.git HEAD:refs/tags/v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "direct git push release tag honors persistent pushInsteadOf rewrite and is denied"
+else
+  assert_fail "direct git push release tag honors persistent pushInsteadOf rewrite" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+git -C "${PERSISTENT_REWRITE_CWD}" config --unset-all url.https://attacker.example/alo-exp/sidekick/.pushInsteadOf
+git -C "${PERSISTENT_REWRITE_CWD}" config url.https://attacker.example/alo-exp/sidekick/.insteadOf https://github.com/alo-exp/sidekick
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${persistent_rewrite_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${persistent_rewrite_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "git -C ${PERSISTENT_REWRITE_CWD} push origin HEAD:refs/tags/v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git push release tag honors persistent insteadOf rewrite and is denied"
+else
+  assert_fail "git push release tag honors persistent insteadOf rewrite" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${PERSISTENT_REWRITE_CWD}"
 assert_denied_release_command_with_current_markers \
   "Scenario 49ct2: git --git-dir/--work-tree release tag push is denied" \
   "git --git-dir=${REPO_ROOT}/.git --work-tree=${REPO_ROOT} push origin HEAD:refs/tags/${release_gate_test_tag}"
@@ -2609,6 +2655,32 @@ else
   assert_fail "explicit Sidekick gh release target from foreign checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+echo "Scenario 49cv17e2: foreign checkout cannot authorize gh release with valid Sidekick target"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh -R alo-exp/sidekick release create v1.2.1 --target $(current_head_sha)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${foreign_release_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "foreign checkout cannot authorize gh release with valid Sidekick target"
+else
+  assert_fail "foreign checkout gh release with valid Sidekick target" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+echo "Scenario 49cv17e3: foreign checkout cannot authorize gh api release with valid Sidekick target"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=$(current_head_sha)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${foreign_release_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "foreign checkout cannot authorize gh api release with valid Sidekick target"
+else
+  assert_fail "foreign checkout gh api release with valid Sidekick target" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
 echo "Scenario 49cv17f: explicit Sidekick git push from foreign checkout is denied"
 H="$(setup_home)"
 write_markers_for_sha "${H}" "${foreign_release_sha}" 1 2 3 4
@@ -2620,6 +2692,19 @@ if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
   assert_pass "explicit Sidekick git push from foreign checkout is denied"
 else
   assert_fail "explicit Sidekick git push from foreign checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+echo "Scenario 49cv17f2: foreign checkout cannot authorize git tag push with valid Sidekick markers"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD="$(jq -cn --arg cmd "git push https://github.com/alo-exp/sidekick.git HEAD:refs/tags/v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${foreign_release_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "foreign checkout cannot authorize git tag push with valid Sidekick markers"
+else
+  assert_fail "foreign checkout git tag push with valid Sidekick markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}" "${foreign_release_repo}"
 gh_api_release_without_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1"
