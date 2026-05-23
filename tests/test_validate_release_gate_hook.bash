@@ -2198,10 +2198,10 @@ write_markers_for_sha "${H}" "${stale_tag_sha}" 1 2 3 4
 write_live_pyramid_markers_for_sha "${H}" "${stale_tag_sha}" 2
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
-if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
-  assert_pass "git push stale tag passes with tag target markers"
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git push stale tag with tag target markers is denied"
 else
-  assert_fail "git push stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+  assert_fail "git push stale tag with tag target markers deny" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 stale_git_alias_command="git -C ${STALE_TAG_REPO} -c alias.releasepush=\"push origin v7.7.7\" -c alias.r=releasepush r"
@@ -2222,10 +2222,10 @@ write_markers_for_sha "${H}" "${stale_tag_sha}" 1 2 3 4
 write_live_pyramid_markers_for_sha "${H}" "${stale_tag_sha}" 2
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
-if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
-  assert_pass "git alias stale tag passes with tag target markers"
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git alias stale tag with tag target markers is denied"
 else
-  assert_fail "git alias stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+  assert_fail "git alias stale tag with tag target markers deny" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 stale_gh_release_command="gh release create v7.7.7"
@@ -2334,6 +2334,26 @@ else
   assert_fail "git push release tag to Sidekick URL" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+compound_release_gate_test_tag="v987.654.322"
+git -C "${REPO_ROOT}" update-ref "refs/tags/${compound_release_gate_test_tag}" HEAD
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct0a: git push with two release tags is denied" \
+  "git push origin ${release_gate_test_tag} ${compound_release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct0b: git push mixed tag forms is denied" \
+  "git push origin tag ${release_gate_test_tag} HEAD:refs/tags/${compound_release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct0c: git push forced release tag is denied" \
+  "git push --force origin ${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct0d: git push plus-prefixed release tag is denied" \
+  "git push origin +${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct0e: git push delete release tag is denied" \
+  "git push --delete origin ${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct0f: git push empty-source release tag deletion is denied" \
+  "git push origin :refs/tags/${release_gate_test_tag}"
 PUSHURL_RELEASE_CWD="$(mktemp -d)"
 git -C "${PUSHURL_RELEASE_CWD}" init -q
 git -C "${PUSHURL_RELEASE_CWD}" remote add origin https://github.com/alo-exp/sidekick.git
@@ -2416,6 +2436,7 @@ assert_denied_release_command_with_current_markers \
   "Scenario 49ct6: same-command git remote push URL rewrite is denied" \
   "git remote set-url --push origin https://github.com/attacker/other.git && git push origin ${release_gate_test_tag}"
 git -C "${REPO_ROOT}" update-ref -d "refs/tags/${release_gate_test_tag}" >/dev/null 2>&1 || true
+git -C "${REPO_ROOT}" update-ref -d "refs/tags/${compound_release_gate_test_tag}" >/dev/null 2>&1 || true
 
 echo "Scenario 49cu: git -C release tag push requires target repository markers"
 GIT_C_RELEASE_CWD="$(mktemp -d)"
@@ -2556,10 +2577,10 @@ write_markers_for_sha "${H}" "${target_ref_sha}" 1 2 3 4
 write_live_pyramid_markers_for_sha "${H}" "${target_ref_sha}" 2
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
-if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
-  assert_pass "gh release --target passes with target ref markers"
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "gh release --target stale SHA is denied with target ref markers"
 else
-  assert_fail "gh release --target with target ref markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+  assert_fail "gh release --target stale SHA with target ref markers deny" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 assert_denied_release_command_with_current_markers \
@@ -2577,6 +2598,10 @@ nested_multi_gh_mixed_target_command="bash -lc 'gh release create v1.2.1 --targe
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0c: nested multi-gh release with unauthorized second target is denied" \
   "${nested_multi_gh_mixed_target_command}"
+generated_script_multi_release_command="printf 'gh release create v2.2.2 --target ${target_ref_sha}' > ./deploy.sh; bash ./deploy.sh && gh release create v1.2.1 --target $(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c2: generated release script plus visible release is denied" \
+  "${generated_script_multi_release_command}"
 multi_release_test_tag="v555.555.555"
 git -C "${REPO_ROOT}" update-ref "refs/tags/${multi_release_test_tag}" HEAD
 multi_git_push_then_gh_command="git push origin ${multi_release_test_tag} && gh release create v2.2.2 --target ${target_ref_sha}"
@@ -2604,8 +2629,8 @@ wrapped_gh_target_command="bash -lc 'gh release create v1.2.1 --target ${target_
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv2: shell-wrapped gh release --target with current HEAD markers is denied" \
   "${wrapped_gh_target_command}"
-assert_passthrough_release_command_with_sha_markers \
-  "Scenario 49cv3: shell-wrapped gh release --target passes with target ref markers" \
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv3: shell-wrapped gh release --target stale SHA is denied with target ref markers" \
   "${wrapped_gh_target_command}" "${target_ref_sha}"
 gh_target_alias_config="$(mktemp -d)"
 cat > "${gh_target_alias_config}/aliases.yml" <<YAML
@@ -2637,9 +2662,13 @@ gh_api_release_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv6: gh api release target_commitish with current HEAD markers is denied" \
   "${gh_api_release_target_command}"
-assert_passthrough_release_command_with_sha_markers \
-  "Scenario 49cv7: gh api release target_commitish passes with target ref markers" \
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv7: gh api release target_commitish stale SHA is denied with target ref markers" \
   "${gh_api_release_target_command}" "${target_ref_sha}"
+gh_api_current_release_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=$(current_head_sha)"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv7b: gh api release target_commitish current SHA passes with current markers" \
+  "${gh_api_current_release_target_command}" "$(current_head_sha)"
 gh_api_symbolic_release_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=main"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv7a: gh api symbolic target_commitish is denied" \
@@ -2648,9 +2677,13 @@ gh_api_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv8: gh api tag ref sha with current HEAD markers is denied" \
   "${gh_api_tag_ref_target_command}"
-assert_passthrough_release_command_with_sha_markers \
-  "Scenario 49cv9: gh api tag ref sha passes with target ref markers" \
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv9: gh api tag ref stale SHA is denied with target ref markers" \
   "${gh_api_tag_ref_target_command}" "${target_ref_sha}"
+gh_api_current_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=$(current_head_sha)"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv9b: gh api tag ref current SHA passes with current markers" \
+  "${gh_api_current_tag_ref_target_command}" "$(current_head_sha)"
 gh_api_graphql_target_command="gh api graphql -f query='mutation { createRef(input:{ref:\"refs/tags/v1.2.1\", oid:\"${target_ref_sha}\"}) { ref { id } } }'"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv10: gh api GraphQL createRef oid with current HEAD markers is denied" \
@@ -2703,6 +2736,18 @@ cross_host_gh_target_command="gh --hostname ghe.example.invalid --repo alo-exp/s
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv17c: gh release target on non-GitHub host is denied" \
   "${cross_host_gh_target_command}"
+dynamic_host_gh_target_command='gh --hostname $HOST --repo alo-exp/sidekick release create v1.2.1 --target '"$(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv17c2: gh release target with dynamic hostname is denied" \
+  "${dynamic_host_gh_target_command}"
+dynamic_env_host_gh_target_command='GH_HOST=$HOST gh --repo alo-exp/sidekick release create v1.2.1 --target '"$(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv17c3: gh release target with dynamic GH_HOST is denied" \
+  "${dynamic_env_host_gh_target_command}"
+dynamic_endpoint_gh_api_command='gh api -X POST https://api.$HOST/repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish='"$(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv17c4: gh api release target with dynamic endpoint host is denied" \
+  "${dynamic_endpoint_gh_api_command}"
 implicit_other_repo="$(mktemp -d)"
 git -C "${implicit_other_repo}" init -q
 git -C "${implicit_other_repo}" remote add origin https://github.com/attacker/other.git

@@ -23,7 +23,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 
 **Session and commit reset**: All four stage markers are scoped to the current host session id and git commit SHA. The gate must be completed in full during the session in which the release is being cut, after the final release commit is present — markers from a previous session or previous commit do not satisfy the release hook.
 
-**Release command scope**: The release hook only authorizes same-repo GitHub.com release transports with resolvable target provenance from a trusted Sidekick checkout: direct `gh release create`, `gh api` release/tag-ref writes with an explicit target SHA, and `git push` tag publication to the canonical Sidekick push destination. Ambiguous hosts/repos/remotes, alternate `pushurl` destinations, persistent or command-scoped Git URL rewrites, command-scoped alias/config/source-context changes, raw `curl`/`wget`, and language-level GitHub API writes intentionally fail closed.
+**Release command scope**: The release hook only authorizes same-repo GitHub.com release transports with resolvable target provenance from a trusted Sidekick checkout and a target that matches that checkout's current `HEAD`: direct `gh release create --target <current-sha>`, `gh api` release/tag-ref writes with an explicit current target SHA, and a single non-forced `git push` tag publication to the canonical Sidekick push destination. Ambiguous hosts/repos/remotes, alternate `pushurl` destinations, persistent or command-scoped Git URL rewrites, command-scoped alias/config/source-context changes, destructive tag pushes, raw `curl`/`wget`, language-level GitHub API writes, and generated-script/config release carriers intentionally fail closed.
 
 Each stage is complete only when:
 1. The work is done and verified
@@ -402,13 +402,12 @@ count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1 ~ /^qual
 live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $0}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 [ "$live_count" -ge 2 ] || { echo "Live pyramid incomplete for current session/current commit: $live_count/2 runs present"; exit 1; }
 
-# Publish the release tag and create the GitHub release
-git push origin v<version>
+# Create the GitHub release and tag at the current trusted Sidekick HEAD
 gh release create v<version> \
   --repo alo-exp/sidekick \
   --title "Sidekick v<version>" \
   --notes-file <notes.md> \
-  --verify-tag \
+  --target "$(git rev-parse HEAD)" \
   --latest
 ```
 
