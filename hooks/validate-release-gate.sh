@@ -67,6 +67,7 @@ import codecs
 import os
 import re
 import shlex
+import subprocess
 import sys
 import urllib.parse
 
@@ -1146,8 +1147,8 @@ def git_subcommand_index(segment, git_index):
     return index
 
 
-def git_global_alias_assignments(segment, git_index):
-    aliases = {}
+def git_global_config_entries(segment, git_index):
+    entries = []
     index = git_index + 1
     while index < len(segment):
         token = segment[index]
@@ -1177,10 +1178,18 @@ def git_global_alias_assignments(segment, git_index):
         else:
             break
 
-        if config_value:
-            match = re.match(r"^alias\.([A-Za-z0-9_.-]+)=(.*)$", config_value)
-            if match and match.group(2).strip():
-                aliases[match.group(1)] = match.group(2).strip()
+        if config_value and "=" in config_value:
+            key, _, value = config_value.partition("=")
+            entries.append((key.strip().lower(), value.strip()))
+    return entries
+
+
+def git_global_alias_assignments(segment, git_index):
+    aliases = {}
+    for key, value in git_global_config_entries(segment, git_index):
+        match = re.match(r"^alias\.([A-Za-z0-9_.-]+)$", key)
+        if match and value:
+            aliases[match.group(1)] = value
     return aliases
 
 def git_config_alias_assignment(segment, git_index):
@@ -1229,11 +1238,115 @@ def refspec_is_dynamic(refspec):
     return "$" in refspec or "`" in refspec or bool(EXPANSION_RE.search(refspec))
 
 
-def refspec_targets_release_tag(refspec):
+def unsafe_ref(value):
+    value = str(value or "")
+    return not value or bool(EXPANSION_RE.search(value)) or value.startswith("<(") or value in {"-", "@-"}
+
+
+def git_c_target_dir(segment, git_index):
+    target_dir = None
+    index = git_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return target_dir
+        if token == "-C":
+            if index + 1 >= len(segment):
+                return target_dir
+            path = Path(segment[index + 1]).expanduser()
+            if target_dir and not path.is_absolute():
+                path = Path(target_dir) / path
+            target_dir = str(path)
+            index += 2
+            continue
+        if token.startswith("-C") and token != "-C":
+            path = Path(token[2:]).expanduser()
+            if target_dir and not path.is_absolute():
+                path = Path(target_dir) / path
+            target_dir = str(path)
+            index += 1
+            continue
+        if token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        if token.startswith("--") and any(
+            token.startswith(option + "=")
+            for option in GIT_VALUE_GLOBALS
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        if token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        break
+    return target_dir
+
+
+def git_config_get_regexp(pattern, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "config", "--get-regexp", pattern],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return []
+    if result.returncode != 0:
+        return []
+    pairs = []
+    for line in result.stdout.splitlines():
+        key, _, value = line.partition(" ")
+        key = key.strip().lower()
+        value = value.strip()
+        if key and value:
+            pairs.append((key, value))
+    return pairs
+
+
+def git_ref_exists(ref, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "show-ref", "--verify", "--quiet", ref],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return False
+    return result.returncode == 0
+
+
+def bare_ref_is_local_tag(name, target_dir=None):
+    if not name or unsafe_ref(name) or name.startswith("-") or ":" in name:
+        return False
+    if name.startswith("refs/heads/"):
+        return False
+    if name.startswith("refs/tags/"):
+        return True
+    return git_ref_exists(f"refs/tags/{name}", target_dir)
+
+
+def refspec_targets_release_tag(refspec, created_tags=None, target_dir=None):
     if not refspec:
         return False
-    parts = [part for part in refspec.split(":") if part]
+    created_tags = created_tags or set()
+    refspec = refspec.lstrip("+")
+    parts = [part.lstrip("+") for part in refspec.split(":") if part]
     if any(token_is_release_tag_ref(part) for part in parts):
+        return True
+    if len(parts) == 1:
+        source = parts[0]
+        if source in created_tags or bare_ref_is_local_tag(source, target_dir):
+            return True
+        if "__UNRESOLVABLE__" in created_tags and not source.startswith("refs/heads/"):
+            return True
+    elif parts and (parts[0] in created_tags or bare_ref_is_local_tag(parts[0], target_dir)):
         return True
     if not refspec_is_dynamic(refspec):
         return False
@@ -1242,22 +1355,133 @@ def refspec_targets_release_tag(refspec):
     return True
 
 
-def git_push_refspecs_target_release_tag(refspecs):
+def git_push_refspecs_target_release_tag(refspecs, created_tags=None, target_dir=None):
     for token in refspecs:
         if token == "tag":
             return True
-        if refspec_targets_release_tag(token):
+        if refspec_targets_release_tag(token, created_tags, target_dir):
             return True
     return False
 
 
-def git_push_release_tag_command(segment, git_index):
+def config_value_truthy(value):
+    return str(value).strip().lower() not in {"", "0", "false", "no", "off"}
+
+
+def git_push_config_entry_targets_release_tag(key, value, remote=None):
+    key = key.strip().lower()
+    if key == "push.followtags":
+        return config_value_truthy(value)
+    match = re.match(r"^remote\.([^.]+)\.mirror$", key)
+    if match and (remote is None or remote == "" or match.group(1) == remote):
+        return config_value_truthy(value)
+    match = re.match(r"^remote\.([^.]+)\.push$", key)
+    if match and (remote is None or remote == "" or match.group(1) == remote):
+        return git_push_refspecs_target_release_tag([value])
+    return False
+
+
+def git_push_config_targets_release_tag(segment, git_index, remote, target_dir):
+    for key, value in git_global_config_entries(segment, git_index):
+        if git_push_config_entry_targets_release_tag(key, value, remote):
+            return True
+    for pattern in (r"^remote\..*\.push$", r"^remote\..*\.mirror$", r"^push\.follow[Tt]ags$"):
+        for key, value in git_config_get_regexp(pattern, target_dir):
+            if git_push_config_entry_targets_release_tag(key, value, remote):
+                return True
+    return False
+
+
+def git_tag_mutation_names(segment, git_index):
+    subcommand_index = git_subcommand_index(segment, git_index)
+    if subcommand_index >= len(segment):
+        return []
+    subcommand = segment[subcommand_index]
+    if subcommand == "update-ref":
+        index = subcommand_index + 1
+        while index < len(segment):
+            token = segment[index]
+            if token == "--stdin":
+                return ["__UNRESOLVABLE__"]
+            if token == "--":
+                index += 1
+                break
+            if token in {"-m", "--message"}:
+                index += 2
+                continue
+            if token.startswith("--message=") or token in {"-d", "--delete", "--no-deref", "--create-reflog", "-z"}:
+                index += 1
+                continue
+            if token.startswith("-"):
+                index += 1
+                continue
+            break
+        if index < len(segment):
+            ref = segment[index].lstrip("+")
+            if ref.startswith("refs/tags/"):
+                return [ref[len("refs/tags/"):]]
+            if unsafe_ref(ref):
+                return ["__UNRESOLVABLE__"]
+        return []
+    if subcommand != "tag":
+        return []
+    index = subcommand_index + 1
+    list_mode = False
+    mutating_mode = False
+    value_options = {"-m", "-F", "-u", "--message", "--file", "--local-user", "--cleanup", "--trailer"}
+    list_value_options = {"--points-at", "--contains", "--no-contains", "--merged", "--no-merged", "--sort", "--format", "--column", "--color"}
+    operands = []
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            operands.extend(segment[index + 1:])
+            break
+        if token in {"-l", "--list"} or re.match(r"^-n[0-9]*$", token):
+            list_mode = True
+            index += 1
+            continue
+        if token in list_value_options:
+            list_mode = True
+            index += 2
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in list_value_options):
+            list_mode = True
+            index += 1
+            continue
+        if token in value_options:
+            mutating_mode = True
+            index += 2
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in value_options):
+            mutating_mode = True
+            index += 1
+            continue
+        if token in {"-a", "-s", "-f", "--annotate", "--sign", "--force", "-d", "--delete", "-v", "--verify"}:
+            mutating_mode = True
+            index += 1
+            continue
+        if token.startswith("-"):
+            mutating_mode = True
+            index += 1
+            continue
+        operands.append(token)
+        index += 1
+    if list_mode and not mutating_mode:
+        return []
+    if not operands:
+        return ["__UNRESOLVABLE__"] if mutating_mode else []
+    tag = operands[0].lstrip("+")
+    return ["__UNRESOLVABLE__"] if unsafe_ref(tag) else [tag.removeprefix("refs/tags/")]
+
+
+def git_push_release_tag_command(segment, git_index, created_tags=None):
     subcommand_index = git_subcommand_index(segment, git_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "push":
         return False
 
     index = subcommand_index + 1
     operands = []
+    target_dir = git_c_target_dir(segment, git_index)
     while index < len(segment):
         token = segment[index]
         if token == "--":
@@ -1285,10 +1509,14 @@ def git_push_release_tag_command(segment, git_index):
         index += 1
 
     if not operands:
-        return False
+        return git_push_config_targets_release_tag(segment, git_index, None, target_dir)
 
+    remote = operands[0]
     refspecs = operands[1:] if len(operands) > 1 else []
-    return git_push_refspecs_target_release_tag(refspecs)
+    return (
+        git_push_refspecs_target_release_tag(refspecs, created_tags, target_dir)
+        or git_push_config_targets_release_tag(segment, git_index, remote, target_dir)
+    )
 
 
 def referenced_env_names(value):
@@ -4031,6 +4259,7 @@ def contains_release_create(command, depth=0):
     aliases = {}
     gh_aliases = {}
     git_aliases = {}
+    created_git_tags = set()
     generated_files = {}
     expand_aliases = False
     cwd_changed = False
@@ -4146,6 +4375,8 @@ def contains_release_create(command, depth=0):
                 effective_git_aliases = dict(persistent_git_aliases())
                 effective_git_aliases.update(git_global_alias_assignments(segment, start))
                 effective_git_aliases.update(git_aliases)
+                for tag_name in git_tag_mutation_names(segment, start):
+                    created_git_tags.add(tag_name)
                 git_config_alias = git_config_alias_assignment(segment, start)
                 if git_config_alias is not None:
                     alias_name, alias_expansion = git_config_alias
@@ -4170,7 +4401,7 @@ def contains_release_create(command, depth=0):
                     )
                     if contains_release_create(alias_payload, depth + 1):
                         return True
-                if git_push_release_tag_command(segment, start):
+                if git_push_release_tag_command(segment, start, created_git_tags):
                     return True
             if command_name == "curl" and curl_release_write_command(segment, start, generated_files):
                 return True
@@ -4294,10 +4525,15 @@ def command_index_from(segment):
 def writes_file(segment):
     write_redirects = {">", ">>", ">|", "&>", "&>>", "<>", ">&"}
     fd_targets = {"/dev/null", "1", "2", "&1", "&2"}
+    saw_redirect = False
     for index, token in enumerate(segment):
         if token in write_redirects:
+            saw_redirect = True
             target = segment[index + 1] if index + 1 < len(segment) else ""
-            return target not in fd_targets
+            if target not in fd_targets:
+                return True
+    if saw_redirect:
+        return False
     start = command_index_from(segment)
     if start < len(segment) and Path(segment[start]).name == "tee":
         index = start + 1
@@ -5440,6 +5676,7 @@ def git_config_changes_release_context(config_value):
     return (
         key.startswith("remote.")
         or key.startswith("url.")
+        or key == "push.followtags"
         or key == "include.path"
         or key.startswith("includeif.")
     )
