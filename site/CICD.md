@@ -50,7 +50,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    git push origin vX.Y.Z
    ```
 
-5. **GitHub Release** — `gh release create vX.Y.Z --notes-file <notes.md>`.
+5. **GitHub Release** — `gh release create vX.Y.Z --verify-tag --notes-file <notes.md>`.
 
 6. **Post-release cleanup** — remove non-essential repo-local artifacts with:
    ```bash

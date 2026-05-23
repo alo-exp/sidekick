@@ -406,6 +406,7 @@ gh release create v<version> \
   --repo alo-exp/sidekick \
   --title "Sidekick v<version>" \
   --notes-file CHANGELOG.md \
+  --verify-tag \
   --latest
 ```
 
