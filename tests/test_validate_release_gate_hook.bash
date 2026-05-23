@@ -2286,6 +2286,35 @@ else
   assert_fail "git push release tag to Sidekick URL" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+PUSHURL_RELEASE_CWD="$(mktemp -d)"
+git -C "${PUSHURL_RELEASE_CWD}" init -q
+git -C "${PUSHURL_RELEASE_CWD}" remote add origin https://github.com/alo-exp/sidekick.git
+git -C "${PUSHURL_RELEASE_CWD}" remote set-url --push origin https://github.com/attacker/other.git
+printf '%s\n' "release target" > "${PUSHURL_RELEASE_CWD}/README.md"
+git -C "${PUSHURL_RELEASE_CWD}" add README.md
+git -C "${PUSHURL_RELEASE_CWD}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m release-target
+pushurl_release_sha="$(git -C "${PUSHURL_RELEASE_CWD}" rev-parse --short=12 HEAD)"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${pushurl_release_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${pushurl_release_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "git -C ${PUSHURL_RELEASE_CWD} push origin HEAD:refs/tags/v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "git push release tag honors attacker pushurl and is denied"
+else
+  assert_fail "git push release tag honors attacker pushurl" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${PUSHURL_RELEASE_CWD}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct2: git --git-dir/--work-tree release tag push is denied" \
+  "git --git-dir=${REPO_ROOT}/.git --work-tree=${REPO_ROOT} push origin HEAD:refs/tags/${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct3: git command-scoped remote URL rewrite is denied" \
+  "git -c remote.origin.url=https://github.com/attacker/other.git push origin HEAD:refs/tags/${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct4: git command-scoped URL insteadOf rewrite is denied" \
+  "git -c url.https://github.com/attacker/other.git.insteadOf=https://github.com/alo-exp/sidekick.git push https://github.com/alo-exp/sidekick.git ${release_gate_test_tag}"
 git -C "${REPO_ROOT}" update-ref -d "refs/tags/${release_gate_test_tag}" >/dev/null 2>&1 || true
 
 echo "Scenario 49cu: git -C release tag push requires target repository markers"
@@ -2433,6 +2462,18 @@ else
   assert_fail "gh release --target with target ref markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+gh_false_verify_target_after_command="gh release create v1.2.1 --target ${target_ref_sha} --verify-tag=false"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv1a: gh release --target with later --verify-tag=false is denied" \
+  "${gh_false_verify_target_after_command}" "${target_ref_sha}"
+gh_false_verify_target_before_command="gh release create v1.2.1 --verify-tag=false --target ${target_ref_sha}"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv1b: gh release --verify-tag=false before --target is denied" \
+  "${gh_false_verify_target_before_command}" "${target_ref_sha}"
+gh_false_verify_target_equals_command="gh release create v1.2.1 --target=${target_ref_sha} --verify-tag=false"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv1c: gh release --target= with --verify-tag=false is denied" \
+  "${gh_false_verify_target_equals_command}" "${target_ref_sha}"
 wrapped_gh_target_command="bash -lc 'gh release create v1.2.1 --target ${target_ref_sha}'"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv2: shell-wrapped gh release --target with current HEAD markers is denied" \
@@ -2547,12 +2588,46 @@ else
   assert_fail "implicit cwd different repo gh release target" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}" "${implicit_other_repo}"
+foreign_release_repo="$(mktemp -d)"
+git -C "${foreign_release_repo}" init -q
+git -C "${foreign_release_repo}" remote add origin https://github.com/attacker/other.git
+printf '%s\n' "foreign release" > "${foreign_release_repo}/README.md"
+git -C "${foreign_release_repo}" add README.md
+git -C "${foreign_release_repo}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m foreign-release
+git -C "${foreign_release_repo}" update-ref refs/tags/v1.2.1 HEAD
+foreign_release_sha="$(git -C "${foreign_release_repo}" rev-parse --short=12 HEAD)"
+echo "Scenario 49cv17e: explicit Sidekick gh release target from foreign checkout is denied"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${foreign_release_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${foreign_release_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh -R alo-exp/sidekick release create v1.2.1 --target ${foreign_release_sha}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${foreign_release_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "explicit Sidekick gh release target from foreign checkout is denied"
+else
+  assert_fail "explicit Sidekick gh release target from foreign checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+echo "Scenario 49cv17f: explicit Sidekick git push from foreign checkout is denied"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${foreign_release_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${foreign_release_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "git push https://github.com/alo-exp/sidekick.git v1.2.1" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${foreign_release_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "explicit Sidekick git push from foreign checkout is denied"
+else
+  assert_fail "explicit Sidekick git push from foreign checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${foreign_release_repo}"
 gh_api_release_without_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1"
 assert_denied_release_command_with_current_markers \
-  "Scenario 49cv17e: gh api release without explicit target_commitish is denied" \
+  "Scenario 49cv17g: gh api release without explicit target_commitish is denied" \
   "${gh_api_release_without_target_command}"
 assert_denied_release_command_with_sha_markers \
-  "Scenario 49cv17f: gh api release without explicit target_commitish is denied even with current markers" \
+  "Scenario 49cv17h: gh api release without explicit target_commitish is denied even with current markers" \
   "${gh_api_release_without_target_command}" "$(current_head_sha)"
 gh_xdg_alias_config="$(mktemp -d)"
 mkdir -p "${gh_xdg_alias_config}/gh"
