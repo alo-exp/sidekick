@@ -380,7 +380,8 @@ test "$live_count" -ge 2 || { echo "Expected 2 current-session/current-commit li
 
 # Resolve the current trusted Sidekick HEAD, then paste that literal SHA as
 # <current-sha>. Do not pass shell substitutions or variables as --target; the
-# release hook intentionally requires a literal SHA token.
+# release hook intentionally requires a literal SHA token and explicit
+# --repo alo-exp/sidekick.
 git rev-parse HEAD
 
 # Create the GitHub release and tag at the current trusted Sidekick HEAD
