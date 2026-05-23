@@ -4124,6 +4124,7 @@ from pathlib import Path
 import os
 import re
 import shlex
+import subprocess
 import sys
 import urllib.parse
 
@@ -4146,6 +4147,7 @@ TAG_REF_TEXT_RE = re.compile(r"refs/tags/", re.IGNORECASE)
 EXPANSION_RE = re.compile(r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{|\$\(|`)")
 UNRESOLVABLE = "__UNRESOLVABLE__"
 SIDEKICK_RELEASE_REPO = "alo-exp/sidekick"
+SIDEKICK_RELEASE_HOSTS = {"github.com", "api.github.com"}
 PERSISTENT_GH_ALIASES = {}
 
 def tokenize(command):
@@ -4242,14 +4244,30 @@ def segment_has_env_chdir(segment, start):
             return True
     return False
 
-def normalize_repo(value):
+def normalize_host(value):
     if not value or unsafe_ref(value):
         return None
+    host = str(value).strip().strip("'\"").lower()
+    if "://" in host:
+        host = urllib.parse.urlparse(host).netloc.lower()
+    if "@" in host and ":" in host:
+        host = host.split("@", 1)[1].split(":", 1)[0]
+    return host.strip("/") or None
+
+def split_repo_identity(value):
+    if not value or unsafe_ref(value):
+        return None, None
     repo = str(value).strip().strip("'\"")
-    if repo.startswith("git@github.com:"):
+    host = None
+    if repo.startswith("git@") and ":" in repo:
+        user_host, repo_path = repo.split(":", 1)
+        host = user_host.split("@", 1)[1].lower()
+        repo = repo_path
+    elif repo.startswith("git@github.com:"):
         repo = repo.split(":", 1)[1]
     elif "://" in repo:
         parsed = urllib.parse.urlparse(repo)
+        host = parsed.netloc.lower()
         path = parsed.path.strip("/")
         if parsed.netloc.lower() == "api.github.com" and path.startswith("repos/"):
             path = path[len("repos/"):]
@@ -4258,15 +4276,29 @@ def normalize_repo(value):
         repo = repo[len("repos/"):]
     repo = repo.removesuffix(".git").strip("/")
     parts = [part for part in repo.split("/") if part]
+    if len(parts) >= 3 and ("." in parts[0] or ":" in parts[0]):
+        host = parts[0].lower()
+        parts = parts[1:]
     if len(parts) < 2:
-        return None
-    return "/".join(parts[:2]).lower()
+        return None, host
+    return "/".join(parts[:2]).lower(), host
 
-def repo_allowed(repo):
+def normalize_repo(value):
+    repo, _ = split_repo_identity(value)
+    return repo
+
+def host_allowed(host):
+    normalized = normalize_host(host)
+    return normalized is None or normalized in SIDEKICK_RELEASE_HOSTS
+
+def repo_allowed(repo, host=None):
+    if not host_allowed(host):
+        return False
     if repo is None:
         return True
-    normalized = normalize_repo(repo)
-    return normalized == SIDEKICK_RELEASE_REPO
+    normalized, repo_host = split_repo_identity(repo)
+    effective_host = normalize_host(host) or repo_host
+    return host_allowed(effective_host) and normalized == SIDEKICK_RELEASE_REPO
 
 def gh_repo_option(segment, gh_index):
     index = gh_index + 1
@@ -4284,11 +4316,72 @@ def gh_repo_option(segment, gh_index):
         index += 1
     return None
 
+def gh_hostname_option(segment, gh_index):
+    index = gh_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            continue
+        if token == "--hostname":
+            return segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
+        if token.startswith("--hostname="):
+            return token.split("=", 1)[1]
+        index += 1
+    return None
+
+def git_config_get(key, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "config", "--get", key],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+def implicit_cwd_repo():
+    return git_config_get("remote.origin.url")
+
+def gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=False):
+    host = (
+        gh_hostname_option(segment, gh_index)
+        or scoped_vars.get("GH_HOST")
+        or os.environ.get("GH_HOST")
+    )
+    repo = (
+        gh_repo_option(segment, gh_index)
+        or scoped_vars.get("GH_REPO")
+        or os.environ.get("GH_REPO")
+    )
+    if not host_allowed(host):
+        return UNRESOLVABLE
+    if repo:
+        return repo if repo_allowed(repo, host) else UNRESOLVABLE
+    if not require_implicit:
+        return None
+    repo = implicit_cwd_repo()
+    if repo is None:
+        return UNRESOLVABLE
+    return repo if repo_allowed(repo, host) else UNRESOLVABLE
+
 def endpoint_repo(endpoint):
     parts = github_api_path_parts(endpoint)
     if len(parts) >= 3 and parts[0] == "repos":
         return f"{parts[1]}/{parts[2]}"
     return None
+
+def endpoint_host(endpoint):
+    value = urllib.parse.unquote(str(endpoint)).strip().strip("'\"")
+    if "://" not in value:
+        return None
+    return urllib.parse.urlparse(value).netloc.lower() or None
 
 def skip_gh_globals(segment, index):
     while index < len(segment):
@@ -4337,6 +4430,16 @@ def gh_config_dir_option(segment, gh_index):
             continue
         break
     return None
+
+def gh_alias_config_dir(segment, gh_index, command_env, variables):
+    config_dir = gh_config_dir_option(segment, gh_index)
+    if config_dir is not None:
+        return config_dir, True
+    if "GH_CONFIG_DIR" in command_env:
+        return command_env.get("GH_CONFIG_DIR"), True
+    if "GH_CONFIG_DIR" in variables:
+        return variables.get("GH_CONFIG_DIR"), True
+    return None, False
 
 def gh_alias_payload(expansion, args=None):
     args = args or []
@@ -4613,19 +4716,36 @@ def compose_git_c_target(current, value):
     except Exception:
         return UNRESOLVABLE
 
-def git_push_release_ref(operands, release_push):
+def git_remote_allowed(remote, target_dir=None):
+    if not remote or unsafe_ref(remote):
+        return False
+    if (
+        "://" in remote
+        or remote.startswith("git@")
+        or remote.startswith("ssh://")
+        or remote.startswith("repos/")
+        or "/" in remote
+    ):
+        return repo_allowed(remote)
+    remote_url = git_config_get(f"remote.{remote}.url", target_dir)
+    return repo_allowed(remote_url)
+
+def git_push_release_target(operands, release_push):
     if release_push:
-        return UNRESOLVABLE
-    refspecs = operands[1:] if len(operands) > 1 else []
+        return ((operands[0] if operands else None), UNRESOLVABLE)
+    if len(operands) < 2:
+        return None
+    remote = operands[0]
+    refspecs = operands[1:]
     index = 0
     while index < len(refspecs):
         refspec = refspecs[index]
         if refspec == "tag":
             if index + 1 >= len(refspecs):
-                return UNRESOLVABLE
-            return release_ref_from_refspec(refspecs[index + 1])
+                return remote, UNRESOLVABLE
+            return remote, release_ref_from_refspec(refspecs[index + 1])
         if refspec_targets_release_tag(refspec):
-            return release_ref_from_refspec(refspec)
+            return remote, release_ref_from_refspec(refspec)
         index += 1
     return None
 
@@ -4786,7 +4906,7 @@ def graphql_target(payloads):
         return target_from_key([text], {"targetCommitish", "target_commitish"})
     return None
 
-def gh_api_metadata(segment, gh_index):
+def gh_api_metadata(segment, gh_index, scoped_vars):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "api":
         return None
@@ -4853,13 +4973,18 @@ def gh_api_metadata(segment, gh_index):
     if not command_has_write_semantics:
         return None
     target = None
-    repo = gh_repo_option(segment, gh_index) or endpoint_repo(endpoint)
-    if not repo_allowed(repo):
+    endpoint_repo_name = endpoint_repo(endpoint)
+    endpoint_host_name = endpoint_host(endpoint)
+    gh_repo_name = gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=endpoint_repo_name is None)
+    if gh_repo_name == UNRESOLVABLE:
+        return UNRESOLVABLE
+    repo = endpoint_repo_name or gh_repo_name
+    if not repo_allowed(repo, endpoint_host_name or gh_hostname_option(segment, gh_index) or scoped_vars.get("GH_HOST") or os.environ.get("GH_HOST")):
         return UNRESOLVABLE
     if is_releases_endpoint(endpoint):
         target = target_from_key(payloads, {"target_commitish", "targetCommitish"})
         if target is None:
-            target = target_from_key(payloads, {"tag_name", "tagName"}) or UNRESOLVABLE
+            return UNRESOLVABLE
     elif is_git_refs_endpoint(endpoint) and payload_mentions_tag_ref(payloads):
         target = target_from_key(payloads, {"sha"}) or UNRESOLVABLE
     elif is_graphql_endpoint(endpoint):
@@ -4870,11 +4995,11 @@ def gh_api_metadata(segment, gh_index):
         return target
     return None
 
-def gh_release_metadata(segment, gh_index):
+def gh_release_metadata(segment, gh_index, scoped_vars):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
         return None
-    if not repo_allowed(gh_repo_option(segment, gh_index)):
+    if gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=True) == UNRESOLVABLE:
         return ("unresolvable", UNRESOLVABLE)
     action_index = skip_gh_globals(segment, subcommand_index + 1)
     if action_index >= len(segment) or segment[action_index] != "create":
@@ -4892,8 +5017,13 @@ def gh_release_metadata(segment, gh_index):
             return ("ref", segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE)
         if current.startswith("--target="):
             return ("ref", current.split("=", 1)[1])
-        if current == "--verify-tag" or current.startswith("--verify-tag="):
+        if current == "--verify-tag":
             verify_tag = True
+            index += 1
+            continue
+        if current.startswith("--verify-tag="):
+            verify_value = current.split("=", 1)[1].strip().lower()
+            verify_tag = verify_value not in {"", "0", "false", "no", "off"}
             index += 1
             continue
         if current in GH_RELEASE_CREATE_VALUE_OPTIONS:
@@ -4975,14 +5105,17 @@ def git_metadata(segment, git_index):
             continue
         operands.append(current)
         cursor += 1
-    release_ref = git_push_release_ref(operands, release_push)
-    if release_ref:
+    release_target = git_push_release_target(operands, release_push)
+    if release_target:
+        remote, release_ref = release_target
+        if target_dir == UNRESOLVABLE or (target_dir is not None and unsafe_ref(target_dir)):
+            return ("unresolvable", UNRESOLVABLE)
+        if not git_remote_allowed(remote, target_dir):
+            return ("unresolvable", UNRESOLVABLE)
         if release_ref == UNRESOLVABLE:
             return ("unresolvable", UNRESOLVABLE)
         if target_dir is None:
             return ("ref", release_ref)
-        if target_dir == UNRESOLVABLE or unsafe_ref(target_dir):
-            return ("unresolvable", UNRESOLVABLE)
         return ("git-c-ref", f"{target_dir}\t{release_ref}")
     return None
 
@@ -5036,11 +5169,7 @@ def extract(command, depth=0):
             if result:
                 return result
         if command_name == "gh":
-            gh_config_dir = (
-                gh_config_dir_option(segment, start)
-                or command_env.get("GH_CONFIG_DIR")
-                or variables.get("GH_CONFIG_DIR")
-            )
+            gh_config_dir, command_scoped_gh_config = gh_alias_config_dir(segment, start, command_env, variables)
             effective_gh_aliases = dict(persistent_gh_aliases(gh_config_dir))
             effective_gh_aliases.update(gh_aliases)
             alias_assignment = gh_alias_assignment(segment, start)
@@ -5049,16 +5178,18 @@ def extract(command, depth=0):
                 gh_aliases[alias_name] = alias_expansion
                 result = extract(gh_alias_payload(alias_expansion), depth + 1)
                 if result:
-                    return result
+                    return ("unresolvable", UNRESOLVABLE)
                 continue
-            target = gh_release_metadata(segment, start)
+            target = gh_release_metadata(segment, start, scoped_vars)
             if target:
                 return ("unresolvable", UNRESOLVABLE) if target[1] == UNRESOLVABLE or unsafe_ref(target[1]) else target
-            target = gh_api_metadata(segment, start)
+            target = gh_api_metadata(segment, start, scoped_vars)
             if target:
                 return ("unresolvable", UNRESOLVABLE) if target == UNRESOLVABLE or unsafe_ref(target) else ("ref", target)
             alias_index = gh_subcommand_index(segment, start)
             if alias_index < len(segment) and segment[alias_index] in effective_gh_aliases:
+                if command_scoped_gh_config or segment[alias_index] in gh_aliases:
+                    return ("unresolvable", UNRESOLVABLE)
                 alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
                 result = extract(alias_payload, depth + 1)
                 if result:
