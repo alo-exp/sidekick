@@ -2197,6 +2197,36 @@ assert_denied_command "Scenario 49cs5: git push tag operand with dynamic tag is 
   'git push origin tag "$TAG"'
 assert_denied_command "Scenario 49cs5b: git push bare numeric semver tag is denied" \
   "git push origin 0.6.0"
+release_candidate_tag="release-candidate"
+git -C "${REPO_ROOT}" update-ref "refs/tags/${release_candidate_tag}" HEAD
+assert_denied_command "Scenario 49cs5c: git push bare local non-semver tag is denied" \
+  "git push origin ${release_candidate_tag}"
+assert_denied_command "Scenario 49cs5d: same-command non-semver tag creation plus bare push is denied" \
+  "git tag -f ${release_candidate_tag} HEAD && git push origin ${release_candidate_tag}"
+assert_denied_command "Scenario 49cs5e: env-expanded bare local non-semver tag push is denied" \
+  "TAG=${release_candidate_tag}; git push origin \"\$TAG\""
+git -C "${REPO_ROOT}" update-ref -d "refs/tags/${release_candidate_tag}" >/dev/null 2>&1 || true
+assert_denied_command "Scenario 49cs5f: git command-scoped remote push tag refspec is denied" \
+  "git -c remote.origin.push=refs/tags/v1.2.1:refs/tags/v1.2.1 push origin"
+assert_denied_command "Scenario 49cs5g: git command-scoped remote mirror push is denied" \
+  "git -c remote.origin.mirror=true push origin"
+assert_denied_command "Scenario 49cs5h: git command-scoped followTags push is denied" \
+  "git -c push.followTags=true push origin main"
+CONFIG_PUSH_CWD="$(mktemp -d)"
+git -C "${CONFIG_PUSH_CWD}" init -q
+git -C "${CONFIG_PUSH_CWD}" remote add origin https://github.com/alo-exp/sidekick.git
+git -C "${CONFIG_PUSH_CWD}" config remote.origin.push refs/tags/v1.2.1:refs/tags/v1.2.1
+echo "Scenario 49cs5i: persistent remote push tag refspec is denied"
+H="$(setup_home)"
+PAYLOAD="$(jq -cn --arg cmd "git push origin" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${CONFIG_PUSH_CWD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "persistent remote push tag refspec is denied"
+else
+  assert_fail "persistent remote push tag refspec" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${CONFIG_PUSH_CWD}"
 assert_denied_command "Scenario 49cs6: git command-scoped release tag alias is denied" \
   'git -c alias.sidekickreleasepush="push origin v1.2.1" sidekickreleasepush'
 assert_denied_command "Scenario 49cs6b: chained git command-scoped release tag aliases are denied" \
@@ -2744,6 +2774,10 @@ same_command_read_write_redirect_release=": <> ./sidekick-review-temp.txt; gh re
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0c5: same-command read-write redirection plus release is denied" \
   "${same_command_read_write_redirect_release}"
+same_command_sink_then_file_redirect_release="printf x >/dev/null > ./sidekick-review-temp.txt; gh release create v1.2.1 --target $(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c6: same-command sink then file redirection plus release is denied" \
+  "${same_command_sink_then_file_redirect_release}"
 multi_release_test_tag="v555.555.555"
 git -C "${REPO_ROOT}" update-ref "refs/tags/${multi_release_test_tag}" HEAD
 multi_git_push_then_gh_command="git push origin ${multi_release_test_tag} && gh release create v2.2.2 --target ${target_ref_sha}"
