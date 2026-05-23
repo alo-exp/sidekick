@@ -1930,6 +1930,12 @@ assert_denied_command "Scenario 49au: ruby static interpreter payload release co
   "ruby -e 'system(\"gh release create v1.2.1\")'"
 assert_denied_command "Scenario 49av: node static interpreter payload release command is denied" \
   "node -e 'require(\"child_process\").execSync(\"gh release create v1.2.1\")'"
+assert_denied_command "Scenario 49av0a: python base64-decoded release payload is denied" \
+  "python3 -c 'import base64, os; os.system(base64.b64decode(\"Z2ggcmVsZWFzZSBjcmVhdGUgdjEuMi4xIC0tdGFyZ2V0IEhFQUQ=\").decode())'"
+assert_denied_command "Scenario 49av0b: shell base64-decoded release payload is denied" \
+  'bash -c "$(printf %s Z2ggcmVsZWFzZSBjcmVhdGUgdjEuMi4xIC0tdGFyZ2V0IEhFQUQ= | base64 -d)"'
+assert_denied_command "Scenario 49av0c: node base64-decoded release payload is denied" \
+  "node -e 'require(\"child_process\").execSync(Buffer.from(\"Z2l0IHB1c2ggb3JpZ2luIHYxLjIuMQ==\", \"base64\").toString())'"
 _local_script_dir="$(mktemp -d)"
 cat > "${_local_script_dir}/release.sh" <<'EOF'
 #!/usr/bin/env bash

@@ -61,6 +61,8 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 is_gh_release_create() {
   python3 - "$1" <<'PY'
 from pathlib import Path
+import base64
+import binascii
 import codecs
 import os
 import re
@@ -100,6 +102,8 @@ GITHUB_REFS_API_RE = re.compile(
     r"(?:https?://[^/\s\"']+/)?(?:api/v3/)?repos/[^/\s\"']+/[^/\s\"']+/git/refs(?:[/\?#\"'\s]|$)",
     re.I,
 )
+STATIC_BASE64_RE = re.compile(r"(?<![A-Za-z0-9+/=])([A-Za-z0-9+/]{16,}={0,2})(?![A-Za-z0-9+/=])")
+STATIC_BASE64_HINT_RE = re.compile(r"\b(?:base64|b64decode|atob|fromBase64|Buffer\.from)\b", re.I)
 STATIC_STRING_CONCAT_RE = re.compile(
     r"('(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")\s*\+\s*"
     r"('(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\")",
@@ -298,6 +302,45 @@ def collapse_static_string_concats(value):
             return text
         text = updated
     return text
+
+
+def decoded_base64_payloads(value):
+    text = str(value)
+    if not STATIC_BASE64_HINT_RE.search(text):
+        return []
+    decoded = []
+    candidates = set(STATIC_BASE64_RE.findall(text))
+    candidates.update(
+        literal.strip() for literal in quoted_string_literals(text)
+        if STATIC_BASE64_RE.fullmatch(literal.strip())
+    )
+    for candidate in candidates:
+        padded = candidate + ("=" * ((4 - len(candidate) % 4) % 4))
+        try:
+            raw = base64.b64decode(padded, validate=True)
+        except (binascii.Error, ValueError):
+            continue
+        if not raw or b"\x00" in raw:
+            continue
+        try:
+            rendered = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        if rendered.strip():
+            decoded.append(rendered)
+    return decoded
+
+
+def decoded_payload_mentions_release_command(value):
+    for decoded in decoded_base64_payloads(value):
+        if (
+            GH_RELEASE_MUTATING_RE.search(decoded)
+            or GIT_PUSH_RELEASE_TEXT_RE.search(decoded)
+            or direct_github_release_api_url(decoded)
+            or literal_argv_mentions_release_command(decoded)
+        ):
+            return True
+    return False
 
 
 def render_printf(format_string, args):
@@ -3570,6 +3613,8 @@ def payload_env_endpoint_needs_gate(payload, command_has_write_semantics, env_ma
 
 
 def language_payload_mentions_release_command(payload, env_map=None):
+    if decoded_payload_mentions_release_command(payload):
+        return True
     if GH_RELEASE_MUTATING_RE.search(payload):
         return True
     if GIT_PUSH_RELEASE_TEXT_RE.search(payload):
@@ -3888,9 +3933,13 @@ def case_payloads(command):
 def contains_release_create(command, depth=0):
     if depth > 12:
         return language_payload_mentions_release_command(command)
+    if decoded_payload_mentions_release_command(command):
+        return True
     normalized_command = normalize_command(command)
     if normalized_command != command:
         command = normalized_command
+    if decoded_payload_mentions_release_command(command):
+        return True
     for payload in literal_expanded_shell_payloads(command):
         if contains_release_create(payload, depth + 1):
             return True
