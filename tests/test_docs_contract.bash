@@ -131,6 +131,10 @@ expect_contains "site/internal/pre-release-quality-gate.md" 'If release commits 
 expect_contains "site/pre-release-quality-gate.md" 'recorded local evidence when `[skip ci]` is intentionally used' "release gate exit criteria allow skip-CI evidence"
 expect_contains "site/internal/pre-release-quality-gate.md" 'recorded local evidence when `[skip ci]` is intentionally used' "internal release gate exit criteria allow skip-CI evidence"
 expect_contains "site/internal/pre-release-quality-gate.md" "git push origin v<version>" "internal release gate documents release tag push"
+expect_contains "site/pre-release-quality-gate.md" '--notes-file <notes.md>' "release gate uses release-specific notes file"
+expect_contains "site/internal/pre-release-quality-gate.md" '--notes-file <notes.md>' "internal release gate uses release-specific notes file"
+expect_not_contains "site/pre-release-quality-gate.md" '--notes-file CHANGELOG.md' "release gate avoids whole changelog release notes"
+expect_not_contains "site/internal/pre-release-quality-gate.md" '--notes-file CHANGELOG.md' "internal release gate avoids whole changelog release notes"
 expect_contains "site/internal/pre-release-quality-gate.md" "Runtime Setup / Repair" "internal release gate references canonical Forge setup section"
 expect_not_contains "site/internal/pre-release-quality-gate.md" "STEP 0A" "internal release gate removes stale STEP 0A references"
 

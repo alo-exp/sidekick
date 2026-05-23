@@ -4386,7 +4386,16 @@ def git_config_get_regexp(pattern, target_dir=None):
     return pairs
 
 def implicit_cwd_repo():
-    return git_config_get("remote.origin.url")
+    repo = git_config_get("remote.origin.url")
+    if repo is None or not repo_allowed(repo):
+        return UNRESOLVABLE
+    fetch_urls = git_remote_fetch_urls("origin")
+    push_urls = git_remote_push_urls("origin")
+    if not fetch_urls or not push_urls:
+        return UNRESOLVABLE
+    if not all(repo_allowed(url) for url in fetch_urls + push_urls):
+        return UNRESOLVABLE
+    return repo
 
 def gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=False):
     host = (
@@ -4837,6 +4846,22 @@ def git_remote_push_urls(remote, target_dir=None):
         cwd = target_dir or os.environ.get("PWD") or os.getcwd()
         result = subprocess.run(
             ["git", "-C", cwd, "remote", "get-url", "--push", "--all", remote],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return []
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+def git_remote_fetch_urls(remote, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "remote", "get-url", "--all", remote],
             check=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -5400,7 +5425,34 @@ trusted_sidekick_checkout() {
   [ -n "${candidate}" ] || return 1
   git -C "${candidate}" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
   origin="$(git -C "${candidate}" config --get remote.origin.url 2>/dev/null || true)"
-  sidekick_checkout_remote_allowed "${origin}"
+  sidekick_checkout_remote_allowed "${origin}" || return 1
+  sidekick_checkout_effective_remotes_allowed "${candidate}"
+}
+
+sidekick_checkout_effective_remotes_allowed() {
+  local candidate fetch_urls found push_urls url
+  candidate="$1"
+  fetch_urls="$(git -C "${candidate}" remote get-url --all origin 2>/dev/null || true)"
+  found=0
+  while IFS= read -r url; do
+    [ -n "${url}" ] || continue
+    found=1
+    sidekick_checkout_remote_allowed "${url}" || return 1
+  done <<EOF
+${fetch_urls}
+EOF
+  [ "${found}" -eq 1 ] || return 1
+
+  push_urls="$(git -C "${candidate}" remote get-url --push --all origin 2>/dev/null || true)"
+  found=0
+  while IFS= read -r url; do
+    [ -n "${url}" ] || continue
+    found=1
+    sidekick_checkout_remote_allowed "${url}" || return 1
+  done <<EOF
+${push_urls}
+EOF
+  [ "${found}" -eq 1 ] || return 1
 }
 
 inside_git_worktree() {
