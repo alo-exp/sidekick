@@ -51,7 +51,7 @@ No automated tag-on-push. Releases are cut by the maintainer against a fully-gre
    git push origin vX.Y.Z
    ```
 
-5. **GitHub Release** — `gh release create vX.Y.Z --repo alo-exp/sidekick --verify-tag --notes-file <notes.md>`. The local release hook only authorizes same-repo GitHub.com `gh`/`git` transports with resolvable targets from trusted Sidekick checkouts; raw API write transports, alternate `pushurl` destinations, persistent Git URL rewrites away from Sidekick, and ambiguous repo/host/remote/source provenance fail closed.
+5. **GitHub Release** — `gh release create vX.Y.Z --repo alo-exp/sidekick --target "$(git rev-parse HEAD)" --notes-file <notes.md>`. The local release hook only authorizes same-repo GitHub.com `gh`/`git` transports with explicit targets that match the current trusted Sidekick checkout `HEAD`; raw API write transports, destructive tag pushes, alternate `pushurl` destinations, persistent Git URL rewrites away from Sidekick, generated script/config carriers, and ambiguous repo/host/remote/source provenance fail closed.
 
 6. **Post-release cleanup** — remove non-essential repo-local artifacts with:
    ```bash
