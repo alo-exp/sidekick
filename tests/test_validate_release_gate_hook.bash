@@ -2634,6 +2634,56 @@ else
   assert_fail "implicit cwd different repo gh release target" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}" "${implicit_other_repo}"
+rewritten_sidekick_repo="$(mktemp -d)"
+git -C "${rewritten_sidekick_repo}" init -q
+git -C "${rewritten_sidekick_repo}" remote add origin https://github.com/alo-exp/sidekick.git
+printf '%s\n' "rewritten release" > "${rewritten_sidekick_repo}/README.md"
+git -C "${rewritten_sidekick_repo}" add README.md
+git -C "${rewritten_sidekick_repo}" -c user.email=sidekick@example.invalid -c user.name=Sidekick commit -q -m rewritten-release
+git -C "${rewritten_sidekick_repo}" update-ref refs/tags/v1.2.1 HEAD
+rewritten_sidekick_sha="$(git -C "${rewritten_sidekick_repo}" rev-parse --short=12 HEAD)"
+git -C "${rewritten_sidekick_repo}" config url.https://attacker.example/alo-exp/sidekick/.insteadOf https://github.com/alo-exp/sidekick
+echo "Scenario 49cv17d2: implicit gh release from persistent insteadOf checkout is denied"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${rewritten_sidekick_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${rewritten_sidekick_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh release create v1.2.1 --verify-tag" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${rewritten_sidekick_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "implicit gh release from persistent insteadOf checkout is denied"
+else
+  assert_fail "implicit gh release from persistent insteadOf checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+git -C "${rewritten_sidekick_repo}" config --unset-all url.https://attacker.example/alo-exp/sidekick/.insteadOf
+git -C "${rewritten_sidekick_repo}" config url.https://attacker.example/alo-exp/sidekick/.pushInsteadOf https://github.com/alo-exp/sidekick
+echo "Scenario 49cv17d3: implicit gh release target from persistent pushInsteadOf checkout is denied"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${rewritten_sidekick_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${rewritten_sidekick_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh release create v1.2.1 --target ${rewritten_sidekick_sha}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${rewritten_sidekick_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "implicit gh release target from persistent pushInsteadOf checkout is denied"
+else
+  assert_fail "implicit gh release target from persistent pushInsteadOf checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+echo "Scenario 49cv17d4: explicit gh release target from persistent pushInsteadOf checkout is denied"
+H="$(setup_home)"
+write_markers_for_sha "${H}" "${rewritten_sidekick_sha}" 1 2 3 4
+write_live_pyramid_markers_for_sha "${H}" "${rewritten_sidekick_sha}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh -R alo-exp/sidekick release create v1.2.1 --target ${rewritten_sidekick_sha}" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_from_cwd "${H}" "${PAYLOAD}" "${rewritten_sidekick_repo}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "explicit gh release target from persistent pushInsteadOf checkout is denied"
+else
+  assert_fail "explicit gh release target from persistent pushInsteadOf checkout" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}" "${rewritten_sidekick_repo}"
 foreign_release_repo="$(mktemp -d)"
 git -C "${foreign_release_repo}" init -q
 git -C "${foreign_release_repo}" remote add origin https://github.com/attacker/other.git
