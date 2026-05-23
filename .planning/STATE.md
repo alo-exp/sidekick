@@ -117,19 +117,18 @@ Key v1.3 Phase 11 Plan 01 decisions:
 
 ### Pending Todos
 
-- [x] Execute Phase 11 Plan 02: sk- unit tests + SRI integrity scaffold (COMPLETE)
-- [x] Execute Phase 11 Plan 03: skill/docs/install housekeeping (COMPLETE)
-- [x] Execute Phase 11 Plan 04: plugin.json hash refresh + HOUSE-01 + FGSB-01 (COMPLETE)
-- Release v1.3.0
+- [ ] Complete v0.6.0 pre-release quality gates for the final release commit.
+- [ ] Run two current-session Codex live release-pyramid passes for the final release commit.
+- [ ] Tag and push `v0.6.0`, create the GitHub Release with release-specific notes, then run post-release cleanup.
 
 ### Blockers/Concerns
 
-- None — v1.2.2 shipped, test suite green. v1.3 scoping in progress.
+- Release remains blocked until all four stage markers and two live-pyramid markers are regenerated for the final v0.6.0 release commit.
 
 ## Session Continuity
 
 Last session: 2026-05-23
-Stopped at: v0.6.0 release candidate prepared — implementation evidence is current through `35e2b472deed`; run final pre-release gates and live release-pyramid passes against the final release commit before tag publication.
+Stopped at: v0.6.0 release candidate prepared — implementation evidence must be refreshed after the latest release-gate/doc fixes; run final pre-release gates and live release-pyramid passes against the final release commit before tag publication.
 Resume file: None
 
 Next likely actions:
