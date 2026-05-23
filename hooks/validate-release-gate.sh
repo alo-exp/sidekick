@@ -4346,6 +4346,22 @@ def git_config_get(key, target_dir=None):
         return None
     return result.stdout.strip() or None
 
+def git_config_get_all(key, target_dir=None):
+    try:
+        cwd = target_dir or os.environ.get("PWD") or os.getcwd()
+        result = subprocess.run(
+            ["git", "-C", cwd, "config", "--get-all", key],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return []
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
 def implicit_cwd_repo():
     return git_config_get("remote.origin.url")
 
@@ -4716,6 +4732,69 @@ def compose_git_c_target(current, value):
     except Exception:
         return UNRESOLVABLE
 
+def git_config_key(config_value):
+    if not config_value or "=" not in config_value:
+        return None
+    return config_value.split("=", 1)[0].strip().lower()
+
+def git_config_changes_release_context(config_value):
+    key = git_config_key(config_value)
+    if not key:
+        return False
+    return (
+        key.startswith("remote.")
+        or key.startswith("url.")
+        or key == "include.path"
+        or key.startswith("includeif.")
+    )
+
+def git_release_context_untrusted(segment, git_index, scoped_vars):
+    if any(
+        key in scoped_vars or key in os.environ
+        for key in {
+            "GIT_DIR",
+            "GIT_WORK_TREE",
+            "GIT_NAMESPACE",
+            "GIT_CONFIG_GLOBAL",
+            "GIT_CONFIG_SYSTEM",
+            "GIT_CONFIG_NOSYSTEM",
+            "GIT_CONFIG_COUNT",
+        }
+    ):
+        return True
+    index = git_index + 1
+    while index < len(segment):
+        token = segment[index]
+        config_value = None
+        if token == "--":
+            break
+        if token in {"--git-dir", "--work-tree", "--namespace"}:
+            return True
+        if token.startswith(("--git-dir=", "--work-tree=", "--namespace=")):
+            return True
+        if token == "--bare":
+            return True
+        if token == "-c" and index + 1 < len(segment):
+            config_value = segment[index + 1]
+            index += 2
+        elif token.startswith("-c") and token != "-c":
+            config_value = token[2:]
+            index += 1
+        elif token in GIT_VALUE_GLOBALS:
+            index += 2
+            continue
+        elif token.startswith("--") and any(token.startswith(option + "=") for option in GIT_VALUE_GLOBALS if option.startswith("--")):
+            index += 1
+            continue
+        elif token in GIT_FLAG_GLOBALS:
+            index += 1
+            continue
+        else:
+            break
+        if config_value and git_config_changes_release_context(config_value):
+            return True
+    return False
+
 def git_remote_allowed(remote, target_dir=None):
     if not remote or unsafe_ref(remote):
         return False
@@ -4727,6 +4806,9 @@ def git_remote_allowed(remote, target_dir=None):
         or "/" in remote
     ):
         return repo_allowed(remote)
+    push_urls = git_config_get_all(f"remote.{remote}.pushurl", target_dir)
+    if push_urls:
+        return all(repo_allowed(push_url) for push_url in push_urls)
     remote_url = git_config_get(f"remote.{remote}.url", target_dir)
     return repo_allowed(remote_url)
 
@@ -5006,7 +5088,9 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
         return None
     index = action_index + 1
     tag = None
+    target = None
     verify_tag = False
+    verify_tag_false = False
     while index < len(segment):
         current = segment[index]
         if current == "--":
@@ -5014,16 +5098,24 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
                 tag = segment[index + 1]
             break
         if current == "--target":
-            return ("ref", segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE)
+            target = segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
+            index += 2
+            continue
         if current.startswith("--target="):
-            return ("ref", current.split("=", 1)[1])
+            target = current.split("=", 1)[1]
+            index += 1
+            continue
         if current == "--verify-tag":
             verify_tag = True
             index += 1
             continue
         if current.startswith("--verify-tag="):
             verify_value = current.split("=", 1)[1].strip().lower()
-            verify_tag = verify_value not in {"", "0", "false", "no", "off"}
+            if verify_value in {"", "0", "false", "no", "off"}:
+                verify_tag = False
+                verify_tag_false = True
+            else:
+                verify_tag = True
             index += 1
             continue
         if current in GH_RELEASE_CREATE_VALUE_OPTIONS:
@@ -5038,13 +5130,19 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
         if tag is None:
             tag = current
         index += 1
+    if verify_tag_false:
+        return ("unresolvable", UNRESOLVABLE)
+    if target is not None:
+        return ("ref", target)
     if tag:
         if not verify_tag:
             return ("unresolvable", UNRESOLVABLE)
         return ("ref", tag if not unsafe_ref(tag) else UNRESOLVABLE)
     return ("unresolvable", UNRESOLVABLE)
 
-def git_metadata(segment, git_index):
+def git_metadata(segment, git_index, scoped_vars):
+    if git_release_context_untrusted(segment, git_index, scoped_vars):
+        return ("unresolvable", UNRESOLVABLE)
     target_dir = None
     index = git_index + 1
     while index < len(segment):
@@ -5195,7 +5293,7 @@ def extract(command, depth=0):
                 if result:
                     return result
         if command_name == "git":
-            result = git_metadata(segment, start)
+            result = git_metadata(segment, start, scoped_vars)
             if result and result[0] == "payload" and result[1]:
                 nested = extract(result[1], depth + 1)
                 if nested:
@@ -5223,6 +5321,29 @@ if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
   exit 0
 fi
 
+sidekick_checkout_remote_allowed() {
+  case "$1" in
+    https://github.com/alo-exp/sidekick|\
+    https://github.com/alo-exp/sidekick.git|\
+    git@github.com:alo-exp/sidekick.git|\
+    ssh://git@github.com/alo-exp/sidekick.git)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+trusted_sidekick_checkout() {
+  local candidate origin
+  candidate="$1"
+  [ -n "${candidate}" ] || return 1
+  git -C "${candidate}" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+  origin="$(git -C "${candidate}" config --get remote.origin.url 2>/dev/null || true)"
+  sidekick_checkout_remote_allowed "${origin}"
+}
+
 current_release_sha() {
   local candidate git_c_ref git_c_target gh_target_ref metadata metadata_kind metadata_value
   metadata="$(release_target_metadata "$COMMAND" 2>/dev/null || true)"
@@ -5239,12 +5360,13 @@ current_release_sha() {
     if [ "${metadata_kind}" = "git-c-ref" ]; then
       git_c_target="${metadata_value%%$'\t'*}"
       git_c_ref="${metadata_value#*$'\t'}"
+      trusted_sidekick_checkout "${git_c_target}" || return 1
       git -C "${git_c_target}" rev-parse --short=12 "${git_c_ref}^{commit}" 2>/dev/null && return 0
       return 1
     fi
     if [ "${metadata_kind}" = "ref" ]; then
       for candidate in "${CLAUDE_PROJECT_DIR:-}" "${CODEX_PROJECT_DIR:-}" "${SIDEKICK_PROJECT_DIR:-}" "${PWD:-.}" "${REPO_ROOT}"; do
-        if [ -n "${candidate}" ] && git -C "${candidate}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null; then
+        if [ -n "${candidate}" ] && trusted_sidekick_checkout "${candidate}" && git -C "${candidate}" rev-parse --short=12 "${metadata_value}^{commit}" 2>/dev/null; then
           return 0
         fi
       done
