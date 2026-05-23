@@ -4916,6 +4916,44 @@ def gh_repo_option(segment, gh_index):
         index += 1
     return None
 
+def gh_release_create_explicit_repo(segment, gh_index):
+    repo = None
+    index = gh_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            index += 1
+            continue
+        if token == "--repo":
+            value = segment[index + 1] if index + 1 < len(segment) else UNRESOLVABLE
+            if repo is not None:
+                return UNRESOLVABLE
+            repo = value
+            index += 2
+            continue
+        if token.startswith("--repo="):
+            if repo is not None:
+                return UNRESOLVABLE
+            repo = token.split("=", 1)[1]
+            index += 1
+            continue
+        if token == "-R" or (token.startswith("-R") and token != "-R"):
+            return UNRESOLVABLE
+        if token in {"--hostname", "--config-dir"}:
+            index += 2
+            continue
+        if token.startswith("--hostname=") or token.startswith("--config-dir="):
+            index += 1
+            continue
+        if token in GH_RELEASE_CREATE_VALUE_OPTIONS:
+            index += 2
+            continue
+        if any(token.startswith(option + "=") for option in GH_RELEASE_CREATE_VALUE_OPTIONS):
+            index += 1
+            continue
+        index += 1
+    return repo if repo == SIDEKICK_RELEASE_REPO else UNRESOLVABLE
+
 def gh_hostname_option(segment, gh_index):
     index = gh_index + 1
     while index < len(segment):
@@ -5913,6 +5951,20 @@ def truthy_payload_key(payloads, keys):
             continue
         value = pair[1].strip().strip("'\"").lower()
         return value not in {"", "0", "false", "no", "off"}
+    text = "\n".join(value for value in payload_values(payloads) if value != UNRESOLVABLE)
+    for key in keys:
+        pattern = re.compile(
+            rf"[\"']?{re.escape(key)}[\"']?\s*[:=]\s*([\"'][^\"']*[\"']|[A-Za-z0-9_.+-]+)",
+            re.IGNORECASE,
+        )
+        found = False
+        for match in pattern.finditer(text):
+            found = True
+            value = match.group(1).strip().strip("'\"").lower()
+            if value not in {"", "0", "false", "no", "off"}:
+                return True
+        if not found and re.search(rf"[\"']?{re.escape(key)}[\"']?\s*[:=]", text, re.IGNORECASE):
+            return True
     return False
 
 def graphql_target(payloads):
@@ -6031,12 +6083,12 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
     subcommand_index = gh_subcommand_index(segment, gh_index)
     if subcommand_index >= len(segment) or segment[subcommand_index] != "release":
         return None
-    repo = gh_effective_repo(segment, gh_index, scoped_vars, require_implicit=False)
-    if repo is None or repo == UNRESOLVABLE:
-        return ("unresolvable", UNRESOLVABLE)
     action_index = skip_gh_globals(segment, subcommand_index + 1)
     if action_index >= len(segment) or segment[action_index] != "create":
         return None
+    repo = gh_release_create_explicit_repo(segment, gh_index)
+    if repo == UNRESOLVABLE or not repo_allowed(repo, gh_hostname_option(segment, gh_index) or scoped_vars.get("GH_HOST") or os.environ.get("GH_HOST")):
+        return ("unresolvable", UNRESOLVABLE)
     index = action_index + 1
     tag = None
     target = None
@@ -6067,6 +6119,15 @@ def gh_release_metadata(segment, gh_index, scoped_vars):
                 verify_tag_false = True
             else:
                 verify_tag = True
+            index += 1
+            continue
+        if current in GH_VALUE_GLOBALS:
+            index += 2
+            continue
+        if current.startswith("-R") and current != "-R":
+            index += 1
+            continue
+        if current.startswith("--") and any(current.startswith(option + "=") for option in GH_VALUE_GLOBALS if option.startswith("--")):
             index += 1
             continue
         if current in GH_RELEASE_CREATE_VALUE_OPTIONS:
@@ -6498,7 +6559,7 @@ current_release_sha() {
 missing=()
 current_head_sha="$(current_release_sha || true)"
 if [ -z "$current_head_sha" ]; then
-  reason="Pre-release quality gate cannot validate this release command because no current git SHA or release target SHA is available. Use one explicit release operation that targets the current trusted Sidekick checkout HEAD, such as gh release create --target <current-sha>."
+  reason="Pre-release quality gate cannot validate this release command because no current git SHA or release target SHA is available. Use one explicit release operation that targets the current trusted Sidekick checkout HEAD, such as gh release create --repo alo-exp/sidekick --target <current-sha>."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",

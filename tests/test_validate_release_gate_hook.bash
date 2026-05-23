@@ -61,29 +61,44 @@ exec "${real_git}" "$@"
 SH
 chmod +x "${GIT_WRAPPER_DIR}/git"
 
+sanitize_release_env() {
+  if [ "${SIDEKICK_TEST_INHERIT_RELEASE_ENV:-0}" = "1" ]; then
+    return 0
+  fi
+  unset GH_HOST GH_REPO
+  unset GIT_DIR GIT_WORK_TREE GIT_NAMESPACE GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
+  unset GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM
+  local name
+  for name in $(compgen -e); do
+    case "${name}" in
+      GIT_CONFIG_KEY_*|GIT_CONFIG_VALUE_*) unset "${name}" ;;
+    esac
+  done
+}
+
 run_hook() {
   # $1 = temp HOME, $2 = JSON payload
-  HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2"
+  (sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2")
 }
 
 run_hook_codex() {
   # $1 = temp HOME, $2 = JSON payload
-  HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" SIDEKICK_SESSION_ID= SESSION_ID= CLAUDE_SESSION_ID= CODEX_THREAD_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2"
+  (sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" SIDEKICK_SESSION_ID= SESSION_ID= CLAUDE_SESSION_ID= CODEX_THREAD_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2")
 }
 
 run_hook_no_git() {
   # $1 = temp HOME, $2 = JSON payload, $3 = package root with hooks/ but no .git
-  HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2"
+  (sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2")
 }
 
 run_hook_no_git_from_cwd() {
   # $1 = temp HOME, $2 = JSON payload, $3 = package root with hooks/ but no .git, $4 = caller cwd
-  (cd "$4" && HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2")
+  (cd "$4" && sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2")
 }
 
 run_hook_from_cwd() {
   # $1 = temp HOME, $2 = JSON payload, $3 = caller cwd
-  (cd "$3" && HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2")
+  (cd "$3" && sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2")
 }
 
 run_hook_without_python() {
@@ -2635,6 +2650,18 @@ else
   assert_fail "gh release --target stale SHA with target ref markers deny" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
+gh_target_repo_before_tag_command="gh release create --repo alo-exp/sidekick v1.2.1 --target $(current_head_sha)"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv-1: gh release --repo before tag passes with current target" \
+  "${gh_target_repo_before_tag_command}" "$(current_head_sha)"
+gh_target_repo_equals_before_tag_command="gh release create --repo=alo-exp/sidekick v1.2.1 --target $(current_head_sha)"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv-2: gh release --repo= before tag passes with current target" \
+  "${gh_target_repo_equals_before_tag_command}" "$(current_head_sha)"
+gh_target_short_repo_command="gh release create -R alo-exp/sidekick v1.2.1 --target $(current_head_sha)"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv-3: gh release -R repo shorthand is denied" \
+  "${gh_target_short_repo_command}" "$(current_head_sha)"
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0: gh release --target symbolic branch is denied" \
   "gh release create v1.2.1 --target main"
@@ -2775,6 +2802,20 @@ gh_api_current_tag_ref_target_command="gh api -X POST repos/alo-exp/sidekick/git
 assert_passthrough_release_command_with_sha_markers \
   "Scenario 49cv9b: gh api tag ref current SHA passes with current markers" \
   "${gh_api_current_tag_ref_target_command}" "$(current_head_sha)"
+gh_api_force_true_body="$(mktemp)"
+printf '{"ref":"refs/tags/v1.2.1","sha":"%s","force":true}\n' "$(current_head_sha)" > "${gh_api_force_true_body}"
+gh_api_force_true_input_command="gh api -X POST repos/alo-exp/sidekick/git/refs --input ${gh_api_force_true_body}"
+assert_denied_release_command_with_sha_markers \
+  "Scenario 49cv9b1: gh api tag ref input force true is denied" \
+  "${gh_api_force_true_input_command}" "$(current_head_sha)"
+rm -f "${gh_api_force_true_body}"
+gh_api_force_false_body="$(mktemp)"
+printf '{"ref":"refs/tags/v1.2.1","sha":"%s","force":false}\n' "$(current_head_sha)" > "${gh_api_force_false_body}"
+gh_api_force_false_input_command="gh api -X POST repos/alo-exp/sidekick/git/refs --input ${gh_api_force_false_body}"
+assert_passthrough_release_command_with_sha_markers \
+  "Scenario 49cv9b2: gh api tag ref input force false passes with current markers" \
+  "${gh_api_force_false_input_command}" "$(current_head_sha)"
+rm -f "${gh_api_force_false_body}"
 gh_api_patch_tag_ref_force_command="gh api -X PATCH repos/alo-exp/sidekick/git/refs/tags/v1.2.1 -f sha=$(current_head_sha) -f force=true"
 assert_denied_release_command_with_sha_markers \
   "Scenario 49cv9c: gh api tag ref PATCH force with current SHA is denied" \
@@ -2818,17 +2859,34 @@ cross_repo_gh_repo_env_command="GH_REPO=attacker/other gh release create v1.2.1 
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv17a: command-scoped GH_REPO different repo release target is denied" \
   "${cross_repo_gh_repo_env_command}"
+same_repo_gh_repo_env_command="GH_REPO=alo-exp/sidekick gh release create v1.2.1 --target $(current_head_sha)"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv17a2: command-scoped GH_REPO same repo release target is denied" \
+  "${same_repo_gh_repo_env_command}"
 echo "Scenario 49cv17b: inherited GH_REPO different repo release target is denied"
 H="$(setup_home)"
 write_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
 PAYLOAD="$(jq -cn --arg cmd "gh release create v1.2.1 --target $(current_head_sha)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
-OUT="$(GH_REPO=attacker/other run_hook "${H}" "${PAYLOAD}")"; RC=$?
+OUT="$(SIDEKICK_TEST_INHERIT_RELEASE_ENV=1 GH_REPO=attacker/other run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
   assert_pass "inherited GH_REPO different repo release target is denied"
 else
   assert_fail "inherited GH_REPO different repo release target" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+echo "Scenario 49cv17b2: inherited GH_REPO same repo release target is denied"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+write_live_pyramid_markers "${H}" 2
+PAYLOAD="$(jq -cn --arg cmd "gh release create v1.2.1 --target $(current_head_sha)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(SIDEKICK_TEST_INHERIT_RELEASE_ENV=1 GH_REPO=alo-exp/sidekick run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ]; then
+  assert_pass "inherited GH_REPO same repo release target is denied"
+else
+  assert_fail "inherited GH_REPO same repo release target" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 cross_host_gh_target_command="gh --hostname ghe.example.invalid --repo alo-exp/sidekick release create v1.2.1 --target $(current_head_sha)"
