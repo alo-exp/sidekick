@@ -5032,6 +5032,114 @@ def git_push_release_target(operands, release_push):
         index += 1
     return None
 
+def git_tag_mutates_release_ref(segment, subcommand_index):
+    list_mode = False
+    mutating_mode = False
+    operands = []
+    value_options = {
+        "-m",
+        "-F",
+        "-u",
+        "--message",
+        "--file",
+        "--local-user",
+        "--cleanup",
+        "--trailer",
+    }
+    list_value_options = {
+        "--points-at",
+        "--contains",
+        "--no-contains",
+        "--merged",
+        "--no-merged",
+        "--sort",
+        "--format",
+        "--column",
+        "--color",
+    }
+    mutating_flags = {"-a", "-s", "-f", "--annotate", "--sign", "--force", "-d", "--delete", "-v", "--verify"}
+    index = subcommand_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            operands.extend(segment[index + 1:])
+            break
+        if token in {"-l", "--list"} or re.match(r"^-n[0-9]*$", token):
+            list_mode = True
+            index += 1
+            continue
+        if token in list_value_options:
+            list_mode = True
+            index += 2
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in list_value_options):
+            list_mode = True
+            index += 1
+            continue
+        if token in value_options:
+            mutating_mode = True
+            index += 2
+            continue
+        if token.startswith("--") and any(token.startswith(option + "=") for option in value_options):
+            mutating_mode = True
+            index += 1
+            continue
+        if token in mutating_flags:
+            mutating_mode = True
+            index += 1
+            continue
+        if token.startswith("-"):
+            mutating_mode = True
+            index += 1
+            continue
+        operands.append(token)
+        index += 1
+    if list_mode and not mutating_mode:
+        return False
+    if not operands:
+        return mutating_mode
+    return any(unsafe_ref(operand) or token_is_release_tag_ref(operand) for operand in operands)
+
+def git_update_ref_mutates_release_ref(segment, subcommand_index):
+    refs = []
+    index = subcommand_index + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--stdin":
+            return True
+        if token == "--":
+            if index + 1 < len(segment):
+                refs.append(segment[index + 1])
+            break
+        if token in {"-m", "--message"}:
+            index += 2
+            continue
+        if token.startswith("--message="):
+            index += 1
+            continue
+        if token in {"-d", "--delete", "--no-deref", "--create-reflog", "-z"}:
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        refs.append(token)
+        break
+    return any(unsafe_ref(ref) or token_is_release_tag_ref(ref) for ref in refs)
+
+def git_prior_release_ref_mutation(segment, git_index, scoped_vars):
+    subcommand_index = git_subcommand_index(segment, git_index)
+    if subcommand_index >= len(segment):
+        return False
+    subcommand = segment[subcommand_index]
+    if subcommand not in {"tag", "update-ref"}:
+        return False
+    if git_release_context_untrusted(segment, git_index, scoped_vars):
+        return True
+    if subcommand == "tag":
+        return git_tag_mutates_release_ref(segment, subcommand_index)
+    return git_update_ref_mutates_release_ref(segment, subcommand_index)
+
 def shell_payload_parts(segment, start):
     index = start + 1
     while index < len(segment):
@@ -5434,6 +5542,11 @@ def extract(command, depth=0):
     variables = {}
     gh_aliases = {}
     cwd_changed = False
+    prior_release_ref_mutation = False
+    def guard_prior_ref_mutation(result):
+        if result and prior_release_ref_mutation and result[0] != "unresolvable":
+            return ("unresolvable", UNRESOLVABLE)
+        return result
     for raw_segment in segments(tokens):
         if len(raw_segment) == 1:
             parsed = literal_assignment(raw_segment[0])
@@ -5468,11 +5581,11 @@ def extract(command, depth=0):
                 nested = substitute_vars(shell_parts[0], scoped_vars)
                 result = extract(nested, depth + 1)
                 if result:
-                    return result
+                    return guard_prior_ref_mutation(result)
         if command_name == "eval":
             result = extract(" ".join(segment[start + 1:]), depth + 1)
             if result:
-                return result
+                return guard_prior_ref_mutation(result)
         if command_name == "gh":
             gh_config_dir, command_scoped_gh_config = gh_alias_config_dir(segment, start, command_env, variables)
             effective_gh_aliases = dict(persistent_gh_aliases(gh_config_dir))
@@ -5487,10 +5600,12 @@ def extract(command, depth=0):
                 continue
             target = gh_release_metadata(segment, start, scoped_vars)
             if target:
-                return ("unresolvable", UNRESOLVABLE) if target[1] == UNRESOLVABLE or unsafe_ref(target[1]) else target
+                result = ("unresolvable", UNRESOLVABLE) if target[1] == UNRESOLVABLE or unsafe_ref(target[1]) else target
+                return guard_prior_ref_mutation(result)
             target = gh_api_metadata(segment, start, scoped_vars)
             if target:
-                return ("unresolvable", UNRESOLVABLE) if target == UNRESOLVABLE or unsafe_ref(target) else ("ref", target)
+                result = ("unresolvable", UNRESOLVABLE) if target == UNRESOLVABLE or unsafe_ref(target) else ("ref", target)
+                return guard_prior_ref_mutation(result)
             alias_index = gh_subcommand_index(segment, start)
             if alias_index < len(segment) and segment[alias_index] in effective_gh_aliases:
                 if command_scoped_gh_config or segment[alias_index] in gh_aliases:
@@ -5498,15 +5613,18 @@ def extract(command, depth=0):
                 alias_payload = gh_alias_payload(effective_gh_aliases[segment[alias_index]], segment[alias_index + 1:])
                 result = extract(alias_payload, depth + 1)
                 if result:
-                    return result
+                    return guard_prior_ref_mutation(result)
         if command_name == "git":
+            if git_prior_release_ref_mutation(segment, start, scoped_vars):
+                prior_release_ref_mutation = True
+                continue
             result = git_metadata(segment, start, scoped_vars)
             if result and result[0] == "payload" and result[1]:
                 nested = extract(result[1], depth + 1)
                 if nested:
-                    return nested
+                    return guard_prior_ref_mutation(nested)
             if result and result[0] in {"git-c", "git-c-ref", "ref", "unresolvable"}:
-                return result
+                return guard_prior_ref_mutation(result)
     return None
 
 result = extract(sys.argv[1])
