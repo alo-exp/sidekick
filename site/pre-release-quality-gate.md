@@ -23,7 +23,7 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 
 **Session and commit reset**: All four stage markers are scoped to the current host session id and git commit SHA. The gate must be completed in full during the session in which the release is being cut, after the final release commit is present — markers from a previous session or previous commit do not satisfy the release hook.
 
-**Release command scope**: The release hook only authorizes same-repo GitHub.com release transports with resolvable target provenance from a trusted Sidekick checkout: direct `gh release create`, `gh api` release/tag-ref writes with an explicit target SHA, and `git push` tag publication to the canonical Sidekick push destination. Ambiguous hosts/repos/remotes, alternate `pushurl` destinations, command-scoped alias/config/source-context changes, raw `curl`/`wget`, and language-level GitHub API writes intentionally fail closed.
+**Release command scope**: The release hook only authorizes same-repo GitHub.com release transports with resolvable target provenance from a trusted Sidekick checkout: direct `gh release create`, `gh api` release/tag-ref writes with an explicit target SHA, and `git push` tag publication to the canonical Sidekick push destination. Ambiguous hosts/repos/remotes, alternate `pushurl` destinations, persistent or command-scoped Git URL rewrites, command-scoped alias/config/source-context changes, raw `curl`/`wget`, and language-level GitHub API writes intentionally fail closed.
 
 Each stage is complete only when:
 1. The work is done and verified
@@ -407,7 +407,7 @@ git push origin v<version>
 gh release create v<version> \
   --repo alo-exp/sidekick \
   --title "Sidekick v<version>" \
-  --notes-file CHANGELOG.md \
+  --notes-file <notes.md> \
   --verify-tag \
   --latest
 ```
