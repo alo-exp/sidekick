@@ -2778,6 +2778,10 @@ same_command_sink_then_file_redirect_release="printf x >/dev/null > ./sidekick-r
 assert_denied_release_command_with_current_markers \
   "Scenario 49cv0c6: same-command sink then file redirection plus release is denied" \
   "${same_command_sink_then_file_redirect_release}"
+nested_shell_write_release="bash -c 'printf x > ./sidekick-review-temp.txt; gh release create v1.2.1 --repo alo-exp/sidekick --target $(current_head_sha) --generate-notes'"
+assert_denied_release_command_with_current_markers \
+  "Scenario 49cv0c7: nested shell file write plus release is denied" \
+  "${nested_shell_write_release}"
 multi_release_test_tag="v555.555.555"
 git -C "${REPO_ROOT}" update-ref "refs/tags/${multi_release_test_tag}" HEAD
 multi_git_push_then_gh_command="git push origin ${multi_release_test_tag} && gh release create v2.2.2 --target ${target_ref_sha}"

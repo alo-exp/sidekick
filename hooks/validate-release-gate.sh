@@ -4498,6 +4498,8 @@ import sys
 
 CONTROL = {";", "&&", "||", "|", "&"}
 ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+ENV_VALUE_OPTIONS = {"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}
+SHELLS = {"sh", "bash", "zsh"}
 
 def tokenize(command):
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
@@ -4520,7 +4522,211 @@ def command_index_from(segment):
     index = 0
     while index < len(segment) and ASSIGNMENT_RE.match(segment[index]):
         index += 1
+    while index < len(segment):
+        wrapper = Path(segment[index]).name
+        if wrapper == "env":
+            index = skip_env(segment, index)
+            continue
+        if wrapper in {"command", "builtin", "noglob", "time", "gtime", "nice", "nohup", "setsid"}:
+            index += 1
+            continue
+        if wrapper in {"sudo", "doas"}:
+            index += 1
+            while index < len(segment) and segment[index].startswith("-"):
+                index += 2 if segment[index] in {"-u", "--user", "-g", "--group", "-h", "--host"} else 1
+            while index < len(segment) and ASSIGNMENT_RE.match(segment[index]):
+                index += 1
+            continue
+        if wrapper == "exec":
+            index += 1
+            while index < len(segment):
+                if segment[index] == "-a":
+                    index += 2
+                    continue
+                if segment[index] in {"-c", "-l"}:
+                    index += 1
+                    continue
+                break
+            continue
+        break
     return index
+
+def skip_env(segment, index):
+    index += 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return index + 1
+        if token in ENV_VALUE_OPTIONS:
+            index += 2
+            continue
+        if any(token.startswith(option + "=") for option in ENV_VALUE_OPTIONS if option.startswith("--")):
+            index += 1
+            continue
+        if token.startswith("-") or ASSIGNMENT_RE.match(token):
+            index += 1
+            continue
+        break
+    return index
+
+def shell_payload(segment, start):
+    index = start + 1
+    while index < len(segment):
+        token = segment[index]
+        if token == "--":
+            return None
+        if token == "-c" or (token.startswith("-") and not token.startswith("--") and "c" in token[1:]):
+            if index + 1 < len(segment):
+                return segment[index + 1]
+            return None
+        if token.startswith("-"):
+            index += 1
+            continue
+        break
+    return None
+
+def read_balanced_payload(command, start, opener, closer):
+    depth = 1
+    in_single = False
+    in_double = False
+    escaped = False
+    payload = []
+    index = start
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            payload.append(char)
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and not in_single:
+            payload.append(char)
+            escaped = True
+            index += 1
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            payload.append(char)
+            index += 1
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            payload.append(char)
+            index += 1
+            continue
+        if not in_single and not in_double:
+            if char == opener:
+                depth += 1
+            elif char == closer:
+                depth -= 1
+                if depth == 0:
+                    return "".join(payload), index
+        payload.append(char)
+        index += 1
+    return None, len(command)
+
+def backtick_payloads(command):
+    payloads = []
+    in_single = False
+    in_double = False
+    in_backtick = False
+    escaped = False
+    payload = []
+    for char in command:
+        if escaped:
+            if in_backtick:
+                payload.append(char)
+            escaped = False
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            if in_backtick:
+                payload.append(char)
+            continue
+        if in_backtick:
+            if char == "`":
+                payloads.append("".join(payload))
+                payload = []
+                in_backtick = False
+                continue
+            payload.append(char)
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            continue
+        if char == "`" and not in_single:
+            in_backtick = True
+            payload = []
+    return payloads
+
+def command_substitution_payloads(command):
+    payloads = []
+    in_single = False
+    in_double = False
+    escaped = False
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            index += 1
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            index += 1
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            index += 1
+            continue
+        if not in_single and char == "$" and index + 1 < len(command) and command[index + 1] == "(":
+            payload, end = read_balanced_payload(command, index + 2, "(", ")")
+            if payload is not None:
+                payloads.append(payload)
+                index = end + 1
+                continue
+        index += 1
+    return payloads
+
+def process_substitution_payloads(command):
+    payloads = []
+    in_single = False
+    in_double = False
+    escaped = False
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            escaped = False
+            index += 1
+            continue
+        if char == "\\" and not in_single:
+            escaped = True
+            index += 1
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            index += 1
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            index += 1
+            continue
+        if not in_single and not in_double and char in "<>" and index + 1 < len(command) and command[index + 1] == "(":
+            payload, end = read_balanced_payload(command, index + 2, "(", ")")
+            if payload is not None:
+                payloads.append(payload)
+                index = end + 1
+                continue
+        index += 1
+    return payloads
 
 def writes_file(segment):
     write_redirects = {">", ">>", ">|", "&>", "&>>", "<>", ">&"}
@@ -4552,13 +4758,44 @@ def writes_file(segment):
         return any(token != "/dev/null" for token in segment[index:])
     return False
 
+def command_writes_file(command, depth=0):
+    if depth > 8:
+        return True
+    for payload in backtick_payloads(command):
+        if command_writes_file(payload, depth + 1):
+            return True
+    for payload in command_substitution_payloads(command):
+        if command_writes_file(payload, depth + 1):
+            return True
+    for payload in process_substitution_payloads(command):
+        if command_writes_file(payload, depth + 1):
+            return True
+    try:
+        tokens = tokenize(command.replace("\\\n", ""))
+    except Exception:
+        return True
+    for segment in segments(tokens):
+        if writes_file(segment):
+            return True
+        start = command_index_from(segment)
+        if start >= len(segment):
+            continue
+        command_name = Path(segment[start]).name
+        if command_name in SHELLS:
+            payload = shell_payload(segment, start)
+            if payload and command_writes_file(payload, depth + 1):
+                return True
+        elif command_name == "eval" and command_writes_file(" ".join(segment[start + 1:]), depth + 1):
+            return True
+    return False
+
 try:
-    tokens = tokenize(sys.argv[1].replace("\\\n", ""))
+    result = command_writes_file(sys.argv[1])
 except Exception:
     print("1")
     raise SystemExit(0)
 
-print("1" if any(writes_file(segment) for segment in segments(tokens)) else "0")
+print("1" if result else "0")
 PY
 }
 
