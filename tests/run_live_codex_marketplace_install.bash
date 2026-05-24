@@ -36,6 +36,11 @@ EXPECTED_MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_EXPECTED_SOURCE:-https://github
 EXPECTED_MARKETPLACE_SOURCE_TYPE="${CODEX_MARKETPLACE_EXPECTED_SOURCE_TYPE:-git}"
 
 resolve_codex_runner() {
+  if [ -n "${SIDEKICK_CODEX_BIN:-}" ]; then
+    CODEX_BIN=( "${SIDEKICK_CODEX_BIN}" )
+    return 0
+  fi
+
   local built_codex="${CODEX_RUST_REPO}/target/debug/codex"
   if [[ -x "${built_codex}" ]]; then
     CODEX_BIN=( "${built_codex}" )
@@ -51,6 +56,11 @@ resolve_codex_runner() {
 }
 
 resolve_code_runner() {
+  if [ -n "${SIDEKICK_KAY_BIN:-}" ]; then
+    CODE_BIN=( "${SIDEKICK_KAY_BIN}" )
+    return 0
+  fi
+
   local built_code="${CODE_RUST_REPO}/target/debug/kay"
   if [[ -x "${built_code}" ]]; then
     CODE_BIN=( "${built_code}" )
