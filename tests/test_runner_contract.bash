@@ -145,6 +145,7 @@ expect_absent "tests/run_live_codex_plugin_read.bash" "/.cargo/bin" "Codex probe
 echo "=== T6: live Codex marketplace install follows public surface ==="
 expect_contains "tests/run_live_codex_marketplace_install.bash" 'MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-labs/codex-plugins}"' "marketplace install uses current public marketplace source"
 expect_contains "tests/run_live_codex_marketplace_install.bash" 'MARKETPLACE_NAME="${CODEX_MARKETPLACE_NAME:-alo-labs-codex}"' "marketplace install uses current marketplace name"
+expect_contains "tests/run_live_codex_marketplace_install.bash" 'plugin add "sidekick@${MARKETPLACE_NAME}"' "marketplace install adds Sidekick plugin from configured marketplace"
 expect_contains "tests/run_live_codex_marketplace_install.bash" 'manifest["skills"]' "marketplace install resolves skill root from manifest"
 expect_contains "tests/run_live_codex_marketplace_install.bash" 'SKILL_ROOT' "marketplace install validates manifest-selected skill surface"
 expect_absent "tests/run_live_codex_marketplace_install.bash" 'MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-exp/sidekick}"' "marketplace install avoids old repo/name source"
