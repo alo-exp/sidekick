@@ -171,25 +171,29 @@ write_legacy_session_only_markers() {
 }
 
 write_live_pyramid_markers() {
-  local h="$1" count="${2:-2}" i sha run_id proof_sha
+  local h="$1" count="${2:-2}" i sha run_id proof_sha candidate_sha command_sha
   sha="$(current_head_sha)"
   mkdir -p "${h}/.claude/.sidekick/kay-wrapper-proofs"
   for i in $(seq 1 "${count}"); do
     run_id="test-run-${i}"
     proof_sha="$(printf '%064d' "${i}")"
-    printf '%s\n' "${proof_sha}" > "${h}/.claude/.sidekick/kay-wrapper-proofs/${run_id}.sha256"
-    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
+    candidate_sha="$(printf '%064d' "$((i + 100))")"
+    command_sha="$(printf '%064d' "$((i + 200))")"
+    printf 'sidekick-kay-wrapper-proof run_id=%s proof_sha256=%s candidate_sha256=%s command_sha256=%s\n' "${run_id}" "${proof_sha}" "${candidate_sha}" "${command_sha}" > "${h}/.claude/.sidekick/kay-wrapper-proofs/${run_id}.proof"
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha} candidate_sha256=${candidate_sha} command_sha256=${command_sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
   done
 }
 
 write_live_pyramid_markers_for_sha() {
-  local h="$1" sha="$2" count="${3:-2}" i run_id proof_sha
+  local h="$1" sha="$2" count="${3:-2}" i run_id proof_sha candidate_sha command_sha
   mkdir -p "${h}/.claude/.sidekick/kay-wrapper-proofs"
   for i in $(seq 1 "${count}"); do
     run_id="test-run-${i}"
     proof_sha="$(printf '%064d' "${i}")"
-    printf '%s\n' "${proof_sha}" > "${h}/.claude/.sidekick/kay-wrapper-proofs/${run_id}.sha256"
-    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
+    candidate_sha="$(printf '%064d' "$((i + 100))")"
+    command_sha="$(printf '%064d' "$((i + 200))")"
+    printf 'sidekick-kay-wrapper-proof run_id=%s proof_sha256=%s candidate_sha256=%s command_sha256=%s\n' "${run_id}" "${proof_sha}" "${candidate_sha}" "${command_sha}" > "${h}/.claude/.sidekick/kay-wrapper-proofs/${run_id}.proof"
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha} candidate_sha256=${candidate_sha} command_sha256=${command_sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
   done
 }
 
@@ -203,14 +207,16 @@ write_codex_markers() {
 }
 
 write_codex_live_pyramid_markers() {
-  local h="$1" count="${2:-2}" i sha run_id proof_sha
+  local h="$1" count="${2:-2}" i sha run_id proof_sha candidate_sha command_sha
   sha="$(current_head_sha)"
   mkdir -p "${h}/.codex/.sidekick/kay-wrapper-proofs"
   for i in $(seq 1 "${count}"); do
     run_id="test-run-${i}"
     proof_sha="$(printf '%064d' "${i}")"
-    printf '%s\n' "${proof_sha}" > "${h}/.codex/.sidekick/kay-wrapper-proofs/${run_id}.sha256"
-    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha}" >> "${h}/.codex/.sidekick/quality-gate-state"
+    candidate_sha="$(printf '%064d' "$((i + 100))")"
+    command_sha="$(printf '%064d' "$((i + 200))")"
+    printf 'sidekick-kay-wrapper-proof run_id=%s proof_sha256=%s candidate_sha256=%s command_sha256=%s\n' "${run_id}" "${proof_sha}" "${candidate_sha}" "${command_sha}" > "${h}/.codex/.sidekick/kay-wrapper-proofs/${run_id}.proof"
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha} candidate_sha256=${candidate_sha} command_sha256=${command_sha}" >> "${h}/.codex/.sidekick/quality-gate-state"
   done
 }
 
@@ -663,6 +669,9 @@ proof_sha="$(printf '%064d' 99)"
   echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T000001Z run_id=spoof-run-1 source=kay-wrapper proof_sha256=${proof_sha}"
   echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T000002Z run_id=spoof-run-2 source=kay-wrapper proof_sha256=${proof_sha}"
 } >> "${H}/.claude/.sidekick/quality-gate-state"
+mkdir -p "${H}/.claude/.sidekick/kay-wrapper-proofs"
+printf '%s\n' "${proof_sha}" > "${H}/.claude/.sidekick/kay-wrapper-proofs/spoof-run-1.sha256"
+printf '%s\n' "${proof_sha}" > "${H}/.claude/.sidekick/kay-wrapper-proofs/spoof-run-2.sha256"
 PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
