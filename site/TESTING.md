@@ -98,14 +98,16 @@ Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model cal
 `tests/run_release.bash` chains all six release tiers with fail-fast stage aborts:
 
 ```bash
-SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash                        # Codex live pyramid — maintainer pre-tag
-SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash                        # second Codex live pyramid marker
-bash tests/run_release.bash                                              # non-live release check; still requires clean committed release metadata and marketplace pin
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash  # Codex live pyramid — maintainer pre-tag
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash  # second Codex live pyramid marker
+bash tests/run_in_kay.bash bash tests/run_release.bash                       # non-live release check; still requires clean committed release metadata and marketplace pin
 ```
 
 To include optional Forge live stages when Forge provider testing is available, add `SIDEKICK_LIVE_FORGE=1` to either Codex live run.
 
 Every release must first pass the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md`, including each stage's own clean-pass loop, then pass the Codex live release pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Stage markers and live markers are scoped to the current host session and current commit SHA; only live runs append the `quality-gate-live-pyramid` marker that the release hook requires.
+
+Local/pre-release test evidence must be produced inside Kay via `tests/run_in_kay.bash`. All Kay/Codex test stages force OpenCode Go with `deepseek-v4-flash` and low reasoning. This keeps release evidence on the verifier/reporting model profile regardless of normal runtime routing.
 
 After the GitHub release is published, run `bash tests/post_release_cleanup.bash` to remove any transient repo-local artifacts left behind by the release process.
 
@@ -136,7 +138,7 @@ bash tests/run_unit.bash
 bash tests/run_all.bash
 
 # Pre-release gate (~2 min for Codex live; Forge live is optional when available):
-SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 
 # Single suite:
 bash tests/test_forge_enforcer_hook.bash

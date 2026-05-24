@@ -173,7 +173,7 @@ EOF
 echo "=== e2e_codex_delegation ==="
 echo "Sending 5-field prompt to Kay (timeout 180s)..."
 set +e
-CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider=opencode-go -c model=mimo-v2.5-pro "${TASK_PROMPT}" 2>&1)"
+CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider=opencode-go -c model=deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
 CODEX_RC=$?
 set -e
 echo "kay rc=${CODEX_RC}"

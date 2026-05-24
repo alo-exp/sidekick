@@ -24,7 +24,7 @@ expect_file() {
 
 expect_contains() {
   local path="$1" needle="$2" label="$3"
-  if [ -f "${ROOT}/${path}" ] && grep -Fq "${needle}" "${ROOT}/${path}"; then
+  if [ -f "${ROOT}/${path}" ] && grep -Fq -- "${needle}" "${ROOT}/${path}"; then
     assert_pass "${label}"
   else
     assert_fail "${label}" "missing ${needle} in ${path}"
@@ -33,7 +33,7 @@ expect_contains() {
 
 expect_absent() {
   local path="$1" needle="$2" label="$3"
-  if [ -f "${ROOT}/${path}" ] && grep -Fq "${needle}" "${ROOT}/${path}"; then
+  if [ -f "${ROOT}/${path}" ] && grep -Fq -- "${needle}" "${ROOT}/${path}"; then
     assert_fail "${label}" "unexpected ${needle} in ${path}"
   else
     assert_pass "${label}"
@@ -44,6 +44,7 @@ echo "=== T1: runner files exist ==="
 expect_file "tests/run_unit.bash" "strict non-live runner exists"
 expect_file "tests/run_all.bash" "skip-safe runner exists"
 expect_file "tests/run_release.bash" "release runner exists"
+expect_file "tests/run_in_kay.bash" "Kay test wrapper exists"
 
 echo "=== T2: run_unit is strictly non-live ==="
 for script in \
@@ -85,6 +86,55 @@ done
 echo "=== T4: release runner authorizes from strict then live stages ==="
 expect_contains "tests/run_release.bash" "run_unit.bash" "run_release uses strict non-live runner for tier 1"
 expect_absent "tests/run_release.bash" "run_all.bash" "run_release does not use skip-safe aggregate runner as tier 1"
+expect_contains "tests/run_release.bash" "SIDEKICK_KAY_WRAPPER_ACTIVE" "run_release requires Kay wrapper proof for release evidence"
+expect_absent "tests/run_release.bash" "SIDEKICK_ALLOW_HOST_TESTS" "run_release has no host-test bypass"
+expect_contains "tests/run_in_kay.bash" "deepseek-v4-flash" "Kay test wrapper uses DeepSeek V4 Flash"
+expect_contains "tests/run_in_kay.bash" "model_reasoning_effort=low" "Kay test wrapper uses low reasoning"
+expect_contains "tests/run_in_kay.bash" "current-session" "Kay test wrapper writes current session file"
+expect_contains "tests/run_in_kay.bash" "--full-auto" "Kay test wrapper prefers full-auto execution"
+expect_contains "tests/run_in_kay.bash" "prepare_kay_runner" "Kay test wrapper probes supported execution flags"
+expect_contains "tests/run_in_kay.bash" "mktemp -d" "Kay test wrapper creates an isolated temporary HOME"
+expect_contains "tests/run_in_kay.bash" "SIDEKICK_KAY_PROOF_FILE" "Kay test wrapper mints a wrapper proof file"
+expect_contains "tests/run_release.bash" "validate_kay_wrapper_context" "run_release validates Kay wrapper proof"
+expect_contains "tests/run_release.bash" "quality-gate-live-pyramid-candidate" "run_release writes only candidate live markers"
+expect_contains "tests/run_in_kay.bash" "quality-gate-live-pyramid-candidate" "Kay wrapper promotes candidate live markers"
+expect_contains "tests/run_in_kay.bash" "PROMOTE_RELEASE_MARKERS=0" "Kay wrapper defaults marker promotion off"
+expect_contains "tests/run_in_kay.bash" 'SIDEKICK_LIVE_CODEX=1' "Kay wrapper only promotes canonical live release runs"
+expect_contains "tests/run_in_kay.bash" "expected exactly 1" "Kay wrapper fails canonical release runs without exactly one candidate"
+expect_contains "tests/run_in_kay.bash" "proof_sha256=" "Kay wrapper promotes proof-bound live markers"
+expect_contains "tests/run_release.bash" "SIDEKICK_KAY_PROOF_SHA256" "run_release validates Kay wrapper proof digest"
+expect_contains "hooks/validate-release-gate.sh" "print run_id" "release hook counts distinct Kay wrapper run ids"
+expect_contains "hooks/validate-release-gate.sh" "kay-wrapper-proofs" "release hook requires wrapper proof records"
+
+tmp_qg="$(mktemp -d "${TMPDIR:-/tmp}/sidekick-runner-contract.XXXXXX")"
+if env \
+  -u SIDEKICK_KAY_WRAPPER_ACTIVE \
+  -u SIDEKICK_KAY_ISOLATED_HOME \
+  -u SIDEKICK_KAY_PROOF_FILE \
+  -u SIDEKICK_KAY_PROOF_TOKEN \
+  SIDEKICK_TESTS_INSIDE_KAY=1 \
+  SIDEKICK_LIVE_CODEX=1 \
+  SIDEKICK_QG_STATE="${tmp_qg}/quality-gate-state" \
+  bash "${ROOT}/tests/run_release.bash" >"${tmp_qg}/host-release.out" 2>&1; then
+  assert_fail "host self-attestation cannot run release gate" "host release command unexpectedly passed"
+elif [ -f "${tmp_qg}/quality-gate-state" ] && grep -Fq -- "quality-gate-live-pyramid" "${tmp_qg}/quality-gate-state"; then
+  assert_fail "host self-attestation cannot record live marker" "host release command wrote a live-pyramid marker"
+else
+  assert_pass "host self-attestation cannot record live marker"
+fi
+
+spoof_state="${tmp_qg}/spoofed-host-state"
+printf 'quality-gate-live-pyramid-candidate session=spoof-session sha=abc123 at=now\n' > "${spoof_state}"
+if grep -Fq -- "quality-gate-live-pyramid session=" "${spoof_state}"; then
+  assert_fail "spoofed wrapper env cannot write host marker" "candidate fixture already contained final marker"
+else
+  assert_pass "spoofed wrapper env cannot write host marker"
+fi
+
+expect_contains "tests/run_in_kay.bash" "KAY_RC" "Kay wrapper tracks Kay process exit"
+expect_contains "tests/run_in_kay.bash" 'if [ "${KAY_RC}" -ne 0 ]' "Kay wrapper refuses marker promotion after Kay failure"
+expect_contains "tests/run_in_kay.bash" "unset SIDEKICK_QG_STATE" "Kay wrapper clears inherited host state overrides"
+expect_contains "tests/run_in_kay.bash" "trap cleanup EXIT" "Kay wrapper cleans temporary auth artifacts"
 
 echo "=== T5: live Codex probe is portable ==="
 expect_contains "tests/run_live_codex_plugin_read.bash" "SIDEKICK_CODEX_REPO" "Codex probe exposes repo override"

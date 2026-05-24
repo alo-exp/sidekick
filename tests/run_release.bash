@@ -23,24 +23,55 @@
 #
 # CI should run tests/run_unit.bash. This runner is for release operators: the
 # live stages skip cleanly when env vars are unset, and Codex live runs are
-# release-authorizing. A run with SIDEKICK_LIVE_CODEX=1 records a current-session,
-# current-commit live-pyramid marker. Forge live stages may also be run when
-# available, but they are not required when Forge testing is intentionally
-# skipped. The release hook requires two such markers before it allows release
-# tag publication or a GitHub release command.
+# release-authorizing. Kay/Codex live tests force OpenCode Go with
+# deepseek-v4-flash and low reasoning so release evidence uses the verifier
+# profile, not the general implementation profile. A run with
+# SIDEKICK_LIVE_CODEX=1 records a current-session, current-commit live-pyramid
+# marker. Forge live stages may also be run when available, but they are not
+# required when Forge testing is intentionally skipped. The release hook requires
+# two such markers before it allows release tag publication or a GitHub release
+# command.
 #
 # Usage
-#   bash tests/run_release.bash
-#   SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
-#   SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # when Forge live is available
+#   bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+#   bash tests/run_in_kay.bash SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # when Forge live is available
 # =============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIVE_PYRAMID_MARKER="quality-gate-live-pyramid"
+LIVE_PYRAMID_CANDIDATE_MARKER="quality-gate-live-pyramid-candidate"
 
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
+
+validate_kay_wrapper_context() {
+  if [[ "${SIDEKICK_KAY_WRAPPER_ACTIVE:-}" != "1" ]]; then
+    return 1
+  fi
+  if [[ -z "${SIDEKICK_KAY_ISOLATED_HOME:-}" || "${HOME}" != "${SIDEKICK_KAY_ISOLATED_HOME}" ]]; then
+    return 1
+  fi
+  if [[ -z "${SIDEKICK_KAY_PROOF_FILE:-}" || -z "${SIDEKICK_KAY_PROOF_TOKEN:-}" || -z "${SIDEKICK_KAY_PROOF_SHA256:-}" ]]; then
+    return 1
+  fi
+  if [[ -z "${SIDEKICK_KAY_RUN_ID:-}" ]]; then
+    return 1
+  fi
+  case "${SIDEKICK_KAY_PROOF_FILE}" in
+    "${SIDEKICK_KAY_ISOLATED_HOME}"/*) ;;
+    *) return 1 ;;
+  esac
+  [[ -f "${SIDEKICK_KAY_PROOF_FILE}" ]] || return 1
+  [[ "$(tr -d '[:space:]' < "${SIDEKICK_KAY_PROOF_FILE}")" == "${SIDEKICK_KAY_PROOF_TOKEN}" ]] || return 1
+  [[ "$(printf '%s' "${SIDEKICK_KAY_PROOF_TOKEN}" | shasum -a 256 | awk '{print $1}')" == "${SIDEKICK_KAY_PROOF_SHA256}" ]]
+}
+
+if ! validate_kay_wrapper_context; then
+  echo -e "${red}${bold}Release tests must run inside Kay.${reset}"
+  echo "Use: bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash"
+  exit 1
+fi
 
 STAGE_FAIL=0
 run_stage() {
@@ -63,11 +94,7 @@ live_pyramid_enabled() {
 }
 
 quality_gate_state_file() {
-  local qg_dir="${HOME}/.claude/.sidekick"
-  if [[ -n "${CODEX_PLUGIN_ROOT:-}" || -n "${CODEX_HOME:-}" || -n "${CODEX_THREAD_ID:-}" ]]; then
-    qg_dir="${HOME}/.codex/.sidekick"
-  fi
-  printf '%s\n' "${SIDEKICK_QG_STATE:-${qg_dir}/quality-gate-state}"
+  printf '%s\n' "${HOME}/.codex/.sidekick/quality-gate-state"
 }
 
 quality_gate_session_id() {
@@ -88,6 +115,7 @@ record_live_pyramid_marker() {
     echo -e "${red}${bold}Cannot record live-pyramid marker: failed to create state directory.${reset}"
     exit 1
   fi
+  printf '%s\n' "${session_id}" > "$(dirname "${state_file}")/current-session"
 
   git_sha="$(git -C "${SCRIPT_DIR}/.." rev-parse --short=12 HEAD 2>/dev/null || true)"
   if [[ -z "${git_sha}" ]]; then
@@ -97,11 +125,11 @@ record_live_pyramid_marker() {
   fi
 
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  if ! printf '%s session=%s sha=%s at=%s\n' "${LIVE_PYRAMID_MARKER}" "${session_id}" "${git_sha}" "${timestamp}" >> "${state_file}"; then
+  if ! printf '%s session=%s sha=%s at=%s run_id=%s token=%s proof_sha256=%s\n' "${LIVE_PYRAMID_CANDIDATE_MARKER}" "${session_id}" "${git_sha}" "${timestamp}" "${SIDEKICK_KAY_RUN_ID}" "${SIDEKICK_KAY_PROOF_TOKEN}" "${SIDEKICK_KAY_PROOF_SHA256}" >> "${state_file}"; then
     echo -e "${red}${bold}Cannot record live-pyramid marker: failed to write state file.${reset}"
     exit 1
   fi
-  echo -e "${green}  → recorded ${LIVE_PYRAMID_MARKER} for this host session${reset}"
+  echo -e "${green}  → recorded ${LIVE_PYRAMID_CANDIDATE_MARKER} inside isolated Kay state${reset}"
 }
 
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
@@ -133,7 +161,7 @@ echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"
 if live_pyramid_enabled; then
   record_live_pyramid_marker
-  echo -e "${green}${bold}RELEASE GATE PASSED${reset} — one live-pyramid run recorded."
+  echo -e "${green}${bold}RELEASE GATE PASSED${reset} — one live-pyramid candidate recorded for wrapper promotion."
   echo -e "${yellow}Release hook requirement:${reset} complete two current-session live-pyramid runs before tagging."
 else
   echo -e "${yellow}${bold}NON-LIVE RELEASE CHECKS PASSED${reset} — live Kay stages skipped; not safe to tag."
