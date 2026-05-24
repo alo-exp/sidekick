@@ -37,6 +37,12 @@ echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━�
 PASS=0; FAIL=0
 pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
+LIVE_KAY_MODEL_ARGS=(
+  -c model_provider=opencode-go
+  -c model=deepseek-v4-flash
+  -c model_reasoning_effort=low
+  -c preferred_model_reasoning_effort=low
+)
 
 resolve_codex_binary() {
   for candidate in kay code codex coder; do
@@ -117,7 +123,7 @@ trap 'rm -rf "${WORKDIR}"' EXIT
 PROMPT=$'Respond with exactly two lines and nothing else:\nSTATUS: SUCCESS\nFILES_CHANGED: []'
 
 set +e
-_out="$(cd "${WORKDIR}" && run_with_timeout 120 "${CODEX_RUNNER[@]}" "${PROMPT}" 2>&1)"
+_out="$(cd "${WORKDIR}" && run_with_timeout 120 "${CODEX_RUNNER[@]}" "${LIVE_KAY_MODEL_ARGS[@]}" "${PROMPT}" 2>&1)"
 _rc=$?
 set -e
 

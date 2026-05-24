@@ -14,7 +14,7 @@
 #   printf 'quality-gate-stage-N session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
 # A successful live `tests/run_release.bash` run with Codex live enabled
 # appends:
-#   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp>
+#   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp> run_id=<id> source=kay-wrapper proof_sha256=<sha256>
 # If stages are added or removed from that document, update STAGE_COUNT below
 # and commit both files together.
 #
@@ -35,6 +35,26 @@ if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_
 fi
 STATE_FILE="${SIDEKICK_QG_STATE:-${SIDEKICK_QG_DIR}/quality-gate-state}"
 QUALITY_GATE_SESSION_ID="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
+
+if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
+  for candidate_dir in "$HOME/.codex/.sidekick" "$HOME/.claude/.sidekick"; do
+    candidate_session_file="${candidate_dir}/current-session"
+    if [ -f "$candidate_session_file" ]; then
+      candidate_session_mtime="$(stat -f %m "$candidate_session_file" 2>/dev/null || stat -c %Y "$candidate_session_file" 2>/dev/null || printf '0')"
+      candidate_session_age="$(( $(date +%s) - candidate_session_mtime ))"
+      if [ "$candidate_session_age" -gt 21600 ]; then
+        continue
+      fi
+      QUALITY_GATE_SESSION_ID="$(sed -n '1s/[[:space:]]*$//p' "$candidate_session_file" 2>/dev/null || true)"
+      if [ -n "$QUALITY_GATE_SESSION_ID" ]; then
+        if [ -z "${SIDEKICK_QG_STATE:-}" ]; then
+          STATE_FILE="${candidate_dir}/quality-gate-state"
+        fi
+        break
+      fi
+    fi
+  done
+fi
 
 # Fail closed if jq is absent — mirrors the sibling hook contract.
 if ! command -v jq >/dev/null 2>&1; then
@@ -135,6 +155,7 @@ VARIABLE_TOKEN_RE = re.compile(r"^\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Z
 ENV_REFERENCE_RE = re.compile(r"\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)\})")
 PRINTF_SPEC_RE = re.compile(r"%(?:[-+#0 ']*\d*(?:\.\d+)?[hlLzjt]*)?([A-Za-z%])")
 SHELL_VALUE_OPTIONS = {"--init-file", "--rcfile"}
+SHELL_NOEXEC_OPTIONS = {"-n", "--noexec"}
 GH_API_VALUE_OPTIONS = {
     "-H", "--header",
     "-X", "--method",
@@ -2828,6 +2849,8 @@ def shell_payload_parts(segment):
         token = segment[index]
         if token == "--":
             return None
+        if token in SHELL_NOEXEC_OPTIONS or (token.startswith("-") and not token.startswith("--") and "n" in token[1:]):
+            return None
         if token == "-c" or (token.startswith("-") and not token.startswith("--") and "c" in token[1:]):
             if index + 1 < len(segment):
                 return segment[index + 1], segment[index + 2:]
@@ -2851,6 +2874,8 @@ def shell_reads_stdin(segment, start):
         token = segment[index]
         if token == "--":
             return index + 1 >= len(segment)
+        if token in SHELL_NOEXEC_OPTIONS or (token.startswith("-") and not token.startswith("--") and "n" in token[1:]):
+            return False
         if token == "-c" or (token.startswith("-") and not token.startswith("--") and "c" in token[1:]):
             return False
         if token in SHELL_VALUE_OPTIONS:
@@ -2895,6 +2920,8 @@ def process_substitution_script_payloads(segment, start):
             if token == "--":
                 index += 1
                 break
+            if token in SHELL_NOEXEC_OPTIONS or (token.startswith("-") and not token.startswith("--") and "n" in token[1:]):
+                return []
             if token in SHELL_VALUE_OPTIONS:
                 index += 2
                 continue
@@ -3626,6 +3653,8 @@ def shell_script_operand(segment, start):
         if token == "--":
             index += 1
             break
+        if token in SHELL_NOEXEC_OPTIONS or (token.startswith("-") and not token.startswith("--") and "n" in token[1:]):
+            return None
         if token == "-c" or token.startswith("-c"):
             return None
         if token.startswith("-") and not token.startswith("--") and "c" in token[1:]:
@@ -4500,6 +4529,7 @@ CONTROL = {";", "&&", "||", "|", "&"}
 ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 ENV_VALUE_OPTIONS = {"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}
 SHELLS = {"sh", "bash", "zsh"}
+SHELL_NOEXEC_OPTIONS = {"-n", "--noexec"}
 
 def tokenize(command):
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()<>{}")
@@ -4908,6 +4938,8 @@ def shell_payload_parts(segment, start):
     while index < len(segment):
         token = segment[index]
         if token == "--":
+            return None
+        if token in SHELL_NOEXEC_OPTIONS or (token.startswith("-") and not token.startswith("--") and "n" in token[1:]):
             return None
         if token == "-c" or (token.startswith("-") and not token.startswith("--") and "c" in token[1:]):
             if index + 1 < len(segment):
@@ -6915,7 +6947,7 @@ PY
 }
 
 if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
-  reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set SIDEKICK_SESSION_ID, CODEX_THREAD_ID, CLAUDE_SESSION_ID, or SESSION_ID and rerun the gate in the current session."
+  reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set the current host session id or write it to ~/.codex/.sidekick/current-session / ~/.claude/.sidekick/current-session before rerunning the gate."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
@@ -7167,11 +7199,15 @@ for stage in $(seq 1 "$STAGE_COUNT"); do
 done
 
 if [ ${#missing[@]} -eq 0 ]; then
+  state_dir="$(dirname "$STATE_FILE")"
   live_pyramid_runs=$(
     awk -v marker="$LIVE_PYRAMID_MARKER" -v sid="$QUALITY_GATE_SESSION_ID" -v sha="$current_head_sha" '
       $1 == marker {
         has_session = 0
         has_sha = 0
+        has_source = 0
+        run_id = ""
+        proof_sha256 = ""
         for (i = 2; i <= NF; i++) {
           if ($i == "session=" sid) {
             has_session = 1
@@ -7179,19 +7215,33 @@ if [ ${#missing[@]} -eq 0 ]; then
           if ($i == "sha=" sha) {
             has_sha = 1
           }
+          if ($i == "source=kay-wrapper") {
+            has_source = 1
+          }
+          if ($i ~ /^run_id=.+/) {
+            run_id = substr($i, 8)
+          }
+          if ($i ~ /^proof_sha256=[0-9a-f]{64}$/) {
+            proof_sha256 = substr($i, 14)
+          }
         }
-        if (has_session && has_sha) {
-          print $0
+        if (has_session && has_sha && has_source && run_id != "" && proof_sha256 != "") {
+          print run_id, proof_sha256
         }
       }
-    ' "$STATE_FILE" 2>/dev/null | sort -u | wc -l | tr -d ' '
+    ' "$STATE_FILE" 2>/dev/null | while read -r run_id proof_sha256; do
+      proof_file="${state_dir}/kay-wrapper-proofs/${run_id}.sha256"
+      if [ -f "$proof_file" ] && [ "$(tr -d '[:space:]' < "$proof_file" 2>/dev/null)" = "$proof_sha256" ]; then
+        printf '%s\n' "$run_id"
+      fi
+    done | sort -u | wc -l | tr -d ' '
   )
 
   if [ "${live_pyramid_runs:-0}" -ge "$LIVE_PYRAMID_REQUIRED_RUNS" ]; then
     exit 0
   fi
 
-  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session, current-commit ${LIVE_PYRAMID_MARKER} marker(s). Run SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
+  reason="Pre-release live pyramid incomplete. Found ${live_pyramid_runs:-0}/${LIVE_PYRAMID_REQUIRED_RUNS} current-session, current-commit ${LIVE_PYRAMID_MARKER} marker(s). Run bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash twice in this host session before cutting a release."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",

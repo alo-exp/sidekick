@@ -89,6 +89,11 @@ run_hook_codex() {
   (sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" SIDEKICK_SESSION_ID= SESSION_ID= CLAUDE_SESSION_ID= CODEX_THREAD_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "${HOOK}" <<<"$2")
 }
 
+run_hook_no_host_session() {
+  # $1 = temp HOME, $2 = JSON payload
+  (sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" SIDEKICK_SESSION_ID= SESSION_ID= CLAUDE_SESSION_ID= CODEX_THREAD_ID= CODEX_HOME= CODEX_PLUGIN_ROOT= bash "${HOOK}" <<<"$2")
+}
+
 run_hook_no_git() {
   # $1 = temp HOME, $2 = JSON payload, $3 = package root with hooks/ but no .git
   (sanitize_release_env; HOME="$1" PATH="${GIT_WRAPPER_DIR}:${PATH}" SIDEKICK_TEST_REAL_GIT="${REAL_GIT}" SIDEKICK_TEST_LS_REMOTE_OUTPUT="${SIDEKICK_TEST_LS_REMOTE_OUTPUT:-}" SIDEKICK_TEST_LS_REMOTE_STATUS="${SIDEKICK_TEST_LS_REMOTE_STATUS:-0}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}" bash "$3/hooks/validate-release-gate.sh" <<<"$2")
@@ -166,17 +171,25 @@ write_legacy_session_only_markers() {
 }
 
 write_live_pyramid_markers() {
-  local h="$1" count="${2:-2}" i sha
+  local h="$1" count="${2:-2}" i sha run_id proof_sha
   sha="$(current_head_sha)"
+  mkdir -p "${h}/.claude/.sidekick/kay-wrapper-proofs"
   for i in $(seq 1 "${count}"); do
-    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z" >> "${h}/.claude/.sidekick/quality-gate-state"
+    run_id="test-run-${i}"
+    proof_sha="$(printf '%064d' "${i}")"
+    printf '%s\n' "${proof_sha}" > "${h}/.claude/.sidekick/kay-wrapper-proofs/${run_id}.sha256"
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
   done
 }
 
 write_live_pyramid_markers_for_sha() {
-  local h="$1" sha="$2" count="${3:-2}" i
+  local h="$1" sha="$2" count="${3:-2}" i run_id proof_sha
+  mkdir -p "${h}/.claude/.sidekick/kay-wrapper-proofs"
   for i in $(seq 1 "${count}"); do
-    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z" >> "${h}/.claude/.sidekick/quality-gate-state"
+    run_id="test-run-${i}"
+    proof_sha="$(printf '%064d' "${i}")"
+    printf '%s\n' "${proof_sha}" > "${h}/.claude/.sidekick/kay-wrapper-proofs/${run_id}.sha256"
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha}" >> "${h}/.claude/.sidekick/quality-gate-state"
   done
 }
 
@@ -190,10 +203,14 @@ write_codex_markers() {
 }
 
 write_codex_live_pyramid_markers() {
-  local h="$1" count="${2:-2}" i sha
+  local h="$1" count="${2:-2}" i sha run_id proof_sha
   sha="$(current_head_sha)"
+  mkdir -p "${h}/.codex/.sidekick/kay-wrapper-proofs"
   for i in $(seq 1 "${count}"); do
-    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z" >> "${h}/.codex/.sidekick/quality-gate-state"
+    run_id="test-run-${i}"
+    proof_sha="$(printf '%064d' "${i}")"
+    printf '%s\n' "${proof_sha}" > "${h}/.codex/.sidekick/kay-wrapper-proofs/${run_id}.sha256"
+    echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T00000${i}Z run_id=${run_id} source=kay-wrapper proof_sha256=${proof_sha}" >> "${h}/.codex/.sidekick/quality-gate-state"
   done
 }
 
@@ -472,6 +489,14 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
+# Scenario 2a: shell syntax checks do not execute release test fixtures
+# ---------------------------------------------------------------------------
+assert_passthrough_command "Scenario 2a: bash -n release-gate fixture passes through" \
+  "bash -n tests/test_validate_release_gate_hook.bash"
+assert_passthrough_command "Scenario 2b: bash --noexec release-gate fixture passes through" \
+  "bash --noexec tests/test_validate_release_gate_hook.bash"
+
+# ---------------------------------------------------------------------------
 # Scenario 3: gh release create with NO markers → deny
 # ---------------------------------------------------------------------------
 echo "Scenario 3: release command with no markers is denied"
@@ -573,16 +598,16 @@ fi
 rm -rf "${H}" "${NO_GIT_ROOT}" "${NO_GIT_CWD}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4b2: missing session id guidance names all accepted variables
+# Scenario 4b2: missing session id guidance names cross-host session files
 # ---------------------------------------------------------------------------
-echo "Scenario 4b2: missing host session guidance names Claude session variable"
+echo "Scenario 4b2: missing host session guidance names cross-host session files"
 H="$(setup_home)"
 PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
 OUT="$(HOME="${H}" CODEX_PLUGIN_ROOT= CODEX_HOME= CODEX_THREAD_ID= SIDEKICK_SESSION_ID= CLAUDE_SESSION_ID= SESSION_ID= bash "${HOOK}" <<<"${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
-if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"CLAUDE_SESSION_ID"* ]]; then
-  assert_pass "missing host session guidance includes CLAUDE_SESSION_ID"
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *".codex/.sidekick/current-session"* ]] && [[ "${REASON}" == *".claude/.sidekick/current-session"* ]]; then
+  assert_pass "missing host session guidance includes cross-host session files"
 else
   assert_fail "missing host session guidance" "rc=${RC} decision=${DECISION} reason=${REASON} out=${OUT}"
 fi
@@ -627,9 +652,32 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4e: stale stage marker SHA does not satisfy current checkout
+# Scenario 4e: direct final marker without wrapper proof is denied
 # ---------------------------------------------------------------------------
-echo "Scenario 4e: stale stage marker SHA is denied"
+echo "Scenario 4e: direct final marker without wrapper proof is denied"
+H="$(setup_home)"
+write_markers "${H}" 1 2 3 4
+sha="$(current_head_sha)"
+proof_sha="$(printf '%064d' 99)"
+{
+  echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T000001Z run_id=spoof-run-1 source=kay-wrapper proof_sha256=${proof_sha}"
+  echo "quality-gate-live-pyramid session=${SIDEKICK_TEST_SESSION:-test-session} sha=${sha} at=20260515T000002Z run_id=spoof-run-2 source=kay-wrapper proof_sha256=${proof_sha}"
+} >> "${H}/.claude/.sidekick/quality-gate-state"
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+REASON=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ "${DECISION}" = "deny" ] && [[ "${REASON}" == *"0/2"* ]]; then
+  assert_pass "direct final marker without wrapper proof: permissionDecision=deny"
+else
+  assert_fail "direct final marker without wrapper proof deny" "rc=${RC} decision=${DECISION} reason=${REASON}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
+# Scenario 4f: stale stage marker SHA does not satisfy current checkout
+# ---------------------------------------------------------------------------
+echo "Scenario 4f: stale stage marker SHA is denied"
 H="$(setup_home)"
 write_markers_for_sha "${H}" "stale-stage-sha" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
@@ -645,9 +693,9 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 4f: legacy session-only stage markers are denied in source checkout
+# Scenario 4g: legacy session-only stage markers are denied in source checkout
 # ---------------------------------------------------------------------------
-echo "Scenario 4f: legacy session-only stage markers are denied"
+echo "Scenario 4g: legacy session-only stage markers are denied"
 H="$(setup_home)"
 write_legacy_session_only_markers "${H}" 1 2 3 4
 write_live_pyramid_markers "${H}" 2
@@ -3201,6 +3249,24 @@ if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
   assert_pass "Codex host markers: release command passes"
 else
   assert_fail "Codex host markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
+
+# ---------------------------------------------------------------------------
+# Scenario 51: Codex current-session file satisfies release gate
+# ---------------------------------------------------------------------------
+echo "Scenario 51: Codex current-session file markers satisfy release command"
+H="$(setup_home)"
+write_codex_markers "${H}" 1 2 3 4
+write_codex_live_pyramid_markers "${H}" 2
+printf '%s\n' "${SIDEKICK_TEST_SESSION:-test-session}" > "${H}/.codex/.sidekick/current-session"
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook_no_host_session "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "Codex current-session file markers: release command passes"
+else
+  assert_fail "Codex current-session file markers" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 
