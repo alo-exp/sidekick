@@ -21,7 +21,6 @@ prepare_surface_sandbox() {
   cp -R "${PLUGIN_DIR}/agents" "${root}/agents"
   cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
   cp "${PLUGIN_DIR}/hooks/hooks.json" "${root}/hooks/hooks.json"
-  cp "${PLUGIN_DIR}/hooks/validate-release-gate.sh" "${root}/hooks/validate-release-gate.sh"
   cp "${PLUGIN_DIR}/skills/forge/SKILL.md" "${root}/skills/forge/SKILL.md"
   cp "${PLUGIN_DIR}/skills/forge-stop/SKILL.md" "${root}/skills/forge-stop/SKILL.md"
   cp "${PLUGIN_DIR}/skills/codex-stop/SKILL.md" "${root}/skills/codex-stop/SKILL.md"
@@ -101,7 +100,6 @@ run_case() {
   local hooks="${root}/hooks/hooks.json"
   local registry="${root}/sidekicks/registry.json"
   local registry_helper="${root}/hooks/lib/sidekick-registry.sh"
-  local release_gate="${root}/hooks/validate-release-gate.sh"
   local canonical_forge_skill="${root}/skills/forge/SKILL.md"
   local generated_forge_skill="${root}/agents/${host}/forge/SKILL.md"
   local generated_forge_stop_skill="${root}/agents/${host}/forge-stop/SKILL.md"
@@ -128,14 +126,6 @@ run_case() {
   assert_absent "${registry_helper}" "${other_session_var}" "${host}: registry helper excludes the other host session var"
   assert_order "${registry_helper}" "if [[ -n \"\${${host_env_var}:-}\" ]]; then" "if [[ -n \"\${SIDEKICK_PLUGIN_ROOT:-}\" ]]; then" "${host}: registry helper prefers the active host plugin root"
   assert_count "${registry_helper}" "if [[ -n \"\${${host_env_var}:-}\" ]]; then" "1" "${host}: registry helper has one active host root branch"
-
-  assert_contains "${release_gate}" "SIDEKICK_QG_DIR=\"\$HOME/${marker_prefix}/.sidekick\"" "${host}: release gate defaults to the host quality-gate state path"
-  assert_contains "${release_gate}" 'STATE_FILE="${SIDEKICK_QG_STATE:-${SIDEKICK_QG_DIR}/quality-gate-state}"' "${host}: release gate resolves quality-gate state from the host dir"
-  assert_absent "${release_gate}" "${host_session_var}, ${host_session_var}" "${host}: release gate message does not duplicate the host session var"
-  case "${marker_prefix}" in
-    .codex) assert_absent "${release_gate}" "\$HOME/.claude/.sidekick/quality-gate-state" "${host}: release gate excludes Claude quality-gate state path" ;;
-    .claude) assert_absent "${release_gate}" "\$HOME/.codex/.sidekick/quality-gate-state" "${host}: release gate excludes Codex quality-gate state path" ;;
-  esac
 
   assert_contains "${registry}" "${marker_prefix}/sessions/\${${host_session_var}}" "${host}: registry marker rewrites to the host session path"
   assert_absent "${registry}" "${other_env_var}" "${host}: registry excludes the other host root"

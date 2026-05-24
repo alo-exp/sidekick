@@ -30,8 +30,8 @@
 # live-pyramid candidate marker. The Kay wrapper promotes successful canonical
 # runs to proof-bound final markers. Forge live stages may also be run when
 # available, but they are not required when Forge testing is intentionally
-# skipped. The release hook requires two final markers before it allows release
-# tag publication or a GitHub release command.
+# skipped. Release operators verify two final markers before publishing the tag
+# or GitHub release.
 #
 # Usage
 #   bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash

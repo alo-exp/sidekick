@@ -182,7 +182,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p>All Forge delegation behavior is defined in <code>skills/forge/SKILL.md</code>. This file is loaded when you invoke <code>/forge</code> and contains the current rules the host follows: how to check runtime readiness, create session state, write task prompts, escalate failures, mentor through AGENTS.md, and observe token limits.</p>
       <p>The canonical SKILL.md covers:</p>
       <ul>
-        <li><strong>Runtime readiness</strong> — per-session health check; SessionStart does not update or repair runtimes</li>
+        <li><strong>Runtime readiness</strong> — per-session health check during explicit delegation startup</li>
         <li><strong>Activation</strong> — health check, bootstrap config, session state</li>
         <li><strong>Delegation Protocol</strong> — 5-field task prompt structure</li>
         <li><strong>Deactivation</strong> — clean shutdown</li>

@@ -88,7 +88,7 @@ echo "=== T5: Getting Started is host-aware ==="
 for needle in 'Claude Code or Codex' 'Codex users should start with Compatibility' 'Claude Code and Codex plugin' 'Codex users should install the Codex-facing Sidekick package' 'Your First Kay Task' 'kay-delegate' 'sidekick:kay-delegate' 'kay exec --full-auto' 'vision / visual reasoning'; do
   expect_contains "site/help/getting-started/index.html" "${needle}" "getting started contains ${needle}"
 done
-for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-labs/codex-plugins' 'The SessionStart hooks only run first-run bootstrap and legacy hook cleanup' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
+for needle in '/plugin install alo-labs/sidekick' 'codex plugin marketplace add alo-labs/codex-plugins' 'Sidekick does not install SessionStart hooks' 'On activation, Forge checks four things' 'The PreToolUse hook injects <code>--conversation-id</code>, <code>--verbose</code>'; do
   expect_contains "site/help/getting-started/index.html" "${needle}" "getting started current flow contains ${needle}"
 done
 
@@ -96,13 +96,12 @@ echo "=== T6: Reference page exposes glossary and compatibility ==="
 for needle in 'Glossary Matrix' 'Compatibility Matrix' '../../GLOSSARY.md' '../../COMPATIBILITY.md'; do
   expect_contains "site/help/reference/index.html" "${needle}" "reference contains ${needle}"
 done
-for needle in 'SessionStart no longer updates or repairs Forge/Kay runtimes after install' 'rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>' 'rewrites Kay runtime calls to include <code>--full-auto</code>' 'host session marker' '~/.kay/sessions/&lt;session&gt;/.kay-delegation-active'; do
+for needle in 'Sidekick ships only PreToolUse and PostToolUse hooks' 'rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>' 'rewrites Kay runtime calls to include <code>--full-auto</code>' 'active-sidekick' '~/.kay/sessions/&lt;session&gt;/.kay-delegation-active'; do
   expect_contains "site/help/reference/index.html" "${needle}" "reference current hooks contain ${needle}"
 done
-expect_contains "site/help/reference/index.html" 'Blocks <code>gh release create</code> commands and release tag pushes' "reference documents release tag push guard"
 
 echo "=== T7: Concepts and troubleshooting match current runtime behavior ==="
-for needle in 'per-session health check; SessionStart does not update or repair runtimes' 'quality-gates + code-review' 'Forge output is treated as untrusted task output' '[<span class="key">compact</span>]' 'vision / visual reasoning'; do
+for needle in 'per-session health check during explicit delegation startup' 'quality-gates + code-review' 'Forge output is treated as untrusted task output' '[<span class="key">compact</span>]' 'vision / visual reasoning'; do
   expect_contains "site/help/concepts/index.html" "${needle}" "concepts current model contains ${needle}"
 done
 for needle in 'Forge Provider Configuration' 'Direct edits are denied after /forge or Kay mode starts' 'conversation database is not writable' 'AGENTS_UPDATE field will propose instructions'; do
