@@ -162,17 +162,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </table>
 
       <h2 id="forge-hooks">Plugin Hooks</h2>
-      <p>Sidekick ships a small SessionStart surface for first-run bootstrap and legacy cleanup, plus PreToolUse and PostToolUse hooks that stay dormant until a sidekick session marker exists. The shared <code>active-sidekick</code> selector is a mutual-exclusion override: when present it points at Forge or Kay, and when absent the matching marker still drives enforcement. SessionStart no longer updates or repairs Forge/Kay runtimes after install.</p>
+      <p>Sidekick ships only PreToolUse and PostToolUse hooks. They stay dormant until a user explicitly starts Forge or Kay delegation for the current session. The shared <code>active-sidekick</code> selector is a mutual-exclusion gate: it must point at Forge or Kay before matching hooks enforce delegation behavior.</p>
       <table class="ref-table">
         <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>install.sh</code></td><td>SessionStart</td><td>Runs the guarded first-run plugin bootstrap when the package-local <code>.installed</code> sentinel is absent.</td></tr>
-          <tr><td><code>scrub-legacy-user-hooks.py</code></td><td>SessionStart</td><td>Removes stale Sidekick-owned hook blocks from legacy user config while preserving unrelated hooks.</td></tr>
           <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Forge mode is active, denies direct implementation edits, rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>, and the safe output runner, and appends an entry to <code>.forge/conversations.idx</code>.</td></tr>
           <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, denies direct implementation edits, rewrites Kay runtime calls to include <code>--full-auto</code> and the safe output runner, and appends an entry to <code>.kay/conversations.idx</code>.</td></tr>
           <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output, strips terminal controls, redacts obvious secrets, and surfaces a compact untrusted <code>[FORGE-SUMMARY]</code> STATUS block when one is present.</td></tr>
           <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay subprocess output, strips terminal controls, redacts obvious secrets, and emits a compact untrusted <code>[KAY-SUMMARY]</code> progress surface when a STATUS block is present.</td></tr>
-          <tr><td><code>validate-release-gate.sh</code></td><td>PreToolUse (Bash)</td><td>Release-safety guard. Blocks <code>gh release create</code> commands and release tag pushes unless all four current-session, current-commit <code>quality-gate-stage-N session=&lt;id&gt; sha=&lt;git-sha&gt;</code> markers and two current-session, current-commit <code>quality-gate-live-pyramid</code> markers are present in the active host state file: <code>~/.claude/.sidekick/quality-gate-state</code> for Claude/source installs or <code>~/.codex/.sidekick/quality-gate-state</code> for Codex installs.</td></tr>
         </tbody>
       </table>
 

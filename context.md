@@ -3,7 +3,7 @@
 **Date:** 2026-05-23
 **Repo:** https://github.com/alo-exp/sidekick
 **Local path:** `/Users/shafqat/projects/sidekick/repo`
-**Plugin version:** v0.6.0
+**Plugin version:** v0.6.1
 
 ---
 
@@ -30,7 +30,7 @@ Forge/Kay = Hands
 - Forge delegates through `forge -p`.
 - Kay activates through `kay-delegate` / `sidekick:kay-delegate`; active Kay mode routes child execution through `kay exec --full-auto` and Sidekick injects `model_provider=opencode-go` plus the routed model automatically.
 - Kay keeps `code`, `codex`, and `coder` as compatibility aliases only.
-- SessionStart only runs first-run bootstrap and legacy hook cleanup; runtime readiness checks happen when a delegation workflow starts.
+- Sidekick does not install SessionStart hooks; runtime readiness checks happen when a delegation workflow starts.
 - Active Forge delegation markers live under the active host session root (`.claude/sessions/...` for Claude Code, `.codex/sessions/...` for Codex). Kay markers live under `.kay/sessions/...`. The shared `~/.sidekick/sessions/<session>/active-sidekick` selector makes Forge and Kay mutually exclusive in the same host session.
 - Trace indexes live in `.forge/conversations.idx` and `.kay/conversations.idx`.
 
@@ -43,14 +43,14 @@ sidekick/
 ├── .claude-plugin/          # Claude plugin manifest and integrity hash block
 ├── .codex-plugin/           # Codex plugin manifest
 ├── site/                    # Website, Help Center, architecture, testing, ADRs
-├── hooks/                   # SessionStart, PreToolUse, and PostToolUse hook scripts
+├── hooks/                   # PreToolUse and PostToolUse hook scripts plus helpers
 ├── output-styles/           # Forge/Kay narration contracts
 ├── sidekicks/registry.json  # Runtime metadata and pinned installer hashes
 ├── skills/                  # Canonical host-agnostic Forge and Kay workflow skills
 ├── agents/                  # Generated Claude/Codex host skill bundles
 ├── scripts/                 # Host surface renderer and maintenance helpers
 ├── tests/                   # Bash test suite
-├── install.sh               # First-run bootstrap and clean reinstall support
+├── install.sh               # Explicit bootstrap and clean reinstall support
 └── README.md
 ```
 
@@ -58,10 +58,7 @@ sidekick/
 
 ## Installation Mechanics
 
-`hooks/hooks.json` runs two SessionStart entries:
-
-1. `hooks/scrub-legacy-user-hooks.py` removes stale user-hook blocks from legacy Codex hook files.
-2. `install.sh` runs only when the package-local `.installed` sentinel is absent.
+`hooks/hooks.json` registers no SessionStart hooks. Explicit delegation starts the current-session hook behavior.
 
 `install.sh`:
 

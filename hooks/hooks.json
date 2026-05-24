@@ -1,23 +1,5 @@
 {
   "hooks": {
-  "SessionStart": [
-    {
-      "hooks": [
-        {
-          "type": "command",
-          "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; python3 \"${ROOT}/hooks/scrub-legacy-user-hooks.py\""
-        }
-      ]
-    },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; test -f \"${ROOT}/.installed\" || (bash \"${ROOT}/install.sh\" && touch \"${ROOT}/.installed\")"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|NotebookEdit|Bash|mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__filesystem__move_file|mcp__filesystem__create_directory",
@@ -29,15 +11,6 @@
           {
             "type": "command",
             "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; bash \"${ROOT}/hooks/codex-delegation-enforcer.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; bash \"${ROOT}/hooks/validate-release-gate.sh\""
           }
         ]
       }

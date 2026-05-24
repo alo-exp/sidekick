@@ -103,8 +103,6 @@ expect_contains "tests/run_in_kay.bash" 'SIDEKICK_LIVE_CODEX=1' "Kay wrapper onl
 expect_contains "tests/run_in_kay.bash" "expected exactly 1" "Kay wrapper fails canonical release runs without exactly one candidate"
 expect_contains "tests/run_in_kay.bash" "proof_sha256=" "Kay wrapper promotes proof-bound live markers"
 expect_contains "tests/run_release.bash" "SIDEKICK_KAY_PROOF_SHA256" "run_release validates Kay wrapper proof digest"
-expect_contains "hooks/validate-release-gate.sh" "print run_id" "release hook counts distinct Kay wrapper run ids"
-expect_contains "hooks/validate-release-gate.sh" "kay-wrapper-proofs" "release hook requires wrapper proof records"
 
 tmp_qg="$(mktemp -d "${TMPDIR:-/tmp}/sidekick-runner-contract.XXXXXX")"
 if env \

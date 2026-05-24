@@ -204,15 +204,13 @@ fi
 echo "=== T15: Non-interactive gate execution ==="
 skip "Non-interactive gate" "forge already installed on this machine — download path not reached in sandbox"
 
-echo "=== T16: hooks.json bootstrap and SessionStart scope ==="
+echo "=== T16: hooks.json has no SessionStart surface ==="
 HOOKS="${PLUGIN_DIR}/hooks/hooks.json"
-SESSION_COUNT=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(len(d['hooks']['SessionStart']))")
-SESSION0_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][0]['hooks'][0]['command'])")
-SESSION1_CMD=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['SessionStart'][1]['hooks'][0]['command'])")
-if [ "${SESSION_COUNT}" = "2" ] && ! grep -q 'runtime-sync.sh' "${HOOKS}"; then
-  assert_pass "SessionStart surface excludes runtime asset sync"
+SESSION_PRESENT=$(python3 -c "import json; d=json.load(open('${HOOKS}')); print('SessionStart' in d['hooks'])")
+if [ "${SESSION_PRESENT}" = "False" ] && ! grep -q 'runtime-sync.sh' "${HOOKS}"; then
+  assert_pass "SessionStart surface is absent"
 else
-  assert_fail "SessionStart runtime sync removal" "unexpected SessionStart count or runtime-sync hook remains"
+  assert_fail "SessionStart removal" "SessionStart hook or runtime-sync hook remains"
 fi
 
 if grep -q 'CLAUDE_PLUGIN_ROOT' "${HOOKS}" \
@@ -222,7 +220,7 @@ else
   assert_fail "shared hook root fallback" "missing CLAUDE fallback or duplicated CODEX fallback remains"
 fi
 
-ROOT_EXPR="${SESSION0_CMD%%; python3*}"
+ROOT_EXPR="$(python3 -c "import json; d=json.load(open('${HOOKS}')); print(d['hooks']['PreToolUse'][0]['hooks'][0]['command'].split('; bash ')[0])")"
 CODEX_ROOT_RESULT="$(SIDEKICK_PLUGIN_ROOT="/tmp/sidekick-stale" CODEX_PLUGIN_ROOT="/tmp/codex-current" CLAUDE_PLUGIN_ROOT= bash -c "${ROOT_EXPR}; printf '%s' \"\${ROOT}\"")"
 CLAUDE_ROOT_RESULT="$(SIDEKICK_PLUGIN_ROOT="/tmp/sidekick-stale" CODEX_PLUGIN_ROOT= CLAUDE_PLUGIN_ROOT="/tmp/claude-current" bash -c "${ROOT_EXPR}; printf '%s' \"\${ROOT}\"")"
 if [ "${CODEX_ROOT_RESULT}" = "/tmp/codex-current" ] \
@@ -230,23 +228,6 @@ if [ "${CODEX_ROOT_RESULT}" = "/tmp/codex-current" ] \
   assert_pass "source hook root fallback prefers active host roots before stale generic root"
 else
   assert_fail "source hook root fallback precedence" "codex=${CODEX_ROOT_RESULT} claude=${CLAUDE_ROOT_RESULT}"
-fi
-
-if echo "${SESSION0_CMD}" | grep -q 'scrub-legacy-user-hooks.py' \
-  && echo "${SESSION0_CMD}" | grep -q 'python3'; then
-  assert_pass "legacy scrub hook remains first SessionStart entry"
-else
-  assert_fail "legacy scrub hook order" "missing scrub-legacy-user-hooks.py first entry"
-fi
-
-if echo "${SESSION1_CMD}" | grep -q 'test -f' \
-  && echo "${SESSION1_CMD}" | grep -q '.installed' \
-  && echo "${SESSION1_CMD}" | grep -q 'install.sh' \
-  && echo "${SESSION1_CMD}" | grep -q '&&' \
-  && echo "${SESSION1_CMD}" | grep -q 'touch'; then
-  assert_pass "bootstrap hook preserves the .installed sentinel guard"
-else
-  assert_fail "bootstrap hook" "missing .installed guard or touch sentinel"
 fi
 
 echo "=== T17: selective install env flags ==="
@@ -343,7 +324,6 @@ for _rel in \
   ".claude-plugin/plugin.json" \
   "hooks/hooks.json" \
   "hooks/lib/sidekick-registry.sh" \
-  "hooks/validate-release-gate.sh" \
   "skills/forge-stop/SKILL.md" \
   "sidekicks/registry.json"; do
   copy_plugin_file "${_host_root}" "${_rel}"
@@ -366,7 +346,6 @@ if "${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT" in hooks_text:
 if "CLAUDE_PLUGIN_ROOT" in hooks_text:
     raise SystemExit("hooks.json still references CLAUDE_PLUGIN_ROOT after Codex host rewrite")
 targets = {
-    "validate_release_gate_sha256": "hooks/validate-release-gate.sh",
     "forge_stop_skill_md_sha256": "skills/forge-stop/SKILL.md",
     "hooks_json_sha256": "hooks/hooks.json",
 }
