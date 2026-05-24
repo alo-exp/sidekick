@@ -128,7 +128,7 @@ The host configures Forge automatically and delegates coding work from that poin
 
 | Tier | Script | Runs without Forge/Kay | Purpose |
 |------|--------|:---:|---------|
-| **Strict unit + integration** | `tests/run_unit.bash` | ✅ | 31 non-live suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup guard tests, clean reinstall bootstrap, runner contract, marketplace release-gate regressions, and Forge/Kay coverage gaps. It does not delete developer artifacts; release cleanup is an explicit post-release step. |
+| **Strict unit + integration** | `tests/run_unit.bash` | ✅ | 32 non-live suites — hook classifiers, generated host skill surfaces, idx audit, plugin integrity, docs contract, homepage/help-site navigation, social preview, post-release cleanup guard tests, clean reinstall bootstrap, runner contract, marketplace release-gate regressions, Kay wrapper isolation/proof promotion, and Forge/Kay coverage gaps. It does not delete developer artifacts; release cleanup is an explicit post-release step. |
 | **Skip-safe local sweep** | `tests/run_all.bash` | ✅ | Delegates to `run_unit.bash`, then runs every live-gated wrapper in skip-safe mode: Forge E2E, Forge smoke/live E2E, Kay plugin/read, marketplace install, smoke, and live E2E. |
 | **Forge smoke** | `tests/smoke/run_smoke.bash` | skip | `forge --version` + trivial `forge -p` round-trip against the real binary. |
 | **Forge live E2E** | `tests/run_live_e2e.bash` | skip | Full host→Forge delegation on a seeded-buggy testapp (`tests/testapp/`) — proves the 5-field prompt shape, tool-use, and verification loop work end-to-end. |

@@ -23,14 +23,29 @@ RESULT_FILE="${RESULT_DIR}/${RESULT_ID}.rc"
 SCRIPT_FILE="${RESULT_DIR}/${RESULT_ID}.bash"
 KAY_OUTPUT_FILE="${RESULT_DIR}/${RESULT_ID}.out"
 ISOLATED_QG_STATE="${ISOLATED_HOME}/.codex/.sidekick/quality-gate-state"
-HOST_QG_DIR="${SIDEKICK_HOST_QG_DIR:-${HOST_HOME}/.codex/.sidekick}"
-HOST_QG_STATE="${SIDEKICK_HOST_QG_STATE:-${HOST_QG_DIR}/quality-gate-state}"
+if [ -n "${SIDEKICK_HOST_QG_STATE:-}" ]; then
+  HOST_QG_STATE="${SIDEKICK_HOST_QG_STATE}"
+  HOST_QG_DIR="$(dirname "${HOST_QG_STATE}")"
+elif [ -n "${SIDEKICK_HOST_QG_DIR:-}" ]; then
+  HOST_QG_DIR="${SIDEKICK_HOST_QG_DIR}"
+  HOST_QG_STATE="${HOST_QG_DIR}/quality-gate-state"
+elif [ -n "${SIDEKICK_QG_STATE:-}" ]; then
+  HOST_QG_STATE="${SIDEKICK_QG_STATE}"
+  HOST_QG_DIR="$(dirname "${HOST_QG_STATE}")"
+elif [ -n "${SIDEKICK_QG_DIR:-}" ]; then
+  HOST_QG_DIR="${SIDEKICK_QG_DIR}"
+  HOST_QG_STATE="${HOST_QG_DIR}/quality-gate-state"
+else
+  HOST_QG_DIR="${HOST_HOME}/.codex/.sidekick"
+  HOST_QG_STATE="${HOST_QG_DIR}/quality-gate-state"
+fi
 HOST_PROOF_DIR="${HOST_QG_DIR}/kay-wrapper-proofs"
 PROOF_DIR="${ISOLATED_HOME}/.sidekick-kay-proof"
 PROOF_FILE="${PROOF_DIR}/${RESULT_ID}.proof"
 PROOF_TOKEN="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
 PROOF_SHA256="$(printf '%s' "${PROOF_TOKEN}" | shasum -a 256 | awk '{print $1}')"
-RUN_ID="${RESULT_ID}.${PROOF_TOKEN}"
+RUN_NONCE="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+RUN_ID="${RESULT_ID}.${RUN_NONCE}"
 
 cleanup() {
   if [ "${SIDEKICK_KEEP_KAY_TEST_ARTIFACTS:-0}" != "1" ]; then
@@ -274,7 +289,14 @@ if [ "${PROMOTE_RELEASE_MARKERS}" = "1" ]; then
   fi
   candidate_sha256="$(printf '%s\n' "${matching_candidate}" | shasum -a 256 | awk '{print $1}')"
   command_sha256="$(printf '%s' "${TEST_COMMAND}" | shasum -a 256 | awk '{print $1}')"
-  final_marker="${matching_candidate/#quality-gate-live-pyramid-candidate/quality-gate-live-pyramid} source=kay-wrapper proof_sha256=${PROOF_SHA256} candidate_sha256=${candidate_sha256} command_sha256=${command_sha256}"
+  final_marker="quality-gate-live-pyramid"
+  for marker_field in ${matching_candidate}; do
+    case "${marker_field}" in
+      quality-gate-live-pyramid-candidate|token=*|proof_sha256=*) ;;
+      *) final_marker="${final_marker} ${marker_field}" ;;
+    esac
+  done
+  final_marker="${final_marker} source=kay-wrapper proof_sha256=${PROOF_SHA256} candidate_sha256=${candidate_sha256} command_sha256=${command_sha256}"
   mkdir -p "${HOST_QG_DIR}" "${HOST_PROOF_DIR}"
   chmod 700 "${HOST_PROOF_DIR}" 2>/dev/null || true
   printf 'sidekick-kay-wrapper-proof run_id=%s proof_sha256=%s candidate_sha256=%s command_sha256=%s\n' "${RUN_ID}" "${PROOF_SHA256}" "${candidate_sha256}" "${command_sha256}" > "${HOST_PROOF_DIR}/${RUN_ID}.proof"
