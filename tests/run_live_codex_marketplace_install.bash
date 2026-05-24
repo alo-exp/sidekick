@@ -8,7 +8,7 @@ set -uo pipefail
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'
 
 if [[ "${SIDEKICK_LIVE_CODEX:-}" != "1" ]]; then
-  echo -e "${yellow}Marketplace install skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to exercise the real Codex install path with Kay runtime)."
+  echo -e "${yellow}Marketplace install skipped${reset} (set SIDEKICK_LIVE_CODEX=1 to exercise the real Codex marketplace/plugin install path with Kay runtime)."
   exit 0
 fi
 
@@ -170,7 +170,8 @@ $(cat /tmp/sidekick-codex-marketplace-add.log)"
   exit 1
 fi
 
-INSTALLED_ROOT="${CODE_HOME}/.tmp/marketplaces/${MARKETPLACE_NAME}"
+MARKETPLACE_ROOT="${CODE_HOME}/.tmp/marketplaces/${MARKETPLACE_NAME}"
+INSTALLED_ROOT="${CODE_HOME}/plugins/cache/${MARKETPLACE_NAME}/sidekick/${PLUGIN_VERSION}"
 
 echo "=== marketplace_config_entry ==="
 if grep -Fq "[marketplaces.${MARKETPLACE_NAME}]" "${CODE_HOME}/config.toml" \
@@ -182,13 +183,34 @@ else
   fail "marketplace_config_entry" "missing marketplace entry in ${CODE_HOME}/config.toml"
 fi
 
-echo "=== marketplace_install_root ==="
+echo "=== plugin_add ==="
+set +e
+(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" "${CODEX_BIN[@]}" plugin add "sidekick@${MARKETPLACE_NAME}" >/tmp/sidekick-codex-plugin-add.log 2>&1)
+PLUGIN_ADD_RC=$?
+set -e
+if [ "${PLUGIN_ADD_RC}" -eq 0 ]; then
+  pass "Sidekick plugin was added from the configured Codex marketplace"
+else
+  fail "plugin_add" "Codex exited ${PLUGIN_ADD_RC}; output:
+$(cat /tmp/sidekick-codex-plugin-add.log)"
+  exit 1
+fi
+
+echo "=== marketplace_checkout_root ==="
+if [ -d "${MARKETPLACE_ROOT}" ] \
+  && [ -f "${MARKETPLACE_ROOT}/.agents/plugins/marketplace.json" ]; then
+  pass "Codex materialized the Sidekick marketplace checkout in isolated CODEX_HOME"
+else
+  fail "marketplace_checkout_root" "missing ${MARKETPLACE_ROOT} or marketplace manifest"
+fi
+
+echo "=== plugin_install_root ==="
 if [ -d "${INSTALLED_ROOT}" ] \
   && [ -f "${INSTALLED_ROOT}/.codex-plugin/plugin.json" ] \
   && [ "$(python3 -c "import json; print(json.load(open('${INSTALLED_ROOT}/.codex-plugin/plugin.json'))['version'])")" = "${PLUGIN_VERSION}" ]; then
-  pass "Codex materialized the Sidekick marketplace in isolated CODEX_HOME at the expected version"
+  pass "Codex materialized the Sidekick plugin cache in isolated CODEX_HOME at the expected version"
 else
-  fail "marketplace_install_root" "missing ${INSTALLED_ROOT} or installed plugin version does not match ${PLUGIN_VERSION}"
+  fail "plugin_install_root" "missing ${INSTALLED_ROOT} or installed plugin version does not match ${PLUGIN_VERSION}"
 fi
 
 SKILL_ROOT="$(python3 - "${INSTALLED_ROOT}" <<'PY'
