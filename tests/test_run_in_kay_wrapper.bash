@@ -54,6 +54,9 @@ run_id="$(awk -F= '/^export SIDEKICK_KAY_RUN_ID=/{print $2; exit}' "${script}")"
 token="$(awk -F= '/^export SIDEKICK_KAY_PROOF_TOKEN=/{print $2; exit}' "${script}")"
 proof_sha="$(awk -F= '/^export SIDEKICK_KAY_PROOF_SHA256=/{print $2; exit}' "${script}")"
 result_file="$(awk '/^printf.*> / {print $NF; exit}' "${script}")"
+if [ -n "${FAKE_KAY_TOKEN_LOG:-}" ]; then
+  printf '%s\n' "${token}" > "${FAKE_KAY_TOKEN_LOG}"
+fi
 
 mkdir -p "$(dirname "${result_file}")"
 printf '%s\n' "${FAKE_KAY_TEST_RC:-0}" > "${result_file}"
@@ -72,11 +75,32 @@ FAKEKAY
 chmod +x "${FAKE_BIN}/kay"
 
 run_wrapper() {
-  PATH="${FAKE_BIN}:$PATH" \
-  HOME="${TMP_ROOT}/host-home" \
-  SIDEKICK_SESSION_ID="fake-session" \
-  SIDEKICK_HOST_QG_DIR="${TMP_ROOT}/host-qg" \
-  "$@"
+  env \
+    PATH="${FAKE_BIN}:$PATH" \
+    HOME="${TMP_ROOT}/host-home" \
+    SIDEKICK_SESSION_ID="fake-session" \
+    SIDEKICK_HOST_QG_DIR="${TMP_ROOT}/host-qg" \
+    FAKE_KAY_WRITE_CANDIDATE="${FAKE_KAY_WRITE_CANDIDATE:-0}" \
+    FAKE_KAY_WRITE_HOST_LEAK="${FAKE_KAY_WRITE_HOST_LEAK:-0}" \
+    FAKE_KAY_TEST_RC="${FAKE_KAY_TEST_RC:-0}" \
+    FAKE_KAY_RC="${FAKE_KAY_RC:-0}" \
+    FAKE_KAY_RUN_SCRIPT="${FAKE_KAY_RUN_SCRIPT:-0}" \
+    FAKE_KAY_TOKEN_LOG="${TMP_ROOT}/fake-kay-token" \
+    "$@"
+}
+
+run_wrapper_no_host_qg_override() {
+  env \
+    PATH="${FAKE_BIN}:$PATH" \
+    HOME="${TMP_ROOT}/host-home" \
+    SIDEKICK_SESSION_ID="fake-session" \
+    FAKE_KAY_WRITE_CANDIDATE="${FAKE_KAY_WRITE_CANDIDATE:-0}" \
+    FAKE_KAY_WRITE_HOST_LEAK="${FAKE_KAY_WRITE_HOST_LEAK:-0}" \
+    FAKE_KAY_TEST_RC="${FAKE_KAY_TEST_RC:-0}" \
+    FAKE_KAY_RC="${FAKE_KAY_RC:-0}" \
+    FAKE_KAY_RUN_SCRIPT="${FAKE_KAY_RUN_SCRIPT:-0}" \
+    FAKE_KAY_TOKEN_LOG="${TMP_ROOT}/fake-kay-token" \
+    "$@"
 }
 
 echo "=== T1: noncanonical commands do not promote candidates ==="
@@ -103,22 +127,35 @@ fi
 
 echo "=== T3: canonical release command promotes one proof-bound candidate ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
+rm -f "${TMP_ROOT}/fake-kay-token"
 if FAKE_KAY_WRITE_CANDIDATE=1 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-canonical.out 2>&1; then
   state="${TMP_ROOT}/host-qg/quality-gate-state"
+  leaked_token="$(cat "${TMP_ROOT}/fake-kay-token" 2>/dev/null || true)"
   if [ -f "${state}" ] \
     && grep -Fq "quality-gate-live-pyramid " "${state}" \
     && grep -Fq "source=kay-wrapper" "${state}" \
+    && ! grep -Fq "token=" "${state}" \
+    && [ -n "${leaked_token}" ] \
+    && ! grep -Fq "${leaked_token}" "${state}" \
     && grep -Eq 'proof_sha256=[0-9a-f]{64}' "${state}" \
     && grep -Eq 'candidate_sha256=[0-9a-f]{64}' "${state}" \
     && grep -Eq 'command_sha256=[0-9a-f]{64}' "${state}"; then
+    proof_field_count="$(grep -Eo 'proof_sha256=[0-9a-f]{64}' "${state}" | wc -l | tr -d ' ')"
     run_id="$(awk '{for(i=1;i<=NF;i++) if($i ~ /^run_id=/){print substr($i,8); exit}}' "${state}")"
-    if [ -f "${TMP_ROOT}/host-qg/kay-wrapper-proofs/${run_id}.proof" ]; then
-      assert_pass "canonical release command promotes one proof-bound candidate"
-    else
+    proof_path="${TMP_ROOT}/host-qg/kay-wrapper-proofs/${run_id}.proof"
+    if [ "${proof_field_count}" != "1" ]; then
+      assert_fail "canonical proof field count" "expected one proof_sha256 field, got ${proof_field_count}: $(cat "${state}")"
+    elif printf '%s\n' "${proof_path}" | grep -Fq "${leaked_token}"; then
+      assert_fail "canonical proof filename token redaction" "${proof_path}"
+    elif [ ! -f "${proof_path}" ]; then
       assert_fail "canonical proof record" "missing proof record for ${run_id}"
+    elif grep -Fq "${leaked_token}" "${proof_path}"; then
+      assert_fail "canonical proof record token redaction" "$(cat "${proof_path}")"
+    else
+      assert_pass "canonical release command promotes one proof-bound candidate"
     fi
   else
-    assert_fail "canonical promotion marker" "$(cat "${state}" 2>/dev/null || true)"
+    assert_fail "canonical promotion marker" "$(find "${TMP_ROOT}" -path '*quality-gate-state' -type f -maxdepth 5 -print -exec cat {} \; 2>/dev/null)"
   fi
 else
   assert_fail "canonical wrapper command" "$(cat /tmp/sidekick-fake-kay-canonical.out)"
@@ -148,7 +185,20 @@ else
   assert_fail "failed test exit suppresses promotion" "$(cat "${TMP_ROOT}/host-qg/quality-gate-state")"
 fi
 
-echo "=== T6: fake Kay executes generated script path ==="
+echo "=== T6: wrapper honors pre-resolved host quality-gate state ==="
+rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg" "${TMP_ROOT}/claude-qg"
+mkdir -p "${TMP_ROOT}/claude-qg"
+if FAKE_KAY_WRITE_CANDIDATE=1 SIDEKICK_QG_STATE="${TMP_ROOT}/claude-qg/quality-gate-state" run_wrapper_no_host_qg_override bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-claude-state.out 2>&1; then
+  if [ -f "${TMP_ROOT}/claude-qg/quality-gate-state" ] && [ ! -f "${TMP_ROOT}/host-qg/quality-gate-state" ]; then
+    assert_pass "wrapper honors pre-resolved host quality-gate state"
+  else
+    assert_fail "wrapper honors pre-resolved host quality-gate state" "claude=$(cat "${TMP_ROOT}/claude-qg/quality-gate-state" 2>/dev/null || true) codex=$(cat "${TMP_ROOT}/host-qg/quality-gate-state" 2>/dev/null || true)"
+  fi
+else
+  assert_fail "wrapper honors pre-resolved host quality-gate state" "$(cat /tmp/sidekick-fake-kay-claude-state.out)"
+fi
+
+echo "=== T7: fake Kay executes generated script path ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 side_effect="${TMP_ROOT}/script-executed"
 if FAKE_KAY_RUN_SCRIPT=1 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" bash -c "printf ok > '${side_effect}'" >/tmp/sidekick-fake-kay-script.out 2>&1; then

@@ -26,11 +26,12 @@
 # release-authorizing. Kay/Codex live tests force OpenCode Go with
 # deepseek-v4-flash and low reasoning so release evidence uses the verifier
 # profile, not the general implementation profile. A run with
-# SIDEKICK_LIVE_CODEX=1 records a current-session, current-commit live-pyramid
-# marker. Forge live stages may also be run when available, but they are not
-# required when Forge testing is intentionally skipped. The release hook requires
-# two such markers before it allows release tag publication or a GitHub release
-# command.
+# SIDEKICK_LIVE_CODEX=1 writes an isolated current-session, current-commit
+# live-pyramid candidate marker. The Kay wrapper promotes successful canonical
+# runs to proof-bound final markers. Forge live stages may also be run when
+# available, but they are not required when Forge testing is intentionally
+# skipped. The release hook requires two final markers before it allows release
+# tag publication or a GitHub release command.
 #
 # Usage
 #   bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
