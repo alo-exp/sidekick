@@ -204,7 +204,7 @@ For each of the 5 help section pages, read the page in full and verify:
 - Install command matches README.md and site/index.html exactly
 - Runtime Setup / Repair credential setup guidance is current and correct
 - Health check output example reflects current `/forge` activation behavior
-- Plugin install commands are correct: Claude Code uses `/plugin install alo-labs/sidekick`; Codex uses `codex plugin marketplace add alo-labs-codex/sidekick`.
+- Plugin install commands are correct: Claude Code uses `/plugin install alo-labs/sidekick`; Codex uses `codex plugin marketplace add alo-labs/codex-plugins`.
 
 **`site/help/concepts/index.html`**
 - Fallback ladder section (L1/L2/L3) matches SKILL.md exactly — same level names, same retry counts, same escalation conditions
