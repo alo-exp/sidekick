@@ -252,7 +252,7 @@ if [ "${PROMOTE_RELEASE_MARKERS}" = "1" ]; then
     echo "FAIL: Kay release run produced no isolated live-pyramid candidate state" >&2
     exit 1
   fi
-  candidate_count="$(
+  matching_candidate="$(
     awk -v run_id="${RUN_ID}" -v token="${PROOF_TOKEN}" '
       $1 == "quality-gate-live-pyramid-candidate" {
         has_run = 0
@@ -263,29 +263,23 @@ if [ "${PROMOTE_RELEASE_MARKERS}" = "1" ]; then
         }
         if (has_run && has_token) print
       }
-    ' "${ISOLATED_QG_STATE}" | wc -l | tr -d ' '
+    ' "${ISOLATED_QG_STATE}"
+  )"
+  candidate_count="$(
+    printf '%s\n' "${matching_candidate}" | awk 'NF { count++ } END { print count + 0 }'
   )"
   if [ "${candidate_count}" -ne 1 ]; then
     echo "FAIL: Kay release run produced ${candidate_count} matching live-pyramid candidates; expected exactly 1" >&2
     exit 1
   fi
+  candidate_sha256="$(printf '%s\n' "${matching_candidate}" | shasum -a 256 | awk '{print $1}')"
+  command_sha256="$(printf '%s' "${TEST_COMMAND}" | shasum -a 256 | awk '{print $1}')"
+  final_marker="${matching_candidate/#quality-gate-live-pyramid-candidate/quality-gate-live-pyramid} source=kay-wrapper proof_sha256=${PROOF_SHA256} candidate_sha256=${candidate_sha256} command_sha256=${command_sha256}"
   mkdir -p "${HOST_QG_DIR}" "${HOST_PROOF_DIR}"
   chmod 700 "${HOST_PROOF_DIR}" 2>/dev/null || true
-  printf '%s\n' "${PROOF_SHA256}" > "${HOST_PROOF_DIR}/${RUN_ID}.sha256"
-  chmod 600 "${HOST_PROOF_DIR}/${RUN_ID}.sha256" 2>/dev/null || true
-  awk -v run_id="${RUN_ID}" -v token="${PROOF_TOKEN}" -v proof_sha256="${PROOF_SHA256}" '
-    $1 == "quality-gate-live-pyramid-candidate" {
-      has_run = 0
-      has_token = 0
-      for (i = 2; i <= NF; i++) {
-        if ($i == "run_id=" run_id) has_run = 1
-        if ($i == "token=" token) has_token = 1
-      }
-      if (!has_run || !has_token) next
-      $1 = "quality-gate-live-pyramid"
-      print $0, "source=kay-wrapper", "proof_sha256=" proof_sha256
-    }
-  ' "${ISOLATED_QG_STATE}" >> "${HOST_QG_STATE}"
+  printf 'sidekick-kay-wrapper-proof run_id=%s proof_sha256=%s candidate_sha256=%s command_sha256=%s\n' "${RUN_ID}" "${PROOF_SHA256}" "${candidate_sha256}" "${command_sha256}" > "${HOST_PROOF_DIR}/${RUN_ID}.proof"
+  chmod 600 "${HOST_PROOF_DIR}/${RUN_ID}.proof" 2>/dev/null || true
+  printf '%s\n' "${final_marker}" >> "${HOST_QG_STATE}"
   if [ -f "${ISOLATED_HOME}/.codex/.sidekick/current-session" ]; then
     cp "${ISOLATED_HOME}/.codex/.sidekick/current-session" "${HOST_QG_DIR}/current-session"
   fi

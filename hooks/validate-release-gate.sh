@@ -14,7 +14,7 @@
 #   printf 'quality-gate-stage-N session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
 # A successful live `tests/run_release.bash` run with Codex live enabled
 # appends:
-#   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp> run_id=<id> source=kay-wrapper proof_sha256=<sha256>
+#   quality-gate-live-pyramid session=<id> sha=<git-sha> at=<utc-timestamp> run_id=<id> source=kay-wrapper proof_sha256=<sha256> candidate_sha256=<sha256> command_sha256=<sha256>
 # If stages are added or removed from that document, update STAGE_COUNT below
 # and commit both files together.
 #
@@ -7208,6 +7208,8 @@ if [ ${#missing[@]} -eq 0 ]; then
         has_source = 0
         run_id = ""
         proof_sha256 = ""
+        candidate_sha256 = ""
+        command_sha256 = ""
         for (i = 2; i <= NF; i++) {
           if ($i == "session=" sid) {
             has_session = 1
@@ -7224,14 +7226,21 @@ if [ ${#missing[@]} -eq 0 ]; then
           if ($i ~ /^proof_sha256=[0-9a-f]{64}$/) {
             proof_sha256 = substr($i, 14)
           }
+          if ($i ~ /^candidate_sha256=[0-9a-f]{64}$/) {
+            candidate_sha256 = substr($i, 18)
+          }
+          if ($i ~ /^command_sha256=[0-9a-f]{64}$/) {
+            command_sha256 = substr($i, 16)
+          }
         }
-        if (has_session && has_sha && has_source && run_id != "" && proof_sha256 != "") {
-          print run_id, proof_sha256
+        if (has_session && has_sha && has_source && run_id != "" && proof_sha256 != "" && candidate_sha256 != "" && command_sha256 != "") {
+          print run_id, proof_sha256, candidate_sha256, command_sha256
         }
       }
-    ' "$STATE_FILE" 2>/dev/null | while read -r run_id proof_sha256; do
-      proof_file="${state_dir}/kay-wrapper-proofs/${run_id}.sha256"
-      if [ -f "$proof_file" ] && [ "$(tr -d '[:space:]' < "$proof_file" 2>/dev/null)" = "$proof_sha256" ]; then
+    ' "$STATE_FILE" 2>/dev/null | while read -r run_id proof_sha256 candidate_sha256 command_sha256; do
+      proof_file="${state_dir}/kay-wrapper-proofs/${run_id}.proof"
+      expected_proof="sidekick-kay-wrapper-proof run_id=${run_id} proof_sha256=${proof_sha256} candidate_sha256=${candidate_sha256} command_sha256=${command_sha256}"
+      if [ -f "$proof_file" ] && [ "$(tr -d '\r\n' < "$proof_file" 2>/dev/null)" = "$expected_proof" ]; then
         printf '%s\n' "$run_id"
       fi
     done | sort -u | wc -l | tr -d ' '

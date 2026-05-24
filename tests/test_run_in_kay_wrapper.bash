@@ -44,6 +44,11 @@ if [ -z "${script}" ] || [ ! -f "${script}" ]; then
   exit 2
 fi
 
+if [ "${FAKE_KAY_RUN_SCRIPT:-0}" = "1" ]; then
+  bash "${script}"
+  exit $?
+fi
+
 home_dir="$(awk -F= '/^export HOME=/{print $2; exit}' "${script}")"
 run_id="$(awk -F= '/^export SIDEKICK_KAY_RUN_ID=/{print $2; exit}' "${script}")"
 token="$(awk -F= '/^export SIDEKICK_KAY_PROOF_TOKEN=/{print $2; exit}' "${script}")"
@@ -103,9 +108,11 @@ if FAKE_KAY_WRITE_CANDIDATE=1 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" S
   if [ -f "${state}" ] \
     && grep -Fq "quality-gate-live-pyramid " "${state}" \
     && grep -Fq "source=kay-wrapper" "${state}" \
-    && grep -Eq 'proof_sha256=[0-9a-f]{64}' "${state}"; then
+    && grep -Eq 'proof_sha256=[0-9a-f]{64}' "${state}" \
+    && grep -Eq 'candidate_sha256=[0-9a-f]{64}' "${state}" \
+    && grep -Eq 'command_sha256=[0-9a-f]{64}' "${state}"; then
     run_id="$(awk '{for(i=1;i<=NF;i++) if($i ~ /^run_id=/){print substr($i,8); exit}}' "${state}")"
-    if [ -f "${TMP_ROOT}/host-qg/kay-wrapper-proofs/${run_id}.sha256" ]; then
+    if [ -f "${TMP_ROOT}/host-qg/kay-wrapper-proofs/${run_id}.proof" ]; then
       assert_pass "canonical release command promotes one proof-bound candidate"
     else
       assert_fail "canonical proof record" "missing proof record for ${run_id}"
@@ -139,6 +146,19 @@ elif [ ! -f "${TMP_ROOT}/host-qg/quality-gate-state" ]; then
   assert_pass "failed test exit suppresses promotion"
 else
   assert_fail "failed test exit suppresses promotion" "$(cat "${TMP_ROOT}/host-qg/quality-gate-state")"
+fi
+
+echo "=== T6: fake Kay executes generated script path ==="
+rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
+side_effect="${TMP_ROOT}/script-executed"
+if FAKE_KAY_RUN_SCRIPT=1 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" bash -c "printf ok > '${side_effect}'" >/tmp/sidekick-fake-kay-script.out 2>&1; then
+  if [ "$(cat "${side_effect}" 2>/dev/null || true)" = "ok" ]; then
+    assert_pass "fake Kay executes generated script path"
+  else
+    assert_fail "fake Kay executes generated script path" "missing side effect"
+  fi
+else
+  assert_fail "fake Kay executes generated script path" "$(cat /tmp/sidekick-fake-kay-script.out)"
 fi
 
 echo ""

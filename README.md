@@ -147,7 +147,7 @@ To include optional Forge live stages when Forge provider testing is available, 
 
 Local/pre-release test evidence must be produced inside Kay via `tests/run_in_kay.bash`. Kay test stages always force OpenCode Go with `deepseek-v4-flash` and low reasoning, even when normal delegation routing would select a different Kay model.
 
-Before any release, make the final release-candidate commit first, then complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two Codex live markers before publishing.
+Before any release, make the final release-candidate commit first, then complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. `tests/run_release.bash` writes isolated `quality-gate-live-pyramid-candidate` markers; only `tests/run_in_kay.bash` promotes successful canonical live runs to proof-bound final `quality-gate-live-pyramid` markers. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two proof-bound Codex live markers before publishing.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.
