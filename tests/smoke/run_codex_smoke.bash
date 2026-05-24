@@ -45,6 +45,16 @@ LIVE_KAY_MODEL_ARGS=(
 )
 
 resolve_codex_binary() {
+  if [ -n "${SIDEKICK_KAY_BIN:-}" ]; then
+    if [ -x "${SIDEKICK_KAY_BIN}" ] \
+      && "${SIDEKICK_KAY_BIN}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
+      && "${SIDEKICK_KAY_BIN}" exec --help >/dev/null 2>&1; then
+      printf '%s\n' "${SIDEKICK_KAY_BIN}"
+      return 0
+    fi
+    return 1
+  fi
+
   for candidate in kay code codex coder; do
     if command -v "${candidate}" >/dev/null 2>&1 \
       && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
@@ -64,7 +74,14 @@ prepare_codex_runner() {
 
   if "${bin}" exec --help >"${help_file}" 2>&1; then
     if grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
-      CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
+      CODEX_RUNNER=( "${bin}" exec )
+      if grep -q -- '--skip-git-repo-check' "${help_file}"; then
+        CODEX_RUNNER+=(--skip-git-repo-check)
+      fi
+      if grep -q -- '--ephemeral' "${help_file}"; then
+        CODEX_RUNNER+=(--ephemeral)
+      fi
+      CODEX_RUNNER+=(--dangerously-bypass-approvals-and-sandbox)
     elif grep -q -- '--full-auto' "${help_file}"; then
       if grep -q -- '--skip-git-repo-check' "${help_file}"; then
         CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --full-auto )
