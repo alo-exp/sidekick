@@ -64,6 +64,8 @@ PY
 }
 
 main() {
+  sidekick_active_mode_allows "$SIDEKICK_NAME" || exit 0
+
   if ! command -v jq >/dev/null 2>&1; then
     exit 0
   fi
