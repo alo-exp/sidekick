@@ -57,14 +57,14 @@ prepare_codex_runner() {
   CODEX_RUNNER=()
 
   if "${bin}" exec --help >"${help_file}" 2>&1; then
-    if grep -q -- '--full-auto' "${help_file}"; then
+    if grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
+      CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
+    elif grep -q -- '--full-auto' "${help_file}"; then
       if grep -q -- '--skip-git-repo-check' "${help_file}"; then
         CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --full-auto )
       else
         CODEX_RUNNER=( "${bin}" exec --full-auto )
       fi
-    elif grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
-      CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
     else
       if grep -q -- '--skip-git-repo-check' "${help_file}"; then
         CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check )
@@ -88,7 +88,23 @@ run_with_timeout() {
   elif command -v timeout >/dev/null 2>&1; then
     timeout "${secs}" "$@"
   else
-    "$@"
+    "$@" &
+    local cmd_pid=$!
+    (
+      sleep "${secs}"
+      if kill -0 "${cmd_pid}" >/dev/null 2>&1; then
+        kill "${cmd_pid}" >/dev/null 2>&1 || true
+        sleep 2
+        kill -KILL "${cmd_pid}" >/dev/null 2>&1 || true
+      fi
+    ) &
+    local watcher_pid=$!
+    local rc
+    wait "${cmd_pid}"
+    rc=$?
+    kill "${watcher_pid}" >/dev/null 2>&1 || true
+    wait "${watcher_pid}" >/dev/null 2>&1 || true
+    return "${rc}"
   fi
 }
 
@@ -173,7 +189,7 @@ EOF
 echo "=== e2e_codex_delegation ==="
 echo "Sending 5-field prompt to Kay (timeout 180s)..."
 set +e
-CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider=opencode-go -c model=deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
+CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider=opencode-go -c model=opencode-go/deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
 CODEX_RC=$?
 set -e
 echo "kay rc=${CODEX_RC}"

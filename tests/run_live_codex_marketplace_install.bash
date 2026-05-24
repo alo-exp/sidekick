@@ -82,7 +82,23 @@ run_with_timeout() {
   elif command -v timeout >/dev/null 2>&1; then
     timeout "${secs}" "$@"
   else
-    "$@"
+    "$@" &
+    local cmd_pid=$!
+    (
+      sleep "${secs}"
+      if kill -0 "${cmd_pid}" >/dev/null 2>&1; then
+        kill "${cmd_pid}" >/dev/null 2>&1 || true
+        sleep 2
+        kill -KILL "${cmd_pid}" >/dev/null 2>&1 || true
+      fi
+    ) &
+    local watcher_pid=$!
+    local rc
+    wait "${cmd_pid}"
+    rc=$?
+    kill "${watcher_pid}" >/dev/null 2>&1 || true
+    wait "${watcher_pid}" >/dev/null 2>&1 || true
+    return "${rc}"
   fi
 }
 
@@ -212,7 +228,7 @@ if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ]; then
   exit 1
 fi
 set +e
-EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check -c model_provider=opencode-go -c model=deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
+EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model_provider=opencode-go -c model=opencode-go/deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
 echo "kay rc=${EXEC_RC}"

@@ -96,6 +96,34 @@ copy_if_present() {
   fi
 }
 
+run_with_timeout() {
+  local secs="$1"
+  shift
+  if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "${secs}" "$@"
+  elif command -v timeout >/dev/null 2>&1; then
+    timeout "${secs}" "$@"
+  else
+    "$@" &
+    local cmd_pid=$!
+    (
+      sleep "${secs}"
+      if kill -0 "${cmd_pid}" >/dev/null 2>&1; then
+        kill "${cmd_pid}" >/dev/null 2>&1 || true
+        sleep 2
+        kill -KILL "${cmd_pid}" >/dev/null 2>&1 || true
+      fi
+    ) &
+    local watcher_pid=$!
+    local rc
+    wait "${cmd_pid}"
+    rc=$?
+    kill "${watcher_pid}" >/dev/null 2>&1 || true
+    wait "${watcher_pid}" >/dev/null 2>&1 || true
+    return "${rc}"
+  fi
+}
+
 prepare_kay_runner() {
   local help
   help="$("${KAY_BIN}" exec --help 2>&1 || true)"
@@ -104,10 +132,10 @@ prepare_kay_runner() {
   if grep -Fq -- "--skip-git-repo-check" <<<"${help}"; then
     KAY_RUNNER+=(--skip-git-repo-check)
   fi
-  if grep -Fq -- "--full-auto" <<<"${help}"; then
-    KAY_RUNNER+=(--full-auto)
-  elif grep -Fq -- "--dangerously-bypass-approvals-and-sandbox" <<<"${help}"; then
+  if grep -Fq -- "--dangerously-bypass-approvals-and-sandbox" <<<"${help}"; then
     KAY_RUNNER+=(--dangerously-bypass-approvals-and-sandbox)
+  elif grep -Fq -- "--full-auto" <<<"${help}"; then
+    KAY_RUNNER+=(--full-auto)
   else
     echo "FAIL: Kay exec does not support --full-auto or the legacy bypass sandbox flag." >&2
     exit 1
@@ -131,6 +159,17 @@ copy_if_present "${HOST_HOME}/.kay/auth_accounts.json" "${ISOLATED_HOME}/.kay/au
 copy_if_present "${HOST_HOME}/.kay/config.toml" "${ISOLATED_HOME}/.kay/config.toml"
 copy_if_present "${HOST_HOME}/.kay/kay.toml" "${ISOLATED_HOME}/.kay/kay.toml"
 copy_if_present "${HOST_HOME}/.kay/models_cache.openai.json" "${ISOLATED_HOME}/.kay/models_cache.openai.json"
+OPENCODE_GO_API_KEY_VALUE="${OPENCODE_GO_API_KEY:-${CUSTOM_OPENCODE_GO_API_KEY:-}}"
+if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ] && [ -f "${HOST_HOME}/.kay/auth.json" ] && command -v python3 >/dev/null 2>&1; then
+  OPENCODE_GO_API_KEY_VALUE="$(python3 -c 'import json, sys, pathlib
+path = pathlib.Path(sys.argv[1])
+data = json.loads(path.read_text())
+api_key = data.get("provider_credentials", {}).get("opencode-go", {}).get("api_key")
+if api_key:
+    print(api_key)
+    raise SystemExit(0)
+raise SystemExit(1)' "${HOST_HOME}/.kay/auth.json" 2>/dev/null || true)"
+fi
 if [ -d "${HOST_HOME}/.config/opencode" ]; then
   mkdir -p "${ISOLATED_HOME}/.config"
   cp -R "${HOST_HOME}/.config/opencode" "${ISOLATED_HOME}/.config/opencode"
@@ -211,14 +250,16 @@ SUCCESS CRITERIA:
 - Your final response includes STATUS and TEST_EXIT_CODE.
 
 IMPLEMENTATION:
-Run this exact command:
+Run this exact command immediately as your next action. Do not inspect files first,
+do not summarize the script first, and do not wait for more instructions:
 
 bash ${SCRIPT_FILE}
 EOF
 )
 
 set +e
-printf '%s\n' "${PROMPT}" | env \
+run_with_timeout "${SIDEKICK_KAY_EXEC_TIMEOUT_SECONDS:-900}" \
+  env \
   -u SIDEKICK_QG_STATE \
   -u SIDEKICK_QG_DIR \
   -u SIDEKICK_HOST_QG_DIR \
@@ -229,13 +270,15 @@ printf '%s\n' "${PROMPT}" | env \
   XDG_CONFIG_HOME="${ISOLATED_HOME}/.config" \
   XDG_CACHE_HOME="${ISOLATED_HOME}/.cache" \
   XDG_DATA_HOME="${ISOLATED_HOME}/.local/share" \
+  OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" \
+  CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" \
   "${KAY_RUNNER[@]}" \
   -C "${REPO_ROOT}" \
   -c model_provider=opencode-go \
-  -c model=deepseek-v4-flash \
+  -c model=opencode-go/deepseek-v4-flash \
   -c model_reasoning_effort=low \
   -c preferred_model_reasoning_effort=low \
-  - >"${KAY_OUTPUT_FILE}" 2>&1
+  "${PROMPT}" >"${KAY_OUTPUT_FILE}" 2>&1
 KAY_RC=$?
 set -e
 

@@ -39,7 +39,7 @@ pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 LIVE_KAY_MODEL_ARGS=(
   -c model_provider=opencode-go
-  -c model=deepseek-v4-flash
+  -c model=opencode-go/deepseek-v4-flash
   -c model_reasoning_effort=low
   -c preferred_model_reasoning_effort=low
 )
@@ -63,14 +63,14 @@ prepare_codex_runner() {
   CODEX_RUNNER=()
 
   if "${bin}" exec --help >"${help_file}" 2>&1; then
-    if grep -q -- '--full-auto' "${help_file}"; then
+    if grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
+      CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
+    elif grep -q -- '--full-auto' "${help_file}"; then
       if grep -q -- '--skip-git-repo-check' "${help_file}"; then
         CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --full-auto )
       else
         CODEX_RUNNER=( "${bin}" exec --full-auto )
       fi
-    elif grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
-      CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check --ephemeral --dangerously-bypass-approvals-and-sandbox )
     else
       if grep -q -- '--skip-git-repo-check' "${help_file}"; then
         CODEX_RUNNER=( "${bin}" exec --skip-git-repo-check )
@@ -94,7 +94,23 @@ run_with_timeout() {
   elif command -v timeout >/dev/null 2>&1; then
     timeout "${secs}" "$@"
   else
-    "$@"
+    "$@" &
+    local cmd_pid=$!
+    (
+      sleep "${secs}"
+      if kill -0 "${cmd_pid}" >/dev/null 2>&1; then
+        kill "${cmd_pid}" >/dev/null 2>&1 || true
+        sleep 2
+        kill -KILL "${cmd_pid}" >/dev/null 2>&1 || true
+      fi
+    ) &
+    local watcher_pid=$!
+    local rc
+    wait "${cmd_pid}"
+    rc=$?
+    kill "${watcher_pid}" >/dev/null 2>&1 || true
+    wait "${watcher_pid}" >/dev/null 2>&1 || true
+    return "${rc}"
   fi
 }
 
