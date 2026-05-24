@@ -88,23 +88,31 @@ run_with_timeout() {
   elif command -v timeout >/dev/null 2>&1; then
     timeout "${secs}" "$@"
   else
-    "$@" &
-    local cmd_pid=$!
-    (
-      sleep "${secs}"
-      if kill -0 "${cmd_pid}" >/dev/null 2>&1; then
-        kill "${cmd_pid}" >/dev/null 2>&1 || true
-        sleep 2
-        kill -KILL "${cmd_pid}" >/dev/null 2>&1 || true
-      fi
-    ) &
-    local watcher_pid=$!
-    local rc
-    wait "${cmd_pid}"
-    rc=$?
-    kill "${watcher_pid}" >/dev/null 2>&1 || true
-    wait "${watcher_pid}" >/dev/null 2>&1 || true
-    return "${rc}"
+    perl -e '
+      use POSIX ":sys_wait_h";
+      my $secs = shift @ARGV;
+      my $pid = fork();
+      die "fork failed: $!" unless defined $pid;
+      if ($pid == 0) {
+        setpgrp(0, 0);
+        exec @ARGV or die "exec failed: $!";
+      }
+      my $deadline = time + $secs;
+      while (time < $deadline) {
+        my $res = waitpid($pid, WNOHANG);
+        exit($? >> 8) if $res == $pid;
+        sleep 1;
+      }
+      if (kill 0, $pid) {
+        kill "TERM", -$pid;
+        sleep 2;
+        kill "KILL", -$pid if kill 0, $pid;
+        waitpid($pid, 0);
+        exit 124;
+      }
+      waitpid($pid, 0);
+      exit($? >> 8);
+    ' "${secs}" "$@"
   fi
 }
 

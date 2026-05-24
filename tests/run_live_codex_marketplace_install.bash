@@ -75,6 +75,26 @@ resolve_code_runner() {
   return 0
 }
 
+prepare_code_exec_runner() {
+  local help_file
+  help_file="$(mktemp)"
+  CODE_RUNNER=( "${CODE_BIN[@]}" exec )
+
+  if "${CODE_BIN[@]}" exec --help >"${help_file}" 2>&1; then
+    CODE_RUNNER=( "${CODE_BIN[@]}" exec )
+    if grep -q -- '--skip-git-repo-check' "${help_file}"; then
+      CODE_RUNNER+=(--skip-git-repo-check)
+    fi
+    if grep -q -- '--dangerously-bypass-approvals-and-sandbox' "${help_file}"; then
+      CODE_RUNNER+=(--dangerously-bypass-approvals-and-sandbox)
+    elif grep -q -- '--full-auto' "${help_file}"; then
+      CODE_RUNNER+=(--full-auto)
+    fi
+  fi
+
+  rm -f "${help_file}"
+}
+
 run_with_timeout() {
   local secs="$1"; shift
   if command -v gtimeout >/dev/null 2>&1; then
@@ -82,23 +102,31 @@ run_with_timeout() {
   elif command -v timeout >/dev/null 2>&1; then
     timeout "${secs}" "$@"
   else
-    "$@" &
-    local cmd_pid=$!
-    (
-      sleep "${secs}"
-      if kill -0 "${cmd_pid}" >/dev/null 2>&1; then
-        kill "${cmd_pid}" >/dev/null 2>&1 || true
-        sleep 2
-        kill -KILL "${cmd_pid}" >/dev/null 2>&1 || true
-      fi
-    ) &
-    local watcher_pid=$!
-    local rc
-    wait "${cmd_pid}"
-    rc=$?
-    kill "${watcher_pid}" >/dev/null 2>&1 || true
-    wait "${watcher_pid}" >/dev/null 2>&1 || true
-    return "${rc}"
+    perl -e '
+      use POSIX ":sys_wait_h";
+      my $secs = shift @ARGV;
+      my $pid = fork();
+      die "fork failed: $!" unless defined $pid;
+      if ($pid == 0) {
+        setpgrp(0, 0);
+        exec @ARGV or die "exec failed: $!";
+      }
+      my $deadline = time + $secs;
+      while (time < $deadline) {
+        my $res = waitpid($pid, WNOHANG);
+        exit($? >> 8) if $res == $pid;
+        sleep 1;
+      }
+      if (kill 0, $pid) {
+        kill "TERM", -$pid;
+        sleep 2;
+        kill "KILL", -$pid if kill 0, $pid;
+        waitpid($pid, 0);
+        exit 124;
+      }
+      waitpid($pid, 0);
+      exit($? >> 8);
+    ' "${secs}" "$@"
   fi
 }
 
@@ -111,6 +139,7 @@ if ! resolve_code_runner; then
   fail "kay runner" "could not find a built Kay binary or cargo on PATH"
   exit 1
 fi
+prepare_code_exec_runner
 
 if ! command -v python3 >/dev/null 2>&1; then
   fail "python3" "python3 not found on PATH"
@@ -228,7 +257,7 @@ if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ]; then
   exit 1
 fi
 set +e
-EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_BIN[@]}" exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model_provider=opencode-go -c model=opencode-go/deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
+EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_RUNNER[@]}" -c model_provider=opencode-go -c model=opencode-go/deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
 echo "kay rc=${EXEC_RC}"
