@@ -2,7 +2,7 @@
 
 > High-level architecture of the Sidekick plugin. Detailed phase-level designs live in `.planning/phases/*/` (active milestone) or `site/specs/` (archived). Preserved design notes live in `site/design/`.
 
-**Plugin version:** v0.6.0 • **Target:** Claude Code and Codex hosts + Forge/Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/kay` ≥ 0.9.4)
+**Plugin version:** v0.6.1 • **Target:** Claude Code and Codex hosts + Forge/Kay sidekicks (`~/.local/bin/forge` ≥ 2.11.3, `~/.local/bin/kay` ≥ 0.9.4)
 
 ---
 
@@ -29,8 +29,8 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 
 | Component | Path | Purpose |
 |---|---|---|
-| Install hook | `install.sh`, `hooks/hooks.json` (SessionStart) | Guarded first-run bootstrap when the package-local `.installed` sentinel is absent: install missing Forge/Kay runtimes, fetch the pinned Kay installer that creates `kay` plus compatibility aliases, bootstrap a missing versioned cache tree from the local snapshot on clean reinstall, rewrite host-specific paths, archive and retire any legacy uppercase `~/.Codex` tree after the lowercase install is valid, then seed trust/state after the final merged hook surface using the exact source each trust prefix names. It does not update or repair runtimes on later session starts. |
-| Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py`, `hooks/hooks.json` (SessionStart) | One-time scrub of stale Sidekick hook blocks from `~/.codex/hooks.json`; legacy `~/.Codex/hooks.json` mirrors are migration-only and get backed up under `~/.sidekick/legacy-hooks-scrub-backups/` before rollback/removal. Touches only matching Sidekick entries and can restore them with `--rollback`. |
+| Manual installer | `install.sh` | Explicit setup and repair path for missing Forge/Kay runtimes, host-specific path rewrites, clean reinstall bootstrap, and trust/state seeding. It is not registered as a SessionStart hook. |
+| Legacy hook scrub | `hooks/scrub-legacy-user-hooks.py` | Explicit cleanup utility for stale Sidekick hook blocks in legacy user hook files. It is no longer registered as a SessionStart hook. |
 | Registry | `sidekicks/registry.json`, `hooks/lib/sidekick-registry.sh` | Shared metadata for sidekick names, marker files, delegate/stop commands, and installer digests. |
 | Skill source — `/forge` | `skills/forge/SKILL.md` | Host-agnostic canonical source for activation / deactivation, health check, delegation protocol, 5-field prompt, fallback ladder (L1 Guide / L2 Handhold / L3 Take over with `sidekick forge-level3 start|stop`), skill injection, AGENTS.md mentoring loop. |
 | Skill source — `kay-delegate` | `skills/codex-delegate/SKILL.md` | Host-agnostic canonical source for the Kay delegation workflow: runtime health checks, Kay-mode activation, `kay exec --full-auto` child execution, and compatibility aliases for older environments. |
@@ -42,8 +42,8 @@ Result: when Forge or Kay delegation mode is active, every mutating operation is
 | Audit indexes | `.forge/conversations.idx`, `.kay/conversations.idx` | Append-only ISO 8601 UTC rows: `<timestamp> <UUID> <sidekick-tag> <task-hint>`. Lookup only — content lives in each runtime's native history store. |
 | Delegation lifecycle skill sources | `skills/codex-delegate/SKILL.md`, `skills/codex-stop/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-stop/SKILL.md` | The canonical four-skill Sidekick source surface for Forge/Kay sidekick pickers, with `/forge:delegate` and `/kay:delegate` aliases kept as thin dispatchers. Installed hosts consume the rendered copies in `agents/claude/` or `agents/codex/`. |
 | Output styles | `output-styles/forge.md`, `output-styles/codex.md` | Narration contracts for active sidekick sessions. Documents `[FORGE]` / `[KAY]` prefixes and `[...-SUMMARY]` blocks. |
-| Codex plugin manifest | `.codex-plugin/plugin.json` | v0.6.0. Points Codex at `agents/codex/` for host-rendered skills plus shared hook wiring. |
-| Claude plugin manifest | `.claude-plugin/plugin.json` | v0.6.0. Points Claude at `agents/claude/`, `hooks/hooks.json`, and `output-styles/`. `_integrity` carries SHA-256 for canonical sources, generated host bundles, and runtime assets. |
+| Codex plugin manifest | `.codex-plugin/plugin.json` | v0.6.1. Points Codex at `agents/codex/` for host-rendered skills plus shared hook wiring. |
+| Claude plugin manifest | `.claude-plugin/plugin.json` | v0.6.1. Points Claude at `agents/claude/`, `hooks/hooks.json`, and `output-styles/`. `_integrity` carries SHA-256 for canonical sources, generated host bundles, and runtime assets. |
 | Marketplace manifest | `.claude-plugin/marketplace.json` | Advertises the plugin to the `alo-exp/sidekick` marketplace. |
 | Forge project config | `.forge/agents/forge.md`, `.forge.toml` | Bootstrapped on first activation (non-destructive). Agent frontmatter carries `tools: ["*"]` (critical — missing this silently provisions zero tools). `.forge.toml` caps `max_tokens = 16384`, compaction at 80k tokens, 20% eviction, 6-message retention. |
 | Kay project config | `~/.kay/config.toml` | Runtime configuration for Kay. Legacy `~/.code` / `~/.codex` paths are compatibility-only; any uppercase `~/.Codex` tree is treated as backup-only migration material and is retired after a successful reinstall. |

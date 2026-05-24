@@ -2,7 +2,7 @@
 workflow_id: 20260521T084826Z-0c5ffd-silver-migrate
 composer: /silver:migrate
 started_at: 2026-05-21T08:48:26Z
-status: active
+status: complete
 intent: migrated legacy project state
 ---
 
@@ -23,4 +23,4 @@ intent: migrated legacy project state
 | 5 | Docsaccuracyverification | complete | - | 2026-05-21T08:48:44Z |
 | 6 | Milestonesummary | complete | - | 2026-05-21T08:48:44Z |
 | 7 | Createrelease | complete | - | 2026-05-21T08:48:44Z |
-| 8 | gsd-new-milestone | pending | - | - |
+| 8 | gsd-new-milestone | complete | - | 2026-05-21T08:48:44Z |

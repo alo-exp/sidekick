@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Forge Plugin — auto-install script
-# Called by the first-run SessionStart bootstrap hook and manual repair paths.
+# Called by explicit install and manual repair paths.
 # Installs Forge and Kay runtimes when explicitly invoked and adds them to PATH.
 # Provider/API key setup is guided interactively by the forge skill in Claude.
 #
-# SECURITY NOTE (R8-2): This script runs non-interactively under the SessionStart hook.
+# SECURITY NOTE (R8-2): This script can run non-interactively from install automation.
 # Ctrl+C is not available to cancel the download. The SHA-256 of the downloaded script is
 # logged to ~/.local/share/forge-plugin-install-sha.log — verify it against the official
 # release hash at https://forgecode.dev/releases after the session starts.
@@ -188,7 +188,6 @@ for rel in [
     "sidekicks/registry.json",
     "hooks/forge-delegation-enforcer.sh",
     "hooks/codex-delegation-enforcer.sh",
-    "hooks/validate-release-gate.sh",
 ]:
     path = root / rel
     if not path.exists():
@@ -270,7 +269,6 @@ hash_targets = {
     "legacy_hooks_scrub_sha256": "hooks/scrub-legacy-user-hooks.py",
     "forge_progress_surface_sha256": "hooks/forge-progress-surface.sh",
     "codex_progress_surface_sha256": "hooks/codex-progress-surface.sh",
-    "validate_release_gate_sha256": "hooks/validate-release-gate.sh",
     "output_style_forge_sha256": "output-styles/forge.md",
     "output_style_codex_sha256": "output-styles/codex.md",
     "forge_delegate_alias_skill_md_sha256": "skills/forge:delegate/SKILL.md",
@@ -883,7 +881,7 @@ if [ "${INSTALL_FORGE}" = "1" ]; then
     fi
 
     # R9-2: Interactive execution gate (co-patch with R9-3 hooks.json change).
-    # When running non-interactively (SessionStart hook) with no pinned hash, skip
+    # When running non-interactively with no pinned hash, skip
     # execution and ask the user to install manually from an interactive terminal.
     # This ensures a human can verify the SHA before the downloaded script is run.
     # When a pinned hash is set and verified above, non-interactive execution is safe.
@@ -894,8 +892,8 @@ if [ "${INSTALL_FORGE}" = "1" ]; then
       echo "[forge-plugin]   To install ForgeCode, open a terminal and run:" >&2
       echo "[forge-plugin]     bash \"${BASH_SOURCE[0]}\"" >&2
       echo "[forge-plugin]   The SHA-256 will be displayed and you can verify it before proceeding." >&2
-      # Exit 0 so the .installed sentinel IS written (via && in hooks.json) and this
-      # message only appears once — not on every subsequent Claude session.
+      # Exit 0 so non-interactive automation can continue without executing
+      # an unverified downloaded installer.
       exit 0
     fi
 
@@ -1096,7 +1094,7 @@ if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
     echo "[forge-plugin] Press Ctrl+C within 10 seconds to cancel, or wait to proceed."
     sleep 10
   else
-    # Non-interactive (SessionStart hook context): print notice with undo instructions
+    # Non-interactive context: print notice with undo instructions
     echo "[forge-plugin] NOTICE: Adding ${SIDEKICK_BIN_DIR} to PATH in shell profiles (if not already present)."
     echo "[forge-plugin] To undo: remove lines marked 'Added by sidekick/forge plugin' from ~/.zshrc etc."
   fi

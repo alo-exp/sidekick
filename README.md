@@ -6,8 +6,8 @@
 
 | Sidekick | Activation surface | Agent | Status |
 |----------|--------------------|-------|--------|
-| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.6.0 |
-| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.0 |
+| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.6.1 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.1 |
 
 More sidekicks planned.
 
@@ -37,7 +37,7 @@ Install through the active host's plugin surface:
 codex plugin marketplace add alo-labs/codex-plugins
 ```
 
-On the next host session, Sidekick performs the first-run bootstrap. Runtime readiness is checked when you start Forge or Kay delegation for the current session.
+After installation, runtime readiness is checked when you start Forge or Kay delegation for the current session.
 
 ---
 
@@ -147,7 +147,7 @@ To include optional Forge live stages when Forge provider testing is available, 
 
 Local/pre-release test evidence must be produced inside Kay via `tests/run_in_kay.bash`. Kay test stages always force OpenCode Go with `deepseek-v4-flash` and low reasoning, even when normal delegation routing would select a different Kay model.
 
-Before any release, make the final release-candidate commit first, then complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. `tests/run_release.bash` writes isolated `quality-gate-live-pyramid-candidate` markers; only `tests/run_in_kay.bash` promotes successful canonical live runs to proof-bound final `quality-gate-live-pyramid` markers. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two proof-bound Codex live markers before publishing.
+Before any release, make the final release-candidate commit first, then complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. `tests/run_release.bash` writes isolated `quality-gate-live-pyramid-candidate` markers; only `tests/run_in_kay.bash` promotes successful canonical live runs to proof-bound final `quality-gate-live-pyramid` markers. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; release operators must verify this evidence before publishing.
 
 After the release is published, run `bash tests/post_release_cleanup.bash` so the local repo returns to a clean post-release state.
 This cleanup only removes transient build/cache artifacts; `.planning/`, site/specs, and site/design content stay in place.

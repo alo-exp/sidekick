@@ -24,7 +24,6 @@ copy_snapshot() {
   cp "${PLUGIN_DIR}/hooks/forge-delegation-enforcer.sh" "${dest}/hooks/forge-delegation-enforcer.sh"
   cp "${PLUGIN_DIR}/hooks/codex-delegation-enforcer.sh" "${dest}/hooks/codex-delegation-enforcer.sh"
   cp "${PLUGIN_DIR}/hooks/scrub-legacy-user-hooks.py" "${dest}/hooks/scrub-legacy-user-hooks.py"
-  cp "${PLUGIN_DIR}/hooks/validate-release-gate.sh" "${dest}/hooks/validate-release-gate.sh"
   cp "${PLUGIN_DIR}/skills/forge/SKILL.md" "${dest}/skills/forge/SKILL.md"
   cp "${PLUGIN_DIR}/skills/codex-stop/SKILL.md" "${dest}/skills/codex-stop/SKILL.md"
   cp "${PLUGIN_DIR}/sidekicks/registry.json" "${dest}/sidekicks/registry.json"

@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.1 — 2026-05-25
+
+### Explicit delegation hook surface
+
+**Changed:**
+
+- **`hooks/hooks.json`**: removed all `SessionStart` hooks, so Sidekick no longer runs bootstrap or legacy cleanup automatically at session startup.
+- **`hooks/validate-release-gate.sh`**: removed the release-gate PreToolUse hook and its classifier test suite. Release evidence remains documented, but publication is now an operator responsibility rather than a hook-enforced block.
+- **`tests/test_sidekick_hook_activation_gate.bash`**, **`tests/run_unit.bash`**: kept focused coverage for the remaining Kay/Forge hook activation contract.
+- **`.claude-plugin/plugin.json`**, **`install.sh`**, **site docs**: refreshed integrity metadata and docs for the reduced hook surface.
+
 ## v0.6.0 — 2026-05-23
 
 ### Host-specific skill bundles and release runner split
