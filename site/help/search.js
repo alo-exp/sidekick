@@ -32,7 +32,7 @@ var IDX = [
     text:'Required: Claude Code or Codex host, provider key for MiniMax or Forge provider config, Node.js 18 or later for Claude Code. Forge and Kay readiness is checked when delegation starts for the current session.' },
   { page:'Getting Started', url:'getting-started/', anchor:'install',
     title:'Installing Sidekick',
-    text:'Install Sidekick through the host plugin surface. Claude Code uses /plugin install alo-labs/sidekick. Codex uses codex plugin marketplace add alo-labs-codex/sidekick. Restart the host so the hook surface loads before starting Forge or Kay delegation.' },
+    text:'Install Sidekick through the host plugin surface. Claude Code uses /plugin install alo-labs/sidekick. Codex uses codex plugin marketplace add alo-labs/codex-plugins. Restart the host so the hook surface loads before starting Forge or Kay delegation.' },
   { page:'Getting Started', url:'getting-started/', anchor:'health-check',
     title:'Forge readiness check — verify current session',
     text:'Run /forge to activate and run the current-session readiness check. It verifies the forge binary, forge info provider output, ~/forge/.credentials.json credential array, and ~/forge/.forge.toml provider_id/model_id. Kay users verify kay --version, kay exec --help, and OpenCode Go login.' },

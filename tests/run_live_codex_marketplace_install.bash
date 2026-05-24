@@ -30,9 +30,9 @@ else
   CODE_RUST_REPO="${CODEX_REPO}/code-rs"
 fi
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
-MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-labs-codex/sidekick}"
+MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-labs/codex-plugins}"
 MARKETPLACE_NAME="${CODEX_MARKETPLACE_NAME:-alo-labs-codex}"
-EXPECTED_MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_EXPECTED_SOURCE:-https://github.com/alo-labs-codex/sidekick.git}"
+EXPECTED_MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_EXPECTED_SOURCE:-https://github.com/alo-labs/codex-plugins.git}"
 EXPECTED_MARKETPLACE_SOURCE_TYPE="${CODEX_MARKETPLACE_EXPECTED_SOURCE_TYPE:-git}"
 
 resolve_codex_runner() {
