@@ -130,7 +130,24 @@ setup_home() {
   h="$(mktemp -d)"
   mkdir -p "${h}/.claude/.sidekick"
   mkdir -p "${h}/.codex/.sidekick"
+  activate_kay_session "${h}"
   echo "${h}"
+}
+
+setup_inactive_home() {
+  local h
+  h="$(mktemp -d)"
+  mkdir -p "${h}/.claude/.sidekick"
+  mkdir -p "${h}/.codex/.sidekick"
+  echo "${h}"
+}
+
+activate_kay_session() {
+  local h="$1" session_id="${SIDEKICK_TEST_SESSION:-test-session}"
+  mkdir -p "${h}/.sidekick/sessions/${session_id}"
+  mkdir -p "${h}/.kay/sessions/${session_id}"
+  printf '%s\n' "kay" > "${h}/.sidekick/sessions/${session_id}/active-sidekick"
+  : > "${h}/.kay/sessions/${session_id}/.kay-delegation-active"
 }
 
 write_markers() {
@@ -465,6 +482,21 @@ SH
   fi
   rm -rf "${h}" "${bin}" "${gh_config}" "${capture}"
 }
+
+# ---------------------------------------------------------------------------
+# Scenario 0: inactive session → release gate is inert
+# ---------------------------------------------------------------------------
+echo "Scenario 0: inactive Sidekick session does not activate release gate"
+H="$(setup_inactive_home)"
+PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash",tool_input:{command:$cmd}}')"
+OUT="$(run_hook "${H}" "${PAYLOAD}")"; RC=$?
+DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
+if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
+  assert_pass "inactive Sidekick session: release command passes through without hook decision"
+else
+  assert_fail "inactive Sidekick session" "rc=${RC} decision=${DECISION} out=${OUT}"
+fi
+rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
 # Scenario 1: non-Bash tool → exit 0, no output
@@ -3262,9 +3294,9 @@ fi
 rm -rf "${H}"
 
 # ---------------------------------------------------------------------------
-# Scenario 51: Codex current-session file satisfies release gate
+# Scenario 51: Codex current-session file alone does not activate release gate
 # ---------------------------------------------------------------------------
-echo "Scenario 51: Codex current-session file markers satisfy release command"
+echo "Scenario 51: Codex current-session file alone does not activate release gate"
 H="$(setup_home)"
 write_codex_markers "${H}" 1 2 3 4
 write_codex_live_pyramid_markers "${H}" 2
@@ -3273,9 +3305,9 @@ PAYLOAD="$(jq -cn --arg cmd "$(current_head_release_command)" '{tool_name:"Bash"
 OUT="$(run_hook_no_host_session "${H}" "${PAYLOAD}")"; RC=$?
 DECISION=$(printf '%s' "${OUT}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)
 if [ "${RC}" -eq 0 ] && [ -z "${DECISION}" ] && [ -z "${OUT}" ]; then
-  assert_pass "Codex current-session file markers: release command passes"
+  assert_pass "Codex current-session file alone: release command passes through"
 else
-  assert_fail "Codex current-session file markers" "rc=${RC} decision=${DECISION} out=${OUT}"
+  assert_fail "Codex current-session file alone" "rc=${RC} decision=${DECISION} out=${OUT}"
 fi
 rm -rf "${H}"
 
