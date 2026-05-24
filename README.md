@@ -139,11 +139,13 @@ The host configures Forge automatically and delegates coding work from that poin
 The live stages are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. CI runs the strict non-live runner. Before tagging a new version, run the Codex live release pyramid twice; add the Forge live flag when Forge provider testing is available:
 
 ```bash
-SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
-SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
 
 To include optional Forge live stages when Forge provider testing is available, add `SIDEKICK_LIVE_FORGE=1` to either run.
+
+Local/pre-release test evidence must be produced inside Kay via `tests/run_in_kay.bash`. Kay test stages always force OpenCode Go with `deepseek-v4-flash` and low reasoning, even when normal delegation routing would select a different Kay model.
 
 Before any release, make the final release-candidate commit first, then complete the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md` (including each stage's own clean-pass loop), then run two current-session live release-pyramid passes. Stage and live-pyramid markers are scoped to the current host session and current commit SHA; the release hook requires the four stage markers plus two Codex live markers before publishing.
 

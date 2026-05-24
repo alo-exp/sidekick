@@ -12,14 +12,14 @@ Before ANY release, the following four-stage quality gate MUST be completed in o
 - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
 - Codex installs: `~/.codex/.sidekick/quality-gate-state`
 **Marker format**: `quality-gate-stage-N session=<current-host-session-id> sha=<git-sha>`
-**Live-pyramid marker format**: `quality-gate-live-pyramid session=<current-host-session-id> sha=<git-sha> at=<utc-timestamp>`
+**Live-pyramid marker format**: `quality-gate-live-pyramid session=<current-host-session-id> sha=<git-sha> at=<utc-timestamp> run_id=<wrapper-run-id> source=kay-wrapper proof_sha256=<wrapper-proof-sha256>`
 
 **Required markers** (must all be present before release):
 - Current-session, current-commit `quality-gate-stage-1`
 - Current-session, current-commit `quality-gate-stage-2`
 - Current-session, current-commit `quality-gate-stage-3`
 - Current-session, current-commit `quality-gate-stage-4`
-- Two distinct current-session, current-commit `quality-gate-live-pyramid` markers written by successful live runs of `tests/run_release.bash`
+- Two distinct current-session, current-commit `quality-gate-live-pyramid` markers written by successful Kay-hosted live runs of `tests/run_release.bash`
 
 **Session and commit reset**: All four stage markers are scoped to the current host session id and git commit SHA. The gate must be completed in full during the session in which the release is being cut, after the final release commit is present — markers from a previous session or previous commit do not satisfy the release hook.
 
@@ -157,6 +157,7 @@ After the review loop produces zero accepted items AND the structure + security 
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf '%s\n' "$SIDEKICK_QG_SESSION" > "${SIDEKICK_QG_DIR}/current-session"
    SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
    test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
    printf 'quality-gate-stage-1 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
@@ -239,6 +240,7 @@ After two consecutive clean passes across all 5 dimensions:
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf '%s\n' "$SIDEKICK_QG_SESSION" > "${SIDEKICK_QG_DIR}/current-session"
    SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
    test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
    printf 'quality-gate-stage-2 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
@@ -310,6 +312,7 @@ All suites in `tests/run_unit.bash` must pass with 0 failures. Run `bash tests/r
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf '%s\n' "$SIDEKICK_QG_SESSION" > "${SIDEKICK_QG_DIR}/current-session"
    SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
    test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
    printf 'quality-gate-stage-3 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
@@ -376,6 +379,7 @@ After all three targets are clean with no blocking issues:
    mkdir -p "$(dirname "$SIDEKICK_QG_STATE")"
    SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
    test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+   printf '%s\n' "$SIDEKICK_QG_SESSION" > "${SIDEKICK_QG_DIR}/current-session"
    SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
    test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
    printf 'quality-gate-stage-4 session=%s sha=%s\n' "$SIDEKICK_QG_SESSION" "$SIDEKICK_QG_SHA" >> "$SIDEKICK_QG_STATE"
@@ -389,17 +393,18 @@ After all three targets are clean with no blocking issues:
 
 After all 4 stage markers are written to `$SIDEKICK_QG_STATE`,
 and after the Codex live release pyramid has been run twice with
-`SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`:
+`bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash`:
 
 ```bash
 # Verify all 4 distinct current-session/current-commit stage markers and 2 current-session/current-commit live-pyramid markers are present
 SIDEKICK_QG_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 test -n "$SIDEKICK_QG_SESSION" || { echo "No host session id found"; exit 1; }
+printf '%s\n' "$SIDEKICK_QG_SESSION" > "${SIDEKICK_QG_DIR}/current-session"
 SIDEKICK_QG_SHA="$(git rev-parse --short=12 HEAD 2>/dev/null || true)"
 test -n "$SIDEKICK_QG_SHA" || { echo "No git SHA found"; exit 1; }
 count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1 ~ /^quality-gate-stage-[1-4]$/ { has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $1 }' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
 [ "$count" -eq 4 ] || { echo "Quality gate incomplete: $count/4 stages present"; exit 1; }
-live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1 } if(has_session && has_sha)print $0}' "$SIDEKICK_QG_STATE" | sort -u | wc -l | tr -d ' ')
+live_count=$(awk -v sid="$SIDEKICK_QG_SESSION" -v sha="$SIDEKICK_QG_SHA" '$1=="quality-gate-live-pyramid"{has_session=0; has_sha=0; has_source=0; run_id=""; proof_sha=""; for(i=2;i<=NF;i++){ if($i=="session="sid)has_session=1; if($i=="sha="sha)has_sha=1; if($i=="source=kay-wrapper")has_source=1; if($i ~ /^run_id=.+/)run_id=substr($i,8); if($i ~ /^proof_sha256=[0-9a-f]{64}$/)proof_sha=substr($i,14) } if(has_session && has_sha && has_source && run_id!="" && proof_sha!="")print run_id, proof_sha}' "$SIDEKICK_QG_STATE" | while read -r run_id proof_sha; do proof_file="$(dirname "$SIDEKICK_QG_STATE")/kay-wrapper-proofs/${run_id}.sha256"; if [ -f "$proof_file" ] && [ "$(tr -d '[:space:]' < "$proof_file")" = "$proof_sha" ]; then printf '%s\n' "$run_id"; fi; done | sort -u | wc -l | tr -d ' ')
 [ "$live_count" -ge 2 ] || { echo "Live pyramid incomplete for current session/current commit: $live_count/2 runs present"; exit 1; }
 
 # Resolve the current trusted Sidekick HEAD, then paste that literal SHA as

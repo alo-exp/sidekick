@@ -11,7 +11,8 @@
       "name": "sidekick",
       "source": {
         "source": "github",
-        "repo": "alo-exp/sidekick"
+        "repo": "alo-exp/sidekick",
+        "ref": "41190dfc29fe796cc23decbe32fffaba06ac54fb"
       },
       "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge and Kay are the first two: they auto-install, configure themselves, and turn Claude into an orchestrator that delegates implementation while handling planning and user interaction itself.",
       "version": "0.6.0",
