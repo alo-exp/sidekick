@@ -36,24 +36,38 @@ fi
 STATE_FILE="${SIDEKICK_QG_STATE:-${SIDEKICK_QG_DIR}/quality-gate-state}"
 QUALITY_GATE_SESSION_ID="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 
-if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
-  for candidate_dir in "$HOME/.codex/.sidekick" "$HOME/.claude/.sidekick"; do
-    candidate_session_file="${candidate_dir}/current-session"
-    if [ -f "$candidate_session_file" ]; then
-      candidate_session_mtime="$(stat -f %m "$candidate_session_file" 2>/dev/null || stat -c %Y "$candidate_session_file" 2>/dev/null || printf '0')"
-      candidate_session_age="$(( $(date +%s) - candidate_session_mtime ))"
-      if [ "$candidate_session_age" -gt 21600 ]; then
-        continue
-      fi
-      QUALITY_GATE_SESSION_ID="$(sed -n '1s/[[:space:]]*$//p' "$candidate_session_file" 2>/dev/null || true)"
-      if [ -n "$QUALITY_GATE_SESSION_ID" ]; then
-        if [ -z "${SIDEKICK_QG_STATE:-}" ]; then
-          STATE_FILE="${candidate_dir}/quality-gate-state"
-        fi
-        break
-      fi
-    fi
-  done
+sidekick_release_gate_active() {
+  local session_id="$1" active_file active_mode marker
+  if [ -z "${session_id}" ]; then
+    return 1
+  fi
+
+  active_file="${HOME}/.sidekick/sessions/${session_id}/active-sidekick"
+  if [ ! -f "${active_file}" ]; then
+    return 1
+  fi
+
+  active_mode="$(sed -n '1s/[[:space:]]*$//p' "${active_file}" 2>/dev/null || true)"
+  case "${active_mode}" in
+    kay)
+      marker="${HOME}/.kay/sessions/${session_id}/.kay-delegation-active"
+      [ -f "${marker}" ]
+      ;;
+    forge)
+      [ -f "${HOME}/.codex/sessions/${session_id}/.forge-delegation-active" ] \
+        || [ -f "${HOME}/.claude/sessions/${session_id}/.forge-delegation-active" ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Sidekick hooks are inert until the user explicitly activates Kay or Forge for
+# the current host session. Deliberately ignore stale current-session files so
+# delegation cannot survive the session that created its marker.
+if ! sidekick_release_gate_active "${QUALITY_GATE_SESSION_ID}"; then
+  exit 0
 fi
 
 # Fail closed if jq is absent — mirrors the sibling hook contract.
@@ -6947,7 +6961,7 @@ PY
 }
 
 if [ -z "$QUALITY_GATE_SESSION_ID" ]; then
-  reason="Pre-release quality gate cannot validate this release command because no host session id is available. Set the current host session id or write it to ~/.codex/.sidekick/current-session / ~/.claude/.sidekick/current-session before rerunning the gate."
+  reason="Pre-release quality gate cannot validate this release command because no active host session id is available. Activate Kay or Forge delegation in the current host session before rerunning the gate."
   jq -cn --arg reason "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",

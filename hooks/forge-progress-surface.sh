@@ -82,6 +82,8 @@ extract_status_block() {
 # main
 # -----------------------------------------------------------------------------
 main() {
+  sidekick_active_mode_allows "$SIDEKICK_NAME" || exit 0
+
   if ! command -v jq >/dev/null 2>&1; then
     # jq missing is a precondition failure but not fatal for a PostToolUse
     # that is supposed to be side-effect-free. Exit 0 silently.

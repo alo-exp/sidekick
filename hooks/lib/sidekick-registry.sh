@@ -146,8 +146,8 @@ sidekick_active_mode_file() {
 sidekick_active_mode_allows() {
   local sidekick="$1"
   local active_file active
-  active_file="$(sidekick_active_mode_file)" || return 0
-  [[ -f "$active_file" ]] || return 0
+  active_file="$(sidekick_active_mode_file)" || return 1
+  [[ -f "$active_file" ]] || return 1
   IFS= read -r active < "$active_file" 2>/dev/null || active=""
   [[ "$active" == "$sidekick" ]]
 }
