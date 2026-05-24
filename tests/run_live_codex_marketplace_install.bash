@@ -24,7 +24,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOME}/projects/codex-cli/kay}"
 CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
-CODE_RUST_REPO="${CODEX_REPO}/code-rs"
+if [ -d "${CODEX_REPO}/kay-rs" ]; then
+  CODE_RUST_REPO="${CODEX_REPO}/kay-rs"
+else
+  CODE_RUST_REPO="${CODEX_REPO}/code-rs"
+fi
 PLUGIN_VERSION="$(python3 -c "import json; print(json.load(open('${SIDEKICK_DIR}/.codex-plugin/plugin.json'))['version'])")"
 MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-labs-codex/sidekick}"
 MARKETPLACE_NAME="${CODEX_MARKETPLACE_NAME:-alo-labs-codex}"
