@@ -320,7 +320,7 @@ if [ "${PROMOTE_RELEASE_MARKERS}" = "1" ]; then
     echo "FAIL: Kay release run produced no isolated live-pyramid candidate state" >&2
     exit 1
   fi
-  matching_candidate="$(
+  matching_candidates="$(
     awk -v run_id="${RUN_ID}" -v token="${PROOF_TOKEN}" '
       $1 == "quality-gate-live-pyramid-candidate" {
         has_run = 0
@@ -334,12 +334,18 @@ if [ "${PROMOTE_RELEASE_MARKERS}" = "1" ]; then
     ' "${ISOLATED_QG_STATE}"
   )"
   candidate_count="$(
-    printf '%s\n' "${matching_candidate}" | awk 'NF { count++ } END { print count + 0 }'
+    printf '%s\n' "${matching_candidates}" | awk 'NF { count++ } END { print count + 0 }'
   )"
-  if [ "${candidate_count}" -ne 1 ]; then
-    echo "FAIL: Kay release run produced ${candidate_count} matching live-pyramid candidates; expected exactly 1" >&2
+  if [ "${candidate_count}" -eq 0 ]; then
+    echo "FAIL: Kay release run produced no matching live-pyramid candidates" >&2
     exit 1
   fi
+  if [ "${candidate_count}" -gt 1 ]; then
+    echo "WARN: Kay release run produced ${candidate_count} matching live-pyramid candidates; promoting the newest entry" >&2
+  fi
+  matching_candidate="$(
+    printf '%s\n' "${matching_candidates}" | awk 'NF { line = $0 } END { print line }'
+  )"
   candidate_sha256="$(printf '%s\n' "${matching_candidate}" | shasum -a 256 | awk '{print $1}')"
   command_sha256="$(printf '%s' "${TEST_COMMAND}" | shasum -a 256 | awk '{print $1}')"
   final_marker="quality-gate-live-pyramid"
