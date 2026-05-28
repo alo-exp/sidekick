@@ -49,59 +49,43 @@ check_hash() {
 }
 
 check_hash "install_sh_sha256" "install.sh"
-check_hash "forge_md_sha256" "skills/forge.md"
-check_hash "forge_skill_md_sha256" "skills/forge/SKILL.md"
 check_hash "kay_delegate_skill_md_sha256" "skills/kay-delegate/SKILL.md"
 check_hash "kay_stop_skill_md_sha256" "skills/kay-stop/SKILL.md"
 check_hash "codex_delegate_skill_md_sha256" "skills/codex-delegate/SKILL.md"
 check_hash "codex_delegate_md_sha256" "skills/codex-delegate.md"
-check_hash "claude_forge_md_sha256" "agents/claude/forge.md"
-check_hash "claude_forge_skill_md_sha256" "agents/claude/forge/SKILL.md"
 check_hash "claude_kay_delegate_skill_md_sha256" "agents/claude/kay-delegate/SKILL.md"
 check_hash "claude_kay_stop_skill_md_sha256" "agents/claude/kay-stop/SKILL.md"
 check_hash "claude_codex_delegate_skill_md_sha256" "agents/claude/codex-delegate/SKILL.md"
 check_hash "claude_codex_delegate_md_sha256" "agents/claude/codex-delegate.md"
-check_hash "claude_forge_delegate_alias_skill_md_sha256" "agents/claude/forge:delegate/SKILL.md"
 check_hash "claude_kay_delegate_alias_skill_md_sha256" "agents/claude/kay:delegate/SKILL.md"
-check_hash "claude_forge_stop_skill_md_sha256" "agents/claude/forge-stop/SKILL.md"
 check_hash "claude_codex_stop_skill_md_sha256" "agents/claude/codex-stop/SKILL.md"
-check_hash "codex_forge_md_sha256" "agents/codex/forge.md"
-check_hash "codex_forge_skill_md_sha256" "agents/codex/forge/SKILL.md"
 check_hash "codex_kay_delegate_skill_md_sha256" "agents/codex/kay-delegate/SKILL.md"
 check_hash "codex_kay_stop_skill_md_sha256" "agents/codex/kay-stop/SKILL.md"
 check_hash "codex_codex_delegate_skill_md_sha256" "agents/codex/codex-delegate/SKILL.md"
 check_hash "codex_codex_delegate_md_sha256" "agents/codex/codex-delegate.md"
-check_hash "codex_forge_delegate_alias_skill_md_sha256" "agents/codex/forge:delegate/SKILL.md"
 check_hash "codex_kay_delegate_alias_skill_md_sha256" "agents/codex/kay:delegate/SKILL.md"
-check_hash "codex_forge_stop_skill_md_sha256" "agents/codex/forge-stop/SKILL.md"
 check_hash "codex_codex_stop_skill_md_sha256" "agents/codex/codex-stop/SKILL.md"
 check_hash "render_agent_bundle_sha256" "scripts/render-agent-bundle.py"
 check_hash "sync_host_surfaces_sha256" "scripts/sync-host-surfaces.sh"
 check_hash "hooks_json_sha256" "hooks/hooks.json"
-check_hash "forge_delegation_enforcer_sha256" "hooks/forge-delegation-enforcer.sh"
 check_hash "codex_delegation_enforcer_sha256" "hooks/codex-delegation-enforcer.sh"
 check_hash "enforcer_utils_sha256" "hooks/lib/enforcer-utils.sh"
 check_hash "sidekick_registry_lib_sha256" "hooks/lib/sidekick-registry.sh"
 check_hash "safe_runner_sha256" "hooks/lib/sidekick-safe-runner.sh"
 check_hash "sidekick_registry_sha256" "sidekicks/registry.json"
 check_hash "legacy_hooks_scrub_sha256" "hooks/scrub-legacy-user-hooks.py"
-check_hash "forge_progress_surface_sha256" "hooks/forge-progress-surface.sh"
 check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
-check_hash "output_style_forge_sha256" "output-styles/forge.md"
 check_hash "output_style_kay_sha256" "output-styles/kay.md"
 check_hash "output_style_codex_sha256" "output-styles/codex.md"
-check_hash "forge_delegate_alias_skill_md_sha256" "skills/forge:delegate/SKILL.md"
 check_hash "kay_delegate_alias_skill_md_sha256" "skills/kay:delegate/SKILL.md"
-check_hash "forge_stop_skill_md_sha256" "skills/forge-stop/SKILL.md"
 check_hash "codex_stop_skill_md_sha256" "skills/codex-stop/SKILL.md"
 
 # Removed-skill surface must stay removed.
 echo "=== Removed skill surface ==="
 if [ ! -f "${PLUGIN_DIR}/skills/codex/SKILL.md" ] \
   && [ ! -f "${PLUGIN_DIR}/skills/codex.md" ] \
-  && [ ! -f "${PLUGIN_DIR}/skills/codex-history/SKILL.md" ] \
-  && [ ! -f "${PLUGIN_DIR}/skills/forge-history/SKILL.md" ]; then
-  assert_pass "removed Codex/Forge history skill files are absent"
+  && [ ! -f "${PLUGIN_DIR}/skills/codex-history/SKILL.md" ]; then
+  assert_pass "removed Codex history skill files are absent"
 else
   assert_fail "removed skill surface" "one or more removed skill files still present"
 fi
@@ -121,42 +105,10 @@ else
   assert_fail "kay installer source" "url=${REGISTRY_KAY_URL} version=${REGISTRY_KAY_VERSION} registry_sha=${REGISTRY_KAY_SHA} manifest_sha=${CLAIMED_CODEX_INSTALL}"
 fi
 
-if grep -q '^user-invocable: false' "${PLUGIN_DIR}/skills/forge.md"; then
-  assert_pass "legacy flat Forge skill is hidden from public invocation"
+if ! python3 -c "import json, pathlib; d=json.load(open('${MANIFEST}')); blob=json.dumps(d).lower(); assert 'forge' not in blob and 'forgecode' not in blob"; then
+  assert_fail "manifest removal check" "Forge metadata remains in plugin manifest"
 else
-  assert_fail "legacy flat Forge skill visibility" "skills/forge.md must remain user-invocable: false"
-fi
-
-# install.sh pinned forge installer hash must match manifest.
-INSTALL_PINNED="$(grep 'EXPECTED_FORGE_SHA=' "${PLUGIN_DIR}/install.sh" | grep -v '^#' | sed 's/.*="\(.*\)"/\1/' | head -n 1)"
-CLAIMED_FORGECODE="$(claim forgecode_installer_sha256)"
-if [ "${INSTALL_PINNED}" = "${CLAIMED_FORGECODE}" ]; then
-  assert_pass "install.sh EXPECTED_FORGE_SHA matches manifest forgecode_installer_sha256"
-else
-  assert_fail "forge installer hash pin" "install.sh=${INSTALL_PINNED} manifest=${CLAIMED_FORGECODE}"
-fi
-
-if [ "${SIDEKICK_VERIFY_REMOTE_INSTALLERS:-0}" = "1" ]; then
-  REGISTRY_FORGE_URL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['forge']['install']['url'])")"
-  REGISTRY_FORGE_SHA="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['forge']['install']['sha256'])")"
-  REMOTE_FORGE_TMP="$(mktemp "${TMPDIR:-/tmp}/sidekick-forge-installer.XXXXXX")"
-  if curl -fsSL --max-time 60 --connect-timeout 15 "${REGISTRY_FORGE_URL}" -o "${REMOTE_FORGE_TMP}"; then
-    if command -v shasum >/dev/null 2>&1; then
-      REMOTE_FORGE_SHA="$(shasum -a 256 "${REMOTE_FORGE_TMP}" | awk '{print $1}')"
-    else
-      REMOTE_FORGE_SHA="$(sha256sum "${REMOTE_FORGE_TMP}" | awk '{print $1}')"
-    fi
-    if [ "${REMOTE_FORGE_SHA}" = "${REGISTRY_FORGE_SHA}" ] && [ "${REMOTE_FORGE_SHA}" = "${CLAIMED_FORGECODE}" ]; then
-      assert_pass "remote Forge installer hash matches registry and manifest"
-    else
-      assert_fail "remote Forge installer hash" "remote=${REMOTE_FORGE_SHA} registry=${REGISTRY_FORGE_SHA} manifest=${CLAIMED_FORGECODE}"
-    fi
-  else
-    assert_fail "remote Forge installer fetch" "could not fetch ${REGISTRY_FORGE_URL}"
-  fi
-  rm -f "${REMOTE_FORGE_TMP}"
-else
-  echo "SKIP remote Forge installer hash check (set SIDEKICK_VERIFY_REMOTE_INSTALLERS=1)"
+  assert_pass "plugin manifest has no removed sidekick metadata"
 fi
 
 # Verify plugin version remains on the pre-1.0 release line.

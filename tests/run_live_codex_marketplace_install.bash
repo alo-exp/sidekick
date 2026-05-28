@@ -236,20 +236,15 @@ if [ -f "${SKILL_ROOT}/codex-delegate/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/codex-stop/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/kay-delegate/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/kay-stop/SKILL.md" ] \
-  && [ -f "${SKILL_ROOT}/forge/SKILL.md" ] \
-  && [ -f "${SKILL_ROOT}/forge-stop/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex-history/SKILL.md" ] \
-  && [ ! -f "${SKILL_ROOT}/forge-history/SKILL.md" ] \
+  && [ ! -f "${SKILL_ROOT}/forge/SKILL.md" ] \
+  && [ ! -f "${SKILL_ROOT}/forge-stop/SKILL.md" ] \
   && grep -q '^name: codex-delegate' "${SKILL_ROOT}/codex-delegate/SKILL.md" \
   && grep -q '\.codex-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \
   && grep -q '^name: kay-delegate' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
   && grep -q '\.kay-delegation-active' "${SKILL_ROOT}/kay-stop/SKILL.md" \
-  && grep -q '^name: forge-delegate' "${SKILL_ROOT}/forge/SKILL.md" \
-  && grep -q '\.forge-delegation-active' "${SKILL_ROOT}/forge-stop/SKILL.md" \
-  && grep -q '/forge-stop' "${SKILL_ROOT}/forge/SKILL.md" \
-  && grep -q '^user-invocable: false' "${SKILL_ROOT}/codex-delegate.md" \
-  && grep -q '^user-invocable: false' "${SKILL_ROOT}/forge.md"
+  && grep -q '^user-invocable: false' "${SKILL_ROOT}/codex-delegate.md"
 then
   pass "installed marketplace exposes the canonical Sidekick skill surface"
 else
@@ -345,9 +340,6 @@ try:
     expected = [
         "sidekick:codex-delegate",
         "sidekick:codex-stop",
-        "sidekick:forge-delegate",
-        "sidekick:forge-stop",
-        "sidekick:forge:delegate",
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
         "sidekick:kay:delegate",
@@ -411,7 +403,7 @@ fi
 
 echo "=== installed_plugin_cache ==="
 if [ -d "${INSTALLED_ROOT}" ]; then
-  if ! HOME="${CODE_HOME}" CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" CODEX_PLUGIN_ROOT="${INSTALLED_ROOT}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=0 bash "${INSTALLED_ROOT}/install.sh" >/dev/null 2>&1; then
+  if ! HOME="${CODE_HOME}" CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" CODEX_PLUGIN_ROOT="${INSTALLED_ROOT}" SIDEKICK_INSTALL_KAY=0 bash "${INSTALLED_ROOT}/install.sh" >/dev/null 2>&1; then
     fail "installed cache rewrite" "reinstalling the installed tree at ${INSTALLED_ROOT} failed"
   fi
   if grep -Fq 'CODEX_PLUGIN_ROOT' "${INSTALLED_ROOT}/hooks/hooks.json" \
@@ -420,10 +412,10 @@ if [ -d "${INSTALLED_ROOT}" ]; then
     && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${INSTALLED_ROOT}/hooks/lib/sidekick-registry.sh" \
     && grep -Fq '.codex/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
     && ! grep -Fq '.claude/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
-    && grep -Fq 'SIDEKICK_HOST_SESSION_ID' "${SKILL_ROOT}/forge/SKILL.md" \
-    && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/forge/SKILL.md" \
-    && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/forge/SKILL.md" \
-    && ! grep -Fq '${HOME}/.codex/sessions/${SIDEKICK_SESSION}' "${SKILL_ROOT}/forge/SKILL.md" \
+    && grep -Fq 'SIDEKICK_HOST_SESSION_ID' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
+    && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
+    && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
+    && ! grep -Fq '${HOME}/.codex/sessions/${SIDEKICK_SESSION}' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
     && grep -Fq 'SIDEKICK_HOST_HOME' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \

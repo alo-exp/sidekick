@@ -26,9 +26,9 @@ trap 'rm -rf "${SANDBOX}"' EXIT
 cleanup_dirs=(.tmp .cache target build dist coverage .pytest_cache node_modules '~')
 preserve_dirs=(.planning site/specs site/design)
 git -C "${SANDBOX}" init -q
-mkdir -p "${SANDBOX}/.claude-plugin" "${SANDBOX}/tests" "${SANDBOX}/skills/forge" "${SANDBOX}/hooks"
+mkdir -p "${SANDBOX}/.claude-plugin" "${SANDBOX}/tests" "${SANDBOX}/skills/kay-delegate" "${SANDBOX}/hooks"
 printf '{"name":"sidekick"}\n' > "${SANDBOX}/.claude-plugin/plugin.json"
-touch "${SANDBOX}/tests/post_release_cleanup.bash" "${SANDBOX}/skills/forge/SKILL.md" "${SANDBOX}/hooks/hooks.json"
+touch "${SANDBOX}/tests/post_release_cleanup.bash" "${SANDBOX}/skills/kay-delegate/SKILL.md" "${SANDBOX}/hooks/hooks.json"
 for dir in "${cleanup_dirs[@]}"; do
   mkdir -p "${SANDBOX}/${dir}"
 done
@@ -97,9 +97,9 @@ else
 fi
 
 MARKER_ONLY_ROOT="${SANDBOX}/marker-only-root"
-mkdir -p "${MARKER_ONLY_ROOT}/.claude-plugin" "${MARKER_ONLY_ROOT}/tests" "${MARKER_ONLY_ROOT}/skills/forge" "${MARKER_ONLY_ROOT}/hooks" "${MARKER_ONLY_ROOT}/.tmp"
+mkdir -p "${MARKER_ONLY_ROOT}/.claude-plugin" "${MARKER_ONLY_ROOT}/tests" "${MARKER_ONLY_ROOT}/skills/kay-delegate" "${MARKER_ONLY_ROOT}/hooks" "${MARKER_ONLY_ROOT}/.tmp"
 printf '{"name":"sidekick"}\n' > "${MARKER_ONLY_ROOT}/.claude-plugin/plugin.json"
-touch "${MARKER_ONLY_ROOT}/tests/post_release_cleanup.bash" "${MARKER_ONLY_ROOT}/skills/forge/SKILL.md" "${MARKER_ONLY_ROOT}/hooks/hooks.json"
+touch "${MARKER_ONLY_ROOT}/tests/post_release_cleanup.bash" "${MARKER_ONLY_ROOT}/skills/kay-delegate/SKILL.md" "${MARKER_ONLY_ROOT}/hooks/hooks.json"
 if SIDEKICK_REPO_ROOT="${MARKER_ONLY_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
   assert_fail "Cleanup rejects marker-only roots" "command succeeded"
 else
@@ -114,9 +114,9 @@ fi
 WRONG_NAME_ROOT="${SANDBOX}/wrong-name-root"
 mkdir -p "${WRONG_NAME_ROOT}"
 git -C "${WRONG_NAME_ROOT}" init -q
-mkdir -p "${WRONG_NAME_ROOT}/.claude-plugin" "${WRONG_NAME_ROOT}/tests" "${WRONG_NAME_ROOT}/skills/forge" "${WRONG_NAME_ROOT}/hooks" "${WRONG_NAME_ROOT}/.tmp"
+mkdir -p "${WRONG_NAME_ROOT}/.claude-plugin" "${WRONG_NAME_ROOT}/tests" "${WRONG_NAME_ROOT}/skills/kay-delegate" "${WRONG_NAME_ROOT}/hooks" "${WRONG_NAME_ROOT}/.tmp"
 printf '{"name":"not-sidekick"}\n' > "${WRONG_NAME_ROOT}/.claude-plugin/plugin.json"
-touch "${WRONG_NAME_ROOT}/tests/post_release_cleanup.bash" "${WRONG_NAME_ROOT}/skills/forge/SKILL.md" "${WRONG_NAME_ROOT}/hooks/hooks.json"
+touch "${WRONG_NAME_ROOT}/tests/post_release_cleanup.bash" "${WRONG_NAME_ROOT}/skills/kay-delegate/SKILL.md" "${WRONG_NAME_ROOT}/hooks/hooks.json"
 if SIDEKICK_REPO_ROOT="${WRONG_NAME_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
   assert_fail "Cleanup rejects non-Sidekick plugin roots" "command succeeded"
 else
@@ -127,9 +127,9 @@ SYMLINK_ROOT="${SANDBOX}/symlink-root"
 mkdir -p "${SYMLINK_ROOT}"
 git -C "${SYMLINK_ROOT}" init -q
 OUTSIDE_ARTIFACT="${SANDBOX}/outside-artifact"
-mkdir -p "${SYMLINK_ROOT}/.claude-plugin" "${SYMLINK_ROOT}/tests" "${SYMLINK_ROOT}/skills/forge" "${SYMLINK_ROOT}/hooks" "${OUTSIDE_ARTIFACT}"
+mkdir -p "${SYMLINK_ROOT}/.claude-plugin" "${SYMLINK_ROOT}/tests" "${SYMLINK_ROOT}/skills/kay-delegate" "${SYMLINK_ROOT}/hooks" "${OUTSIDE_ARTIFACT}"
 printf '{"name":"sidekick"}\n' > "${SYMLINK_ROOT}/.claude-plugin/plugin.json"
-touch "${SYMLINK_ROOT}/tests/post_release_cleanup.bash" "${SYMLINK_ROOT}/skills/forge/SKILL.md" "${SYMLINK_ROOT}/hooks/hooks.json"
+touch "${SYMLINK_ROOT}/tests/post_release_cleanup.bash" "${SYMLINK_ROOT}/skills/kay-delegate/SKILL.md" "${SYMLINK_ROOT}/hooks/hooks.json"
 ln -s "${OUTSIDE_ARTIFACT}" "${SYMLINK_ROOT}/.tmp"
 if SIDEKICK_REPO_ROOT="${SYMLINK_ROOT}" bash "${CLEANUP_SCRIPT}" >/dev/null 2>&1; then
   assert_fail "Cleanup rejects symlinked cleanup paths outside root" "command succeeded"

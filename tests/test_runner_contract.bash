@@ -52,16 +52,14 @@ for script in \
   test_agent_surface_render.bash \
   test_host_surface_rewrite.bash \
   test_plugin_integrity.bash \
+  test_removed_sidekick_absent.bash \
   test_codex_marketplace_release_gate.bash \
   test_runner_contract.bash \
   test_repo_layout.bash; do
   expect_contains "tests/run_unit.bash" "${script}" "run_unit includes ${script}"
 done
 for live_script in \
-  test_forge_e2e.bash \
   run_live_codex_plugin_read.bash \
-  smoke/run_smoke.bash \
-  run_live_e2e.bash \
   run_live_codex_marketplace_install.bash \
   smoke/run_codex_smoke.bash \
   run_live_codex_e2e.bash; do
@@ -73,9 +71,6 @@ expect_absent "tests/run_unit.bash" "SIDEKICK_REPO_ROOT=" "run_unit does not ove
 echo "=== T3: run_all is skip-safe everything ==="
 expect_contains "tests/run_all.bash" "run_unit.bash" "run_all delegates strict suites to run_unit"
 for live_script in \
-  test_forge_e2e.bash \
-  smoke/run_smoke.bash \
-  run_live_e2e.bash \
   run_live_codex_plugin_read.bash \
   run_live_codex_marketplace_install.bash \
   smoke/run_codex_smoke.bash \

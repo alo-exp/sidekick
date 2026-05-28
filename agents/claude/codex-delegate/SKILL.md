@@ -58,18 +58,16 @@ mkdir -p "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.claude/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.kay/sessions/${SIDEKICK_SESSION}"
-rm -f "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
-  "${HOME}/.claude/sessions/${SIDEKICK_SESSION}/.forge-level3-active" \
-  "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
+rm -f "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
 printf '%s\n' "codex" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
 : > "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.codex-delegation-active"
 ```
 
-Codex, Kay, and Forge are mutually exclusive per host session. Codex activation clears any current-session Forge and Kay markers and writes `active-sidekick=codex`, so the other hooks become no-ops before Codex commands start.
+Codex and Kay are mutually exclusive per host session. Codex activation clears any current-session Kay marker and writes `active-sidekick=codex`, so the Kay hook becomes a no-op before Codex commands start.
 
 Confirm: **"Codex sidekick mode activated for this session. Delegating implementation work to Codex."**
 
-To stop: `/codex-stop`
+To stop: `/sidekick:codex-stop`
 
 ## STEP 2 -- Delegation Protocol
 
@@ -92,3 +90,24 @@ Useful options:
 - Use the OpenAI Codex CLI's native `codex exec` automation for file changes, tests, and commits.
 - Use repository `AGENTS.md` instructions.
 - Keep the host AI responsible for architecture, explanations, review, and user communication.
+
+## STEP 4 -- Host Verification and Recovery
+
+Use this loop after every sidekick task or subtask before reporting completion, starting dependent work, or accepting a sidekick `STATUS: SUCCESS`. Treat `STATUS: SUCCESS` as a claim to audit, not proof.
+
+Verification checklist:
+
+- Compare the final repo state and diff against the original task prompt and success criteria.
+- Run the smallest meaningful verification commands: tests, type checks, linters, builds, or targeted runtime checks.
+- Inspect integration points: filenames, signatures, types, imports, configuration, and existing behavior touched by the change.
+- Classify any failure with one or more taxonomy codes: `MISSED_REQUIREMENT`, `INTEGRATION_ERROR`, `REGRESSION`, `WRONG_LOGIC`, `SYNTAX_ERROR`, `WRONG_FILE`, `UNVERIFIED_ASSUMPTION`, `KNOWLEDGE_GAP`, `MISUNDERSTOOD_TASK`, `TRIAL_INCOMPLETE`, `API_FAILURE`, `EXECUTION_ERROR_EXTERNAL`.
+
+Recovery protocol:
+
+1. If a failure is detected, relaunch the active Codex sidekick for the missed task, missed subtask, or correction.
+2. Give Codex a focused correction prompt with the original task prompt, failure code(s), observed evidence, relevant files/tests, constraints, and exact success criteria.
+3. Actively handhold when needed: split the work into smaller subtasks, point to repo examples, specify the expected API/signature, or forbid the wrong location or approach.
+4. Repeat verify -> relaunch until the success criteria pass and no taxonomy failure remains.
+5. For `TRIAL_INCOMPLETE`, `API_FAILURE`, or `EXECUTION_ERROR_EXTERNAL`, do not treat partial output as complete; retry after the model provider or environment is usable, or report the external blocker with evidence.
+
+The host AI only reports completion after its own verification evidence supports the result.

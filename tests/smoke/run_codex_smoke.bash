@@ -55,7 +55,7 @@ resolve_codex_binary() {
     return 1
   fi
 
-  for candidate in kay code codex coder; do
+  for candidate in kay code coder; do
     if command -v "${candidate}" >/dev/null 2>&1 \
       && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
       && "${candidate}" exec --help >/dev/null 2>&1; then
@@ -143,7 +143,7 @@ echo "=== smoke_codex_on_path ==="
 if CODEX_BIN="$(resolve_codex_binary)"; then
   pass "Kay binary exists at $(command -v "${CODEX_BIN}")"
 else
-  fail "smoke_codex_on_path" "kay/code/codex/coder not found on PATH"
+  fail "smoke_codex_on_path" "kay/code/coder not found on PATH"
   echo "Aborting smoke — Kay binary required."
   exit 1
 fi

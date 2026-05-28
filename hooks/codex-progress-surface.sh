@@ -48,7 +48,7 @@ try:
 except Exception:
     raise SystemExit(1)
 
-aliases = {"kay", "code", "codex", "coder"} if mode == "kay" else {"codex"}
+aliases = {"kay", "code", "coder"} if mode == "kay" else {"codex"}
 
 if len(tokens) >= 2 and tokens[0] in aliases and tokens[1] == "exec":
     raise SystemExit(0)

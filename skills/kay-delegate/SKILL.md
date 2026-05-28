@@ -29,7 +29,7 @@ Kay readiness is checked when delegation starts for the current session. Session
 Before delegating, verify the runtime is available:
 
 ```bash
-for candidate in kay code codex coder; do
+for candidate in kay code coder; do
   if command -v "$candidate" >/dev/null 2>&1 \
     && "$candidate" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
     && "$candidate" exec --help >/dev/null 2>&1; then
@@ -57,7 +57,7 @@ If login is missing, guide the user to:
 kay login --provider opencode-go --with-api-key
 ```
 
-If `kay` is unavailable, install or repair Kay. The `code`, `codex`, and `coder` names are compatibility aliases only.
+If `kay` is unavailable, install or repair Kay. The `code` and `coder` names are compatibility aliases only. The `codex` binary name is reserved for the real OpenAI Codex CLI.
 
 ## STEP 1 -- Activate Kay Mode
 
@@ -80,18 +80,16 @@ CODEX_STATE_ROOT="${HOME}/.codex"
 mkdir -p "${KAY_STATE_ROOT}/sessions/${SIDEKICK_SESSION}" \
   "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
-rm -f "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-delegation-active" \
-  "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-level3-active" \
-  "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.codex-delegation-active"
+rm -f "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.codex-delegation-active"
 printf '%s\n' "kay" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
 : > "${KAY_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
 ```
 
-Kay, Codex, and Forge are mutually exclusive per host session. Kay activation clears any current-session Forge and Codex markers and writes `active-sidekick=kay`, so the other hooks become no-ops before Kay commands start.
+Kay and Codex are mutually exclusive per host session. Kay activation clears any current-session Codex marker and writes `active-sidekick=kay`, so the Codex hook becomes a no-op before Kay commands start.
 
 Confirm: **"Kay sidekick mode activated for this session. Delegating implementation work to Kay."**
 
-To stop: `/kay-stop`
+To stop: `/sidekick:kay-stop`
 
 ## STEP 2 -- Delegation Protocol
 
@@ -116,3 +114,24 @@ Useful options:
 - Use Kay's native `kay exec` automation for file changes, tests, and commits.
 - Use repository `AGENTS.md` instructions.
 - Use native Kay agents/subagents when tasks benefit from parallel work.
+
+## STEP 4 -- Host Verification and Recovery
+
+Use this loop after every sidekick task or subtask before reporting completion, starting dependent work, or accepting a sidekick `STATUS: SUCCESS`. Treat `STATUS: SUCCESS` as a claim to audit, not proof.
+
+Verification checklist:
+
+- Compare the final repo state and diff against the original task prompt and success criteria.
+- Run the smallest meaningful verification commands: tests, type checks, linters, builds, or targeted runtime checks.
+- Inspect integration points: filenames, signatures, types, imports, configuration, and existing behavior touched by the change.
+- Classify any failure with one or more taxonomy codes: `MISSED_REQUIREMENT`, `INTEGRATION_ERROR`, `REGRESSION`, `WRONG_LOGIC`, `SYNTAX_ERROR`, `WRONG_FILE`, `UNVERIFIED_ASSUMPTION`, `KNOWLEDGE_GAP`, `MISUNDERSTOOD_TASK`, `TRIAL_INCOMPLETE`, `API_FAILURE`, `EXECUTION_ERROR_EXTERNAL`.
+
+Recovery protocol:
+
+1. If a failure is detected, relaunch the active Kay sidekick for the missed task, missed subtask, or correction.
+2. Give Kay a focused correction prompt with the original task prompt, failure code(s), observed evidence, relevant files/tests, constraints, and exact success criteria.
+3. Actively handhold when needed: split the work into smaller subtasks, point to repo examples, specify the expected API/signature, or forbid the wrong location or approach.
+4. Repeat verify -> relaunch until the success criteria pass and no taxonomy failure remains.
+5. For `TRIAL_INCOMPLETE`, `API_FAILURE`, or `EXECUTION_ERROR_EXTERNAL`, do not treat partial output as complete; retry after the model provider or environment is usable, or report the external blocker with evidence.
+
+The host AI only reports completion after its own verification evidence supports the result.

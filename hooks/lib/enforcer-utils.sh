@@ -2,7 +2,7 @@
 # =============================================================================
 # Sidekick Plugin — Enforcer Utility Library
 # =============================================================================
-# Sourced by hooks/forge-delegation-enforcer.sh at startup.
+# Sourced by Sidekick delegation enforcer hooks at startup.
 # Safe to source independently in tests — no side effects at source time,
 # no main() call, no exit statements.
 #
@@ -1188,15 +1188,9 @@ is_read_only() {
   if command_has_inplace_mutation "$cmd"; then
     return 1
   fi
-  case "$first" in
-    "forge --version"|"forge --help"|"forge info") return 0 ;;
-  esac
   git_read_only_command "$cmd" && return 0
   command_text_filter_is_read_only "$cmd" && return 0
   first3="$(first_three_tokens "$cmd")"
-  case "$first3" in
-    "forge conversation list"|"forge conversation info"|"forge conversation stats"|"forge conversation show"|"forge conversation dump") return 0 ;;
-  esac
   # ENF-05: gh read-only sub-commands require 3-token matching (gh <noun> <verb>).
   case "$first3" in
     "gh issue list"|"gh issue view"|"gh pr list"|"gh pr view"|"gh pr status"|"gh pr checks"\
@@ -1237,9 +1231,6 @@ is_mutating() {
     "git add"|"git commit"|"git push"|"git pull"|"git fetch"|"git checkout"|"git reset"|"git rebase"|"git merge"|"git cherry-pick"|"git restore"|"git rm"|"git mv"|"git tag"|"git clean"|"git stash") return 0 ;;
   esac
   first3="$(first_three_tokens "$cmd")"
-  case "$first3" in
-    "forge conversation delete"|"forge conversation rename"|"forge conversation compact"|"forge conversation clone"|"forge conversation new") return 0 ;;
-  esac
   # ENF-05: gh mutating sub-commands require 3-token matching (gh <noun> <verb>).
   case "$first3" in
     "gh issue create"|"gh issue edit"|"gh issue close"|"gh issue delete"\

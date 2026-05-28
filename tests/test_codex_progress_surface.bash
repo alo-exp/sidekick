@@ -78,7 +78,7 @@ out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec --full-au
 ctx="$(extract_context "${out}")"
 if echo "${ctx}" | grep -q 'STATUS: SUCCESS' \
   && echo "${ctx}" | grep -q 'FILES_CHANGED: \[utils.py\]' \
-  && echo "${ctx}" | grep -q '/kay-stop' \
+  && echo "${ctx}" | grep -q '/sidekick:kay-stop' \
   && echo "${ctx}" | grep -q '\[KAY-SUMMARY\]' \
   && echo "${ctx}" | grep -q '\[UNTRUSTED\]'; then
   assert_pass "test_kay_mode_emits_summary_when_status_block_present"
@@ -136,7 +136,7 @@ out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"codex exec -m gpt-
 ctx="$(extract_context "${out}")"
 if echo "${ctx}" | grep -q '\[CODEX-SUMMARY\]' \
   && echo "${ctx}" | grep -q 'STATUS: SUCCESS' \
-  && echo "${ctx}" | grep -q '/codex-stop'; then
+  && echo "${ctx}" | grep -q '/sidekick:codex-stop'; then
   assert_pass "test_codex_mode_emits_codex_summary_and_stop_hint"
 else
   assert_fail "test_codex_mode_emits_codex_summary_and_stop_hint" "ctx='${ctx}'"

@@ -17,18 +17,18 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 copy_snapshot() {
   local dest="$1"
-  mkdir -p "${dest}/hooks/lib" "${dest}/hooks" "${dest}/skills/forge" "${dest}/skills/codex-stop" "${dest}/sidekicks" "${dest}/output-styles" "${dest}/.claude-plugin" "${dest}/.codex-plugin"
+  mkdir -p "${dest}/hooks/lib" "${dest}/hooks" "${dest}/skills/kay-delegate" "${dest}/skills/kay-stop" "${dest}/skills/codex-stop" "${dest}/sidekicks" "${dest}/output-styles" "${dest}/.claude-plugin" "${dest}/.codex-plugin"
 
   cp "${INSTALL_SH}" "${dest}/install.sh"
   cp "${PLUGIN_DIR}/hooks/hooks.json" "${dest}/hooks/hooks.json"
   cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${dest}/hooks/lib/sidekick-registry.sh"
-  cp "${PLUGIN_DIR}/hooks/forge-delegation-enforcer.sh" "${dest}/hooks/forge-delegation-enforcer.sh"
   cp "${PLUGIN_DIR}/hooks/codex-delegation-enforcer.sh" "${dest}/hooks/codex-delegation-enforcer.sh"
   cp "${PLUGIN_DIR}/hooks/scrub-legacy-user-hooks.py" "${dest}/hooks/scrub-legacy-user-hooks.py"
-  cp "${PLUGIN_DIR}/skills/forge/SKILL.md" "${dest}/skills/forge/SKILL.md"
+  cp "${PLUGIN_DIR}/skills/kay-delegate/SKILL.md" "${dest}/skills/kay-delegate/SKILL.md"
+  cp "${PLUGIN_DIR}/skills/kay-stop/SKILL.md" "${dest}/skills/kay-stop/SKILL.md"
   cp "${PLUGIN_DIR}/skills/codex-stop/SKILL.md" "${dest}/skills/codex-stop/SKILL.md"
   cp "${PLUGIN_DIR}/sidekicks/registry.json" "${dest}/sidekicks/registry.json"
-  cp "${PLUGIN_DIR}/output-styles/forge.md" "${dest}/output-styles/forge.md"
+  cp "${PLUGIN_DIR}/output-styles/kay.md" "${dest}/output-styles/kay.md"
   cp "${PLUGIN_DIR}/output-styles/codex.md" "${dest}/output-styles/codex.md"
   cp "${PLUGIN_DIR}/.claude-plugin/plugin.json" "${dest}/.claude-plugin/plugin.json"
   cp "${PLUGIN_DIR}/.codex-plugin/plugin.json" "${dest}/.codex-plugin/plugin.json"
@@ -218,7 +218,6 @@ if env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUD
   SIDEKICK_PLUGIN_ROOT="${SOURCE_SNAPSHOT}" \
   CODEX_PLUGIN_ROOT="${TARGET_ROOT}" \
   SIDEKICK_CLEAN_REINSTALL=1 \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_CODE=0 \
   bash "${SOURCE_SNAPSHOT}/install.sh" >/tmp/sidekick-clean-reinstall-1.out 2>/tmp/sidekick-clean-reinstall-1.err
 then
@@ -243,7 +242,6 @@ if env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUD
   SIDEKICK_PLUGIN_ROOT="${SOURCE_SNAPSHOT}" \
   CODEX_PLUGIN_ROOT="${TARGET_ROOT}" \
   SIDEKICK_CLEAN_REINSTALL=1 \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_CODE=0 \
   bash "${SOURCE_SNAPSHOT}/install.sh" >/tmp/sidekick-clean-reinstall-2.out 2>/tmp/sidekick-clean-reinstall-2.err
 then
@@ -273,7 +271,6 @@ if env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUD
   SIDEKICK_PLUGIN_ROOT="${DANGER_SOURCE}" \
   CODEX_PLUGIN_ROOT="${DANGER_HOME}/.codex" \
   SIDEKICK_CLEAN_REINSTALL=1 \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_CODE=0 \
   bash "${DANGER_SOURCE}/install.sh" >/tmp/sidekick-clean-reinstall-danger.out 2>/tmp/sidekick-clean-reinstall-danger.err
 then
@@ -301,7 +298,6 @@ if env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUD
   SIDEKICK_PLUGIN_ROOT="${OUT_SOURCE}" \
   CODEX_PLUGIN_ROOT="${OUT_TARGET}" \
   SIDEKICK_CLEAN_REINSTALL=1 \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_CODE=0 \
   bash "${OUT_SOURCE}/install.sh" >/tmp/sidekick-clean-reinstall-outside.out 2>/tmp/sidekick-clean-reinstall-outside.err
 then

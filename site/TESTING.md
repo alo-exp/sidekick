@@ -1,147 +1,21 @@
-# Testing Strategy
+# Testing
 
-> How the Sidekick plugin is tested. Release authorization is handled by `tests/run_release.bash`, which chains the strict non-live suites and live gates. After publishing, `tests/post_release_cleanup.bash` returns the local repo to a clean state.
-
----
-
-## Test pyramid
-
-Six release tiers, each with a distinct purpose. Tier 1 runs every strict non-live suite and aggregates failures; the release gate aborts on the first failed tier.
-
-| Tier | Script | Runs in CI | Exercises real agent | Purpose |
-|------|--------|:---:|:---:|---|
-| **1. Strict unit + integration** | `tests/run_unit.bash` | ✅ | ✗ (mocked / static inspection) | Delegation hook activation, idx audit-row shape, plugin manifest integrity, generated host skill surfaces, runner contract, Forge/Kay coverage gaps, docs contract, help-site navigation, clean reinstall bootstrap, post-release cleanup guard tests, repository layout. The runner does not delete developer artifacts; release cleanup is an explicit post-release step. |
-| **2. Forge smoke** | `tests/smoke/run_smoke.bash` | skip | ✓ Forge | `forge --version` succeeds; trivial `forge -p` round-trip emits a `STATUS:` block; auto-injected `--conversation-id` is a valid UUID. |
-| **3. Forge live E2E** | `tests/run_live_e2e.bash` | skip | ✓ Forge | Full host→Forge delegation on a seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
-| **4. Kay marketplace install** | `tests/run_live_codex_marketplace_install.bash` | skip | ✓ Kay | Installs Sidekick from the marketplace, resolves the packaged runtime, and proves the marketplace packaging path is live. |
-| **5. Kay smoke** | `tests/smoke/run_codex_smoke.bash` | skip | ✓ Kay | `kay --version` succeeds; trivial `kay exec` round-trip completes against the real binary. |
-| **6. Kay live E2E** | `tests/run_live_codex_e2e.bash` | skip | ✓ Kay | Full host→Kay delegation on the same seeded-buggy Python testapp. Baseline-must-fail + `add()` patched + `sub()` preserved + all 3 tests pass after fix. |
-
-Stages 2 through 6 are gated behind `SIDEKICK_LIVE_FORGE=1` and `SIDEKICK_LIVE_CODEX=1` so they never run in CI. Without the env vars, those stages exit 0 cleanly and the release gate still runs stage 1.
-
-`tests/run_all.bash` is the skip-safe local sweep: it delegates to `tests/run_unit.bash`, then runs every live-gated wrapper in skip-safe mode: Forge E2E, Forge smoke/live E2E, Kay plugin/read, Kay marketplace install, Kay smoke, and Kay live E2E.
-
----
-
-## Strict Unit + Integration Suites (Tier 1)
-
-Core suites in `tests/`. Each suite is an independent Bash script with a pass/fail counter.
-
-| Suite | Coverage |
-|---|---|
-| `test_forge_skill.bash` | `/forge` activation / deactivation, marker lifecycle, health check |
-| `test_fallback_ladder.bash` | L1 Guide reframe, L2 Handhold atomic decomposition, L3 Take-over + DEBRIEF |
-| `test_skill_injection.bash` | Task-type → skill mapping, injection budget cap, skill-file existence |
-| `test_agents_md_dedup.bash` | 3-tier AGENTS.md write, exact-match + semantic dedup |
-| `test_forge_enforcer_hook.bash` | PreToolUse behavior: deny Write/Edit/NotebookEdit, rewrite `forge -p`, read-only allowlist passthrough, idempotent rewrites, UUID format |
-| `test_forge_progress_surface.bash` | PostToolUse behavior: no-op inactive, STATUS parsing, ANSI strip, 20-line cap, stop-hint emission |
-| `test_forge_v12_integration.bash` | End-to-end Pre → Post hook flow: marker on → Bash → rewrite → STATUS → summary → idx row |
-| `test_v12_coverage.bash` | Coverage-gap suite: `sed -i` / `awk -i inplace` denial, `>>` append, `> /dev/null` passthroughs, env-var prefix, 80-char task-hint truncation, unknown tool_name passthrough, stdout-only summary fallback |
-| `test_v13_coverage.bash` | Forge v1.3 coverage gaps: helper extraction, path allowlist, SRI, and sentinel-related regressions |
-| `test_agent_surface_render.bash` | Generated Claude/Codex host skill surfaces render from the canonical skills tree and reject unsafe render destinations |
-| `test_sidekick_hook_activation_gate.bash` | Remaining Kay/Forge hooks stay inert without the current-session `active-sidekick` selector and enforce only after explicit activation |
-| `test_legacy_hook_scrub.bash` | One-time scrub/rollback of stale Sidekick user-hook entries in `~/.codex/hooks.json`; legacy `~/.Codex/hooks.json` mirrors are cleaned only as migration artifacts |
-| `test_post_release_cleanup.bash` | Post-release cleanup script: removes transient repo-local artifacts and is idempotent |
-| `test_repo_layout.bash` | Repository layout guard: expected top-level files/directories and docs structure stay organized |
-| `test_codex_skill.bash` | Kay skill structure, activation/deactivation markers, and packaging expectations |
-| `test_codex_enforcer_hook.bash` | Kay PreToolUse behavior: deny direct mutation, rewrite `kay exec` (with compatibility aliases), allow read-only passthrough |
-| `test_codex_progress_surface.bash` | Kay PostToolUse behavior: STATUS parsing, ANSI strip, summary emission, stop hint |
-| `test_codex_plugin_manifest.bash` | Kay plugin manifest structure, interface metadata, and path wiring |
-| `test_codex_marketplace_manifest.bash` | Kay marketplace entry, source pinning, and install-packaging expectations |
-| `test_codex_marketplace_release_gate.bash` | Release-mode marketplace pin validation fails closed on missing manifests or dirty repos and passes on a clean pinned fixture |
-| `test_plugin_integrity.bash` | Every `_integrity` SHA-256 in `plugin.json` matches the on-disk artifact; Kay bootstrap source stays pinned to the installer that creates the `kay` binary |
-| `test_install_sh.bash` | Installer idempotency, no-SessionStart hook contract, selective install env flags, credentials schema validation |
-| `test_fresh_install_sim.bash` | Simulates fresh-install path: no `.forge/`, no `.installed` sentinel |
-| `test_clean_reinstall.bash` | Clean reinstall scrub: stale registry/config/hook/cache state removal, lowercase-only versioned-cache bootstrap, legacy uppercase archive/retirement, stable `current` alias |
-| `test_hook_trust_state.bash` | Source-specific hook trust seeding: package-local manifest vs lowercase mirrored host hook files, stable reinstall trust table, no stale alias residue, legacy uppercase retirement |
-| `test_docs_contract.bash` | Public docs and canonical help pages stay in sync with the shipped workflows |
-| `test_help_site_navigation.bash` | Help-site links, anchors, and navigation order stay valid |
-| `test_runner_contract.bash` | Runner split stays explicit: `run_unit` strict non-live, `run_all` skip-safe, `run_release` authoritative |
-
-All listed suites are invoked by `tests/run_unit.bash` with combined reporting. `tests/run_all.bash` invokes `run_unit.bash`, then runs every live-gated wrapper in skip-safe mode: Forge E2E, Forge smoke/live E2E, Kay plugin/read, Kay marketplace install, Kay smoke, and Kay live E2E.
-
----
-
-## Smoke harness (tier 2)
-
-`tests/smoke/run_smoke.bash` — 3 assertions gated on `SIDEKICK_LIVE_FORGE=1`:
-
-1. `forge --version` exits 0 and prints a semver.
-2. Minimal `forge -p '…'` round-trip emits a `STATUS:` block within 30s.
-3. The hook-injected `--conversation-id` matches `^[0-9a-f]{8}-…` (valid lowercase RFC 4122 UUID).
-
-When the env var is absent, the script prints a yellow skip notice and exits 0.
-
----
-
-## Live E2E driver (tier 3)
-
-`tests/run_live_e2e.bash` + `tests/testapp/`:
-
-**Fixture.** `tests/testapp/calc.py` defines two functions: `add(a, b)` (seeded bug — returns `a - b`) and `sub(a, b)` (correct). `tests/testapp/test_calc.py` is pure-stdlib `unittest` — `test_add_positive`, `test_add_negative_and_positive`, `test_sub`.
-
-**Flow.**
-1. Copy testapp to `$TMPDIR` sandbox.
-2. Run the tests — baseline **must fail** (bug is real).
-3. Send Forge a 5-field task prompt through `forge -C <sandbox> -p '…'` (180s timeout).
-4. Assert `calc.py`'s `add` now returns `a + b` (regex-verified).
-5. Assert `sub` is untouched — no over-fix.
-6. Re-run tests — all 3 must now pass.
-7. Sandbox is preserved on disk for maintainer inspection.
-
-Gated on `SIDEKICK_LIVE_FORGE=1`. Never runs in CI — it makes a real model call and takes ~30–120 seconds.
-
----
-
-## Release gate
-
-`tests/run_release.bash` chains all six release tiers with fail-fast stage aborts:
+## Strict Local Tests
 
 ```bash
-bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash  # Codex live pyramid — maintainer pre-tag
-bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash  # second Codex live pyramid marker
-bash tests/run_in_kay.bash bash tests/run_release.bash                       # non-live release check; still requires clean committed release metadata and marketplace pin
-```
-
-To include optional Forge live stages when Forge provider testing is available, add `SIDEKICK_LIVE_FORGE=1` to either Codex live run.
-
-Every release must first pass the 4-stage pre-release quality gate exactly as documented in `site/pre-release-quality-gate.md`, including each stage's own clean-pass loop, then pass the Codex live release pyramid twice locally before the version tag is pushed. Forge live stages can be added when the provider is available, but Codex-only live runs are still release-authorizing in this repo. Release evidence therefore includes all four quality-gate markers plus two current-session/current-commit live-pyramid markers. Stage markers and live markers are scoped to the current host session and current commit SHA. `tests/run_release.bash` writes isolated candidate markers; `tests/run_in_kay.bash` promotes successful canonical live runs to proof-bound final `quality-gate-live-pyramid` markers that release operators verify before publishing.
-
-Local/pre-release test evidence must be produced inside Kay via `tests/run_in_kay.bash`. All Kay/Codex test stages force OpenCode Go with `deepseek-v4-flash` and low reasoning. This keeps release evidence on the verifier/reporting model profile regardless of normal runtime routing.
-
-After the GitHub release is published, run `bash tests/post_release_cleanup.bash` to remove any transient repo-local artifacts left behind by the release process.
-
----
-
-## Coverage goals
-
-- **Classifier branches** (enforcer hook `is_read_only`, `decide_bash`): every branch covered by `test_forge_enforcer_hook.bash` + `test_v12_coverage.bash`. Target: 100% branch coverage; current: 100%.
-- **Hook JSON contract**: every `permissionDecision` shape (`allow` / `deny` / passthrough) and `updatedInput.command` rewrite is asserted against the host PreToolUse schema.
-- **Idempotence**: rewriting an already-rewritten `forge -p` command is asserted to be a no-op.
-- **Happy-path E2E**: live Kay runs confirm the release-authorizing host-to-agent flow end-to-end on every release; live Forge runs add the same coverage when the provider is available.
-
-Not covered today (accepted gaps, documented in `.planning/`):
-
-- Multi-Forge parallelism (single conversation per task assumption).
-- Cross-machine conversation sync.
-- Bedrock/Vertex/Microsoft Foundry hosts (Monitor unavailable — skill documents the foreground-Bash fallback path; not exercised by an automated test).
-
----
-
-## Running tests locally
-
-```bash
-# Strict non-live suites (CI path):
 bash tests/run_unit.bash
-
-# Skip-safe local sweep:
-bash tests/run_all.bash
-
-# Pre-release gate (~2 min for Codex live; Forge live is optional when available):
-bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
-
-# Single suite:
-bash tests/test_forge_enforcer_hook.bash
 ```
 
-Each suite prints `PASS` / `FAIL` per assertion with colored output and a count summary at the end. A failing tier aborts the release gate before the next tier runs.
+## Skip-Safe Sweep
+
+```bash
+bash tests/run_all.bash
+```
+
+## Release Gate
+
+```bash
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
+```
+
+Release evidence must be produced inside Kay. The wrapper creates an isolated home, records proof-bound live markers, and refuses to promote markers after Kay failures.
