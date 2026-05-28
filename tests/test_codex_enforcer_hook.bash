@@ -145,14 +145,14 @@ else
   assert_fail "test_noop_when_marker_absent" "expected empty, got: '${out}'"
 fi
 
-echo "=== test_noop_when_forge_is_active_sidekick ==="
+echo "=== test_noop_when_unknown_sidekick_is_active ==="
 touch "${KAY_MARKER_FILE}"
-printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
+printf '%s\n' "pilot" > "${ACTIVE_MODE_FILE}"
 out="$(run_hook '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x","content":"y"}}')"
 if [ -z "${out}" ]; then
-  assert_pass "test_noop_when_forge_is_active_sidekick"
+  assert_pass "test_noop_when_unknown_sidekick_is_active"
 else
-  assert_fail "test_noop_when_forge_is_active_sidekick" "expected empty, got: '${out}'"
+  assert_fail "test_noop_when_unknown_sidekick_is_active" "expected empty, got: '${out}'"
 fi
 rm -f "${ACTIVE_MODE_FILE}"
 

@@ -6,10 +6,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; bash \"${ROOT}/hooks/forge-delegation-enforcer.sh\""
-          },
-          {
-            "type": "command",
             "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; bash \"${ROOT}/hooks/codex-delegation-enforcer.sh\""
           }
         ]
@@ -19,10 +15,6 @@
       {
         "matcher": "Bash",
         "hooks": [
-          {
-            "type": "command",
-            "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; bash \"${ROOT}/hooks/forge-progress-surface.sh\""
-          },
           {
             "type": "command",
             "command": "ROOT=\"$(printf '%s' \"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\"; bash \"${ROOT}/hooks/codex-progress-surface.sh\""

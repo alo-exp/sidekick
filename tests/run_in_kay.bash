@@ -60,7 +60,7 @@ trap cleanup EXIT
 
 resolve_kay_binary() {
   local candidate
-  for candidate in kay code codex coder "${HOME}/.local/bin/kay"; do
+  for candidate in kay code coder "${HOME}/.local/bin/kay"; do
     if command -v "${candidate}" >/dev/null 2>&1 \
       && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
       && "${candidate}" exec --help >/dev/null 2>&1; then
@@ -151,7 +151,7 @@ prepare_kay_runner() {
 }
 
 KAY_BIN="$(resolve_kay_binary)" || {
-  echo "FAIL: Kay binary not found. Expected kay/code/codex/coder on PATH or ~/.local/bin/kay." >&2
+  echo "FAIL: Kay binary not found. Expected kay/code/coder on PATH or ~/.local/bin/kay." >&2
   exit 1
 }
 prepare_kay_runner
@@ -189,12 +189,6 @@ if [ "$#" -eq 3 ] \
   && [ "$1" = "SIDEKICK_LIVE_CODEX=1" ] \
   && [ "$2" = "bash" ] \
   && [ "$3" = "tests/run_release.bash" ]; then
-  PROMOTE_RELEASE_MARKERS=1
-elif [ "$#" -eq 4 ] \
-  && [ "$1" = "SIDEKICK_LIVE_FORGE=1" ] \
-  && [ "$2" = "SIDEKICK_LIVE_CODEX=1" ] \
-  && [ "$3" = "bash" ] \
-  && [ "$4" = "tests/run_release.bash" ]; then
   PROMOTE_RELEASE_MARKERS=1
 fi
 REPO_ROOT_Q="$(quote_value "${REPO_ROOT}")"

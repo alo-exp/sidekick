@@ -40,7 +40,7 @@ delegate_command() {
 
 resolve_kay_binary_name() {
   local candidate
-  for candidate in kay code codex coder; do
+  for candidate in kay code coder; do
     if command -v "$candidate" >/dev/null 2>&1 \
       && "$candidate" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
       && "$candidate" exec --help >/dev/null 2>&1; then
@@ -67,10 +67,10 @@ resolve_codex_binary_name() {
 deny_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf 'Sidekick /kay mode is active: direct file edits are delegated to Kay. Use: Bash { command: "%s --full-auto \"<your task description>\"" }. Sidekick injects the OpenCode Go provider and task model automatically; legacy code/codex/coder aliases remain compatibility-only.' "$(delegate_command)"
+      printf 'Sidekick /sidekick:kay-delegate mode is active: direct file edits are delegated to Kay. Use: Bash { command: '\''%s --full-auto "<your task description>"'\'' }. Sidekick injects the OpenCode Go provider and task model automatically; legacy code/coder aliases remain compatibility-only.' "$(delegate_command)"
       ;;
     codex)
-      printf 'Sidekick /codex-delegate mode is active: direct file edits are delegated to Codex. Use: Bash { command: "%s \"<your task description>\"" }. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$(delegate_command)"
+      printf 'Sidekick /sidekick:codex-delegate mode is active: direct file edits are delegated to Codex. Use: Bash { command: '\''%s "<your task description>"'\'' }. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$(delegate_command)"
       ;;
   esac
 }
@@ -110,7 +110,7 @@ has_delegate_exec_command() {
 
   case "$SIDEKICK_NAME" in
     kay)
-      [[ "$stripped" =~ ^(kay|code|codex|coder)([[:space:]]|$) ]] || return 1
+      [[ "$stripped" =~ ^(kay|code|coder)([[:space:]]|$) ]] || return 1
       ;;
     codex)
       [[ "$stripped" =~ ^codex([[:space:]]|$) ]] || return 1
@@ -147,7 +147,7 @@ try:
 except Exception:
     raise SystemExit(1)
 
-if len(tokens) < 3 or tokens[0] not in {"kay", "code", "codex", "coder"} or tokens[1] != "exec":
+if len(tokens) < 3 or tokens[0] not in {"kay", "code", "coder"} or tokens[1] != "exec":
     raise SystemExit(1)
 
 for tok in tokens:
@@ -268,10 +268,10 @@ rewrite_delegate_exec() {
 missing_runtime_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: no Kay-compatible runtime is on PATH. Install the Kay sidekick package and re-run /kay.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: no Kay-compatible runtime is on PATH. Install the Kay sidekick package and re-run /sidekick:kay-delegate.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: no OpenAI Codex CLI runtime is on PATH. Install the local OpenAI Codex CLI and re-run /codex-delegate.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: no OpenAI Codex CLI runtime is on PATH. Install the local OpenAI Codex CLI and re-run /sidekick:codex-delegate.'
       ;;
   esac
 }
@@ -279,10 +279,10 @@ missing_runtime_reason() {
 malformed_rewrite_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: refusing to rewrite malformed Kay exec invocation.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: refusing to rewrite malformed Kay exec invocation.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: refusing to rewrite malformed Codex exec invocation.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: refusing to rewrite malformed Codex exec invocation.'
       ;;
   esac
 }
@@ -290,10 +290,10 @@ malformed_rewrite_reason() {
 idx_not_writable_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: Kay audit index is not writable or is outside the project. Remove any symlinked .kay path and re-run /kay.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: Kay audit index is not writable or is outside the project. Remove any symlinked .kay path and re-run /sidekick:kay-delegate.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: Codex audit index is not writable or is outside the project. Remove any symlinked .codex path and re-run /codex-delegate.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: Codex audit index is not writable or is outside the project. Remove any symlinked .codex path and re-run /sidekick:codex-delegate.'
       ;;
   esac
 }
@@ -301,10 +301,10 @@ idx_not_writable_reason() {
 idx_append_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: Kay audit index could not record the delegated task. Check .kay/conversations.idx permissions and re-run /kay.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: Kay audit index could not record the delegated task. Check .kay/conversations.idx permissions and re-run /sidekick:kay-delegate.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: Codex audit index could not record the delegated task. Check .codex/conversations.idx permissions and re-run /codex-delegate.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: Codex audit index could not record the delegated task. Check .codex/conversations.idx permissions and re-run /sidekick:codex-delegate.'
       ;;
   esac
 }
@@ -312,10 +312,10 @@ idx_append_reason() {
 mutating_chain_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: command chain contains a non-read-only segment. Use kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: command chain contains a non-read-only segment. Use kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: command chain contains a non-read-only segment. Delegate via codex exec.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: command chain contains a non-read-only segment. Delegate via codex exec.'
       ;;
   esac
 }
@@ -323,10 +323,10 @@ mutating_chain_reason() {
 mutating_pipe_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: pipe chain contains a non-read-only segment. Use kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: pipe chain contains a non-read-only segment. Use kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: pipe chain contains a non-read-only segment. Delegate via codex exec.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: pipe chain contains a non-read-only segment. Delegate via codex exec.'
       ;;
   esac
 }
@@ -334,10 +334,10 @@ mutating_pipe_reason() {
 mutating_denied_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: mutating command denied. Delegate via kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: mutating command denied. Delegate via kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: mutating command denied. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: mutating command denied. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
       ;;
   esac
 }
@@ -345,10 +345,10 @@ mutating_denied_reason() {
 unclassified_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /kay mode: command could not be classified. Delegate via kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay-delegate mode: command could not be classified. Delegate via kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /codex-delegate mode: command could not be classified. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
+      printf '%s' 'Sidekick /sidekick:codex-delegate mode: command could not be classified. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
       ;;
   esac
 }

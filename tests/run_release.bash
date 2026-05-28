@@ -6,18 +6,14 @@
 # failure. Intended to be run by the maintainer before tagging a new version.
 #
 #   1. run_unit.bash         — strict non-live unit + integration suites
-#   2. smoke/run_smoke.bash   — live `forge --version` + trivial forge -p
-#                              (requires SIDEKICK_LIVE_FORGE=1)
-#   3. run_live_e2e.bash      — full host→Forge delegation on seeded testapp
-#                              (requires SIDEKICK_LIVE_FORGE=1)
-#   4. run_live_codex_marketplace_install.bash
+#   2. run_live_codex_marketplace_install.bash
 #                             — install Sidekick through the Codex marketplace
 #                              and prove it materializes in the Codex cache
 #                              (requires SIDEKICK_LIVE_CODEX=1)
-#   5. smoke/run_codex_smoke.bash
+#   3. smoke/run_codex_smoke.bash
 #                             — live `kay --version` + trivial kay exec
 #                              (requires SIDEKICK_LIVE_CODEX=1)
-#   6. run_live_codex_e2e.bash
+#   4. run_live_codex_e2e.bash
 #                             — full host→Kay delegation on seeded testapp
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
@@ -28,14 +24,11 @@
 # profile, not the general implementation profile. A run with
 # SIDEKICK_LIVE_CODEX=1 writes an isolated current-session, current-commit
 # live-pyramid candidate marker. The Kay wrapper promotes successful canonical
-# runs to proof-bound final markers. Forge live stages may also be run when
-# available, but they are not required when Forge testing is intentionally
-# skipped. Release operators verify two final markers before publishing the tag
-# or GitHub release.
+# runs to proof-bound final markers. Release operators verify two final markers
+# before publishing the tag or GitHub release.
 #
 # Usage
 #   bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
-#   bash tests/run_in_kay.bash SIDEKICK_LIVE_FORGE=1 SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash   # when Forge live is available
 # =============================================================================
 
 set -euo pipefail
@@ -136,13 +129,6 @@ record_live_pyramid_marker() {
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 export SIDEKICK_RELEASE_GATE=1
 echo -e "${bold}Sidekick pre-release gate${reset}"
-if [[ "${SIDEKICK_LIVE_FORGE:-}" == "1" ]]; then
-  echo -e "  live Forge: ${green}enabled${reset} (smoke + e2e will run)"
-  export SIDEKICK_VERIFY_REMOTE_INSTALLERS="${SIDEKICK_VERIFY_REMOTE_INSTALLERS:-1}"
-else
-  echo -e "  live Forge: ${yellow}disabled${reset} (smoke + e2e will skip)"
-  echo -e "  ${yellow}Tip:${reset} set SIDEKICK_LIVE_FORGE=1 before tagging to exercise the live path."
-fi
 if [[ "${SIDEKICK_LIVE_CODEX:-}" == "1" ]]; then
   echo -e "  live Kay: ${green}enabled${reset} (marketplace + smoke + e2e will run)"
 else
@@ -152,8 +138,6 @@ fi
 echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${reset}"
 
 run_stage "Strict non-live unit + integration suites" "${SCRIPT_DIR}/run_unit.bash"
-run_stage "Live-Forge smoke harness"   "${SCRIPT_DIR}/smoke/run_smoke.bash"
-run_stage "Live-Forge E2E testapp"     "${SCRIPT_DIR}/run_live_e2e.bash"
 run_stage "Live-Codex marketplace install" "${SCRIPT_DIR}/run_live_codex_marketplace_install.bash"
 run_stage "Live-Kay smoke harness"       "${SCRIPT_DIR}/smoke/run_codex_smoke.bash"
 run_stage "Live-Kay E2E testapp"         "${SCRIPT_DIR}/run_live_codex_e2e.bash"

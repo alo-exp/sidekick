@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+_No unreleased changes._
+
+## v0.7.0 -- 2026-05-29
+
+### Remove Forge sidekick and retain Kay/Codex delegation
+
+Sidekick no longer supports Forge as a sidekick. The supported runtime set is now Kay and Codex, with Codex delegating through the local Codex CLI using `gpt-5.4-mini` at Extra High reasoning.
+
+**Removed:**
+
+- **Forge runtime surfaces**: removed `.forge/`, `.forge.toml`, Forge skills, generated Forge host bundles, Forge hooks, Forge output style, and Forge live/unit test runners.
+
+**Changed:**
+
+- **`sidekicks/registry.json`**, **`hooks/hooks.json`**, **`install.sh`**, **plugin manifests**: packaging, installation, hook routing, and metadata now expose only Kay and Codex.
+- **`skills/kay-delegate/SKILL.md`**, **`skills/codex-delegate/SKILL.md`**, generated host bundles, and docs require the host AI to verify every sidekick task against the original prompt before reporting completion. The host classifies failures with the shared taxonomy (`MISSED_REQUIREMENT`, `INTEGRATION_ERROR`, `REGRESSION`, `WRONG_LOGIC`, `SYNTAX_ERROR`, `WRONG_FILE`, `UNVERIFIED_ASSUMPTION`, `KNOWLEDGE_GAP`, `MISUNDERSTOOD_TASK`, `TRIAL_INCOMPLETE`, `API_FAILURE`, `EXECUTION_ERROR_EXTERNAL`) and relaunches or handholds the active sidekick until the missed task or failure is resolved.
+- **Public docs and release guidance**: README, context, site docs, help pages, testing docs, CI/CD docs, and release runbooks were refreshed for the Kay/Codex-only product surface.
+
+**Added:**
+
+- **`tests/test_removed_sidekick_absent.bash`**: locks the removal contract so Forge files, manifests, hooks, runners, and current public docs cannot accidentally reappear.
+- **`tests/test_codex_skill.bash`** and Kay/Codex skill coverage: lock the verification taxonomy and relaunch loop into the supported delegation surfaces.
+
 ## v0.6.2 — 2026-05-28
 
 ### OpenAI Codex sidekick and canonical Kay split

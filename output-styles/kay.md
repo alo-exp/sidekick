@@ -21,8 +21,8 @@ What this style DOES do:
 
 ## Delegation Control
 
-When a `/kay-stop` hint appears in a `[KAY-SUMMARY]` block, surface it to the user in plain language: `Run /kay-stop to return to direct host mode.`
+When a `/sidekick:kay-stop` hint appears in a `[KAY-SUMMARY]` block, surface it to the user in plain language: `Run /sidekick:kay-stop to return to direct host mode.`
 
 ## Deactivation
 
-When the user runs `/kay-stop`, this output style is no longer loaded. Your next response reverts to the prior narration style.
+When the user runs `/sidekick:kay-stop`, this output style is no longer loaded. Your next response reverts to the prior narration style.

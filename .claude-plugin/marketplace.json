@@ -1,10 +1,10 @@
 {
   "name": "alo-labs",
   "owner": {
-    "name": "Ālo Labs"
+    "name": "\u0100lo Labs"
   },
   "metadata": {
-    "description": "Sidekick — AI coding agents as Claude sidekicks. Forge, Kay, and Codex are the current sidekicks: Forge and Kay can be installed/configured through Sidekick, while Codex delegates to the local OpenAI Codex CLI."
+    "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code. Kay and Codex are the supported sidekicks."
   },
   "plugins": [
     {
@@ -12,18 +12,26 @@
       "source": {
         "source": "github",
         "repo": "alo-exp/sidekick",
-        "ref": "8ec4afa31f3df042e53e3e5448e0afee7cf4d64d"
+        "ref": "v0.7.0"
       },
-      "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge, Kay, and Codex are the current sidekicks: Forge and Kay can be installed/configured through Sidekick, while Codex delegates to the local OpenAI Codex CLI and keeps Claude in the orchestrator role.",
-      "version": "0.6.2",
+      "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code. Kay installs through Sidekick, Codex delegates to the local OpenAI Codex CLI, and Claude stays in the orchestrator role.",
+      "version": "0.7.0",
       "author": {
-        "name": "Ālo Labs",
+        "name": "\u0100lo Labs",
         "url": "https://alolabs.dev"
       },
       "homepage": "https://github.com/alo-exp/sidekick",
       "repository": "https://github.com/alo-exp/sidekick",
       "license": "MIT",
-      "keywords": ["sidekick", "claude-code", "forge", "codex", "kay", "forgecode", "terminal-agent", "coding-agent", "orchestration"]
+      "keywords": [
+        "sidekick",
+        "claude-code",
+        "codex",
+        "kay",
+        "terminal-agent",
+        "coding-agent",
+        "orchestration"
+      ]
     }
   ]
 }

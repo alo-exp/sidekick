@@ -1,7 +1,0 @@
-"$schema" = "https://forgecode.dev/schema.json"
-max_tokens = 16384
-
-[compact]
-token_threshold = 80000
-eviction_window = 0.20
-retention_window = 6

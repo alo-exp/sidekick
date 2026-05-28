@@ -17,12 +17,13 @@ assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 prepare_surface_sandbox() {
   local root="$1"
   cp "${INSTALL_SH}" "${root}/install.sh"
-  mkdir -p "${root}/hooks/lib" "${root}/skills/forge" "${root}/skills/forge-stop" "${root}/skills/codex-stop" "${root}/sidekicks"
+  mkdir -p "${root}/hooks/lib" "${root}/skills/kay-delegate" "${root}/skills/kay-stop" "${root}/skills/codex-delegate" "${root}/skills/codex-stop" "${root}/sidekicks"
   cp -R "${PLUGIN_DIR}/agents" "${root}/agents"
   cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
   cp "${PLUGIN_DIR}/hooks/hooks.json" "${root}/hooks/hooks.json"
-  cp "${PLUGIN_DIR}/skills/forge/SKILL.md" "${root}/skills/forge/SKILL.md"
-  cp "${PLUGIN_DIR}/skills/forge-stop/SKILL.md" "${root}/skills/forge-stop/SKILL.md"
+  cp "${PLUGIN_DIR}/skills/kay-delegate/SKILL.md" "${root}/skills/kay-delegate/SKILL.md"
+  cp "${PLUGIN_DIR}/skills/kay-stop/SKILL.md" "${root}/skills/kay-stop/SKILL.md"
+  cp "${PLUGIN_DIR}/skills/codex-delegate/SKILL.md" "${root}/skills/codex-delegate/SKILL.md"
   cp "${PLUGIN_DIR}/skills/codex-stop/SKILL.md" "${root}/skills/codex-stop/SKILL.md"
   cp "${PLUGIN_DIR}/sidekicks/registry.json" "${root}/sidekicks/registry.json"
 }
@@ -84,14 +85,12 @@ run_case() {
   if [ "${host}" = "codex" ]; then
     env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR -u CLAUDE_THREAD_ID \
       HOME="${root}/home" \
-      SIDEKICK_INSTALL_FORGE=0 \
       SIDEKICK_INSTALL_CODE=0 \
       CODEX_PLUGIN_ROOT="${root}" \
       bash "${root}/install.sh" >/dev/null 2>&1
   else
     env -u CODEX_PLUGIN_ROOT -u CODEX_HOME -u CODEX_THREAD_ID -u CODEX_PROJECT_DIR \
       HOME="${root}/home" \
-      SIDEKICK_INSTALL_FORGE=0 \
       SIDEKICK_INSTALL_CODE=0 \
       CLAUDE_PLUGIN_ROOT="${root}" \
       bash "${root}/install.sh" >/dev/null 2>&1
@@ -100,21 +99,10 @@ run_case() {
   local hooks="${root}/hooks/hooks.json"
   local registry="${root}/sidekicks/registry.json"
   local registry_helper="${root}/hooks/lib/sidekick-registry.sh"
-  local canonical_forge_skill="${root}/skills/forge/SKILL.md"
-  local generated_forge_skill="${root}/agents/${host}/forge/SKILL.md"
-  local generated_forge_stop_skill="${root}/agents/${host}/forge-stop/SKILL.md"
-  local generated_kay_stop_skill="${root}/agents/${host}/codex-stop/SKILL.md"
-  local host_project_var
-  local other_project_var
-
-  if [ "${host}" = "codex" ]; then
-    host_project_var="CODEX_PROJECT_DIR"
-    other_project_var="CLAUDE_PROJECT_DIR"
-  else
-    host_project_var="CLAUDE_PROJECT_DIR"
-    other_project_var="CODEX_PROJECT_DIR"
-  fi
-
+  local canonical_kay_skill="${root}/skills/kay-delegate/SKILL.md"
+  local generated_kay_skill="${root}/agents/${host}/kay-delegate/SKILL.md"
+  local generated_kay_stop_skill="${root}/agents/${host}/kay-stop/SKILL.md"
+  local generated_codex_stop_skill="${root}/agents/${host}/codex-stop/SKILL.md"
   assert_contains "${hooks}" "${host_env_var}" "${host}: hooks.json uses the host plugin root"
   assert_absent "${hooks}" "${other_env_var}" "${host}: hooks.json excludes the other host root"
   assert_contains "${hooks}" "\${${host_env_var}:-\${SIDEKICK_PLUGIN_ROOT:-}}" "${host}: hooks.json prefers the active host plugin root"
@@ -131,23 +119,20 @@ run_case() {
   assert_absent "${registry}" "${other_env_var}" "${host}: registry excludes the other host root"
   assert_absent "${registry}" "${other_session_var}" "${host}: registry excludes the other host session var"
 
-  assert_contains "${canonical_forge_skill}" "SIDEKICK_HOST_SESSION_ID" "${host}: canonical skill remains host-placeholder based"
-  assert_contains "${canonical_forge_skill}" "CLAUDE_SESSION_ID" "${host}: canonical skill keeps Claude fallback in source"
-  assert_contains "${canonical_forge_skill}" "CODEX_THREAD_ID" "${host}: canonical skill keeps Codex fallback in source"
-  assert_absent "${canonical_forge_skill}" "${marker_prefix}/sessions/\${${host_session_var}}" "${host}: install does not rewrite canonical skill to a host session path"
+  assert_contains "${canonical_kay_skill}" "SIDEKICK_HOST_SESSION_ID" "${host}: canonical Kay skill remains host-placeholder based"
+  assert_contains "${canonical_kay_skill}" "CLAUDE_SESSION_ID" "${host}: canonical Kay skill keeps Claude fallback in source"
+  assert_contains "${canonical_kay_skill}" "CODEX_THREAD_ID" "${host}: canonical Kay skill keeps Codex fallback in source"
+  assert_absent "${canonical_kay_skill}" "${marker_prefix}/sessions/\${${host_session_var}}" "${host}: install does not rewrite canonical Kay skill to a host session path"
 
-  assert_contains "${generated_forge_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated forge skill uses the host session path"
-  assert_contains "${generated_forge_skill}" "${host_session_var}" "${host}: generated forge skill resolver uses the host session var"
-  assert_contains "${generated_forge_skill}" "${host_project_var}" "${host}: generated forge skill uses the host project var"
-  assert_absent "${generated_forge_skill}" "${other_env_var}" "${host}: generated forge skill excludes the other host root"
-  assert_absent "${generated_forge_skill}" "${other_session_var}" "${host}: generated forge skill excludes the other host session var"
-  assert_absent "${generated_forge_skill}" "${other_project_var}" "${host}: generated forge skill excludes the other host project var"
+  assert_contains "${generated_kay_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated Kay skill uses the host session path"
+  assert_contains "${generated_kay_skill}" "${host_session_var}" "${host}: generated Kay skill resolver uses the host session var"
+  assert_absent "${generated_kay_skill}" "${other_env_var}" "${host}: generated Kay skill excludes the other host root"
+  assert_absent "${generated_kay_skill}" "${other_session_var}" "${host}: generated Kay skill excludes the other host session var"
 
-  assert_contains "${generated_forge_stop_skill}" "${host_session_var}" "${host}: generated forge stop skill uses the host session var"
-  assert_contains "${generated_forge_stop_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated forge stop skill uses the host session path"
-  assert_absent "${generated_forge_stop_skill}" "${other_session_var}" "${host}: generated forge stop skill excludes the other host session var"
   assert_contains "${generated_kay_stop_skill}" "${host_session_var}" "${host}: generated Kay stop skill uses the host session var"
   assert_absent "${generated_kay_stop_skill}" "${other_session_var}" "${host}: generated Kay stop skill excludes the other host session var"
+  assert_contains "${generated_codex_stop_skill}" "${host_session_var}" "${host}: generated Codex stop skill uses the host session var"
+  assert_absent "${generated_codex_stop_skill}" "${other_session_var}" "${host}: generated Codex stop skill excludes the other host session var"
 }
 
 run_mixed_detection_case() {
@@ -162,7 +147,6 @@ run_mixed_detection_case() {
   if [ "${host}" = "codex" ]; then
     env -u SIDEKICK_INSTALL_HOST \
       HOME="${root}/home" \
-      SIDEKICK_INSTALL_FORGE=0 \
       SIDEKICK_INSTALL_CODE=0 \
       CODEX_PLUGIN_ROOT="${root}" \
       CLAUDE_SESSION_ID="claude-session-from-parent" \
@@ -170,7 +154,6 @@ run_mixed_detection_case() {
   else
     env -u SIDEKICK_INSTALL_HOST \
       HOME="${root}/home" \
-      SIDEKICK_INSTALL_FORGE=0 \
       SIDEKICK_INSTALL_CODE=0 \
       CLAUDE_PLUGIN_ROOT="${root}" \
       CODEX_HOME="${root}/home/.codex" \

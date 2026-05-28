@@ -14,7 +14,6 @@ sidekick="${1:-}"
 shift || true
 
 case "$sidekick" in
-  forge) prefix="[FORGE]" ;;
   kay)   prefix="[KAY]" ;;
   codex) prefix="[CODEX]" ;;
   *)
@@ -113,7 +112,7 @@ lines = clean.splitlines()
 status = []
 in_block = False
 for line in lines:
-    if not in_block and re.match(r"^\s*(?:\[(?:FORGE|KAY|CODEX)\]\s+)?STATUS:", line):
+    if not in_block and re.match(r"^\s*(?:\[(?:KAY|CODEX)\]\s+)?STATUS:", line):
         in_block = True
     if in_block:
         status.append(line)

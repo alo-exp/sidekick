@@ -48,7 +48,7 @@ fi
 
 if [ ! -f "${REPO_ROOT}/.claude-plugin/plugin.json" ] \
   || [ ! -f "${REPO_ROOT}/tests/post_release_cleanup.bash" ] \
-  || [ ! -f "${REPO_ROOT}/skills/forge/SKILL.md" ] \
+  || [ ! -f "${REPO_ROOT}/skills/kay-delegate/SKILL.md" ] \
   || [ ! -f "${REPO_ROOT}/hooks/hooks.json" ]; then
   echo "post-release cleanup: refusing root without Sidekick repo markers: ${REPO_ROOT}" >&2
   exit 1
