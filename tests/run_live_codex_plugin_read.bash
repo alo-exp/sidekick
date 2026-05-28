@@ -8,7 +8,8 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(dirname "${SCRIPT_DIR}")"
-CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOME}/projects/codex-cli/kay}"
+HOST_HOME_FOR_TOOLS="${SIDEKICK_HOST_HOME:-${HOME}}"
+CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOST_HOME_FOR_TOOLS}/projects/codex-cli/kay}"
 CODEX_BIN="${SIDEKICK_CODEX_BIN:-${CODEX_REPO}/codex-rs/target/debug/codex}"
 
 green='\033[0;32m'; red='\033[0;31m'; yellow='\033[0;33m'; bold='\033[1m'; reset='\033[0m'

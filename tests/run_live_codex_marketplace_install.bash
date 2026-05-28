@@ -22,7 +22,8 @@ fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOME}/projects/codex-cli/kay}"
+HOST_HOME_FOR_TOOLS="${SIDEKICK_HOST_HOME:-${HOME}}"
+CODEX_REPO="${SIDEKICK_CODEX_REPO:-${HOST_HOME_FOR_TOOLS}/projects/codex-cli/kay}"
 CODEX_RUST_REPO="${CODEX_REPO}/codex-rs"
 if [ -d "${CODEX_REPO}/kay-rs" ]; then
   CODE_RUST_REPO="${CODEX_REPO}/kay-rs"

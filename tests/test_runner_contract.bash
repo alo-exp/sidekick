@@ -136,6 +136,8 @@ expect_contains "tests/run_in_kay.bash" "trap cleanup EXIT" "Kay wrapper cleans 
 echo "=== T5: live Codex probe is portable ==="
 expect_contains "tests/run_live_codex_plugin_read.bash" "SIDEKICK_CODEX_REPO" "Codex probe exposes repo override"
 expect_contains "tests/run_live_codex_plugin_read.bash" "SIDEKICK_CODEX_BIN" "Codex probe exposes binary override"
+expect_contains "tests/run_live_codex_plugin_read.bash" "SIDEKICK_HOST_HOME" "Codex probe defaults tool repo from host home under Kay wrapper"
+expect_contains "tests/run_live_codex_marketplace_install.bash" "SIDEKICK_HOST_HOME" "marketplace install defaults tool repo from host home under Kay wrapper"
 expect_contains "tests/smoke/run_codex_smoke.bash" "SIDEKICK_KAY_BIN" "Kay smoke exposes binary override"
 expect_contains "tests/run_live_codex_e2e.bash" "SIDEKICK_KAY_BIN" "Kay live E2E exposes binary override"
 expect_absent "tests/run_live_codex_plugin_read.bash" "/Users/" "Codex probe avoids absolute maintainer home paths"
