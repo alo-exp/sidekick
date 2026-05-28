@@ -16,6 +16,8 @@ if [ -e "${REPO_ROOT}/.kay" ]; then
   REPO_KAY_PREEXISTED=1
 fi
 HOST_HOME="${HOME}"
+HOST_CARGO_HOME="${CARGO_HOME:-${HOST_HOME}/.cargo}"
+HOST_RUSTUP_HOME="${RUSTUP_HOME:-${HOST_HOME}/.rustup}"
 ISOLATED_HOME="$(mktemp -d "${TMPDIR:-/tmp}/sidekick-kay-home.XXXXXX")"
 RESULT_DIR="${ISOLATED_HOME}/.sidekick-kay-test-results"
 RESULT_ID="$(date -u +%Y%m%dT%H%M%SZ).$$"
@@ -202,6 +204,8 @@ PROOF_SHA256_Q="$(quote_value "${PROOF_SHA256}")"
 RUN_ID_Q="$(quote_value "${RUN_ID}")"
 HOST_SESSION_ID_Q="$(quote_value "${HOST_SESSION_ID}")"
 HOST_HOME_Q="$(quote_value "${HOST_HOME}")"
+HOST_CARGO_HOME_Q="$(quote_value "${HOST_CARGO_HOME}")"
+HOST_RUSTUP_HOME_Q="$(quote_value "${HOST_RUSTUP_HOME}")"
 cat >"${SCRIPT_FILE}" <<EOF
 #!/usr/bin/env bash
 export HOME=${ISOLATED_HOME_Q}
@@ -210,6 +214,12 @@ export CODEX_HOME="\${HOME}/.codex"
 export XDG_CONFIG_HOME="\${HOME}/.config"
 export XDG_CACHE_HOME="\${HOME}/.cache"
 export XDG_DATA_HOME="\${HOME}/.local/share"
+if [ -d ${HOST_CARGO_HOME_Q} ]; then
+  export CARGO_HOME=${HOST_CARGO_HOME_Q}
+fi
+if [ -d ${HOST_RUSTUP_HOME_Q} ]; then
+  export RUSTUP_HOME=${HOST_RUSTUP_HOME_Q}
+fi
 export SIDEKICK_KAY_WRAPPER_ACTIVE=1
 export SIDEKICK_KAY_ISOLATED_HOME=${ISOLATED_HOME_Q}
 export SIDEKICK_KAY_PROOF_FILE=${PROOF_FILE_Q}
@@ -274,6 +284,8 @@ printf '%s\n' "${PROMPT}" | run_with_timeout "${SIDEKICK_KAY_EXEC_TIMEOUT_SECOND
   XDG_CONFIG_HOME="${ISOLATED_HOME}/.config" \
   XDG_CACHE_HOME="${ISOLATED_HOME}/.cache" \
   XDG_DATA_HOME="${ISOLATED_HOME}/.local/share" \
+  CARGO_HOME="${HOST_CARGO_HOME}" \
+  RUSTUP_HOME="${HOST_RUSTUP_HOME}" \
   OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" \
   CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" \
   "${KAY_RUNNER[@]}" \
