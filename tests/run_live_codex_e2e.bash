@@ -49,7 +49,7 @@ resolve_codex_binary() {
     return 1
   fi
 
-  for candidate in kay code codex coder; do
+  for candidate in kay code coder; do
     if command -v "${candidate}" >/dev/null 2>&1 \
       && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
       && "${candidate}" exec --help >/dev/null 2>&1; then
@@ -135,7 +135,7 @@ run_with_timeout() {
 
 CODEX_BIN="$(resolve_codex_binary)"
 if [ -z "${CODEX_BIN}" ]; then
-  echo -e "${red}FAIL${reset}: Kay-compatible kay/code/codex/coder not on PATH"
+  echo -e "${red}FAIL${reset}: Kay-compatible kay/code/coder not on PATH"
   exit 1
 fi
 prepare_codex_runner "${CODEX_BIN}"

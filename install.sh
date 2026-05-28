@@ -1,29 +1,21 @@
 #!/usr/bin/env bash
-# Forge Plugin — auto-install script
+# Sidekick Plugin — auto-install script
 # Called by explicit install and manual repair paths.
-# Installs Forge and Kay runtimes when explicitly invoked and adds them to PATH.
-# Provider/API key setup is guided interactively by the forge skill in Claude.
-#
-# SECURITY NOTE (R8-2): This script can run non-interactively from install automation.
-# Ctrl+C is not available to cancel the download. The SHA-256 of the downloaded script is
-# logged to ~/.local/share/forge-plugin-install-sha.log — verify it against the official
-# release hash at https://forgecode.dev/releases after the session starts.
+# Installs the Kay runtime when explicitly invoked and adds the Sidekick bin dir to PATH.
+# The Codex sidekick uses the user's local Codex CLI installation.
 
 set -euo pipefail
 
 SIDEKICK_BIN_DIR="${BIN_DIR:-${HOME}/.local/bin}"
-FORGE_BIN="${SIDEKICK_BIN_DIR}/forge"
 KAY_BIN="${SIDEKICK_BIN_DIR}/kay"
-CODEX_CODE_ALIAS="${SIDEKICK_BIN_DIR}/codex"
-CODEX_CODER_ALIAS="${SIDEKICK_BIN_DIR}/coder"
+KAY_CODE_ALIAS="${SIDEKICK_BIN_DIR}/code"
+KAY_CODER_ALIAS="${SIDEKICK_BIN_DIR}/coder"
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_PLUGIN_ROOT="${PLUGIN_ROOT}"
 SIDEKICK_PLUGIN_ROOT_ENV="${SIDEKICK_PLUGIN_ROOT:-}"
 SIDEKICK_PLUGIN_ROOT="${SIDEKICK_PLUGIN_ROOT:-${SOURCE_PLUGIN_ROOT}}"
 export SIDEKICK_PLUGIN_ROOT
-FORGE_INSTALL_TMP=""
 CODEX_INSTALL_TMP=""
-INSTALL_FORGE="${SIDEKICK_INSTALL_FORGE:-1}"
 INSTALL_KAY="${SIDEKICK_INSTALL_KAY:-${SIDEKICK_INSTALL_CODE:-1}}"
 FORCE_REINSTALL="${SIDEKICK_FORCE_REINSTALL:-0}"
 CLEAN_REINSTALL="${SIDEKICK_CLEAN_REINSTALL:-0}"
@@ -94,7 +86,7 @@ rewrite_host_surface() {
 
   [ -n "${host}" ] || return 0
 
-  echo "[forge-plugin] Rewriting installed surface for ${host}."
+  echo "[sidekick-plugin] Rewriting installed surface for ${host}."
 
   python3 - "${rewrite_target}" "${host}" <<'PY'
 from pathlib import Path
@@ -186,7 +178,6 @@ for rel in [
     "hooks/hooks.json",
     "hooks/lib/sidekick-registry.sh",
     "sidekicks/registry.json",
-    "hooks/forge-delegation-enforcer.sh",
     "hooks/codex-delegation-enforcer.sh",
 ]:
     path = root / rel
@@ -237,50 +228,35 @@ manifest = Path(sys.argv[2])
 
 hash_targets = {
     "install_sh_sha256": "install.sh",
-    "forge_md_sha256": "skills/forge.md",
-    "forge_skill_md_sha256": "skills/forge/SKILL.md",
     "kay_delegate_skill_md_sha256": "skills/kay-delegate/SKILL.md",
     "kay_stop_skill_md_sha256": "skills/kay-stop/SKILL.md",
     "codex_delegate_skill_md_sha256": "skills/codex-delegate/SKILL.md",
     "codex_delegate_md_sha256": "skills/codex-delegate.md",
-    "claude_forge_md_sha256": "agents/claude/forge.md",
-    "claude_forge_skill_md_sha256": "agents/claude/forge/SKILL.md",
     "claude_kay_delegate_skill_md_sha256": "agents/claude/kay-delegate/SKILL.md",
     "claude_kay_stop_skill_md_sha256": "agents/claude/kay-stop/SKILL.md",
     "claude_codex_delegate_skill_md_sha256": "agents/claude/codex-delegate/SKILL.md",
     "claude_codex_delegate_md_sha256": "agents/claude/codex-delegate.md",
-    "claude_forge_delegate_alias_skill_md_sha256": "agents/claude/forge:delegate/SKILL.md",
     "claude_kay_delegate_alias_skill_md_sha256": "agents/claude/kay:delegate/SKILL.md",
-    "claude_forge_stop_skill_md_sha256": "agents/claude/forge-stop/SKILL.md",
     "claude_codex_stop_skill_md_sha256": "agents/claude/codex-stop/SKILL.md",
-    "codex_forge_md_sha256": "agents/codex/forge.md",
-    "codex_forge_skill_md_sha256": "agents/codex/forge/SKILL.md",
     "codex_kay_delegate_skill_md_sha256": "agents/codex/kay-delegate/SKILL.md",
     "codex_kay_stop_skill_md_sha256": "agents/codex/kay-stop/SKILL.md",
     "codex_codex_delegate_skill_md_sha256": "agents/codex/codex-delegate/SKILL.md",
     "codex_codex_delegate_md_sha256": "agents/codex/codex-delegate.md",
-    "codex_forge_delegate_alias_skill_md_sha256": "agents/codex/forge:delegate/SKILL.md",
     "codex_kay_delegate_alias_skill_md_sha256": "agents/codex/kay:delegate/SKILL.md",
-    "codex_forge_stop_skill_md_sha256": "agents/codex/forge-stop/SKILL.md",
     "codex_codex_stop_skill_md_sha256": "agents/codex/codex-stop/SKILL.md",
     "render_agent_bundle_sha256": "scripts/render-agent-bundle.py",
     "sync_host_surfaces_sha256": "scripts/sync-host-surfaces.sh",
     "hooks_json_sha256": "hooks/hooks.json",
-    "forge_delegation_enforcer_sha256": "hooks/forge-delegation-enforcer.sh",
     "codex_delegation_enforcer_sha256": "hooks/codex-delegation-enforcer.sh",
     "enforcer_utils_sha256": "hooks/lib/enforcer-utils.sh",
     "sidekick_registry_lib_sha256": "hooks/lib/sidekick-registry.sh",
     "safe_runner_sha256": "hooks/lib/sidekick-safe-runner.sh",
     "sidekick_registry_sha256": "sidekicks/registry.json",
     "legacy_hooks_scrub_sha256": "hooks/scrub-legacy-user-hooks.py",
-    "forge_progress_surface_sha256": "hooks/forge-progress-surface.sh",
     "codex_progress_surface_sha256": "hooks/codex-progress-surface.sh",
-    "output_style_forge_sha256": "output-styles/forge.md",
     "output_style_kay_sha256": "output-styles/kay.md",
     "output_style_codex_sha256": "output-styles/codex.md",
-    "forge_delegate_alias_skill_md_sha256": "skills/forge:delegate/SKILL.md",
     "kay_delegate_alias_skill_md_sha256": "skills/kay:delegate/SKILL.md",
-    "forge_stop_skill_md_sha256": "skills/forge-stop/SKILL.md",
     "codex_stop_skill_md_sha256": "skills/codex-stop/SKILL.md",
 }
 
@@ -673,7 +649,7 @@ validate_clean_reinstall_cache_target() {
       expected_cache_root="${HOME}/.claude/plugins/cache"
       ;;
     *)
-      echo "[forge-plugin] ERROR: Refusing clean reinstall for unknown host '${host}'." >&2
+      echo "[sidekick-plugin] ERROR: Refusing clean reinstall for unknown host '${host}'." >&2
       return 1
       ;;
   esac
@@ -681,7 +657,7 @@ validate_clean_reinstall_cache_target() {
   case "${HOME:-}" in
     /*) ;;
     *)
-      echo "[forge-plugin] ERROR: Refusing clean reinstall because HOME is not absolute: ${HOME:-}" >&2
+      echo "[sidekick-plugin] ERROR: Refusing clean reinstall because HOME is not absolute: ${HOME:-}" >&2
       return 1
       ;;
   esac
@@ -689,7 +665,7 @@ validate_clean_reinstall_cache_target() {
   case "${target_root}" in
     /*) ;;
     *)
-      echo "[forge-plugin] ERROR: Refusing clean reinstall for non-absolute plugin root: ${target_root}" >&2
+      echo "[sidekick-plugin] ERROR: Refusing clean reinstall for non-absolute plugin root: ${target_root}" >&2
       return 1
       ;;
   esac
@@ -697,14 +673,14 @@ validate_clean_reinstall_cache_target() {
   case "${plugin_root_dir}" in
     "${expected_cache_root}"/*/sidekick) ;;
     *)
-      echo "[forge-plugin] ERROR: Refusing clean reinstall outside the active ${host} sidekick cache: ${plugin_root_dir}" >&2
+      echo "[sidekick-plugin] ERROR: Refusing clean reinstall outside the active ${host} sidekick cache: ${plugin_root_dir}" >&2
       return 1
       ;;
   esac
 
   case "${target_root}:${plugin_root_dir}" in
     *"/../"*|*"/./"*|*"/.."|*"/.")
-      echo "[forge-plugin] ERROR: Refusing clean reinstall for non-canonical cache path: ${target_root}" >&2
+      echo "[sidekick-plugin] ERROR: Refusing clean reinstall for non-canonical cache path: ${target_root}" >&2
       return 1
       ;;
   esac
@@ -713,12 +689,12 @@ validate_clean_reinstall_cache_target() {
   plugin_leaf="$(basename "${plugin_root_dir}")"
 
   if [ "${plugin_leaf}" != "sidekick" ]; then
-    echo "[forge-plugin] ERROR: Refusing clean reinstall because cache parent is not the sidekick package root: ${plugin_root_dir}" >&2
+    echo "[sidekick-plugin] ERROR: Refusing clean reinstall because cache parent is not the sidekick package root: ${plugin_root_dir}" >&2
     return 1
   fi
 
   if [[ ! "${target_leaf}" =~ ^v?[0-9]+[.][0-9]+[.][0-9]+([-+][A-Za-z0-9._-]+)?$ ]]; then
-    echo "[forge-plugin] ERROR: Refusing clean reinstall for non-versioned plugin root: ${target_root}" >&2
+    echo "[sidekick-plugin] ERROR: Refusing clean reinstall for non-versioned plugin root: ${target_root}" >&2
     return 1
   fi
 
@@ -743,7 +719,7 @@ if not is_relative_to(plugin_root, cache_root):
     raise SystemExit(1)
 PY
   then
-    echo "[forge-plugin] ERROR: Refusing clean reinstall because the resolved ${host} cache path escapes HOME: ${plugin_root_dir}" >&2
+    echo "[sidekick-plugin] ERROR: Refusing clean reinstall because the resolved ${host} cache path escapes HOME: ${plugin_root_dir}" >&2
     return 1
   fi
 }
@@ -809,19 +785,10 @@ resolve_bootstrap_target_root() {
 }
 
 cleanup_install_tmps() {
-  rm -f "${FORGE_INSTALL_TMP:-}" "${CODEX_INSTALL_TMP:-}" 2>/dev/null || true
+  rm -f "${CODEX_INSTALL_TMP:-}" 2>/dev/null || true
 }
 
 trap cleanup_install_tmps EXIT
-
-# R8-3/R10-1: Pinned SHA-256 of the ForgeCode install script (https://forgecode.dev/cli).
-# This enables automated mismatch-abort before execution.
-# UPDATE THIS VALUE when upgrading ForgeCode — fetch the new hash with:
-#   curl -fsSL https://forgecode.dev/cli | shasum -a 256
-# Verify the hash matches the official release at: https://forgecode.dev/releases
-# Leave blank ("") only if you intentionally want display-only verification.
-# (SENTINEL FINDING-R7-7/R8-3/R10-1: supply chain hardening)
-EXPECTED_FORGE_SHA="e77cc415c254dede4553b87ba4a0361a44d41b59c576e34b44d81ea48b34ce62"
 
 if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
   if bootstrap_target_root="$(resolve_bootstrap_target_root "${bootstrap_host}")"; then
@@ -829,141 +796,64 @@ if bootstrap_host="$(detect_install_host 2>/dev/null)"; then
   fi
 fi
 
-if [ "${INSTALL_FORGE}" = "1" ]; then
-  echo "[forge-plugin] Checking ForgeCode installation..."
-
-  # --- Install forge binary if not present ---
-  if [ "${FORCE_REINSTALL}" = "1" ] || [ ! -x "${FORGE_BIN}" ]; then
-    if [ "${FORCE_REINSTALL}" = "1" ] && [ -x "${FORGE_BIN}" ]; then
-      echo "[forge-plugin] Forcing ForgeCode reinstall from the bootstrap installer."
-    fi
-    echo "[forge-plugin] Installing ForgeCode..."
-    # Download install script to a temp file first — do NOT pipe directly to sh.
-    # Downloading to a file avoids stream-injection attacks and prints the SHA-256
-    # so the user can verify the download matches a known-good release.
-    # (SENTINEL FINDING-7.1: supply chain hardening)
-    FORGE_INSTALL_TMP=$(mktemp "${TMPDIR:-/tmp}/forge-install.XXXXXX")
-    # R8-6: Add download timeouts to prevent indefinite hang on slow/stalled connections.
-    if command -v curl &>/dev/null; then
-      curl -fsSL --max-time 60 --connect-timeout 15 https://forgecode.dev/cli -o "${FORGE_INSTALL_TMP}"
-    elif command -v wget &>/dev/null; then
-      wget -qO "${FORGE_INSTALL_TMP}" --timeout=60 https://forgecode.dev/cli
-    else
-      echo "[forge-plugin] ERROR: Neither curl nor wget found. Install ForgeCode manually from https://forgecode.dev" >&2
-      exit 1
-    fi
-    # R7-8: shasum availability check with sha256sum fallback
-    if command -v shasum &>/dev/null; then
-      FORGE_SHA=$(shasum -a 256 "${FORGE_INSTALL_TMP}" | awk '{print $1}')
-    elif command -v sha256sum &>/dev/null; then
-      FORGE_SHA=$(sha256sum "${FORGE_INSTALL_TMP}" | awk '{print $1}')
-    else
-      echo "[forge-plugin] ERROR: Neither shasum nor sha256sum found — cannot verify download integrity." >&2
-      exit 1
-    fi
-    FORGE_SHA_LOG="${HOME}/.local/share/forge-plugin-install-sha.log"
-    mkdir -p "$(dirname "${FORGE_SHA_LOG}")"
-    echo "[forge-plugin] Install script SHA-256: ${FORGE_SHA}"
-    echo "[forge-plugin] IMPORTANT: Compare this hash against the official release at:"
-    echo "[forge-plugin]   https://forgecode.dev/releases  (or GitHub releases page)"
-    echo "[forge-plugin] If hashes do not match, delete ${FORGE_INSTALL_TMP} and abort."
-    # Log SHA to a persistent file so the user can verify even in non-interactive contexts
-    printf '%s  %s  (downloaded %s)\n' "${FORGE_SHA}" "forgecode-install.sh" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${FORGE_SHA_LOG}"
-    echo "[forge-plugin] SHA logged to: ${FORGE_SHA_LOG}"
-
-    # R8-3: If a pinned SHA is set, abort on mismatch before executing the script.
-    if [ -n "${EXPECTED_FORGE_SHA}" ]; then
-      if [ "${FORGE_SHA}" != "${EXPECTED_FORGE_SHA}" ]; then
-        echo "[forge-plugin] ERROR: SHA-256 MISMATCH — aborting installation." >&2
-        echo "[forge-plugin]   Got:      ${FORGE_SHA}" >&2
-        echo "[forge-plugin]   Expected: ${EXPECTED_FORGE_SHA}" >&2
-        echo "[forge-plugin]   Verify the release at: https://forgecode.dev/releases" >&2
-        exit 1
-      fi
-      echo "[forge-plugin] SHA-256 verified against pinned hash — OK."
-    else
-      # R9-1/R9-9: Warn when no pin is active so the verification gap is explicit.
-      echo "[forge-plugin] NOTICE: No pinned SHA-256 set — verification is display-only."
-      echo "[forge-plugin]   To enable automated verification, set EXPECTED_FORGE_SHA in install.sh."
-    fi
-
-    # R9-2: Interactive execution gate (co-patch with R9-3 hooks.json change).
-    # When running non-interactively with no pinned hash, skip
-    # execution and ask the user to install manually from an interactive terminal.
-    # This ensures a human can verify the SHA before the downloaded script is run.
-    # When a pinned hash is set and verified above, non-interactive execution is safe.
-    # (SENTINEL FINDING-R9-2/R9-3: interactive gate + sentinel co-patch)
-    if [ ! -t 1 ] && [ -z "${EXPECTED_FORGE_SHA}" ]; then
-      echo "[forge-plugin] NOTICE: Cannot execute downloaded installer without user verification." >&2
-      echo "[forge-plugin]   Running non-interactively with no pinned SHA — skipping auto-install." >&2
-      echo "[forge-plugin]   To install ForgeCode, open a terminal and run:" >&2
-      echo "[forge-plugin]     bash \"${BASH_SOURCE[0]}\"" >&2
-      echo "[forge-plugin]   The SHA-256 will be displayed and you can verify it before proceeding." >&2
-      # Exit 0 so non-interactive automation can continue without executing
-      # an unverified downloaded installer.
-      exit 0
-    fi
-
-    # R6-1: In non-interactive mode Ctrl+C may not be available; give a short window anyway.
-    sleep 5
-    bash "${FORGE_INSTALL_TMP}"
-    echo "[forge-plugin] ForgeCode installed."
-    # NOTE (SENTINEL-S4): The forge-sb skill is bundled with the Sidekick plugin via
-    # .forge/skills/ and does not require a secondary network fetch.  The previous
-    # `curl | bash` from raw.githubusercontent.com was removed because it executed
-    # unsigned remote code without checksum verification (arbitrary code execution risk).
-  else
-    echo "[forge-plugin] ForgeCode already installed."
-  fi
-else
-  echo "[forge-plugin] Skipping ForgeCode bootstrap/repair (SIDEKICK_INSTALL_FORGE=0)."
-fi
-
 # --- Ensure Kay runtime is installed and aliased ---
 if [ "${INSTALL_KAY}" = "1" ]; then
-  echo "[forge-plugin] Checking Kay installation..."
+  echo "[sidekick-plugin] Checking Kay installation..."
   CODEX_INSTALL_URL="$(sidekick_source_registry_get kay 'install.url')"
   CODEX_INSTALL_SHA="$(sidekick_source_registry_get kay 'install.sha256')"
   CODEX_INSTALL_VERSION="$(sidekick_source_registry_get kay 'install.version')"
 
-  ensure_codex_aliases() {
+  remove_kay_codex_alias() {
+    local alias_path="${SIDEKICK_BIN_DIR}/codex"
+    local alias_target alias_base
+
+    [ -e "${alias_path}" ] || [ -L "${alias_path}" ] || return 0
+
+    if [ -L "${alias_path}" ]; then
+      alias_target="$(readlink "${alias_path}" 2>/dev/null || true)"
+      alias_base="$(basename "${alias_target:-}")"
+      if [ "${alias_base}" = "kay" ] || [ "${alias_target}" = "${KAY_BIN}" ]; then
+        rm -f "${alias_path}"
+      fi
+      return 0
+    fi
+
+    if [ -x "${alias_path}" ] && "${alias_path}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)'; then
+      rm -f "${alias_path}"
+    fi
+  }
+
+  ensure_kay_aliases() {
     local source_bin="$1"
-    mkdir -p "$(dirname "${CODEX_CODE_ALIAS}")"
+    mkdir -p "$(dirname "${KAY_CODE_ALIAS}")"
+    remove_kay_codex_alias
     case "$(basename "${source_bin}")" in
       kay)
-        ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
-        ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
-        ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
+        ln -sf "${source_bin}" "${KAY_CODE_ALIAS}"
+        ln -sf "${source_bin}" "${KAY_CODER_ALIAS}"
         ;;
       code)
         ln -sf "${source_bin}" "${KAY_BIN}"
-        ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
-        ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
-        ;;
-      codex)
-        ln -sf "${source_bin}" "${KAY_BIN}"
-        ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
-        ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
+        ln -sf "${source_bin}" "${KAY_CODER_ALIAS}"
         ;;
       coder)
         ln -sf "${source_bin}" "${KAY_BIN}"
-        ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
-        ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
+        ln -sf "${source_bin}" "${KAY_CODE_ALIAS}"
         ;;
       *)
         ln -sf "${source_bin}" "${KAY_BIN}"
-        ln -sf "${source_bin}" "${SIDEKICK_BIN_DIR}/code"
-        ln -sf "${source_bin}" "${CODEX_CODE_ALIAS}"
-        ln -sf "${source_bin}" "${CODEX_CODER_ALIAS}"
+        ln -sf "${source_bin}" "${KAY_CODE_ALIAS}"
+        ln -sf "${source_bin}" "${KAY_CODER_ALIAS}"
         ;;
     esac
-    echo "[forge-plugin] Installed Kay command and compatibility aliases: kay, code, codex, coder -> ${source_bin}"
+    remove_kay_codex_alias
+    echo "[sidekick-plugin] Installed Kay command and non-Codex compatibility aliases: kay, code, coder -> ${source_bin}"
   }
 
-resolve_codex_binary() {
+resolve_kay_binary() {
   local candidate
 
-  for candidate in "${KAY_BIN}" "${SIDEKICK_BIN_DIR}/code" "${SIDEKICK_BIN_DIR}/codex" "${SIDEKICK_BIN_DIR}/coder"; do
+  for candidate in "${KAY_BIN}" "${KAY_CODE_ALIAS}" "${KAY_CODER_ALIAS}"; do
     if [ -x "${candidate}" ] \
       && "${candidate}" --version 2>/dev/null | grep -qiE '^kay([[:space:]]|$)' \
       && "${candidate}" exec --help >/dev/null 2>&1; then
@@ -979,24 +869,24 @@ install_codex_runtime() {
   local codex_sha codex_source force_reinstall="${FORCE_REINSTALL:-0}"
 
   if [ "${force_reinstall}" != "1" ]; then
-    codex_source="$(resolve_codex_binary || true)"
+    codex_source="$(resolve_kay_binary || true)"
     if [ -n "${codex_source}" ]; then
-      ensure_codex_aliases "${codex_source}"
-      echo "[forge-plugin] Kay runtime already installed; aliases refreshed."
+      ensure_kay_aliases "${codex_source}"
+      echo "[sidekick-plugin] Kay runtime already installed; aliases refreshed."
       return 0
     fi
   else
-    echo "[forge-plugin] Forcing Kay reinstall from the bootstrap installer."
+    echo "[sidekick-plugin] Forcing Kay reinstall from the bootstrap installer."
   fi
 
-  echo "[forge-plugin] Installing pinned Kay runtime release..."
+  echo "[sidekick-plugin] Installing pinned Kay runtime release..."
   CODEX_INSTALL_TMP=$(mktemp "${TMPDIR:-/tmp}/codex-install.XXXXXX")
   if command -v curl &>/dev/null; then
     curl -fsSL --max-time 60 --connect-timeout 15 "${CODEX_INSTALL_URL}" -o "${CODEX_INSTALL_TMP}"
   elif command -v wget &>/dev/null; then
     wget -qO "${CODEX_INSTALL_TMP}" --timeout=60 "${CODEX_INSTALL_URL}"
   else
-    echo "[forge-plugin] ERROR: Neither curl nor wget found. Install Kay manually from https://github.com/alo-labs/kay/releases" >&2
+    echo "[sidekick-plugin] ERROR: Neither curl nor wget found. Install Kay manually from https://github.com/alo-labs/kay/releases" >&2
     exit 1
   fi
 
@@ -1005,47 +895,47 @@ install_codex_runtime() {
   elif command -v sha256sum &>/dev/null; then
     codex_sha=$(sha256sum "${CODEX_INSTALL_TMP}" | awk '{print $1}')
   else
-    echo "[forge-plugin] WARNING: Neither shasum nor sha256sum found — cannot verify Kay installer integrity." >&2
+    echo "[sidekick-plugin] WARNING: Neither shasum nor sha256sum found — cannot verify Kay installer integrity." >&2
     codex_sha="UNAVAILABLE"
   fi
 
-  echo "[forge-plugin] Kay installer SHA-256: ${codex_sha}"
-  echo "[forge-plugin] IMPORTANT: Compare this hash against the pinned registry entry before proceeding."
+  echo "[sidekick-plugin] Kay installer SHA-256: ${codex_sha}"
+  echo "[sidekick-plugin] IMPORTANT: Compare this hash against the pinned registry entry before proceeding."
 
   if [ -z "${CODEX_INSTALL_SHA}" ]; then
-    echo "[forge-plugin] ERROR: No pinned Kay SHA-256 is configured in sidekicks/registry.json." >&2
+    echo "[sidekick-plugin] ERROR: No pinned Kay SHA-256 is configured in sidekicks/registry.json." >&2
     exit 1
   fi
 
   if [ "${codex_sha}" = "UNAVAILABLE" ]; then
-    echo "[forge-plugin] ERROR: Cannot verify Kay installer integrity without shasum or sha256sum." >&2
+    echo "[sidekick-plugin] ERROR: Cannot verify Kay installer integrity without shasum or sha256sum." >&2
     exit 1
   fi
 
   if [ "${codex_sha}" != "${CODEX_INSTALL_SHA}" ]; then
-    echo "[forge-plugin] ERROR: Kay SHA-256 MISMATCH — aborting installation." >&2
-    echo "[forge-plugin]   Got:      ${codex_sha}" >&2
-    echo "[forge-plugin]   Expected: ${CODEX_INSTALL_SHA}" >&2
+    echo "[sidekick-plugin] ERROR: Kay SHA-256 MISMATCH — aborting installation." >&2
+    echo "[sidekick-plugin]   Got:      ${codex_sha}" >&2
+    echo "[sidekick-plugin]   Expected: ${CODEX_INSTALL_SHA}" >&2
     exit 1
   fi
 
-  echo "[forge-plugin] Kay installer verified against pinned hash — OK."
+  echo "[sidekick-plugin] Kay installer verified against pinned hash — OK."
 
   CODEX_INSTALL_DIR="${SIDEKICK_BIN_DIR}" bash "${CODEX_INSTALL_TMP}" --release "${CODEX_INSTALL_VERSION}"
 
-  codex_source="$(resolve_codex_binary || true)"
+  codex_source="$(resolve_kay_binary || true)"
   if [ -z "${codex_source}" ]; then
-    echo "[forge-plugin] ERROR: Kay install completed but kay binary was not found." >&2
+    echo "[sidekick-plugin] ERROR: Kay install completed but kay binary was not found." >&2
     exit 1
   fi
 
-  ensure_codex_aliases "${codex_source}"
-  echo "[forge-plugin] Kay runtime ready."
+  ensure_kay_aliases "${codex_source}"
+  echo "[sidekick-plugin] Kay runtime ready."
 }
 
   install_codex_runtime
 else
-  echo "[forge-plugin] Skipping Kay bootstrap/repair (SIDEKICK_INSTALL_KAY=0 or SIDEKICK_INSTALL_CODE=0)."
+  echo "[sidekick-plugin] Skipping Kay bootstrap/repair (SIDEKICK_INSTALL_KAY=0 or SIDEKICK_INSTALL_CODE=0)."
 fi
 
 if install_host="$(detect_install_host 2>/dev/null)"; then
@@ -1060,10 +950,10 @@ fi
 # Each addition is preceded by a marker comment so it can be easily found and
 # removed if you want to undo this change.
 # (SENTINEL FINDING-10.1: persistence transparency)
-if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
+if [ "${INSTALL_KAY}" = "1" ]; then
   add_to_path() {
     local profile="$1"
-    local marker='# Added by sidekick/forge plugin (https://github.com/alo-exp/sidekick) — remove this block to undo'
+    local marker='# Added by sidekick plugin (https://github.com/alo-exp/sidekick) - remove this block to undo'
     local line="export PATH=\"${SIDEKICK_BIN_DIR}:\$PATH\""
     if [ -f "${profile}" ] && ! (grep -qF "${SIDEKICK_BIN_DIR}" "${profile}" || grep -qF '$HOME/.local/bin' "${profile}"); then
       # R6-5: Symlink validation — refuse to append to a profile that is a symlink
@@ -1074,7 +964,7 @@ if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
         local home_prefix
         home_prefix=$(realpath "${HOME}" 2>/dev/null || echo "${HOME}")
         if [[ "${real_target}" != "${home_prefix}/"* ]]; then
-          echo "[forge-plugin] WARNING: ${profile} is a symlink pointing outside HOME (${real_target}). Skipping PATH addition." >&2
+          echo "[sidekick-plugin] WARNING: ${profile} is a symlink pointing outside HOME (${real_target}). Skipping PATH addition." >&2
           return 0
         fi
       fi
@@ -1083,11 +973,11 @@ if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
       file_owner=$(stat -c '%U' "${profile}" 2>/dev/null || stat -f '%Su' "${profile}" 2>/dev/null || echo "")
       local current_user="${USER:-$(id -un)}"
       if [ -n "${file_owner}" ] && [ "${file_owner}" != "${current_user}" ]; then
-        echo "[forge-plugin] WARNING: ${profile} is owned by '${file_owner}', not '${current_user}'. Skipping PATH addition." >&2
+        echo "[sidekick-plugin] WARNING: ${profile} is owned by '${file_owner}', not '${current_user}'. Skipping PATH addition." >&2
         return 0
       fi
       printf '\n%s\n%s\n' "${marker}" "${line}" >> "${profile}"
-      echo "[forge-plugin] Added ${SIDEKICK_BIN_DIR} to PATH in ${profile} (marker: 'Added by sidekick/forge plugin')"
+      echo "[sidekick-plugin] Added ${SIDEKICK_BIN_DIR} to PATH in ${profile} (marker: 'Added by sidekick plugin')"
     fi
   }
 
@@ -1095,15 +985,15 @@ if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
   # (SENTINEL FINDING-10.1 R2: pre-consent hardening)
   if [ -t 1 ]; then
     # Interactive terminal: give user a cancellation window
-    echo "[forge-plugin] NOTICE: About to add ${SIDEKICK_BIN_DIR} to PATH in:"
-    echo "[forge-plugin]   ~/.zshrc, ~/.bashrc, ~/.bash_profile (if they exist and don't already have it)"
-    echo "[forge-plugin] This makes the 'forge' command available in new terminal sessions."
-    echo "[forge-plugin] Press Ctrl+C within 10 seconds to cancel, or wait to proceed."
+    echo "[sidekick-plugin] NOTICE: About to add ${SIDEKICK_BIN_DIR} to PATH in:"
+    echo "[sidekick-plugin]   ~/.zshrc, ~/.bashrc, ~/.bash_profile (if they exist and don't already have it)"
+    echo "[sidekick-plugin] This makes the 'kay' command and compatibility aliases available in new terminal sessions."
+    echo "[sidekick-plugin] Press Ctrl+C within 10 seconds to cancel, or wait to proceed."
     sleep 10
   else
     # Non-interactive context: print notice with undo instructions
-    echo "[forge-plugin] NOTICE: Adding ${SIDEKICK_BIN_DIR} to PATH in shell profiles (if not already present)."
-    echo "[forge-plugin] To undo: remove lines marked 'Added by sidekick/forge plugin' from ~/.zshrc etc."
+    echo "[sidekick-plugin] NOTICE: Adding ${SIDEKICK_BIN_DIR} to PATH in shell profiles (if not already present)."
+    echo "[sidekick-plugin] To undo: remove lines marked 'Added by sidekick plugin' from ~/.zshrc etc."
   fi
 
   add_to_path "${HOME}/.zshrc"
@@ -1112,32 +1002,6 @@ if [ "${INSTALL_FORGE}" = "1" ] || [ "${INSTALL_KAY}" = "1" ]; then
 
   export PATH="${HOME}/.local/bin:${PATH}"
 
-  # --- Verify installation ---
-  # R6-10: Binary identity check — confirm the 'forge' binary is actually ForgeCode,
-  # not a different tool that happens to share the name.
-  if [ -x "${FORGE_BIN}" ]; then
-    VERSION=$("${FORGE_BIN}" --version 2>/dev/null || echo "unknown")
-    # ForgeCode --version output contains "forge" or "forgecode"; warn if it doesn't.
-    if echo "${VERSION}" | grep -qiE 'forge|forgecode'; then
-      echo "[forge-plugin] ForgeCode ${VERSION} ready."
-    else
-      echo "[forge-plugin] WARNING: Binary at ${FORGE_BIN} reported version '${VERSION}'." >&2
-      echo "[forge-plugin] WARNING: This does not look like ForgeCode. Verify the binary manually." >&2
-    fi
-  else
-    echo "[forge-plugin] WARNING: forge binary not found after install. Check PATH." >&2
-  fi
-
-  # --- Credential file permissions hardening ---
-  # S4-FIX: Ensure ~/forge/.credentials.json is never world-readable.
-  # If the file already exists (written by STEP 0A setup or a prior install),
-  # enforce 600 permissions so only the owning user can read it.
-  # This is also called after every install/re-install for idempotent safety.
-  CREDS_FILE="${HOME}/forge/.credentials.json"
-  if [ -f "${CREDS_FILE}" ]; then
-    chmod 600 "${CREDS_FILE}"
-    echo "[forge-plugin] Credential file permissions set to 600 (user-only read/write)."
-  fi
 fi
 
-echo "[forge-plugin] Setup complete. Ask the host to configure the provider credentials for the sidekick you want to use."
+echo "[sidekick-plugin] Setup complete. Use /sidekick:kay-delegate or /sidekick:codex-delegate to activate a sidekick."

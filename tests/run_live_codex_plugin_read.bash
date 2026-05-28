@@ -157,16 +157,15 @@ try:
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
     expected_names = [
-        "sidekick:forge-delegate",
-        "sidekick:forge-stop",
-        "sidekick:forge:delegate",
+        "sidekick:codex-delegate",
+        "sidekick:codex-stop",
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
         "sidekick:kay:delegate",
     ]
     canonical_order = [
-        "sidekick:forge-delegate",
-        "sidekick:forge-stop",
+        "sidekick:codex-delegate",
+        "sidekick:codex-stop",
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
     ]
@@ -191,10 +190,6 @@ try:
     if manifest.get("skills") != "./skills/":
         raise SystemExit("Codex manifest must select ./skills/ as the skill root")
     alias_expectations = {
-        "skills/forge:delegate/SKILL.md": [
-            "name: forge:delegate",
-            "canonical `/forge` workflow",
-        ],
         "skills/kay:delegate/SKILL.md": [
             "name: kay:delegate",
             "canonical `kay-delegate` workflow",

@@ -1,6 +1,6 @@
 ---
 name: codex-stop
-description: Canonical Codex stop workflow. Use /codex-stop to deactivate delegation and return to direct host behavior.
+description: Canonical Codex stop workflow. Use /sidekick:codex-stop to deactivate delegation and return to direct host behavior.
 ---
 
 # Codex Stop Workflow

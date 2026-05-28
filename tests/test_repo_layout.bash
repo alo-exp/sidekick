@@ -41,9 +41,14 @@ expect_valid_json() {
 }
 
 echo "=== T1: Top-level project shape ==="
-for dir in .claude .claude-plugin .codex-plugin .forge .github .planning agents agents/claude agents/codex hooks output-styles scripts sidekicks site skills tests; do
+for dir in .claude .claude-plugin .codex-plugin .github .planning agents agents/claude agents/codex hooks output-styles scripts sidekicks site skills tests; do
   expect_dir "${dir}"
 done
+if [ -e "${ROOT}/.forge" ]; then
+  assert_fail "removed Forge runtime directory absent" ".forge still exists"
+else
+  assert_pass "removed Forge runtime directory absent"
+fi
 
 if [ -e "${ROOT}/docs" ]; then
   assert_fail "legacy docs directory absent" "unexpected legacy docs/ directory present"
@@ -51,9 +56,14 @@ else
   assert_pass "legacy docs directory absent"
 fi
 
-for file in .forge.toml .gitignore .silver-bullet.json AGENTS.md CHANGELOG.md CLAUDE.md README.md context.md install.sh silver-bullet.md; do
+for file in .gitignore .silver-bullet.json AGENTS.md CHANGELOG.md CLAUDE.md README.md context.md install.sh silver-bullet.md; do
   expect_file "${file}"
 done
+if [ -e "${ROOT}/.forge.toml" ]; then
+  assert_fail "removed Forge config absent" ".forge.toml still exists"
+else
+  assert_pass "removed Forge config absent"
+fi
 
 echo "=== T2: Transient cleanup is release-scoped ==="
 assert_pass "repository layout test does not delete developer artifacts; post_release_cleanup.bash owns transient cleanup"

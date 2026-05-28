@@ -15,4 +15,4 @@ When invoked, follow the canonical `kay-delegate` workflow exactly:
 3. Delegate implementation work through Kay while the host AI remains the
    planner, reviewer, communicator, and mentor.
 
-To stop Kay delegation, invoke `/kay-stop`.
+To stop Kay delegation, invoke `/sidekick:kay-stop`.

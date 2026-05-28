@@ -21,9 +21,6 @@ run_suite() {
 }
 
 run_suite "Strict non-live unit + integration suites" "run_unit.bash"
-run_suite "Skip-safe Forge E2E probe"                 "test_forge_e2e.bash"
-run_suite "Skip-safe Forge smoke harness"             "smoke/run_smoke.bash"
-run_suite "Skip-safe Forge live E2E"                  "run_live_e2e.bash"
 run_suite "Skip-safe Kay plugin/read probe"           "run_live_codex_plugin_read.bash"
 run_suite "Skip-safe Kay marketplace install"         "run_live_codex_marketplace_install.bash"
 run_suite "Skip-safe Kay smoke harness"               "smoke/run_codex_smoke.bash"

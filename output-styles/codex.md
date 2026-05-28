@@ -21,8 +21,8 @@ What this style DOES do:
 
 ## Delegation Control
 
-When a `/codex-stop` hint appears in a `[CODEX-SUMMARY]` block, surface it to the user in plain language: `Run /codex-stop to return to direct host mode.`
+When a `/sidekick:codex-stop` hint appears in a `[CODEX-SUMMARY]` block, surface it to the user in plain language: `Run /sidekick:codex-stop to return to direct host mode.`
 
 ## Deactivation
 
-When the user runs `/codex-stop`, this output style is no longer loaded. Your next response reverts to the prior narration style.
+When the user runs `/sidekick:codex-stop`, this output style is no longer loaded. Your next response reverts to the prior narration style.

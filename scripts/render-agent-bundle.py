@@ -29,20 +29,6 @@ HOST_REPLACEMENTS = {
 def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
     return [
         (
-            "New installs invoke /forge from skills/forge/SKILL.md.",
-            "New installs invoke /forge from the generated host skill at "
-            "forge/SKILL.md.",
-        ),
-        (
-            "[`skills/forge/SKILL.md`](./forge/SKILL.md)",
-            "[`forge/SKILL.md`](./forge/SKILL.md)",
-        ),
-        (
-            "`skills/forge/SKILL.md`",
-            f"`forge/SKILL.md` in this generated {agent} skill root "
-            f"(`agents/{agent}/forge/SKILL.md` in the repository)",
-        ),
-        (
             "Prefer skills/codex-delegate/SKILL.md.",
             "Prefer the generated host skill at codex-delegate/SKILL.md.",
         ),
@@ -54,16 +40,6 @@ def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
             "`skills/codex-delegate/SKILL.md`",
             f"`codex-delegate/SKILL.md` in this generated {agent} skill root "
             f"(`agents/{agent}/codex-delegate/SKILL.md` in the repository)",
-        ),
-        (
-            "`skills/forge.md`",
-            f"`forge.md` in this generated {agent} skill root "
-            f"(`agents/{agent}/forge.md` in the repository)",
-        ),
-        (
-            "`skills/forge-stop/SKILL.md`",
-            f"`forge-stop/SKILL.md` in this generated {agent} skill root "
-            f"(`agents/{agent}/forge-stop/SKILL.md` in the repository)",
         ),
         (
             "`skills/codex-stop/SKILL.md`",
@@ -123,13 +99,6 @@ def host_logic_replacements(agent: str) -> list[tuple[str, str]]:
     for host_home_block, echo_indent, inner_fi_indent, outer_fi_indent in host_home_blocks:
         replacements.extend(
             [
-                (
-                    host_home_block
-                    + f'{echo_indent}echo "No host home found for Forge mode"; exit 1\n'
-                    + f"{inner_fi_indent}fi\n"
-                    + f"{outer_fi_indent}fi\n",
-                    "",
-                ),
                 (
                     host_home_block
                     + f'{echo_indent}echo "No host home found for Kay mode"; exit 1\n'

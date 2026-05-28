@@ -84,12 +84,12 @@ fi
 echo "=== T2: Safety flags ==="
 grep -q 'set -euo pipefail' "${INSTALL_SH}" && assert_pass "set -euo pipefail present" || assert_fail "set -euo pipefail" "not found"
 
-echo "=== T3: Pinned SHA ==="
-PINNED=$(grep 'EXPECTED_FORGE_SHA=' "${INSTALL_SH}" | grep -v '^#' | head -1 | sed 's/.*="\(.*\)"/\1/')
+echo "=== T3: Pinned Kay SHA ==="
+PINNED=$(python3 -c "import json; print(json.load(open('${PLUGIN_DIR}/sidekicks/registry.json'))['kay']['install']['sha256'])")
 if [ -n "${PINNED}" ]; then
-  assert_pass "EXPECTED_FORGE_SHA is set: ${PINNED:0:16}…"
+  assert_pass "Kay installer SHA is pinned in registry: ${PINNED:0:16}..."
 else
-  assert_fail "EXPECTED_FORGE_SHA" "empty — pinned hash verification disabled"
+  assert_fail "Kay installer SHA" "empty - pinned hash verification disabled"
 fi
 if grep -q 'ERROR: No pinned Kay SHA-256 is configured in sidekicks/registry.json' "${INSTALL_SH}" \
   && ! grep -q 'No pinned Kay SHA-256 set' "${INSTALL_SH}"; then
@@ -101,11 +101,13 @@ fi
 echo "=== T4: SHA abort logic ==="
 grep -q 'SHA-256 MISMATCH' "${INSTALL_SH}" && assert_pass "SHA mismatch abort message present" || assert_fail "SHA abort" "not found"
 
-echo "=== T5: Non-interactive gate ==="
-if grep -q '\-t 1' "${INSTALL_SH}" && grep -q 'skipping auto-install' "${INSTALL_SH}"; then
-  assert_pass "Non-interactive gate present"
+echo "=== T5: Removed runtime bootstrap ==="
+if ! grep -q 'forgecode.dev/cli' "${INSTALL_SH}" \
+  && ! grep -q 'EXPECTED_FORGE_SHA' "${INSTALL_SH}" \
+  && ! grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}"; then
+  assert_pass "removed sidekick bootstrap path is absent"
 else
-  assert_fail "Non-interactive gate" "[ -t 1 ] abort not found"
+  assert_fail "removed sidekick bootstrap" "Forge installer path, pin, or env flag remains"
 fi
 
 echo "=== T6: Download timeouts ==="
@@ -115,11 +117,11 @@ grep -q '\-\-timeout=60' "${INSTALL_SH}" && assert_pass "wget timeout present" |
 
 echo "=== T7: SHA tool fallback ==="
 if grep -q 'sha256sum' "${INSTALL_SH}" \
-  && grep -q 'ERROR: Neither shasum nor sha256sum found — cannot verify download integrity.' "${INSTALL_SH}" \
-  && ! grep -q 'FORGE_SHA="UNAVAILABLE"' "${INSTALL_SH}"; then
-  assert_pass "Forge bootstrap fails closed without hash tool"
+  && grep -q 'ERROR: Cannot verify Kay installer integrity without shasum or sha256sum.' "${INSTALL_SH}" \
+  && ! grep -q 'codex_sha="UNAVAILABLE".*bash "${CODEX_INSTALL_TMP}"' "${INSTALL_SH}"; then
+  assert_pass "Kay bootstrap fails closed without hash tool"
 else
-  assert_fail "Forge bootstrap fail-closed path" "missing hard error or still contains UNAVAILABLE fallback"
+  assert_fail "Kay bootstrap fail-closed path" "missing hard error or still allows execution without a hash tool"
 fi
 
 echo "=== T8: Symlink validation ==="
@@ -131,27 +133,33 @@ grep -q 'Ownership check' "${INSTALL_SH}" && grep -q 'file_owner' "${INSTALL_SH}
   assert_pass "Ownership check present" || assert_fail "Ownership check" "not found"
 
 echo "=== T10: Binary identity check ==="
-grep -q 'grep -qiE.*forge' "${INSTALL_SH}" && assert_pass "Binary identity check present" || assert_fail "Binary identity check" "not found"
+if grep -q -- "--version 2>/dev/null | grep -qiE '^kay" "${INSTALL_SH}" \
+  && grep -q 'exec --help' "${INSTALL_SH}"; then
+  assert_pass "Kay runtime identity check present"
+else
+  assert_fail "Kay runtime identity check" "not found"
+fi
 
 echo "=== T11: PATH marker ==="
-grep -q 'Added by sidekick/forge plugin' "${INSTALL_SH}" && assert_pass "PATH marker comment present" || assert_fail "PATH marker" "not found"
+grep -q 'Added by sidekick plugin' "${INSTALL_SH}" && assert_pass "PATH marker comment present" || assert_fail "PATH marker" "not found"
 
 echo "=== T12: Kay bootstrap ==="
 if grep -q 'install_codex_runtime' "${INSTALL_SH}" \
   && grep -q 'sidekick_source_registry_get kay' "${INSTALL_SH}" \
   && grep -q 'CODEX_INSTALL_TMP' "${INSTALL_SH}" \
   && grep -q 'KAY_BIN' "${INSTALL_SH}" \
-  && grep -q 'CODEX_CODE_ALIAS' "${INSTALL_SH}" \
-  && grep -q 'CODEX_CODER_ALIAS' "${INSTALL_SH}" \
+  && grep -q 'KAY_CODE_ALIAS' "${INSTALL_SH}" \
+  && grep -q 'KAY_CODER_ALIAS' "${INSTALL_SH}" \
+  && grep -q 'remove_kay_codex_alias' "${INSTALL_SH}" \
   && grep -q 'CODEX_INSTALL_VERSION' "${INSTALL_SH}" \
   && ! grep -q 'update --help' "${INSTALL_SH}" \
   && grep -q -- '--version 2>/dev/null | grep -qiE' "${INSTALL_SH}" \
   && grep -q -- '--release "${CODEX_INSTALL_VERSION}"' "${INSTALL_SH}" \
   && grep -q 'CODEX_INSTALL_DIR="${SIDEKICK_BIN_DIR}" bash "${CODEX_INSTALL_TMP}"' "${INSTALL_SH}" \
   && grep -q 'cleanup_install_tmps' "${INSTALL_SH}"; then
-  assert_pass "Kay runtime bootstrap logic present with pinned release, exec-capable detection, custom install dir, and compatibility aliases"
+  assert_pass "Kay runtime bootstrap logic present with pinned release, exec-capable detection, custom install dir, non-Codex aliases, and Codex CLI collision cleanup"
 else
-  assert_fail "Kay bootstrap" "missing Kay runtime install, pinned release, exec-capable detection, custom install dir, aliases, or cleanup logic"
+  assert_fail "Kay bootstrap" "missing Kay runtime install, pinned release, exec-capable detection, custom install dir, non-Codex aliases, collision cleanup, or cleanup logic"
 fi
 
 echo "=== T13: Idempotency (add_to_path) ==="
@@ -202,7 +210,11 @@ else
 fi
 
 echo "=== T15: Non-interactive gate execution ==="
-skip "Non-interactive gate" "forge already installed on this machine — download path not reached in sandbox"
+if ! grep -qiE 'forge|forgecode|SIDEKICK_INSTALL_FORGE|EXPECTED_FORGE_SHA' "${INSTALL_SH}"; then
+  assert_pass "removed sidekick installer code is absent"
+else
+  assert_fail "removed sidekick installer code" "Forge bootstrap text remains"
+fi
 
 echo "=== T16: hooks.json has no SessionStart surface ==="
 HOOKS="${PLUGIN_DIR}/hooks/hooks.json"
@@ -231,10 +243,10 @@ else
 fi
 
 echo "=== T17: selective install env flags ==="
-if grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_KAY' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_CODE' "${INSTALL_SH}"; then
+if grep -q 'SIDEKICK_INSTALL_KAY' "${INSTALL_SH}" && grep -q 'SIDEKICK_INSTALL_CODE' "${INSTALL_SH}" && ! grep -q 'SIDEKICK_INSTALL_FORGE' "${INSTALL_SH}"; then
   assert_pass "selective install env flags present"
 else
-  assert_fail "selective install env flags" "missing SIDEKICK_INSTALL_FORGE, SIDEKICK_INSTALL_KAY, or compatibility SIDEKICK_INSTALL_CODE"
+  assert_fail "selective install env flags" "missing Kay/compatibility flag or stale Forge flag remains"
 fi
 
 echo "=== T18: missing hash tools fail closed at runtime ==="
@@ -243,7 +255,7 @@ _toolbox_root="$(mktemp -d)"
 prepare_install_sandbox "${_runtime_root}"
 make_install_toolbox "${_toolbox_root}" "0"
 mkdir -p "${_runtime_root}/home"
-if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_KAY=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
   assert_fail "missing hash tools fail closed" "expected install.sh to fail, got success"
 else
   if echo "${OUT}" | grep -q 'Cannot verify Kay installer integrity without shasum or sha256sum'; then
@@ -272,7 +284,7 @@ with open(path, "w", encoding="utf-8") as fh:
     fh.write("\n")
 PY
 mkdir -p "${_runtime_root}/home"
-if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
+if OUT="$(HOME="${_runtime_root}/home" SIDEKICK_PLUGIN_ROOT="${_runtime_root}" BIN_DIR="${_toolbox_root}" PATH="${_toolbox_root}" SIDEKICK_INSTALL_KAY=1 bash "${_runtime_root}/install.sh" 2>&1)"; then
   assert_fail "missing registry SHA fails closed" "expected install.sh to fail, got success"
 else
   if echo "${OUT}" | grep -q 'No pinned Kay SHA-256 is configured in sidekicks/registry.json'; then
@@ -324,11 +336,11 @@ for _rel in \
   ".claude-plugin/plugin.json" \
   "hooks/hooks.json" \
   "hooks/lib/sidekick-registry.sh" \
-  "skills/forge-stop/SKILL.md" \
+  "skills/kay-stop/SKILL.md" \
   "sidekicks/registry.json"; do
   copy_plugin_file "${_host_root}" "${_rel}"
 done
-if HOME="${_host_home}" SIDEKICK_INSTALL_HOST=codex SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=0 PATH="/usr/bin:/bin:/usr/sbin:/sbin" bash "${_host_root}/install.sh" >/tmp/sidekick-install-host-rewrite.out 2>&1; then
+if HOME="${_host_home}" SIDEKICK_INSTALL_HOST=codex SIDEKICK_INSTALL_KAY=0 PATH="/usr/bin:/bin:/usr/sbin:/sbin" bash "${_host_root}/install.sh" >/tmp/sidekick-install-host-rewrite.out 2>&1; then
   if python3 - "${_host_root}" <<'PY'
 from pathlib import Path
 import hashlib
@@ -346,7 +358,7 @@ if "${SIDEKICK_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT" in hooks_text:
 if "CLAUDE_PLUGIN_ROOT" in hooks_text:
     raise SystemExit("hooks.json still references CLAUDE_PLUGIN_ROOT after Codex host rewrite")
 targets = {
-    "forge_stop_skill_md_sha256": "skills/forge-stop/SKILL.md",
+    "kay_stop_skill_md_sha256": "skills/kay-stop/SKILL.md",
     "hooks_json_sha256": "hooks/hooks.json",
 }
 for key, rel in targets.items():
@@ -371,7 +383,6 @@ prepare_install_sandbox "${_session_root}"
 if env -u CODEX_PLUGIN_ROOT -u CLAUDE_PLUGIN_ROOT -u SIDEKICK_PLUGIN_ROOT \
   HOME="${_session_home}" \
   CODEX_THREAD_ID="session-only-install-test" \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_KAY=0 \
   PATH="/usr/bin:/bin:/usr/sbin:/sbin" \
   bash "${_session_root}/install.sh" >/tmp/sidekick-install-session-only.out 2>&1; then
@@ -459,8 +470,9 @@ fi
 exit 0
 CODEX
 chmod +x "${_custom_bin}/codex"
-if HOME="${_custom_home}" SIDEKICK_PLUGIN_ROOT="${_custom_root}" BIN_DIR="${_custom_bin}" PATH="${_custom_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" SIDEKICK_INSTALL_FORGE=0 SIDEKICK_INSTALL_KAY=1 bash "${_custom_root}/install.sh" >/tmp/sidekick-install-custom-bin.out 2>&1; then
+if HOME="${_custom_home}" SIDEKICK_PLUGIN_ROOT="${_custom_root}" BIN_DIR="${_custom_bin}" PATH="${_custom_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" SIDEKICK_INSTALL_KAY=1 bash "${_custom_root}/install.sh" >/tmp/sidekick-install-custom-bin.out 2>&1; then
   if [ -x "${_custom_bin}/kay" ] \
+    && [ -x "${_custom_bin}/codex" ] \
     && [ ! -e "${_custom_home}/.local/bin/kay" ] \
     && [ ! -e "${_custom_home}/codex-exec-called" ] \
     && "${_custom_bin}/kay" --version 2>/dev/null | grep -q '^kay '; then
@@ -554,7 +566,6 @@ if HOME="${_fresh_home}" \
   BIN_DIR="${_fresh_bin}" \
   PATH="${_fresh_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" \
   SIDEKICK_TEST_CURL_LOG="${_curl_log}" \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_KAY=1 \
   bash "${_fresh_root}/install.sh" >/tmp/sidekick-install-source-registry.out 2>&1; then
   if [ -x "${_fresh_bin}/kay" ] \
@@ -585,7 +596,6 @@ if env -u CODEX_PLUGIN_ROOT -u CODEX_HOME -u CODEX_THREAD_ID \
   -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u SIDEKICK_PLUGIN_ROOT \
   HOME="${_skip_home}" \
   PATH="${_skip_toolbox}:/usr/bin:/bin:/usr/sbin:/sbin" \
-  SIDEKICK_INSTALL_FORGE=0 \
   SIDEKICK_INSTALL_KAY=0 \
   bash "${_skip_root}/install.sh" >/tmp/sidekick-install-no-python-skip.out 2>&1; then
   if grep -q 'Skipping Kay bootstrap/repair' /tmp/sidekick-install-no-python-skip.out; then

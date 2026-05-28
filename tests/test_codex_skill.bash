@@ -100,7 +100,7 @@ fi
 
 echo "=== T6: kay-delegate remains the Kay runtime contract ==="
 if grep -q 'kay exec --full-auto' "${KAY_DELEGATE_FILE}" \
-  && grep -q 'for candidate in kay code codex coder' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'for candidate in kay code coder' "${KAY_DELEGATE_FILE}" \
   && grep -q 'No Kay-compatible runtime found' "${KAY_DELEGATE_FILE}" \
   && grep -q '\.kay-delegation-active' "${KAY_DELEGATE_FILE}" \
   && ! grep -q 'gpt-5.4-mini' "${KAY_DELEGATE_FILE}"; then
@@ -119,6 +119,46 @@ else
   assert_fail "kay-stop" "missing Kay marker workflow or audit preservation note"
 fi
 
+echo "=== T7b: Codex and Kay require post-task host verification and recovery ==="
+verification_missing=()
+failure_codes=(
+  MISSED_REQUIREMENT
+  INTEGRATION_ERROR
+  REGRESSION
+  WRONG_LOGIC
+  SYNTAX_ERROR
+  WRONG_FILE
+  UNVERIFIED_ASSUMPTION
+  KNOWLEDGE_GAP
+  MISUNDERSTOOD_TASK
+  TRIAL_INCOMPLETE
+  API_FAILURE
+  EXECUTION_ERROR_EXTERNAL
+)
+for surface in "${CODEX_DELEGATE_FILE}" "${KAY_DELEGATE_FILE}"; do
+  for required in \
+    'Host Verification and Recovery' \
+    'after every sidekick task' \
+    'original task prompt' \
+    'STATUS: SUCCESS' \
+    'relaunch' \
+    'handhold'; do
+    if ! grep -Fq "${required}" "${surface}"; then
+      verification_missing+=("${surface}:${required}")
+    fi
+  done
+  for code in "${failure_codes[@]}"; do
+    if ! grep -Fq "\`${code}\`" "${surface}"; then
+      verification_missing+=("${surface}:${code}")
+    fi
+  done
+done
+if [ "${#verification_missing[@]}" -eq 0 ]; then
+  assert_pass "Codex and Kay document host verification taxonomy and relaunch loop"
+else
+  assert_fail "Codex/Kay host verification" "missing: ${verification_missing[*]}"
+fi
+
 echo "=== T8: legacy flat wrapper now points to Codex canonical skill ==="
 if grep -q '^---$' "${CODEX_DELEGATE_LEGACY_FILE}" \
   && grep -q '^name: codex-delegate' "${CODEX_DELEGATE_LEGACY_FILE}" \
@@ -135,7 +175,7 @@ fi
 echo "=== T9: /kay:delegate alias points at the explicit Kay canonical skill ==="
 if grep -q '^name: kay:delegate' "${KAY_ALIAS_FILE}" \
   && grep -q 'skills/kay-delegate/SKILL.md' "${KAY_ALIAS_FILE}" \
-  && grep -q '/kay-stop' "${KAY_ALIAS_FILE}" \
+  && grep -q '/sidekick:kay-stop' "${KAY_ALIAS_FILE}" \
   && ! grep -q 'skills/codex-delegate/SKILL.md' "${KAY_ALIAS_FILE}"; then
   assert_pass "Kay delegate alias references explicit Kay canonical skill"
 else
@@ -156,14 +196,14 @@ assert codex["display_name"] == "Codex"
 assert codex["marker_file"] == ".codex/sessions/${CODEX_THREAD_ID}/.codex-delegation-active"
 assert codex["idx_dir"] == ".codex"
 assert codex["delegate_command"] == "codex exec"
-assert codex["stop_command"] == "/codex-stop"
+assert codex["stop_command"] == "/sidekick:codex-stop"
 assert codex["skill"] == "skills/codex-delegate/SKILL.md"
 assert codex["skill_legacy"] == "skills/codex-delegate.md"
 assert codex["output_style"] == "output-styles/codex.md"
 
 assert kay["display_name"] == "Kay"
 assert kay["skill"] == "skills/kay-delegate/SKILL.md"
-assert kay["stop_command"] == "/kay-stop"
+assert kay["stop_command"] == "/sidekick:kay-stop"
 assert kay["output_style"] == "output-styles/kay.md"
 PY
 then
