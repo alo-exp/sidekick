@@ -91,6 +91,7 @@ expect_absent "tests/run_release.bash" "SIDEKICK_ALLOW_HOST_TESTS" "run_release 
 expect_contains "tests/run_in_kay.bash" "deepseek-v4-flash" "Kay test wrapper uses DeepSeek V4 Flash"
 expect_contains "tests/run_in_kay.bash" "model_reasoning_effort=low" "Kay test wrapper uses low reasoning"
 expect_contains "tests/run_in_kay.bash" "current-session" "Kay test wrapper writes current session file"
+expect_contains "tests/run_in_kay.bash" "SIDEKICK_HOST_HOME" "Kay test wrapper preserves the real host home for release-gate lookups"
 expect_contains "tests/run_in_kay.bash" "--full-auto" "Kay test wrapper prefers full-auto execution"
 expect_contains "tests/run_in_kay.bash" "prepare_kay_runner" "Kay test wrapper probes supported execution flags"
 expect_contains "tests/run_in_kay.bash" "mktemp -d" "Kay test wrapper creates an isolated temporary HOME"
