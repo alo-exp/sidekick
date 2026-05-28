@@ -179,7 +179,7 @@ PY
     && grep -Fq 'SIDEKICK_HOST_SESSION_ID' "${target_root}/skills/codex-stop/SKILL.md" \
     && grep -Fq 'CODEX_THREAD_ID' "${target_root}/agents/codex/codex-stop/SKILL.md" \
     && ! grep -Fq 'CLAUDE_SESSION_ID' "${target_root}/agents/codex/codex-stop/SKILL.md" \
-    && grep -Fq '"skills": "./agents/codex/"' "${target_root}/.codex-plugin/plugin.json" \
+    && grep -Fq '"skills": "./skills/"' "${target_root}/.codex-plugin/plugin.json" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/config.toml" \
     && ! grep -Fq 'sidekick@alo-labs-codex-local' "${home}/.codex/plugins/installed_plugins.json" \
     && grep -Fq 'topgun@alo-labs-codex' "${home}/.codex/config.toml" \

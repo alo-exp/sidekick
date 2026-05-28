@@ -143,12 +143,19 @@ sidekick_active_mode_file() {
   printf '%s/.sidekick/sessions/%s/active-sidekick' "${HOME}" "${session_id}"
 }
 
-sidekick_active_mode_allows() {
-  local sidekick="$1"
+sidekick_active_mode() {
   local active_file active
   active_file="$(sidekick_active_mode_file)" || return 1
   [[ -f "$active_file" ]] || return 1
   IFS= read -r active < "$active_file" 2>/dev/null || active=""
+  [[ -n "$active" ]] || return 1
+  printf '%s' "$active"
+}
+
+sidekick_active_mode_allows() {
+  local sidekick="$1"
+  local active
+  active="$(sidekick_active_mode)" || return 1
   [[ "$active" == "$sidekick" ]]
 }
 

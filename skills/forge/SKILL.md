@@ -192,7 +192,16 @@ trigger: review refactor cleanup improve optimize pr
 Resolve the same host session id the hooks use, then create or refresh the marker with a fresh activation token:
 
 ```bash
-SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"
+if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+    SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+  elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.claude"
+  else
+    echo "No host home found for Forge mode"; exit 1
+  fi
+fi
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Forge mode"; exit 1; }
 mkdir -p "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.kay/sessions/${SIDEKICK_SESSION}" \
@@ -240,7 +249,16 @@ Use `forge -p "..."` only for simple prompts that do not contain shell-sensitive
 Before every implementation task, check the marker under the resolved session id:
 
 ```bash
-SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"
+if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+    SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+  elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.claude"
+  else
+    echo "No host home found for Forge mode"; exit 1
+  fi
+fi
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"
 test -f "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}/.forge-delegation-active"
 ```
 

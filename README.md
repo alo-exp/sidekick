@@ -1,13 +1,14 @@
 # Sidekick — AI Coding Agents for Claude Code and Codex
 
-**AI coding agents for Claude Code and Codex** — Sidekick lets the active host AI delegate implementation to Forge or Kay while the host stays focused on planning, review, mentoring, and communication.
+**AI coding agents for Claude Code and Codex** — Sidekick lets the active host AI delegate implementation to Forge, Kay, or Codex while the host stays focused on planning, review, mentoring, and communication.
 
 ## Sidekicks
 
 | Sidekick | Activation surface | Agent | Status |
 |----------|--------------------|-------|--------|
-| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.6.1 |
-| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.1 |
+| **Forge** | `/forge` | [ForgeCode](https://forgecode.dev) — #7 Terminal-Bench 2.0 (81.8%) | ✅ v0.6.2 |
+| **Kay** | `kay-delegate` | OSS Codex-lineage execution agent — Codex CLI #6 Terminal-Bench 2.0, `kay exec`, OpenCode Go provider routing, MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for verification/reporting work | ✅ v0.6.2 |
+| **Codex** | `codex-delegate` | Local OpenAI Codex CLI sidekick — `codex exec`, GPT-5.4 Mini, Extra High reasoning, workspace-write sandboxing, and never-ask approval policy injected by Sidekick | ✅ v0.6.2 |
 
 More sidekicks planned.
 
@@ -46,7 +47,7 @@ After installation, runtime readiness is checked when you start Forge or Kay del
 Sidekick keeps host-agnostic workflow sources under `skills/`. Host-facing skill bundles are generated from that source tree:
 
 ```text
-skills/           Canonical Forge and Kay workflow sources
+skills/           Canonical Forge, Kay, and Codex workflow sources
 agents/claude/    Generated Claude Code skill surface
 agents/codex/     Generated Codex skill surface
 scripts/          Host-surface renderer and maintenance helpers
@@ -84,6 +85,24 @@ The plugin manifests point at the generated host bundle for each runtime, while 
 - **Keeps** a project-local audit index at `.kay/conversations.idx`; the canonical Kay workflows live in the delegate and stop skills, with the legacy flat alias preserved only as a hidden compatibility entry at `skills/codex-delegate.md`.
 
 The website setup shortcuts `/forge:delegate` and `/kay:delegate` are shipped alias skills. They route to the canonical `/forge` and `kay-delegate` workflows.
+
+## Codex — OpenAI Codex CLI Sidekick
+
+### What it does
+- **Uses** the local OpenAI Codex CLI as a child execution runtime instead of the OSS Kay runtime.
+- **Activates** Codex work through `codex-delegate`; active Codex mode launches `codex exec` and Sidekick injects `-m gpt-5.4-mini`, `-c model_reasoning_effort=xhigh`, `--sandbox workspace-write`, and `--ask-for-approval never`.
+- **Rejects** the legacy Kay `codex` compatibility alias when Codex mode is active; the real OpenAI Codex CLI must be on `PATH`.
+- **Keeps** a project-local audit index at `.codex/conversations.idx`; the canonical Codex workflows live in `skills/codex-delegate/SKILL.md` and `skills/codex-stop/SKILL.md`.
+- **Supports** both Claude Code and Codex hosts through the same host-neutral canonical skill source and generated host bundles.
+
+### Codex flow
+
+```
+You → Claude Code or Codex (plan + communicate) → Codex CLI (implement + commit) → host AI (review + report)
+```
+
+Host AI handles: architecture, explanations, research, code review
+Codex handles: writing files, features, tests, git commits
 
 ### Kay flow
 

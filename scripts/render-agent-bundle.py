@@ -70,7 +70,99 @@ def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
             f"`codex-stop/SKILL.md` in this generated {agent} skill root "
             f"(`agents/{agent}/codex-stop/SKILL.md` in the repository)",
         ),
+        (
+            "Prefer skills/kay-delegate/SKILL.md.",
+            "Prefer the generated host skill at kay-delegate/SKILL.md.",
+        ),
+        (
+            "[`skills/kay-delegate/SKILL.md`](./kay-delegate/SKILL.md)",
+            "[`kay-delegate/SKILL.md`](./kay-delegate/SKILL.md)",
+        ),
+        (
+            "`skills/kay-delegate/SKILL.md`",
+            f"`kay-delegate/SKILL.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/kay-delegate/SKILL.md` in the repository)",
+        ),
+        (
+            "`skills/kay-stop/SKILL.md`",
+            f"`kay-stop/SKILL.md` in this generated {agent} skill root "
+            f"(`agents/{agent}/kay-stop/SKILL.md` in the repository)",
+        ),
     ]
+
+
+def host_logic_replacements(agent: str) -> list[tuple[str, str]]:
+    host_home_blocks = [
+        (
+            """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+    SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+  elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.claude"
+  else
+""",
+            "    ",
+            "  ",
+            "",
+        ),
+        (
+            """   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+     if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+       SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+     elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
+       SIDEKICK_HOST_HOME="${HOME}/.claude"
+     else
+""",
+            "       ",
+            "     ",
+            "   ",
+        ),
+    ]
+
+    replacements: list[tuple[str, str]] = []
+    for host_home_block, echo_indent, inner_fi_indent, outer_fi_indent in host_home_blocks:
+        replacements.extend(
+            [
+                (
+                    host_home_block
+                    + f'{echo_indent}echo "No host home found for Forge mode"; exit 1\n'
+                    + f"{inner_fi_indent}fi\n"
+                    + f"{outer_fi_indent}fi\n",
+                    "",
+                ),
+                (
+                    host_home_block
+                    + f'{echo_indent}echo "No host home found for Kay mode"; exit 1\n'
+                    + f"{inner_fi_indent}fi\n"
+                    + f"{outer_fi_indent}fi\n",
+                    "",
+                ),
+                (
+                    host_home_block
+                    + f'{echo_indent}echo "No host home found for Codex mode"; exit 1\n'
+                    + f"{inner_fi_indent}fi\n"
+                    + f"{outer_fi_indent}fi\n",
+                    "",
+                ),
+            ]
+        )
+
+    if agent == "codex":
+        replacements.append(
+            (
+                'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"',
+                'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"',
+            )
+        )
+        return replacements
+
+    replacements.append(
+        (
+            'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"',
+            'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"',
+        )
+    )
+    return replacements
 
 
 def rewrite_file(path: pathlib.Path, agent: str) -> bool:
@@ -81,6 +173,8 @@ def rewrite_file(path: pathlib.Path, agent: str) -> bool:
 
     updated = text
     for old, new in HOST_REPLACEMENTS[agent]:
+        updated = updated.replace(old, new)
+    for old, new in host_logic_replacements(agent):
         updated = updated.replace(old, new)
     for old, new in host_alias_replacements(agent):
         updated = updated.replace(old, new)

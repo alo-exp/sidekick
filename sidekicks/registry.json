@@ -20,9 +20,8 @@
     "idx_dir": ".kay",
     "delegate_command": "kay exec",
     "stop_command": "/kay-stop",
-    "skill": "skills/codex-delegate/SKILL.md",
-    "skill_legacy": "skills/codex-delegate.md",
-    "output_style": "output-styles/codex.md",
+    "skill": "skills/kay-delegate/SKILL.md",
+    "output_style": "output-styles/kay.md",
     "install": {
       "kind": "codex-install-script",
       "version": "v0.9.4",
@@ -32,6 +31,22 @@
       "alias": "code",
       "codex_alias": "codex",
       "fallback_alias": "coder"
+    }
+  },
+  "codex": {
+    "display_name": "Codex",
+    "marker_file": ".codex/sessions/${CODEX_THREAD_ID}/.codex-delegation-active",
+    "idx_dir": ".codex",
+    "delegate_command": "codex exec",
+    "stop_command": "/codex-stop",
+    "skill": "skills/codex-delegate/SKILL.md",
+    "skill_legacy": "skills/codex-delegate.md",
+    "output_style": "output-styles/codex.md",
+    "install": {
+      "kind": "openai-codex-cli",
+      "binary": "codex",
+      "model": "gpt-5.4-mini",
+      "reasoning_effort": "xhigh"
     }
   }
 }

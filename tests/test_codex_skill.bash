@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Kay skill surface tests
+# Sidekick Plugin — Codex and Kay skill surface tests
 # =============================================================================
 
 set -euo pipefail
@@ -8,9 +8,13 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "${SCRIPT_DIR}")"
-DELEGATE_FILE="${PLUGIN_DIR}/skills/codex-delegate/SKILL.md"
-DELEGATE_LEGACY_FILE="${PLUGIN_DIR}/skills/codex-delegate.md"
-STOP_FILE="${PLUGIN_DIR}/skills/codex-stop/SKILL.md"
+CODEX_DELEGATE_FILE="${PLUGIN_DIR}/skills/codex-delegate/SKILL.md"
+CODEX_DELEGATE_LEGACY_FILE="${PLUGIN_DIR}/skills/codex-delegate.md"
+CODEX_STOP_FILE="${PLUGIN_DIR}/skills/codex-stop/SKILL.md"
+KAY_DELEGATE_FILE="${PLUGIN_DIR}/skills/kay-delegate/SKILL.md"
+KAY_STOP_FILE="${PLUGIN_DIR}/skills/kay-stop/SKILL.md"
+KAY_ALIAS_FILE="${PLUGIN_DIR}/skills/kay:delegate/SKILL.md"
+REGISTRY_FILE="${PLUGIN_DIR}/sidekicks/registry.json"
 REMOVED_CODEX_FILE="${PLUGIN_DIR}/skills/codex/SKILL.md"
 REMOVED_CODEX_LEGACY="${PLUGIN_DIR}/skills/codex.md"
 REMOVED_HISTORY_FILE="${PLUGIN_DIR}/skills/codex-history/SKILL.md"
@@ -19,124 +23,162 @@ green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 assert_fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
 
-[ -f "${DELEGATE_FILE}" ] || { echo "ERROR: ${DELEGATE_FILE} missing"; exit 1; }
-[ -f "${DELEGATE_LEGACY_FILE}" ] || { echo "ERROR: ${DELEGATE_LEGACY_FILE} missing"; exit 1; }
-[ -f "${STOP_FILE}" ] || { echo "ERROR: ${STOP_FILE} missing"; exit 1; }
+for path in \
+  "${CODEX_DELEGATE_FILE}" \
+  "${CODEX_DELEGATE_LEGACY_FILE}" \
+  "${CODEX_STOP_FILE}" \
+  "${KAY_DELEGATE_FILE}" \
+  "${KAY_STOP_FILE}" \
+  "${KAY_ALIAS_FILE}" \
+  "${REGISTRY_FILE}"; do
+  [ -f "${path}" ] || { echo "ERROR: ${path} missing"; exit 1; }
+done
 
-echo "=== T1: canonical kay-delegate frontmatter ==="
-if grep -q '^---$' "${DELEGATE_FILE}" \
-  && grep -q '^name: kay-delegate' "${DELEGATE_FILE}"; then
+echo "=== T1: canonical codex-delegate frontmatter ==="
+if grep -q '^---$' "${CODEX_DELEGATE_FILE}" \
+  && grep -q '^name: codex-delegate' "${CODEX_DELEGATE_FILE}"; then
+  assert_pass "codex-delegate frontmatter present"
+else
+  assert_fail "codex-delegate frontmatter" "missing YAML frontmatter or name: codex-delegate"
+fi
+
+echo "=== T2: codex-delegate documents the OpenAI Codex CLI contract ==="
+if grep -q 'codex exec' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'gpt-5.4-mini' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'xhigh' "${CODEX_DELEGATE_FILE}" \
+  && grep -q -- '--sandbox workspace-write' "${CODEX_DELEGATE_FILE}" \
+  && grep -q -- '--ask-for-approval never' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'OpenAI Codex CLI' "${CODEX_DELEGATE_FILE}" \
+  && ! grep -q 'kay exec --full-auto' "${CODEX_DELEGATE_FILE}"; then
+  assert_pass "codex-delegate documents Codex CLI routing"
+else
+  assert_fail "codex-delegate routing" "missing Codex CLI command/model/reasoning guidance or still documents Kay runtime"
+fi
+
+echo "=== T3: codex-delegate stays canonical and host-neutral ==="
+if grep -q 'SIDEKICK_HOST_HOME' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'SIDEKICK_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'SIDEKICK_HOST_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'CODEX_THREAD_ID' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'CLAUDE_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
+  && grep -q '\.codex-delegation-active' "${CODEX_DELEGATE_FILE}" \
+  && grep -q '\.sidekick/sessions' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'active-sidekick' "${CODEX_DELEGATE_FILE}" \
+  && grep -q 'Codex sidekick mode activated' "${CODEX_DELEGATE_FILE}" \
+  && ! grep -q '\.claude/sessions' "${CODEX_DELEGATE_FILE}" \
+  && ! grep -q '\.codex/sessions' "${CODEX_DELEGATE_FILE}"; then
+  assert_pass "codex-delegate keeps host-neutral activation source"
+else
+  assert_fail "codex-delegate activation marker" "missing host-neutral session marker flow or still hard-codes a host session path"
+fi
+
+echo "=== T4: codex-stop frontmatter and host-neutral marker handling ==="
+if grep -q '^---$' "${CODEX_STOP_FILE}" \
+  && grep -q '^name: codex-stop' "${CODEX_STOP_FILE}" \
+  && grep -q 'SIDEKICK_HOST_HOME' "${CODEX_STOP_FILE}" \
+  && grep -q 'SIDEKICK_SESSION_ID' "${CODEX_STOP_FILE}" \
+  && grep -q 'SIDEKICK_HOST_SESSION_ID' "${CODEX_STOP_FILE}" \
+  && grep -q 'CODEX_THREAD_ID' "${CODEX_STOP_FILE}" \
+  && grep -q 'CLAUDE_SESSION_ID' "${CODEX_STOP_FILE}" \
+  && grep -q '\.codex-delegation-active' "${CODEX_STOP_FILE}" \
+  && grep -q 'active-sidekick' "${CODEX_STOP_FILE}" \
+  && grep -q 'Direct-host mode restored' "${CODEX_STOP_FILE}" \
+  && ! grep -q '\.claude/sessions' "${CODEX_STOP_FILE}" \
+  && ! grep -q '\.codex/sessions' "${CODEX_STOP_FILE}"; then
+  assert_pass "codex-stop keeps host-neutral marker workflow"
+else
+  assert_fail "codex-stop" "missing host-neutral session resolution or still hard-codes a host session path"
+fi
+
+echo "=== T5: canonical kay-delegate frontmatter ==="
+if grep -q '^---$' "${KAY_DELEGATE_FILE}" \
+  && grep -q '^name: kay-delegate' "${KAY_DELEGATE_FILE}"; then
   assert_pass "kay-delegate frontmatter present"
 else
-  assert_fail "frontmatter" "missing YAML frontmatter or name: kay-delegate"
+  assert_fail "kay-delegate frontmatter" "missing YAML frontmatter or name: kay-delegate"
 fi
 
-echo "=== T2: kay-delegate contains runtime delegation guidance ==="
-if grep -q 'kay exec --full-auto' "${DELEGATE_FILE}" \
-  && grep -q 'for candidate in kay code codex coder' "${DELEGATE_FILE}" \
-  && grep -q -- '--version 2>/dev/null' "${DELEGATE_FILE}" \
-  && grep -q "grep -qiE '^kay" "${DELEGATE_FILE}" \
-  && grep -q 'exec --help' "${DELEGATE_FILE}" \
-  && grep -q 'No Kay-compatible runtime found' "${DELEGATE_FILE}" \
-  && grep -q 'compatibility aliases' "${DELEGATE_FILE}" \
-    && ! grep -q 'code exec --full-auto' "${DELEGATE_FILE}"; then
-  assert_pass "Kay runtime command present, identity-checked, and deprecated code exec copy removed"
+echo "=== T6: kay-delegate remains the Kay runtime contract ==="
+if grep -q 'kay exec --full-auto' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'for candidate in kay code codex coder' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'No Kay-compatible runtime found' "${KAY_DELEGATE_FILE}" \
+  && grep -q '\.kay-delegation-active' "${KAY_DELEGATE_FILE}" \
+  && ! grep -q 'gpt-5.4-mini' "${KAY_DELEGATE_FILE}"; then
+  assert_pass "Kay canonical workflow remains Kay-specific"
 else
-  assert_fail "delegation guidance" "missing Kay runtime command, identity check, compatibility note, or still documents code exec"
+  assert_fail "kay canonical workflow" "missing Kay runtime guidance or polluted with Codex-only routing"
 fi
 
-echo "=== T3: kay-delegate uses host-neutral planner wording ==="
-if grep -q 'The host AI plans, explains, and verifies' "${DELEGATE_FILE}" \
-  && grep -q 'Host AI = Brain' "${DELEGATE_FILE}" \
-  && ! grep -q 'Claude plans, explains, and verifies' "${DELEGATE_FILE}" \
-  && ! grep -q 'Claude = Brain' "${DELEGATE_FILE}"; then
-  assert_pass "Kay delegate planner wording is host-neutral"
+echo "=== T7: kay-stop exists and preserves Kay audit state ==="
+if grep -q '^---$' "${KAY_STOP_FILE}" \
+  && grep -q '^name: kay-stop' "${KAY_STOP_FILE}" \
+  && grep -q '\.kay-delegation-active' "${KAY_STOP_FILE}" \
+  && grep -q '\.kay/conversations.idx' "${KAY_STOP_FILE}"; then
+  assert_pass "kay-stop marker workflow present"
 else
-  assert_fail "host-neutral planner wording" "missing host-neutral wording or stale Claude-only planner wording present"
+  assert_fail "kay-stop" "missing Kay marker workflow or audit preservation note"
 fi
 
-echo "=== T4: kay-delegate workflow sections present ==="
-if grep -q 'STEP 0' "${DELEGATE_FILE}" \
-  && grep -q 'Activate Kay Mode' "${DELEGATE_FILE}" \
-  && grep -q 'Delegation Protocol' "${DELEGATE_FILE}" \
-  && grep -q 'Native Workflow' "${DELEGATE_FILE}"; then
-  assert_pass "step structure present"
+echo "=== T8: legacy flat wrapper now points to Codex canonical skill ==="
+if grep -q '^---$' "${CODEX_DELEGATE_LEGACY_FILE}" \
+  && grep -q '^name: codex-delegate' "${CODEX_DELEGATE_LEGACY_FILE}" \
+  && grep -q '^user-invocable: false' "${CODEX_DELEGATE_LEGACY_FILE}" \
+  && grep -q 'skills/codex-delegate/SKILL.md' "${CODEX_DELEGATE_LEGACY_FILE}" \
+  && grep -qi 'deprecated' "${CODEX_DELEGATE_LEGACY_FILE}" \
+  && grep -q '^# Codex' "${CODEX_DELEGATE_LEGACY_FILE}" \
+  && ! grep -q '^# Kay' "${CODEX_DELEGATE_LEGACY_FILE}"; then
+  assert_pass "legacy codex wrapper points to Codex canonical skill"
 else
-  assert_fail "workflow structure" "missing expected sections"
+  assert_fail "legacy codex wrapper" "missing canonical Codex reference, hidden flag, or updated wrapper wording"
 fi
 
-echo "=== T5: kay-delegate activates the session marker ==="
-if grep -q 'SIDEKICK_SESSION_ID' "${DELEGATE_FILE}" \
-  && grep -q 'SIDEKICK_HOST_SESSION_ID' "${DELEGATE_FILE}" \
-	  && ! grep -q 'CODEX_THREAD_ID' "${DELEGATE_FILE}" \
-	  && ! grep -q 'CLAUDE_SESSION_ID' "${DELEGATE_FILE}" \
-	  && grep -q '\.kay/sessions' "${DELEGATE_FILE}" \
-	  && grep -q '\.kay-delegation-active' "${DELEGATE_FILE}" \
-	  && grep -q '\.sidekick/sessions' "${DELEGATE_FILE}" \
-	  && grep -q 'active-sidekick' "${DELEGATE_FILE}" \
-	  && grep -q 'Claude Code and Codex hosts both follow' "${DELEGATE_FILE}"; then
-  assert_pass "Kay activation marker workflow supports Claude Code and Codex hosts"
+echo "=== T9: /kay:delegate alias points at the explicit Kay canonical skill ==="
+if grep -q '^name: kay:delegate' "${KAY_ALIAS_FILE}" \
+  && grep -q 'skills/kay-delegate/SKILL.md' "${KAY_ALIAS_FILE}" \
+  && grep -q '/kay-stop' "${KAY_ALIAS_FILE}" \
+  && ! grep -q 'skills/codex-delegate/SKILL.md' "${KAY_ALIAS_FILE}"; then
+  assert_pass "Kay delegate alias references explicit Kay canonical skill"
 else
-  assert_fail "Kay activation marker" "missing session marker creation or host support wording"
+  assert_fail "Kay delegate alias" "missing /kay:delegate backing skill or still points at codex-delegate"
 fi
 
-echo "=== T6: kay-stop frontmatter and marker handling ==="
-if grep -q '^---$' "${STOP_FILE}" \
-  && grep -q '^name: kay-stop' "${STOP_FILE}" \
-  && grep -q 'SIDEKICK_SESSION_ID' "${STOP_FILE}" \
-  && grep -q 'SIDEKICK_HOST_SESSION_ID' "${STOP_FILE}" \
-	  && ! grep -q 'CODEX_THREAD_ID' "${STOP_FILE}" \
-	  && ! grep -q 'CLAUDE_SESSION_ID' "${STOP_FILE}" \
-	  && grep -q '\.kay/sessions' "${STOP_FILE}" \
-	  && grep -q '\.kay-delegation-active' "${STOP_FILE}" \
-	  && grep -q 'active-sidekick' "${STOP_FILE}"; then
-  assert_pass "kay-stop marker workflow mirrors host session resolution"
+echo "=== T10: sidekick registry exposes separate Codex and Kay entries ==="
+if python3 - "${REGISTRY_FILE}" <<'PY'
+import json
+import sys
+
+registry = json.load(open(sys.argv[1], "r", encoding="utf-8"))
+
+codex = registry["codex"]
+kay = registry["kay"]
+
+assert codex["display_name"] == "Codex"
+assert codex["marker_file"] == ".codex/sessions/${CODEX_THREAD_ID}/.codex-delegation-active"
+assert codex["idx_dir"] == ".codex"
+assert codex["delegate_command"] == "codex exec"
+assert codex["stop_command"] == "/codex-stop"
+assert codex["skill"] == "skills/codex-delegate/SKILL.md"
+assert codex["skill_legacy"] == "skills/codex-delegate.md"
+assert codex["output_style"] == "output-styles/codex.md"
+
+assert kay["display_name"] == "Kay"
+assert kay["skill"] == "skills/kay-delegate/SKILL.md"
+assert kay["stop_command"] == "/kay-stop"
+assert kay["output_style"] == "output-styles/kay.md"
+PY
+then
+  assert_pass "registry separates Codex and Kay runtime surfaces"
 else
-  assert_fail "kay-stop" "missing YAML frontmatter, name, host session resolution, or marker handling"
+  assert_fail "sidekick registry" "missing Codex entry or Kay still points at Codex-owned surfaces"
 fi
 
-echo "=== T6b: kay-stop keeps Kay-primary history wording ==="
-if grep -q 'Kay runtime history' "${STOP_FILE}" \
-  && grep -q 'legacy `~/.code/history.jsonl` compatibility history file' "${STOP_FILE}" \
-  && ! grep -q 'native `~/.code/history.jsonl`' "${STOP_FILE}"; then
-  assert_pass "kay-stop history wording is Kay-primary"
-else
-  assert_fail "kay-stop history wording" "stale native ~/.code compatibility wording present"
-fi
-
-echo "=== T7: legacy alias points to canonical kay-delegate skill ==="
-if grep -q '^---$' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q 'skills/codex-delegate/SKILL.md' "${DELEGATE_LEGACY_FILE}" \
-  && grep -qi 'deprecated' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q '^name: kay-delegate' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q '^user-invocable: false' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q '^# Kay' "${DELEGATE_LEGACY_FILE}" \
-  && grep -q 'compatibility aliases only' "${DELEGATE_LEGACY_FILE}" \
-  && ! grep -q 'Code CLI' "${DELEGATE_LEGACY_FILE}" \
-  && ! grep -q '^# Code' "${DELEGATE_LEGACY_FILE}"; then
-  assert_pass "legacy alias is hidden, Kay-primary, and points to canonical delegate skill"
-else
-  assert_fail "legacy alias" "missing YAML frontmatter, canonical reference, deprecation note, alias name, hidden flag, or Kay-primary compatibility wording"
-fi
-
-echo "=== T8: removed codex canonical/history skills are absent ==="
+echo "=== T11: removed codex canonical/history skills stay absent ==="
 if [ ! -f "${REMOVED_CODEX_FILE}" ] \
   && [ ! -f "${REMOVED_CODEX_LEGACY}" ] \
   && [ ! -f "${REMOVED_HISTORY_FILE}" ]; then
-  assert_pass "codex, codex legacy, and codex-history files removed"
+  assert_pass "removed codex legacy/history skill files stay absent"
 else
-  assert_fail "removed skills" "one or more removed codex skill files still present"
-fi
-
-echo "=== T9: /kay:delegate alias is backed by a shipped skill ==="
-KAY_ALIAS="${PLUGIN_DIR}/skills/kay:delegate/SKILL.md"
-if [ -f "${KAY_ALIAS}" ] \
-  && grep -q '^name: kay:delegate' "${KAY_ALIAS}" \
-  && grep -q 'skills/codex-delegate/SKILL.md' "${KAY_ALIAS}" \
-  && grep -q '/kay-stop' "${KAY_ALIAS}"; then
-  assert_pass "Kay delegate alias skill present"
-else
-  assert_fail "Kay delegate alias" "missing /kay:delegate backing skill or canonical references"
+  assert_fail "removed skill files" "one or more removed codex legacy/history files still present"
 fi
 
 echo ""

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Sidekick Plugin — Kay Progress Surface (PostToolUse hook)
+# Sidekick Plugin — Kay/Codex Progress Surface (PostToolUse hook)
 # =============================================================================
 
 set -euo pipefail
@@ -12,12 +12,9 @@ source "${HOOK_DIR}/lib/enforcer-utils.sh"
 # shellcheck source=hooks/lib/sidekick-registry.sh
 source "${HOOK_DIR}/lib/sidekick-registry.sh"
 
-SIDEKICK_NAME="kay"
-MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
+SIDEKICK_NAME=""
+MARKER_FILE=""
 
-# -----------------------------------------------------------------------------
-# strip_ansi — remove control sequences before summarizing output.
-# -----------------------------------------------------------------------------
 strip_ansi() {
   perl -0777 -pe '
     s/\x1b\[[0-9;?]*[ -\/]*[@-~]//g;
@@ -37,43 +34,68 @@ extract_status_block() {
   '
 }
 
-is_kay_exec_command() {
+is_delegate_exec_command() {
   local cmd="$1"
-  python3 - "$cmd" <<'PY'
+  python3 - "$cmd" "$SIDEKICK_NAME" <<'PY'
 from pathlib import Path
 import shlex
 import sys
 
+cmd, mode = sys.argv[1:3]
+
 try:
-    tokens = shlex.split(sys.argv[1])
+    tokens = shlex.split(cmd)
 except Exception:
     raise SystemExit(1)
 
-aliases = {"kay", "code", "codex", "coder"}
+aliases = {"kay", "code", "codex", "coder"} if mode == "kay" else {"codex"}
+
 if len(tokens) >= 2 and tokens[0] in aliases and tokens[1] == "exec":
     raise SystemExit(0)
 
 for index, token in enumerate(tokens):
     if Path(token).name == "sidekick-safe-runner.sh":
         rest = tokens[index + 1:]
-        if len(rest) >= 3 and rest[0] == "kay" and rest[1] in aliases and rest[2] == "exec":
+        if mode == "kay" and len(rest) >= 3 and rest[0] == "kay" and rest[1] in aliases and rest[2] == "exec":
+            raise SystemExit(0)
+        if mode == "codex" and len(rest) >= 3 and rest[0] == "codex" and rest[1] == "codex" and rest[2] == "exec":
             raise SystemExit(0)
 
 raise SystemExit(1)
 PY
 }
 
+summary_prefix() {
+  case "$SIDEKICK_NAME" in
+    kay) printf '%s' '[KAY-SUMMARY]' ;;
+    codex) printf '%s' '[CODEX-SUMMARY]' ;;
+  esac
+}
+
+display_name() {
+  sidekick_registry_get "$SIDEKICK_NAME" '.[$sidekick].display_name'
+}
+
+stop_command() {
+  sidekick_registry_get "$SIDEKICK_NAME" '.[$sidekick].stop_command'
+}
+
 main() {
-  sidekick_active_mode_allows "$SIDEKICK_NAME" || exit 0
+  SIDEKICK_NAME="$(sidekick_active_mode 2>/dev/null || true)"
+  case "$SIDEKICK_NAME" in
+    kay|codex) ;;
+    *) exit 0 ;;
+  esac
 
   if ! command -v jq >/dev/null 2>&1; then
     exit 0
   fi
 
+  MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
   [[ -n "$MARKER_FILE" ]] || exit 0
   [[ -f "$MARKER_FILE" ]] || exit 0
 
-  local input tool_name cmd output summary header footer payload
+  local input tool_name cmd output summary header footer payload prefix name
   input="$(head -c 2097152)"
   tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
   [[ "$tool_name" = "Bash" ]] || exit 0
@@ -81,7 +103,7 @@ main() {
   cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
   [[ -n "$cmd" ]] || exit 0
   cmd="$(strip_env_prefix "$cmd")"
-  is_kay_exec_command "$cmd" || exit 0
+  is_delegate_exec_command "$cmd" || exit 0
 
   output="$(printf '%s' "$input" | jq -r '.tool_response.output // .tool_response.stdout // empty' 2>/dev/null || true)"
   [[ -n "$output" ]] || exit 0
@@ -89,9 +111,11 @@ main() {
   summary="$(printf '%s' "$output" | strip_ansi | extract_status_block | sidekick_redact_sensitive_text)"
   [[ -n "$summary" ]] || exit 0
 
-  header="[KAY-SUMMARY] [UNTRUSTED] === Kay task complete ==="
-  footer="[KAY-SUMMARY] [UNTRUSTED] Stop delegation: $(jq -r --arg sidekick "$SIDEKICK_NAME" '.[$sidekick].stop_command' "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../sidekicks/registry.json")"
-  payload="$(printf '%s\n%s\n%s' "$header" "$(printf '%s' "$summary" | sed 's/^/[KAY-SUMMARY] [UNTRUSTED] /')" "$footer")"
+  prefix="$(summary_prefix)"
+  name="$(display_name)"
+  header="${prefix} [UNTRUSTED] === ${name} task complete ==="
+  footer="${prefix} [UNTRUSTED] Stop delegation: $(stop_command)"
+  payload="$(printf '%s\n%s\n%s' "$header" "$(printf '%s' "$summary" | sed "s/^/${prefix} [UNTRUSTED] /")" "$footer")"
 
   jq -cn --arg ctx "$payload" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'
 }

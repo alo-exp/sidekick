@@ -170,6 +170,8 @@ try:
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
     ]
+    expected_counts = {name: 1 for name in expected_names}
+    actual_counts = {name: names.count(name) for name in expected_names}
     missing = sorted(set(expected_names).difference(names))
     extras = sorted(set(names).difference(expected_names))
     print("skill_names:", ", ".join(names))
@@ -177,21 +179,24 @@ try:
         raise SystemExit(f"missing required skills: {', '.join(missing)}")
     if extras:
         raise SystemExit(f"unexpected extra skills: {', '.join(extras)}")
+    if actual_counts != expected_counts:
+        raise SystemExit(
+            "duplicate or repeated plugin/read skill names: "
+            + ", ".join(f"{name}={actual_counts[name]}" for name in expected_names)
+        )
     canonical_positions = [names.index(name) for name in canonical_order]
     if canonical_positions != sorted(canonical_positions):
         raise SystemExit("canonical skill order mismatch: " + ", ".join(names))
     manifest = json.loads((sidekick_dir / ".codex-plugin" / "plugin.json").read_text())
-    if manifest.get("skills") != "./agents/codex/":
-        raise SystemExit("Codex manifest must select ./agents/codex/ as the skill root")
+    if manifest.get("skills") != "./skills/":
+        raise SystemExit("Codex manifest must select ./skills/ as the skill root")
     alias_expectations = {
-        "agents/codex/forge:delegate/SKILL.md": [
+        "skills/forge:delegate/SKILL.md": [
             "name: forge:delegate",
-            "generated codex skill root",
             "canonical `/forge` workflow",
         ],
-        "agents/codex/kay:delegate/SKILL.md": [
+        "skills/kay:delegate/SKILL.md": [
             "name: kay:delegate",
-            "generated codex skill root",
             "canonical `kay-delegate` workflow",
         ],
     }
