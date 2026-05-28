@@ -12,7 +12,7 @@
       "source": {
         "source": "github",
         "repo": "alo-exp/sidekick",
-        "ref": "a3f38dd1a32a33ab5eef3f5d6dc22a8b46dd2c3a"
+        "ref": "8ec4afa31f3df042e53e3e5448e0afee7cf4d64d"
       },
       "description": "Sidekick — a collection of AI coding agents as Claude sidekicks. Forge, Kay, and Codex are the current sidekicks: Forge and Kay can be installed/configured through Sidekick, while Codex delegates to the local OpenAI Codex CLI and keeps Claude in the orchestrator role.",
       "version": "0.6.2",
