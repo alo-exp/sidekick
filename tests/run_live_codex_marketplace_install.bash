@@ -234,13 +234,17 @@ echo "=== marketplace_skill_surface ==="
 if [ -f "${SKILL_ROOT}/codex-delegate/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/codex-delegate.md" ] \
   && [ -f "${SKILL_ROOT}/codex-stop/SKILL.md" ] \
+  && [ -f "${SKILL_ROOT}/kay-delegate/SKILL.md" ] \
+  && [ -f "${SKILL_ROOT}/kay-stop/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/forge/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/forge-stop/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex-history/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/forge-history/SKILL.md" ] \
-  && grep -q '^name: kay-delegate' "${SKILL_ROOT}/codex-delegate/SKILL.md" \
-  && grep -q '\.kay-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+  && grep -q '^name: codex-delegate' "${SKILL_ROOT}/codex-delegate/SKILL.md" \
+  && grep -q '\.codex-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+  && grep -q '^name: kay-delegate' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
+  && grep -q '\.kay-delegation-active' "${SKILL_ROOT}/kay-stop/SKILL.md" \
   && grep -q '^name: forge-delegate' "${SKILL_ROOT}/forge/SKILL.md" \
   && grep -q '\.forge-delegation-active' "${SKILL_ROOT}/forge-stop/SKILL.md" \
   && grep -q '/forge-stop' "${SKILL_ROOT}/forge/SKILL.md" \
@@ -339,6 +343,8 @@ try:
                 names.append(skill["name"])
     print("skill_names:", ", ".join(names))
     expected = [
+        "sidekick:codex-delegate",
+        "sidekick:codex-stop",
         "sidekick:forge-delegate",
         "sidekick:forge-stop",
         "sidekick:forge:delegate",
@@ -414,10 +420,14 @@ if [ -d "${INSTALLED_ROOT}" ]; then
     && ! grep -Fq 'CLAUDE_PROJECT_DIR' "${INSTALLED_ROOT}/hooks/lib/sidekick-registry.sh" \
     && grep -Fq '.codex/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
     && ! grep -Fq '.claude/' "${INSTALLED_ROOT}/sidekicks/registry.json" \
-    && ! grep -Fq '~/.claude' "${SKILL_ROOT}/forge/SKILL.md" \
-    && ! grep -Fq '~/.claude' "${SKILL_ROOT}/forge-stop/SKILL.md" \
-    && grep -Fq '${HOME}/.kay/sessions' "${SKILL_ROOT}/codex-stop/SKILL.md" \
-    && ! grep -Fq '~/.claude' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+    && grep -Fq 'SIDEKICK_HOST_SESSION_ID' "${SKILL_ROOT}/forge/SKILL.md" \
+    && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/forge/SKILL.md" \
+    && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/forge/SKILL.md" \
+    && ! grep -Fq '${HOME}/.codex/sessions/${SIDEKICK_SESSION}' "${SKILL_ROOT}/forge/SKILL.md" \
+    && grep -Fq 'SIDEKICK_HOST_HOME' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+    && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+    && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+    && grep -Fq '.codex-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && python3 - "${CODE_HOME}/.Codex" "${CODE_HOME}/.codex" <<'PY' >/dev/null
 import os
 from pathlib import Path
@@ -433,9 +443,9 @@ except FileNotFoundError:
     raise SystemExit(0)
 PY
     then
-    pass "installed marketplace surface rewrote to Codex-only paths without touching real HOME"
+    pass "installed marketplace cache rewrote runtime surfaces while preserving canonical host-neutral skills"
   else
-    fail "installed marketplace surface" "host rewrite did not remove Claude-specific paths from ${INSTALLED_ROOT}"
+    fail "installed marketplace surface" "installed cache contents do not match the expected Codex runtime rewrite and canonical skill surface"
   fi
 else
   fail "installed marketplace surface" "could not locate the installed Sidekick marketplace tree"
