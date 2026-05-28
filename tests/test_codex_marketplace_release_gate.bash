@@ -128,6 +128,17 @@ else
   assert_fail "kay wrapper transcript release gate" "$(cat /tmp/sidekick-marketplace-kay-wrapper.out)"
 fi
 
+echo "=== T6: release mode resolves marketplace pin from SIDEKICK_HOST_HOME ==="
+rm -rf "${FIXTURE_REPO}/.kay"
+HOST_HOME_FIXTURE="${TMP_ROOT}/host-home"
+mkdir -p "${HOST_HOME_FIXTURE}/projects"
+ln -s "${MARKETPLACE_REPO}" "${HOST_HOME_FIXTURE}/projects/codex-plugins"
+if SIDEKICK_HOST_HOME="${HOST_HOME_FIXTURE}" SIDEKICK_RELEASE_GATE=1 bash "${FIXTURE_REPO}/tests/test_codex_marketplace_manifest.bash" >/tmp/sidekick-marketplace-host-home.out 2>&1; then
+  assert_pass "release-mode marketplace check resolves the host-home marketplace pin"
+else
+  assert_fail "host-home marketplace release gate" "$(cat /tmp/sidekick-marketplace-host-home.out)"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"
