@@ -40,6 +40,7 @@ MARKER_ACTIVATION_COUNTER=0
 activate_marker() {
   MARKER_ACTIVATION_COUNTER=$((MARKER_ACTIVATION_COUNTER+1))
   printf 'activation-%s-%s\n' "${TEST_SESSION_ID}" "${MARKER_ACTIVATION_COUNTER}" > "${MARKER_FILE}"
+  printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
 }
 
 # Forge stub: exits with the numeric code in $HOME/forge-stub-exit, default 0.
@@ -89,8 +90,9 @@ fi
 
 # -----------------------------------------------------------------------------
 echo "=== test_exit2_on_malformed_json ==="
+activate_marker
 set +e
-_out="$(HOME="${HOME_SANDBOX}" bash "${HOOK_FILE}" <<< 'not json' 2>/tmp/enf_err_$$)"
+_out="$(HOME="${HOME_SANDBOX}" SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" bash "${HOOK_FILE}" <<< 'not json' 2>/tmp/enf_err_$$)"
 _rc=$?
 _err="$(cat /tmp/enf_err_$$ 2>/dev/null || true)"
 rm -f /tmp/enf_err_$$
@@ -124,9 +126,6 @@ else
   assert_fail "test_gen_uuid_honors_test_override" "expected '${_fixed}' got '${_uuid}'"
 fi
 
-# Activate marker for decision-logic tests.
-activate_marker
-
 # Helper: pipe stdin JSON to the hook with sandboxed HOME + CLAUDE_PROJECT_DIR +
 # stubbed forge on PATH, capture stdout + rc.
 run_hook() {
@@ -152,6 +151,7 @@ else
   assert_fail "test_noop_when_kay_is_active_sidekick" "expected empty, got: '${_out}'"
 fi
 rm -f "${ACTIVE_MODE_FILE}"
+printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
 
 # -----------------------------------------------------------------------------
 _assert_deny_with_forge_reason() {

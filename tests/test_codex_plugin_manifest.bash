@@ -43,7 +43,7 @@ import sys
 
 data = json.load(open(sys.argv[1]))
 assert data["name"] == "sidekick"
-assert data["skills"] == "./agents/codex/"
+assert data["skills"] == "./skills/"
 assert "commands" not in data
 assert data["hooks"] == "./hooks/hooks.json"
 assert "outputStyles" not in data
@@ -51,7 +51,7 @@ assert data["interface"]["displayName"] == "Sidekick"
 assert "Codex" in data["interface"]["shortDescription"]
 PY
 then
-  assert_pass "Codex manifest uses the generated Codex skill surface and keeps hook wiring registered"
+  assert_pass "Codex manifest points at the canonical skills surface and keeps hook wiring registered"
 else
   assert_fail "manifest core fields" "missing expected manifest data or unsupported Claude-only fields present"
 fi

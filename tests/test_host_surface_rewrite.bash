@@ -132,8 +132,9 @@ run_case() {
   assert_absent "${registry}" "${other_session_var}" "${host}: registry excludes the other host session var"
 
   assert_contains "${canonical_forge_skill}" "SIDEKICK_HOST_SESSION_ID" "${host}: canonical skill remains host-placeholder based"
-  assert_absent "${canonical_forge_skill}" "${host_session_var}" "${host}: install no longer mutates canonical skill to host session var"
-  assert_absent "${canonical_forge_skill}" "${other_session_var}" "${host}: canonical skill excludes the other host session var"
+  assert_contains "${canonical_forge_skill}" "CLAUDE_SESSION_ID" "${host}: canonical skill keeps Claude fallback in source"
+  assert_contains "${canonical_forge_skill}" "CODEX_THREAD_ID" "${host}: canonical skill keeps Codex fallback in source"
+  assert_absent "${canonical_forge_skill}" "${marker_prefix}/sessions/\${${host_session_var}}" "${host}: install does not rewrite canonical skill to a host session path"
 
   assert_contains "${generated_forge_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated forge skill uses the host session path"
   assert_contains "${generated_forge_skill}" "${host_session_var}" "${host}: generated forge skill resolver uses the host session var"

@@ -10,7 +10,7 @@ For third-party plugins in Codex, **skills are the runtime contract**.
 - There is no separate third-party command runtime to maintain.
 - `commands/` wrappers are not required for Codex picker visibility.
 
-For Sidekick, treat `skills/**/SKILL.md` as the host-agnostic canonical authoring source and `agents/codex/**/SKILL.md` as the generated Codex-facing package surface.
+For Sidekick, treat `skills/**/SKILL.md` as the host-agnostic canonical authoring source. Keep `agents/codex/**/SKILL.md` as a generated parity artifact for validation and documentation, but do not point the Codex manifest at it.
 
 ## Required plugin shape
 
@@ -33,18 +33,20 @@ plugin-root/
         └── ...
 ```
 
-`.codex-plugin/plugin.json` must point at the generated Codex surface:
+`.codex-plugin/plugin.json` must point at the canonical skills surface:
 
 ```json
 {
   "name": "<plugin-name>",
   "version": "<x.y.z>",
-  "skills": "./agents/codex/",
+  "skills": "./skills/",
   "hooks": "./hooks/hooks.json"
 }
 ```
 
 Do not add a `commands` contract for Codex packaging.
+
+Why: current Codex discovery already scans the plugin's canonical `skills/` tree. If the manifest also points at `agents/codex/`, `skills/list` and `plugin/read` register every Sidekick skill twice, which breaks the picker surface.
 
 ## Picker behavior mapping
 
@@ -86,7 +88,7 @@ Apply this sequence for any plugin that should appear correctly in Codex pickers
 1. Move full workflow bodies into `skills/<name>/SKILL.md`.
 2. Remove stale command wrappers/obsolete SKILL entries.
 3. Regenerate host surfaces with `bash scripts/sync-host-surfaces.sh`.
-4. Ensure `.codex-plugin/plugin.json` uses `"skills": "./agents/codex/"`.
+4. Ensure `.codex-plugin/plugin.json` uses `"skills": "./skills/"`.
 5. Verify local integrity/tests.
 6. Verify Codex runtime surfaces:
    - `skills/list` includes expected names.
@@ -99,8 +101,8 @@ Apply this sequence for any plugin that should appear correctly in Codex pickers
 If skills appear in `/` or `$` but not as expected in `@`:
 
 1. Check installed plugin version/cache actually matches the released tree.
-2. Confirm removed skills are truly deleted from `skills/**/SKILL.md` and regenerated out of `agents/codex/**/SKILL.md` (not just deprecated in prose).
-3. Confirm `plugin/read` returns exactly the expected skill names.
+2. Confirm removed skills are truly deleted from `skills/**/SKILL.md`. Keep `agents/codex/**/SKILL.md` regenerated for parity, but do not rely on it as the Codex manifest root.
+3. Confirm `skills/list` and `plugin/read` return each expected Sidekick skill exactly once.
 4. Reinstall plugin cleanly to flush stale cache entries.
 
 This process is now the source of truth for Sidekick and should be reused for other plugins.

@@ -215,7 +215,7 @@ Audit `.claude-plugin/plugin.json` and `install.sh`:
 
 - **Version field**: Matches the release version being cut
 - **SHA-256 accuracy**: Every hash in `_integrity` matches the live file (`tests/test_plugin_integrity.bash` must pass green)
-- **Skill paths**: Claude manifest `"skills": "./agents/claude/"` and Codex manifest `"skills": "./agents/codex/"` resolve correctly; generated Forge and Kay lifecycle skills exist at those paths and match `bash scripts/sync-host-surfaces.sh`
+- **Skill paths**: Claude manifest `"skills": "./agents/claude/"` and Codex manifest `"skills": "./skills/"` resolve correctly; generated Forge and Kay lifecycle skills still exist under `agents/claude/` and `agents/codex/` and match `bash scripts/sync-host-surfaces.sh`
 - **Output styles**: `"outputStyles": "./output-styles/"` resolves correctly; all referenced files exist
 - **Hook registration**: Both `PreToolUse` (enforcer) and `PostToolUse` (progress-surface) hooks are registered in `plugin.json` with correct matchers and paths
 - **`install.sh`**: Forge install flow is correct for the current Forge version (binary path, agent config, `.forge.toml` defaults); no references to deprecated install steps

@@ -5,7 +5,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-KAY_ENFORCER="${REPO_ROOT}/hooks/codex-delegation-enforcer.sh"
+MULTI_ENFORCER="${REPO_ROOT}/hooks/codex-delegation-enforcer.sh"
 FORGE_ENFORCER="${REPO_ROOT}/hooks/forge-delegation-enforcer.sh"
 SESSION_ID="${SIDEKICK_TEST_SESSION:-test-session}"
 
@@ -37,6 +37,19 @@ create_kay_marker_only() {
   local h="$1"
   mkdir -p "${h}/.kay/sessions/${SESSION_ID}"
   : > "${h}/.kay/sessions/${SESSION_ID}/.kay-delegation-active"
+}
+
+activate_codex() {
+  local h="$1"
+  mkdir -p "${h}/.sidekick/sessions/${SESSION_ID}" "${h}/.codex/sessions/${SESSION_ID}"
+  printf '%s\n' "codex" > "${h}/.sidekick/sessions/${SESSION_ID}/active-sidekick"
+  : > "${h}/.codex/sessions/${SESSION_ID}/.codex-delegation-active"
+}
+
+create_codex_marker_only() {
+  local h="$1"
+  mkdir -p "${h}/.codex/sessions/${SESSION_ID}"
+  : > "${h}/.codex/sessions/${SESSION_ID}/.codex-delegation-active"
 }
 
 activate_forge() {
@@ -90,22 +103,34 @@ expect_enforcer_denied() {
 echo "Scenario 1: stale Kay marker alone does not activate enforcer hook"
 H="$(setup_home)"
 create_kay_marker_only "${H}"
-expect_enforcer_passthrough "Kay marker without active-sidekick passes through" "${H}" "${KAY_ENFORCER}"
+expect_enforcer_passthrough "Kay marker without active-sidekick passes through" "${H}" "${MULTI_ENFORCER}"
 rm -rf "${H}"
 
 echo "Scenario 2: explicit Kay activation enables enforcer hook"
 H="$(setup_home)"
 activate_kay "${H}"
-expect_enforcer_denied "Kay active session denies direct Write" "${H}" "${KAY_ENFORCER}"
+expect_enforcer_denied "Kay active session denies direct Write" "${H}" "${MULTI_ENFORCER}"
 rm -rf "${H}"
 
-echo "Scenario 3: stale Forge marker alone does not activate enforcer hook"
+echo "Scenario 3: stale Codex marker alone does not activate enforcer hook"
+H="$(setup_home)"
+create_codex_marker_only "${H}"
+expect_enforcer_passthrough "Codex marker without active-sidekick passes through" "${H}" "${MULTI_ENFORCER}"
+rm -rf "${H}"
+
+echo "Scenario 4: explicit Codex activation enables enforcer hook"
+H="$(setup_home)"
+activate_codex "${H}"
+expect_enforcer_denied "Codex active session denies direct Write" "${H}" "${MULTI_ENFORCER}"
+rm -rf "${H}"
+
+echo "Scenario 5: stale Forge marker alone does not activate enforcer hook"
 H="$(setup_home)"
 create_forge_marker_only "${H}"
 expect_enforcer_passthrough "Forge marker without active-sidekick passes through" "${H}" "${FORGE_ENFORCER}"
 rm -rf "${H}"
 
-echo "Scenario 4: explicit Forge activation enables enforcer hook"
+echo "Scenario 6: explicit Forge activation enables enforcer hook"
 H="$(setup_home)"
 activate_forge "${H}"
 expect_enforcer_denied "Forge active session denies direct Write" "${H}" "${FORGE_ENFORCER}"

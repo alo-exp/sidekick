@@ -56,6 +56,8 @@ expect_file "scripts/render-agent-bundle.py"
 expect_executable "scripts/sync-host-surfaces.sh"
 expect_file "agents/claude/forge/SKILL.md"
 expect_file "agents/codex/forge/SKILL.md"
+expect_file "agents/claude/kay-delegate/SKILL.md"
+expect_file "agents/codex/kay-delegate/SKILL.md"
 expect_file "agents/claude/codex-delegate/SKILL.md"
 expect_file "agents/codex/codex-delegate/SKILL.md"
 
@@ -63,11 +65,13 @@ echo "=== T2: canonical skills use host placeholders ==="
 for path in \
   skills/forge/SKILL.md \
   skills/forge-stop/SKILL.md \
+  skills/kay-delegate/SKILL.md \
+  skills/kay-stop/SKILL.md \
   skills/codex-delegate/SKILL.md \
   skills/codex-stop/SKILL.md; do
   expect_contains "$path" "SIDEKICK_HOST_SESSION_ID" "canonical ${path} uses host session placeholder"
-  expect_not_contains "$path" "CLAUDE_SESSION_ID" "canonical ${path} has no Claude session literal"
-  expect_not_contains "$path" "CODEX_THREAD_ID" "canonical ${path} has no Codex thread literal"
+  expect_contains "$path" "CLAUDE_SESSION_ID" "canonical ${path} includes Claude fallback"
+  expect_contains "$path" "CODEX_THREAD_ID" "canonical ${path} includes Codex fallback"
   expect_not_contains "$path" ".claude/sessions" "canonical ${path} has no Claude session path"
   expect_not_contains "$path" ".codex/sessions" "canonical ${path} has no Codex session path"
 done
@@ -76,6 +80,8 @@ echo "=== T3: generated Claude skills are Claude-specific ==="
 for path in \
   agents/claude/forge/SKILL.md \
   agents/claude/forge-stop/SKILL.md \
+  agents/claude/kay-delegate/SKILL.md \
+  agents/claude/kay-stop/SKILL.md \
   agents/claude/codex-delegate/SKILL.md \
   agents/claude/codex-stop/SKILL.md; do
   expect_contains "$path" "CLAUDE_SESSION_ID" "Claude generated ${path} uses Claude session var"
@@ -85,6 +91,7 @@ done
 for path in \
   agents/claude/forge/SKILL.md \
   agents/claude/forge-stop/SKILL.md \
+  agents/claude/kay-delegate/SKILL.md \
   agents/claude/codex-delegate/SKILL.md; do
   expect_contains "$path" ".claude/sessions" "Claude generated ${path} uses Claude session path"
 done
@@ -93,6 +100,8 @@ echo "=== T4: generated Codex skills are Codex-specific ==="
 for path in \
   agents/codex/forge/SKILL.md \
   agents/codex/forge-stop/SKILL.md \
+  agents/codex/kay-delegate/SKILL.md \
+  agents/codex/kay-stop/SKILL.md \
   agents/codex/codex-delegate/SKILL.md \
   agents/codex/codex-stop/SKILL.md; do
   expect_contains "$path" "CODEX_THREAD_ID" "Codex generated ${path} uses Codex thread var"
@@ -102,6 +111,7 @@ done
 for path in \
   agents/codex/forge/SKILL.md \
   agents/codex/forge-stop/SKILL.md \
+  agents/codex/kay-delegate/SKILL.md \
   agents/codex/codex-delegate/SKILL.md; do
   expect_contains "$path" ".codex/sessions" "Codex generated ${path} uses Codex session path"
 done
@@ -109,15 +119,16 @@ done
 echo "=== T5: generated aliases point at host-specific surfaces ==="
 for agent in claude codex; do
   expect_contains "agents/${agent}/forge:delegate/SKILL.md" "agents/${agent}/forge/SKILL.md" "${agent} Forge alias names generated skill surface"
-  expect_contains "agents/${agent}/kay:delegate/SKILL.md" "agents/${agent}/codex-delegate/SKILL.md" "${agent} Kay alias names generated skill surface"
+  expect_contains "agents/${agent}/kay:delegate/SKILL.md" "agents/${agent}/kay-delegate/SKILL.md" "${agent} Kay alias names generated skill surface"
   expect_not_contains "agents/${agent}/forge:delegate/SKILL.md" 'skills/forge/SKILL.md' "${agent} Forge alias does not point at canonical skills tree"
-  expect_not_contains "agents/${agent}/kay:delegate/SKILL.md" 'skills/codex-delegate/SKILL.md' "${agent} Kay alias does not point at canonical skills tree"
+  expect_not_contains "agents/${agent}/kay:delegate/SKILL.md" 'skills/kay-delegate/SKILL.md' "${agent} Kay alias does not point at canonical skills tree"
   expect_contains "agents/${agent}/forge.md" "generated host skill at forge/SKILL.md" "${agent} flat Forge wrapper names generated skill surface"
-  expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Kay wrapper names generated skill surface"
+  expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Codex wrapper names generated skill surface"
   expect_not_contains "agents/${agent}/forge.md" 'skills/forge/SKILL.md' "${agent} flat Forge wrapper does not point at canonical skills tree"
-  expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Kay wrapper does not point at canonical skills tree"
+  expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Codex wrapper does not point at canonical skills tree"
   expect_contains "agents/${agent}/forge/SKILL.md" "agents/${agent}/forge.md" "${agent} Forge skill names generated flat wrapper"
   expect_contains "agents/${agent}/forge/SKILL.md" "agents/${agent}/forge-stop/SKILL.md" "${agent} Forge skill names generated stop skill"
+  expect_contains "agents/${agent}/kay-delegate/SKILL.md" "agents/${agent}/kay-stop/SKILL.md" "${agent} Kay skill names generated stop skill"
   expect_not_contains "agents/${agent}/forge/SKILL.md" 'skills/forge.md' "${agent} Forge skill does not point at canonical flat wrapper"
   expect_not_contains "agents/${agent}/forge/SKILL.md" 'skills/forge-stop/SKILL.md' "${agent} Forge skill does not point at canonical stop skill"
 done

@@ -34,8 +34,10 @@ STUB_DIR="$HOME_SBX/bin"
 TEST_SESSION_ID="forge-test-$$"
 MARKER_DIR="$HOME_SBX/.claude/sessions/${TEST_SESSION_ID}"
 MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
+ACTIVE_MODE_DIR="$HOME_SBX/.sidekick/sessions/${TEST_SESSION_ID}"
+ACTIVE_MODE_FILE="${ACTIVE_MODE_DIR}/active-sidekick"
 trap 'rm -rf "$HOME_SBX" "$PROJ_SBX"' EXIT
-mkdir -p "$MARKER_DIR" "$STUB_DIR"
+mkdir -p "$MARKER_DIR" "$ACTIVE_MODE_DIR" "$STUB_DIR"
 
 cat > "$STUB_DIR/forge" <<'STUB'
 #!/usr/bin/env bash
@@ -44,6 +46,7 @@ STUB
 chmod +x "$STUB_DIR/forge"
 
 touch "$MARKER_FILE"
+printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
 
 STUB_PATH="$STUB_DIR:$PATH"
 

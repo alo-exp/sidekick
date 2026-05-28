@@ -1,11 +1,11 @@
 ---
-name: kay-delegate
-description: Legacy flat alias for the Kay sidekick orchestration skill. Prefer skills/codex-delegate/SKILL.md.
+name: codex-delegate
+description: Legacy flat alias for the Codex sidekick orchestration skill. Prefer skills/codex-delegate/SKILL.md.
 user-invocable: false
 ---
 
 > Deprecated in favor of [`skills/codex-delegate/SKILL.md`](./codex-delegate/SKILL.md).
 
-# Kay
+# Codex
 
-Use Kay for implementation work. The canonical activation, login, and delegation flow lives in the directory-style skill files. The legacy `code`, `codex`, and `coder` names are compatibility aliases only.
+Use Codex for implementation work when you want Sidekick to drive the local OpenAI Codex CLI as a child execution runtime. The canonical activation, readiness, and delegation flow lives in the directory-style skill files.
