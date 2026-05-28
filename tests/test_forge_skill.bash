@@ -212,8 +212,10 @@ else
 fi
 
 echo "=== T20: Forge skill marker paths use shared session resolver ==="
-if grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"' "${SKILL_FILE}" \
-  && grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${SESSION_ID:-}}}"' "${STOP_SKILL}" \
+if grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"' "${SKILL_FILE}" \
+  && grep -q 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"' "${STOP_SKILL}" \
+	  && grep -q 'SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"' "${SKILL_FILE}" \
+	  && grep -q 'SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"' "${STOP_SKILL}" \
 	  && grep -q '\${SIDEKICK_HOST_HOME}/sessions/\${SIDEKICK_SESSION}/.forge-delegation-active' "${SKILL_FILE}" \
 	  && grep -q '\${SIDEKICK_HOST_HOME}/sessions/\${SIDEKICK_SESSION}/.forge-delegation-active' "${STOP_SKILL}" \
 	  && grep -q '\${SIDEKICK_HOST_HOME}/sessions/\${SIDEKICK_SESSION}/.forge-level3-active' "${STOP_SKILL}" \

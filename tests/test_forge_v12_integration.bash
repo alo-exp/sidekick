@@ -40,8 +40,10 @@ PROJECT_SANDBOX="$(mktemp -d)"
 TEST_SESSION_ID="forge-test-$$"
 MARKER_DIR="${HOME_SANDBOX}/.claude/sessions/${TEST_SESSION_ID}"
 MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
+ACTIVE_MODE_DIR="${HOME_SANDBOX}/.sidekick/sessions/${TEST_SESSION_ID}"
+ACTIVE_MODE_FILE="${ACTIVE_MODE_DIR}/active-sidekick"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
-mkdir -p "${MARKER_DIR}"
+mkdir -p "${MARKER_DIR}" "${ACTIVE_MODE_DIR}"
 mkdir -p "${HOME_SANDBOX}/bin"
 
 # Stub forge binary so db_precheck inside the enforcer succeeds without a
@@ -74,6 +76,7 @@ run_post() {
 # -----------------------------------------------------------------------------
 echo "=== E2E step 1: activate marker (simulating /forge) ==="
 touch "${MARKER_FILE}"
+printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
 if [ -f "${MARKER_FILE}" ]; then
   assert_pass "e2e_step1_marker_activated"
 else
@@ -144,6 +147,7 @@ fi
 # -----------------------------------------------------------------------------
 echo "=== E2E step 5: deactivate preserves idx, hooks become no-op ==="
 rm -f "${MARKER_FILE}"
+rm -f "${ACTIVE_MODE_FILE}"
 
 # Idx file should still exist with the row from step 2.
 if [ -f "${IDX_FILE}" ] && grep -q -- "${EXPECTED_UUID}" "${IDX_FILE}"; then

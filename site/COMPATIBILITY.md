@@ -7,7 +7,7 @@
 | Concern | Host Surface | Execution Agent | Notes |
 |---------|--------------|-----------------|-------|
 | Canonical instruction body | Claude Code and Codex plugin skills | `skills/<name>/SKILL.md` | Skills stay canonical and host-agnostic regardless of host. |
-| Generated host skill surface | Claude and Codex plugin manifests | `agents/claude/<name>/SKILL.md`, `agents/codex/<name>/SKILL.md` | Generated from `skills/`; do not edit directly. |
+| Generated host skill surface | Claude manifest, parity tests, and docs | `agents/claude/<name>/SKILL.md`, `agents/codex/<name>/SKILL.md` | Generated from `skills/`; do not edit directly. Codex runtime discovery now reads the canonical `skills/` tree to avoid duplicate entries. |
 | Command discoverability | Claude command surface, Codex marketplace skills, and plugin-prefixed pickers | Forge and Kay delegate/stop skills | Wrappers are for discovery, not for source text. |
 | Execution identity | Host AI remains advisor, reviewer, and mentor | `forge` or `kay` | Sidekick should launch the active runtime binary, not a deprecated compatibility alias. |
 | Provider precedence | Host asks for the backend path the user wants | MiniMax Coding for Forge; OpenCode Go provider routing for Kay delegation with MiMo-V2.5-Pro for non-trivial work, MiMo-V2.5 for vision / visual reasoning, MiniMax M2.7 for trivial work, and DeepSeek V4 Flash for test running / issue reporting / completion verification | Provider choice is runtime-owned and should stay explicit. |

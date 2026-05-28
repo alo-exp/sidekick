@@ -2,13 +2,13 @@
 
 > High-level product vision and requirement areas. Synced with `.planning/milestones/v1.4.0-REQUIREMENTS.md` — the authoritative source managed by GSD. Updated at the finalization step of each phase and at milestone completion.
 
-**Current milestone:** v0.6.1. All 77 requirements across v1 + v1.2 remain validated.
+**Current milestone:** v0.6.2. All 77 requirements across v1 + v1.2 remain validated.
 
 ---
 
 ## Product Vision
 
-Sidekick is a Claude Code and Codex plugin that turns the host AI into a **planner, reviewer, and mentor** and delegates implementation work — file writes, edits, shell mutations, git operations — to execution agents. The shipped sidekicks are **Forge** (ForgeCode) and **Kay** (OSS Codex-lineage, `kay` binary). Target user: a developer using Claude Code or Codex who wants capable, lower-cost execution agents handling implementation while the host handles thinking and the conversation.
+Sidekick is a Claude Code and Codex plugin that turns the host AI into a **planner, reviewer, and mentor** and delegates implementation work — file writes, edits, shell mutations, git operations — to execution agents. The shipped sidekicks are **Forge** (ForgeCode), **Kay** (OSS Codex-lineage, `kay` binary), and **Codex** (the local OpenAI Codex CLI). Target user: a developer using Claude Code or Codex who wants capable, lower-cost execution agents handling implementation while the host handles thinking and the conversation.
 
 ---
 
@@ -46,8 +46,8 @@ Mapped to phases in `.planning/milestones/v1.4.0-REQUIREMENTS.md`. All validated
 | Visual distinction | `STYLE-01..04` | Output-style narration contract — `[FORGE]`, `[KAY]`, and `[...-SUMMARY]` markers |
 | Delegation lifecycle skills | `REPLAY-01..04` | Canonical `forge-stop` and `kay-stop` stop workflows, with indexed conversation traces preserved in `.forge/.kay` ledgers |
 | Activation lifecycle | `ACT-01..04` | DB-writability check, idx init, output style switch/revert, SKILL.md STEP 4/5/6 documentation |
-| Plugin manifest | `MAN-01..04` | Current release metadata remains `v0.6.1`, hooks registered, commands + output styles registered, `_integrity` refreshed |
-| Delegation coverage | `TEST-V12-01..05` | Current enforcer hook, progress surface, UUID format, history pruning, and full delegation-flow assertions remain validated in the v0.6.1 test suite |
+| Plugin manifest | `MAN-01..04` | Current release metadata remains `v0.6.2`, hooks registered, commands + output styles registered, `_integrity` refreshed |
+| Delegation coverage | `TEST-V12-01..05` | Current enforcer hook, progress surface, UUID format, history pruning, and full delegation-flow assertions remain validated in the v0.6.2 test suite |
 
 ---
 
@@ -73,7 +73,7 @@ Explicit non-goals. See `.planning/milestones/v1.4.0-REQUIREMENTS.md` §Out of S
 
 This doc is a high-level summary — not the source of truth.
 
-- **Source of truth for requirements:** `.planning/milestones/v1.4.0-REQUIREMENTS.md` (77 requirements, all validated as of v0.6.1).
+- **Source of truth for requirements:** `.planning/milestones/v1.4.0-REQUIREMENTS.md` (77 requirements, all validated as of v0.6.2).
 - **Source of truth for phase structure:** `.planning/ROADMAP.md` (9 phases, all shipped).
 - **Source of truth for project state:** `.planning/STATE.md` (`status: complete`, last_updated 2026-05-07).
 

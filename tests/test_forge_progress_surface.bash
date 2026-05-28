@@ -25,8 +25,10 @@ HOME_SANDBOX="$(mktemp -d)"
 TEST_SESSION_ID="forge-test-$$"
 MARKER_DIR="${HOME_SANDBOX}/.claude/sessions/${TEST_SESSION_ID}"
 MARKER_FILE="${MARKER_DIR}/.forge-delegation-active"
+ACTIVE_MODE_DIR="${HOME_SANDBOX}/.sidekick/sessions/${TEST_SESSION_ID}"
+ACTIVE_MODE_FILE="${ACTIVE_MODE_DIR}/active-sidekick"
 trap 'rm -rf "${HOME_SANDBOX}"' EXIT
-mkdir -p "${MARKER_DIR}"
+mkdir -p "${MARKER_DIR}" "${ACTIVE_MODE_DIR}"
 
 run_hook() {
   local json="$1"
@@ -44,6 +46,7 @@ fi
 
 # Activate marker for all remaining tests.
 touch "${MARKER_FILE}"
+printf '%s\n' "forge" > "${ACTIVE_MODE_FILE}"
 
 # -----------------------------------------------------------------------------
 echo "=== test_noop_when_tool_not_bash ==="

@@ -245,13 +245,123 @@ if [ -f "${SKILL_ROOT}/codex-delegate/SKILL.md" ] \
   && grep -q '\.forge-delegation-active' "${SKILL_ROOT}/forge-stop/SKILL.md" \
   && grep -q '/forge-stop' "${SKILL_ROOT}/forge/SKILL.md" \
   && grep -q '^user-invocable: false' "${SKILL_ROOT}/codex-delegate.md" \
-  && grep -q '^user-invocable: false' "${SKILL_ROOT}/forge.md" \
-  && ! grep -R -q 'SIDEKICK_HOST_' "${SKILL_ROOT}" \
-  && ! grep -R -q 'CLAUDE_SESSION_ID\|CLAUDE_PLUGIN_ROOT\|CLAUDE_PROJECT_DIR\|~/.claude' "${SKILL_ROOT}"
+  && grep -q '^user-invocable: false' "${SKILL_ROOT}/forge.md"
 then
-  pass "installed marketplace exposes the Codex manifest skill surface"
+  pass "installed marketplace exposes the canonical Sidekick skill surface"
 else
   fail "marketplace_skill_surface" "Codex manifest skill surface is missing or mis-targeted in ${SKILL_ROOT}"
+fi
+
+echo "=== marketplace_skills_list_surface ==="
+if python3 - "${CODE_HOME}" "${WORKSPACE}/workspace" "${CODEX_BIN[@]}" <<'PY'
+import json
+import os
+import pathlib
+import queue
+import subprocess
+import sys
+import threading
+import time
+
+code_home = pathlib.Path(sys.argv[1])
+workspace = pathlib.Path(sys.argv[2])
+codex_cmd = sys.argv[3:]
+
+env = os.environ.copy()
+env["CODEX_HOME"] = str(code_home)
+env["CODE_HOME"] = str(code_home)
+
+proc = subprocess.Popen(
+    [*codex_cmd, "app-server", "--listen", "stdio://"],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True,
+    env=env,
+    cwd=workspace,
+)
+
+q = queue.Queue()
+
+def pump(pipe, label):
+    for line in iter(pipe.readline, ""):
+        q.put((label, line))
+    q.put((label, None))
+
+threading.Thread(target=pump, args=(proc.stdout, "stdout"), daemon=True).start()
+threading.Thread(target=pump, args=(proc.stderr, "stderr"), daemon=True).start()
+
+def send(obj):
+    proc.stdin.write(json.dumps(obj) + "\n")
+    proc.stdin.flush()
+
+def recv_id(target_id, timeout=30):
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            _label, line = q.get(timeout=0.2)
+        except queue.Empty:
+            continue
+        if line is None:
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if obj.get("id") == target_id:
+            return obj
+    raise TimeoutError(f"timed out waiting for JSON-RPC response {target_id}")
+
+try:
+    send(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "clientInfo": {
+                    "name": "sidekick-marketplace-probe",
+                    "title": "Sidekick Marketplace Probe",
+                    "version": "0.1.0",
+                },
+                "capabilities": {"experimentalApi": True},
+            },
+        }
+    )
+    recv_id(1)
+    send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
+    send({"jsonrpc": "2.0", "id": 2, "method": "skills/list", "params": {}})
+    resp = recv_id(2)
+    names = []
+    for entry in resp["result"]["data"]:
+        for skill in entry.get("skills", []):
+            if skill["name"].startswith("sidekick:"):
+                names.append(skill["name"])
+    print("skill_names:", ", ".join(names))
+    expected = [
+        "sidekick:forge-delegate",
+        "sidekick:forge-stop",
+        "sidekick:forge:delegate",
+        "sidekick:kay-delegate",
+        "sidekick:kay-stop",
+        "sidekick:kay:delegate",
+    ]
+    if names != expected:
+        raise SystemExit(
+            "skills/list did not return the unique expected Sidekick surface: "
+            + ", ".join(names)
+        )
+finally:
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+PY
+then
+  pass "installed marketplace exposes a unique Sidekick skills/list picker surface"
+else
+  fail "marketplace_skills_list_surface" "Codex skills/list did not match the expected unique Sidekick surface"
 fi
 
 read -r -d '' TASK_PROMPT <<'EOF' || true

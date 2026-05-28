@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.6.2 — 2026-05-28
+
+### OpenAI Codex sidekick and canonical Kay split
+
+Sidekick now ships a first-class Codex sidekick that delegates to the local OpenAI Codex CLI with `gpt-5.4-mini` at Extra High reasoning, while splitting Kay’s canonical lifecycle skills away from the old Codex-named surfaces. Shared hook routing, generated host bundles, docs, and release assets were refreshed to match the three-sidekick model.
+
+**Added:**
+
+- **`skills/kay-delegate/SKILL.md`**, **`skills/kay-stop/SKILL.md`**, **`agents/claude/kay-delegate/SKILL.md`**, **`agents/claude/kay-stop/SKILL.md`**, **`agents/codex/kay-delegate/SKILL.md`**, **`agents/codex/kay-stop/SKILL.md`**, **`output-styles/kay.md`**: canonical Kay delegate/stop workflows, generated host bundles, and a dedicated Kay narration style are now shipped explicitly.
+
+**Changed:**
+
+- **`sidekicks/registry.json`**, **`skills/codex-delegate/SKILL.md`**, **`skills/codex-stop/SKILL.md`**, **`hooks/codex-delegation-enforcer.sh`**, **`hooks/codex-progress-surface.sh`**: added the Codex sidekick as a distinct runtime that delegates through the local OpenAI Codex CLI, injects `gpt-5.4-mini`, `model_reasoning_effort=xhigh`, `--sandbox workspace-write`, and `--ask-for-approval never`, and surfaces Codex-specific summaries and stop hints.
+- **`scripts/render-agent-bundle.py`**, **`scripts/sync-host-surfaces.sh`**, **`agents/claude/*`**, **`agents/codex/*`**: host bundle generation now rewrites the canonical Kay and Codex lifecycle skills into Claude- and Codex-specific surfaces without mutating the host-neutral source tree.
+- **`README.md`**, **`context.md`**, **`site/ARCHITECTURE.md`**, **`site/TESTING.md`**, **`site/PRD-Overview.md`**, **plugin manifests**: docs and packaging now describe Forge, Kay, and Codex as the three current sidekicks and advertise the `0.6.2` release line.
+
+**Fixed:**
+
+- **`tests/test_host_surface_rewrite.bash`**, **Forge hook/integration coverage suites**: release verification now matches the current shared `active-sidekick` activation contract and the host-neutral canonical skill source, eliminating stale assumptions about per-host mutations in the source tree.
+
 ## v0.6.1 — 2026-05-25
 
 ### Explicit delegation hook surface

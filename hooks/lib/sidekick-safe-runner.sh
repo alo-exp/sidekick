@@ -16,6 +16,7 @@ shift || true
 case "$sidekick" in
   forge) prefix="[FORGE]" ;;
   kay)   prefix="[KAY]" ;;
+  codex) prefix="[CODEX]" ;;
   *)
     printf '[SIDEKICK] invalid sidekick runner target\n' >&2
     exit 2
