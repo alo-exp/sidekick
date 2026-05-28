@@ -8,7 +8,8 @@ set -euo pipefail
 PASS=0; FAIL=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIDEKICK_DIR="$(dirname "${SCRIPT_DIR}")"
-DEFAULT_MARKETPLACE_FILE="${HOME}/projects/codex-plugins/.agents/plugins/marketplace.json"
+HOST_MARKETPLACE_HOME="${SIDEKICK_HOST_HOME:-${HOME}}"
+DEFAULT_MARKETPLACE_FILE="${HOST_MARKETPLACE_HOME}/projects/codex-plugins/.agents/plugins/marketplace.json"
 MARKETPLACE_FILE="${CODEX_MARKETPLACE_FILE:-}"
 CHECK_EXTERNAL_MARKETPLACE=0
 if [ -n "${MARKETPLACE_FILE}" ]; then
