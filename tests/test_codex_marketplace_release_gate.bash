@@ -118,6 +118,16 @@ else
   assert_fail "dirty marketplace file release gate" "$(cat /tmp/sidekick-marketplace-dirty-file.out)"
 fi
 
+echo "=== T5: release mode ignores untracked Kay wrapper transcripts ==="
+git -C "${MARKETPLACE_REPO}" checkout -- .agents/plugins/marketplace.json
+mkdir -p "${FIXTURE_REPO}/.kay/agents/1"
+printf 'wrapper transcript\n' > "${FIXTURE_REPO}/.kay/agents/1/exec-call.txt"
+if CODEX_MARKETPLACE_FILE="${MARKETPLACE_FILE}" SIDEKICK_RELEASE_GATE=1 bash "${FIXTURE_REPO}/tests/test_codex_marketplace_manifest.bash" >/tmp/sidekick-marketplace-kay-wrapper.out 2>&1; then
+  assert_pass "release-mode marketplace check ignores untracked Kay wrapper transcripts"
+else
+  assert_fail "kay wrapper transcript release gate" "$(cat /tmp/sidekick-marketplace-kay-wrapper.out)"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"
