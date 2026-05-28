@@ -43,12 +43,20 @@ fi
 
 echo "=== release_metadata_clean ==="
 if [ "${SIDEKICK_RELEASE_GATE:-0}" = "1" ]; then
-  if ! DIRTY_RELEASE_FILES="$(git -C "${SIDEKICK_DIR}" status --porcelain 2>&1 | sed -n '1,20p')"; then
+  if ! DIRTY_RELEASE_FILES="$(git -C "${SIDEKICK_DIR}" status --porcelain 2>&1)"; then
     assert_fail "release metadata clean" "git status failed:\n${DIRTY_RELEASE_FILES}"
-  elif [ -z "${DIRTY_RELEASE_FILES}" ]; then
-    assert_pass "release metadata and package surfaces are committed before release gate"
   else
-    assert_fail "release metadata clean" "dirty files:\n${DIRTY_RELEASE_FILES}"
+    # Kay release-wrapper transcripts are runtime evidence, not source changes.
+    DIRTY_RELEASE_FILES="$(
+      printf '%s\n' "${DIRTY_RELEASE_FILES}" \
+        | awk '$0 !~ /^\?\? \.kay(\/|$)/ { print }' \
+        | sed -n '1,20p'
+    )"
+    if [ -z "${DIRTY_RELEASE_FILES}" ]; then
+      assert_pass "release metadata and package surfaces are committed before release gate"
+    else
+      assert_fail "release metadata clean" "dirty files:\n${DIRTY_RELEASE_FILES}"
+    fi
   fi
 else
   echo "SKIP release metadata clean check (set SIDEKICK_RELEASE_GATE=1)"
