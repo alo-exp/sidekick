@@ -61,9 +61,18 @@ fi
 mkdir -p "$(dirname "${result_file}")"
 printf '%s\n' "${FAKE_KAY_TEST_RC:-0}" > "${result_file}"
 
-if [ "${FAKE_KAY_WRITE_CANDIDATE:-0}" = "1" ]; then
+candidate_count="${FAKE_KAY_CANDIDATE_COUNT:-0}"
+if [ "${FAKE_KAY_WRITE_CANDIDATE:-0}" = "1" ] && [ "${candidate_count}" -eq 0 ]; then
+  candidate_count=1
+fi
+
+if [ "${candidate_count}" -gt 0 ]; then
   mkdir -p "${home_dir}/.codex/.sidekick"
-  printf 'quality-gate-live-pyramid-candidate session=fake-session sha=fake-sha at=20260524T000000Z run_id=%s token=%s proof_sha256=%s\n' "${run_id}" "${token}" "${proof_sha}" >> "${home_dir}/.codex/.sidekick/quality-gate-state"
+  i=1
+  while [ "${i}" -le "${candidate_count}" ]; do
+    printf 'quality-gate-live-pyramid-candidate session=fake-session sha=fake-sha-%s at=20260524T00000%sZ run_id=%s token=%s proof_sha256=%s\n' "${i}" "${i}" "${run_id}" "${token}" "${proof_sha}" >> "${home_dir}/.codex/.sidekick/quality-gate-state"
+    i=$((i + 1))
+  done
 fi
 
 if [ "${FAKE_KAY_WRITE_HOST_LEAK:-0}" = "1" ] && [ -n "${SIDEKICK_QG_STATE:-}" ]; then
@@ -115,11 +124,12 @@ else
   assert_fail "noncanonical wrapper command" "$(cat /tmp/sidekick-fake-kay-noncanonical.out)"
 fi
 
-echo "=== T2: canonical release command fails without exactly one candidate ==="
+echo "=== T2: canonical release command fails without any candidate ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 if run_wrapper bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-zero.out 2>&1; then
   assert_fail "canonical zero-candidate release run fails" "wrapper unexpectedly passed"
-elif grep -Fq "expected exactly 1" /tmp/sidekick-fake-kay-zero.out || grep -Fq "produced no isolated live-pyramid candidate state" /tmp/sidekick-fake-kay-zero.out; then
+elif grep -Fq "produced no matching live-pyramid candidates" /tmp/sidekick-fake-kay-zero.out \
+  || grep -Fq "produced no isolated live-pyramid candidate state" /tmp/sidekick-fake-kay-zero.out; then
   assert_pass "canonical zero-candidate release run fails"
 else
   assert_fail "canonical zero-candidate release run fails" "$(cat /tmp/sidekick-fake-kay-zero.out)"
@@ -161,7 +171,25 @@ else
   assert_fail "canonical wrapper command" "$(cat /tmp/sidekick-fake-kay-canonical.out)"
 fi
 
-echo "=== T4: inherited host quality-gate state is cleared inside Kay command ==="
+echo "=== T4: duplicate canonical candidates promote the newest entry ==="
+rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
+rm -f "${TMP_ROOT}/fake-kay-token"
+if FAKE_KAY_CANDIDATE_COUNT=2 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-duplicate.out 2>&1; then
+  state="${TMP_ROOT}/host-qg/quality-gate-state"
+  final_count="$(grep -c '^quality-gate-live-pyramid ' "${state}" 2>/dev/null || true)"
+  if [ "${final_count}" = "1" ] \
+    && grep -Fq 'sha=fake-sha-2' "${state}" \
+    && grep -Fq 'at=20260524T000002Z' "${state}" \
+    && grep -Fq 'promoting the newest entry' /tmp/sidekick-fake-kay-duplicate.out; then
+    assert_pass "duplicate canonical candidates promote the newest entry"
+  else
+    assert_fail "duplicate canonical candidates promote the newest entry" "$(cat "${state}" 2>/dev/null || cat /tmp/sidekick-fake-kay-duplicate.out)"
+  fi
+else
+  assert_fail "duplicate canonical candidates promote the newest entry" "$(cat /tmp/sidekick-fake-kay-duplicate.out)"
+fi
+
+echo "=== T5: inherited host quality-gate state is cleared inside Kay command ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 mkdir -p "${TMP_ROOT}/host-qg"
 host_state="${TMP_ROOT}/host-qg/quality-gate-state"
@@ -175,7 +203,7 @@ else
   assert_fail "env isolation wrapper command" "$(cat /tmp/sidekick-fake-kay-env.out)"
 fi
 
-echo "=== T5: failed Kay/test exits suppress promotion ==="
+echo "=== T6: failed Kay/test exits suppress promotion ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 if FAKE_KAY_WRITE_CANDIDATE=1 FAKE_KAY_TEST_RC=7 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-fail.out 2>&1; then
   assert_fail "failed test exit suppresses promotion" "wrapper unexpectedly passed"
@@ -185,7 +213,7 @@ else
   assert_fail "failed test exit suppresses promotion" "$(cat "${TMP_ROOT}/host-qg/quality-gate-state")"
 fi
 
-echo "=== T6: wrapper honors pre-resolved host quality-gate state ==="
+echo "=== T7: wrapper honors pre-resolved host quality-gate state ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg" "${TMP_ROOT}/claude-qg"
 mkdir -p "${TMP_ROOT}/claude-qg"
 if FAKE_KAY_WRITE_CANDIDATE=1 SIDEKICK_QG_STATE="${TMP_ROOT}/claude-qg/quality-gate-state" run_wrapper_no_host_qg_override bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-claude-state.out 2>&1; then
@@ -198,7 +226,7 @@ else
   assert_fail "wrapper honors pre-resolved host quality-gate state" "$(cat /tmp/sidekick-fake-kay-claude-state.out)"
 fi
 
-echo "=== T7: fake Kay executes generated script path ==="
+echo "=== T8: fake Kay executes generated script path ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 side_effect="${TMP_ROOT}/script-executed"
 if FAKE_KAY_RUN_SCRIPT=1 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" bash -c "printf ok > '${side_effect}'" >/tmp/sidekick-fake-kay-script.out 2>&1; then
