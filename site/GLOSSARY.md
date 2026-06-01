@@ -1,13 +1,24 @@
 # Glossary
 
-**Host AI**: The assistant coordinating the task, communicating with the user, and verifying results.
+> Canonical terms for Sidekick docs.
 
-**Sidekick**: A delegated coding agent that performs implementation work for the host.
+---
 
-**Kay**: Supported Sidekick runtime launched through `kay exec`.
+| Term | Meaning |
+|------|---------|
+| **Sidekick** | The Ālo Labs plugin system that hosts multiple coding-agent runtimes under one host-side orchestration layer. |
+| **host AI** | The Claude Code or Codex session that advises, delegates, reviews, and mentors execution agents through Sidekick. |
+| **Forge** | The ForgeCode execution agent packaged by Sidekick. Claude Code and Codex hosts can both route work to Forge. |
+| **Kay** | The OSS Codex-lineage execution agent packaged by Sidekick. `kay` is the canonical binary; legacy Code aliases (`code`, `codex`, `coder`) are compatibility-only. |
+| **host Codex** | The user-installed Codex environment that can host the Sidekick plugin and route work to Forge or Kay. |
+| **delegate** | To hand execution of a coding task to Forge or Kay while the host AI stays in the advisor, review, and mentoring role. |
+| **skill** | The canonical instruction body for a capability. In Sidekick, skills are the source of truth. |
+| **selector** | A host/runtime picker entry (for example `sidekick:forge-stop`) that resolves directly to a canonical skill body. |
+| **bridge** | A thin compatibility layer that makes a skill visible in a runtime's native picker or import path. |
+| **wrapper** | A minimal compatibility skill (or alias file) that points to canonical workflow content without duplicating it. |
 
-**Codex sidekick**: Supported Sidekick runtime launched through the local OpenAI Codex CLI.
+## Canonical Rules
 
-**Active sidekick selector**: `~/.sidekick/sessions/<session>/active-sidekick`, containing `kay` or `codex`.
-
-**Host verification**: The mandatory post-task audit where the host compares the result against the prompt, runs checks, classifies failures, and relaunches the active sidekick when needed.
+- Skills carry the real instruction text and are the runtime contract.
+- Compatibility layers should not duplicate long-form workflow text.
+- Runtime-specific docs should point back to this glossary instead of redefining terms.
