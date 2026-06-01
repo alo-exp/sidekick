@@ -1,35 +1,28 @@
 # ADR 2026-05-08: Docs System Upgrade
 
 Status: Accepted
-**Date:** 2026-05-08
+Date: 2026-05-08
 
 ## Context
 
-Sidekick's docs scheme already kept the repository organized, but it was still mostly a placement contract. It did not yet give readers a clear "where do I start?" path, a canonical glossary, a runtime compatibility matrix, or a dedicated home for durable docs decisions.
-
-The docs system also needed a stronger way to signal the intent of each doc:
-
-- tutorial
-- explanation
-- how-to
-- reference
+Sidekick's docs scheme kept the repository organized, but readers still needed a clearer path from role or task to the right document. The docs also needed a canonical glossary, compatibility matrix, and durable place for docs-system decisions.
 
 ## Decision
 
-We will keep `site/doc-scheme.md` as the placement contract, then add a reader-first layer around it:
+Keep `site/doc-scheme.md` as the placement contract, then add a reader-first layer:
 
-- `site/START-HERE.md` for task-first navigation
-- `site/AUDIENCE.md` for reader roles and entry points
-- `site/GLOSSARY.md` for canonical terms
-- `site/COMPATIBILITY.md` for Claude Code / Codex host surfaces and Forge / Kay execution-agent differences
-- `site/ADR/` for durable docs-system decisions
+- `site/START-HERE.md` for task-first navigation.
+- `site/AUDIENCE.md` for reader roles and entry points.
+- `site/GLOSSARY.md` for canonical terms.
+- `site/COMPATIBILITY.md` for Claude Code, Codex, Kay, and Codex sidekick differences.
+- `site/ADR/` for durable docs-system decisions.
 
-We will also treat the public help site as the task map and wire it back to the new docs pages.
+The public Help section remains the task-oriented surface and links back to these docs.
 
 ## Consequences
 
 - New readers have a single page that tells them where to begin.
 - Canonical terms stop drifting across docs.
-- Runtime differences are visible in one place instead of being repeated ad hoc.
-- Important docs-system decisions now have a stable home separate from knowledge notes and lessons.
-- The docs system remains organized without turning `doc-scheme.md` into a giant policy dump.
+- Runtime differences are visible in one place.
+- Important docs decisions have a stable home separate from knowledge notes and lessons.
+- `doc-scheme.md` can stay short and structural.

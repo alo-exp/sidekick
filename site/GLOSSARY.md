@@ -1,24 +1,26 @@
 # Glossary
 
-> Canonical terms for Sidekick docs.
-
----
+> Canonical terms for current Sidekick docs.
 
 | Term | Meaning |
-|------|---------|
-| **Sidekick** | The Ālo Labs plugin system that hosts multiple coding-agent runtimes under one host-side orchestration layer. |
-| **host AI** | The Claude Code or Codex session that advises, delegates, reviews, and mentors execution agents through Sidekick. |
-| **Forge** | The ForgeCode execution agent packaged by Sidekick. Claude Code and Codex hosts can both route work to Forge. |
-| **Kay** | The OSS Codex-lineage execution agent packaged by Sidekick. `kay` is the canonical binary; legacy Code aliases (`code`, `codex`, `coder`) are compatibility-only. |
-| **host Codex** | The user-installed Codex environment that can host the Sidekick plugin and route work to Forge or Kay. |
-| **delegate** | To hand execution of a coding task to Forge or Kay while the host AI stays in the advisor, review, and mentoring role. |
-| **skill** | The canonical instruction body for a capability. In Sidekick, skills are the source of truth. |
-| **selector** | A host/runtime picker entry (for example `sidekick:forge-stop`) that resolves directly to a canonical skill body. |
-| **bridge** | A thin compatibility layer that makes a skill visible in a runtime's native picker or import path. |
-| **wrapper** | A minimal compatibility skill (or alias file) that points to canonical workflow content without duplicating it. |
+| --- | --- |
+| **Sidekick** | The Alo Labs plugin that gives Claude Code and Codex a shared delegation layer for supported coding sidekicks. |
+| **host AI** | The Claude Code or Codex session that plans, delegates, reviews, verifies, and communicates with the user. |
+| **sidekick** | A supported child runtime that performs bounded implementation work after activation. Current sidekicks are Kay and Codex. |
+| **Kay** | The Kay runtime installed and repaired through Sidekick. Kay tasks run through `kay exec`. |
+| **Codex sidekick** | The local OpenAI Codex CLI used as a child runtime through `codex exec`, pinned to `gpt-5.4-mini` with extra-high reasoning. |
+| **delegate** | To hand a bounded coding task from the host AI to the active sidekick. |
+| **active-sidekick** | The shared session selector at `~/.sidekick/sessions/<session>/active-sidekick`. It contains `kay` or `codex`. |
+| **marker** | A project-local file showing that a sidekick is active in the current host session. |
+| **Host verification** | The host-owned review pass that checks requirements, diffs, tests, integration behavior, assumptions, and failure classes before reporting completion. |
+| **generated host bundle** | A rendered skill surface under `agents/claude/` or `agents/codex/`, produced from canonical files under `skills/`. |
+| **registry** | `sidekicks/registry.json`, the shared metadata for runtime names, marker paths, commands, and install details. |
+| **release gate** | The test sequence that proves public docs, generated surfaces, manifests, hooks, and live sidekick paths are aligned. |
 
 ## Canonical Rules
 
-- Skills carry the real instruction text and are the runtime contract.
-- Compatibility layers should not duplicate long-form workflow text.
-- Runtime-specific docs should point back to this glossary instead of redefining terms.
+- The host AI owns final correctness.
+- Kay and Codex are mutually exclusive in a host session.
+- Canonical workflow text lives under `skills/`.
+- Generated host bundles are render outputs.
+- Public docs should name only the supported sidekicks: Kay and Codex.

@@ -1,361 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark light">
-<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
-<title>Command Reference — Sidekick Help</title>
-<meta name="description" content="Current reference for Sidekick: delegation skills, hook behavior, runtime commands, config files, bootstrap skills, glossary terms, and runtime compatibility.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../tokens.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference - Sidekick Help</title>
+<meta name="description" content="Current Sidekick command, runtime, state, generated bundle, registry, and testing reference.">
 <link rel="icon" href="../../og-image.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
-h1,h2,h3,h4,h5,h6,.logo,.nav-logo,.section-title,.section-label,.tagline,.btn,.tag,.nav-cta,.hero-tagline-caps,.version-badge{font-family:var(--font-heading)}
-.container{max-width:860px;margin:0 auto;padding:0 24px}
-.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
-nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
-.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:0}
-.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
-.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
-.nav-breadcrumb a:hover{color:var(--accent-light)}
-.nav-breadcrumb .sep{color:var(--text-dim)}
-.nav-right{display:flex;align-items:center;gap:16px}
-.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
-.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
-.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
-.page-hero .container{position:relative;z-index:1}
-.breadcrumb-nav{font-size:.9rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
-.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
-.breadcrumb-nav a:hover{color:var(--accent-light)}
-.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:0;margin-bottom:16px;line-height:1.1}
-.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
-.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
-@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
-.doc-sidebar{position:sticky;top:88px;height:fit-content}
-.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
-.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
-.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
-.sidebar-nav li a.active{background:var(--accent-subtle);color:var(--accent-light);font-weight:600}
-.sidebar-nav .sidebar-section{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);padding:16px 12px 4px;margin-top:8px}
-@media(max-width:768px){.doc-sidebar{display:none}}
-.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:0;margin-bottom:16px;margin-top:48px;padding-top:16px}
-.doc-content h2:first-child{margin-top:0}
-.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
-.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
-.doc-content ul{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
-.doc-content li{margin-bottom:6px;line-height:1.7}
-.doc-content strong{color:var(--text-primary)}
-.doc-content a{color:var(--accent-light);text-decoration:none}
-.doc-content a:hover{text-decoration:underline}
-.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
-.callout-info{background:var(--accent-faint);border:1px solid var(--accent-border)}
-.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
-.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
-.callout-body strong{color:var(--text-primary)}
-.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size: 1rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
-.code-block .comment{color:var(--text-dim)}
-.code-block .cmd{color:var(--accent-light)}
-.code-block .key{color:var(--cyan)}
-.code-block .val{color:var(--amber)}
-.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
-/* REF TABLE */
-.ref-table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:.85rem}
-.ref-table th{text-align:left;padding:10px 16px;background:var(--bg-code);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);border-bottom:1px solid var(--border)}
-.ref-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top}
-.ref-table tr:last-child td{border-bottom:none}
-.ref-table td:first-child{color:var(--accent-light);font-family:var(--font-mono);font-size: 1rem;white-space:nowrap}
-.ref-table td code{font-family:var(--font-mono);font-size: 1rem;color:var(--accent-light)}
-footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
-.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
-footer a{color:var(--text-secondary);text-decoration:none}
-footer a:hover{color:var(--accent-light)}
-.footer-links{display:flex;gap:24px}
-.page-nav-bottom{display:flex;justify-content:space-between;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
-.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
-.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
-svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+:root{--bg:#f7faf8;--ink:#101815;--muted:#50605a;--line:#d8e2dd;--panel:#fff;--soft:#edf6f2;--green:#17724d;--blue:#1d6385;--gold:#9d6b1d;--mono:'IBM Plex Mono',monospace;--sans:'Manrope',system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65}.wrap{width:min(1040px,calc(100% - 36px));margin:0 auto}header{padding:24px 0;border-bottom:1px solid var(--line);background:rgba(255,255,255,.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(16px)}.nav{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.nav a{color:var(--muted);text-decoration:none;font-weight:800}.nav .brand{color:var(--ink)}.links{display:flex;gap:14px;flex-wrap:wrap}main{padding:52px 0 78px}h1{font-size:clamp(2.4rem,6vw,4.4rem);line-height:1;margin:0 0 14px}h2{margin-top:40px}.lead,p,li{color:var(--muted)}table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:table;margin-top:16px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:12px 14px;vertical-align:top}th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink);background:#edf6f2}tr:last-child td{border-bottom:0}.code{display:block;white-space:pre-wrap;font-family:var(--mono);background:#101815;color:#b4f2cf;border-radius:8px;padding:16px;margin:14px 0;overflow:auto}.inline,td:first-child{font-family:var(--mono)}.inline{background:#e7f1ed;color:#153828;border-radius:7px;padding:2px 6px}@media(max-width:760px){table{display:block;overflow-x:auto}.links{gap:10px}}
 </style>
 </head>
 <body>
+<header><nav class="wrap nav"><a class="brand" href="../">Sidekick Help</a><div class="links"><a href="../getting-started/">Getting Started</a><a href="../concepts/">Concepts</a><a href="../workflows/">Workflows</a><a href="../reference/">Reference</a><a href="../troubleshooting/">Troubleshooting</a></div></nav></header>
+<main class="wrap">
+  <h1>Reference</h1>
+  <p class="lead">Current command, runtime, state, generated bundle, registry, and testing reference for Sidekick 0.7.0.</p>
 
-<nav>
-  <div class="nav-inner">
-    <div style="display:flex;align-items:center;gap:16px">
-      <a href="../../" class="nav-logo">Sidekick</a>
-      <span class="nav-breadcrumb">
-        <span class="sep">/</span>
-        <a href="../">Help</a>
-        <span class="sep">/</span>
-        Reference
-      </span>
-    </div>
-    <div class="nav-right">
-      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
-        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
-        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
-      </button>
-    </div>
-  </div>
-</nav>
+  <h2>Delegation Commands</h2>
+  <table>
+    <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>/sidekick:kay-delegate</td><td>Activate Kay delegation for the current host session.</td></tr>
+      <tr><td>/sidekick:kay-delegate xiaomi</td><td>Activate Kay with Xiaomi routing for the session.</td></tr>
+      <tr><td>/sidekick:kay-delegate ocg</td><td>Activate Kay while forcing OpenCode Go routing.</td></tr>
+      <tr><td>/sidekick:kay-stop</td><td>Stop Kay delegation and clear the Kay session marker.</td></tr>
+      <tr><td>/sidekick:codex-delegate</td><td>Activate Codex delegation through the local OpenAI Codex CLI.</td></tr>
+      <tr><td>/sidekick:codex-stop</td><td>Stop Codex delegation and clear the Codex session marker.</td></tr>
+    </tbody>
+  </table>
 
-<div class="page-hero">
-  <div class="container">
-    <div class="breadcrumb-nav">
-      <a href="../">Help Center</a>
-      <span>/</span>
-      <span>Command Reference</span>
-    </div>
-    <h1>Command Reference</h1>
-    <p>Every current delegation skill, hook, runtime command, config file, bootstrap skill, and canonical term — all in one place. If you need the vocabulary first, read <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a>.</p>
-  </div>
-</div>
+  <h2>Runtime Commands</h2>
+  <table>
+    <thead><tr><th>Runtime</th><th>Command</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Kay</td><td>kay exec</td><td>Primary Kay child execution path. Sidekick installs and repairs the Kay runtime.</td></tr>
+      <tr><td>Kay login</td><td>kay login --provider opencode-go --with-api-key</td><td>Configures Kay provider credentials when needed.</td></tr>
+      <tr><td>Codex</td><td>codex exec</td><td>Local OpenAI Codex CLI path. Sidekick uses <span class="inline">gpt-5.4-mini</span> with extra-high reasoning.</td></tr>
+    </tbody>
+  </table>
 
-<div class="container">
-  <div class="callout callout-info">
-    <span class="callout-icon"><i data-lucide="info"></i></span>
-    <div class="callout-body"><strong>Reader docs:</strong> <a href="../../START-HERE.md">Start Here</a> for the task map, <a href="../../AUDIENCE.md">Audience</a> for the reader matrix, and <a href="../../COMPATIBILITY.md">Compatibility</a> for runtime differences.</div>
-  </div>
-</div>
+  <h2>State Paths</h2>
+  <table>
+    <thead><tr><th>Path</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>~/.sidekick/sessions/&lt;session&gt;/active-sidekick</td><td>Shared session selector containing <span class="inline">kay</span> or <span class="inline">codex</span>.</td></tr>
+      <tr><td>.kay/sessions/&lt;session&gt;/.kay-delegation-active</td><td>Project-local Kay delegation marker.</td></tr>
+      <tr><td>.codex/sessions/&lt;session&gt;/.codex-delegation-active</td><td>Project-local Codex delegation marker.</td></tr>
+      <tr><td>.kay/conversations.idx</td><td>Kay task lookup ledger.</td></tr>
+      <tr><td>.codex/conversations.idx</td><td>Codex task lookup ledger.</td></tr>
+    </tbody>
+  </table>
 
-<div class="container-wide">
-  <div class="doc-layout">
-    <aside class="doc-sidebar">
-      <ul class="sidebar-nav">
-        <li class="sidebar-section">Commands</li>
-        <li><a href="#forge-commands">/forge Commands</a></li>
-        <li><a href="#kay-commands">Kay Runtime Commands</a></li>
-        <li><a href="#task-prompt">Task Prompt Fields</a></li>
-        <li class="sidebar-section">Configuration</li>
-        <li><a href="#forge-toml">.forge.toml Config</a></li>
-        <li><a href="#bootstrap-skills">Bootstrap Skills</a></li>
-        <li class="sidebar-section">Terms</li>
-        <li><a href="../../GLOSSARY.md">Glossary Matrix</a></li>
-        <li><a href="../../COMPATIBILITY.md">Compatibility Matrix</a></li>
-        <li class="sidebar-section">Output &amp; Files</li>
-        <li><a href="#forge-hooks">Plugin Hooks</a></li>
-        <li><a href="#output-format">Output Format</a></li>
-        <li><a href="#agents-md-format">AGENTS.md Format</a></li>
-        <li><a href="#file-structure">File Structure</a></li>
-      </ul>
-    </aside>
+  <h2>Canonical Files</h2>
+  <table>
+    <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>skills/kay-delegate/SKILL.md</td><td>Canonical Kay activation workflow.</td></tr>
+      <tr><td>skills/kay-stop/SKILL.md</td><td>Canonical Kay stop workflow.</td></tr>
+      <tr><td>skills/codex-delegate/SKILL.md</td><td>Canonical Codex activation workflow.</td></tr>
+      <tr><td>skills/codex-stop/SKILL.md</td><td>Canonical Codex stop workflow.</td></tr>
+      <tr><td>sidekicks/registry.json</td><td>Runtime registry consumed by hooks and tests.</td></tr>
+      <tr><td>agents/claude/ and agents/codex/</td><td>Generated host bundles rendered from canonical skills.</td></tr>
+    </tbody>
+  </table>
 
-    <div class="doc-content">
-
-      <h2 id="forge-commands">Delegation Skills</h2>
-      <table class="ref-table">
-        <thead><tr><th>Command</th><th>Description</th></tr></thead>
-        <tbody>
-          <tr><td>/forge</td><td>Activate Forge delegation mode for the current session. Runs the four-part health check, bootstraps missing Sidekick-owned project files, loads SKILL.md, and arms hook enforcement through the session marker.</td></tr>
-          <tr><td>/forge:delegate</td><td>Alias for the canonical <code>/forge</code> activation workflow.</td></tr>
-          <tr><td>/forge-stop</td><td>Deactivate Forge delegation mode and return to direct host implementation.</td></tr>
-          <tr><td>kay-delegate</td><td>Use the Kay delegate workflow for <code>kay</code> runtime tasks. Some hosts display the plugin-prefixed name <code>sidekick:kay-delegate</code>. Older binary names remain compatibility-only.</td></tr>
-          <tr><td>/kay:delegate</td><td>Alias for the canonical <code>kay-delegate</code> workflow.</td></tr>
-          <tr><td>/kay-stop</td><td>Deactivate Kay delegation mode and return to direct host implementation.</td></tr>
-        </tbody>
-      </table>
-
-      <h2 id="forge-hooks">Plugin Hooks</h2>
-      <p>Sidekick ships only PreToolUse and PostToolUse hooks. They stay dormant until a user explicitly starts Forge or Kay delegation for the current session. The shared <code>active-sidekick</code> selector is a mutual-exclusion gate: it must point at Forge or Kay before matching hooks enforce delegation behavior.</p>
-      <table class="ref-table">
-        <thead><tr><th>Hook</th><th>Event</th><th>Description</th></tr></thead>
-        <tbody>
-          <tr><td><code>forge-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Forge mode is active, denies direct implementation edits, rewrites <code>forge -p</code> calls to inject <code>--conversation-id</code>, <code>--verbose</code>, and the safe output runner, and appends an entry to <code>.forge/conversations.idx</code>.</td></tr>
-          <tr><td><code>codex-delegation-enforcer.sh</code></td><td>PreToolUse (Write / Edit / NotebookEdit / Bash)</td><td>When Kay mode is active, denies direct implementation edits, rewrites Kay runtime calls to include <code>--full-auto</code> and the safe output runner, and appends an entry to <code>.kay/conversations.idx</code>.</td></tr>
-          <tr><td><code>forge-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Forge subprocess output, strips terminal controls, redacts obvious secrets, and surfaces a compact untrusted <code>[FORGE-SUMMARY]</code> STATUS block when one is present.</td></tr>
-          <tr><td><code>codex-progress-surface.sh</code></td><td>PostToolUse (Bash)</td><td>Parses Kay subprocess output, strips terminal controls, redacts obvious secrets, and emits a compact untrusted <code>[KAY-SUMMARY]</code> progress surface when a STATUS block is present.</td></tr>
-        </tbody>
-      </table>
-
-      <h2 id="kay-commands">Kay Runtime Commands</h2>
-      <p>Start Kay mode through <code>kay-delegate</code> or <code>sidekick:kay-delegate</code>. These lower-level runtime commands are what active Kay mode uses after activation; older binary names stay compatibility-only:</p>
-      <table class="ref-table">
-        <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td>kay exec --full-auto "&lt;task&gt;"</td><td>Native non-interactive Kay runtime command used after Kay mode is active.</td></tr>
-          <tr><td>kay login --provider opencode-go --with-api-key</td><td>Configure OpenCode Go credentials for the Kay provider path.</td></tr>
-          <tr><td>legacy aliases</td><td>The old <code>code</code>, <code>codex</code>, and <code>coder</code> binary names are retained for compatibility, not for new user-facing setup.</td></tr>
-        </tbody>
-      </table>
-
-      <h2 id="task-prompt">Task Prompt Fields</h2>
-      <p>Every task delegated to Forge uses exactly these 5 fields, in this order:</p>
-      <table class="ref-table">
-        <thead><tr><th>Field</th><th>Description</th><th>Limit</th></tr></thead>
-        <tbody>
-          <tr><td>OBJECTIVE</td><td>One-sentence statement of what Forge must accomplish. No ambiguity.</td><td>1 sentence</td></tr>
-          <tr><td>CONTEXT</td><td>Only files directly relevant to the task. No conversation history, no unrelated files.</td><td>~600 tokens</td></tr>
-          <tr><td>DESIRED STATE</td><td>Specific, verifiable outcome. What the code/system looks like when done.</td><td>~300 tokens</td></tr>
-          <tr><td>SUCCESS CRITERIA</td><td>Checklist the host uses to verify Forge succeeded. Each item must be checkable.</td><td>3–6 items</td></tr>
-          <tr><td>INJECTED SKILLS</td><td>≤2 bootstrap skills relevant to the task type.</td><td>1–2 skills</td></tr>
-        </tbody>
-      </table>
-      <p>Total prompt budget: <strong>2,000 tokens max</strong>.</p>
-
-      <h2 id="forge-toml">.forge.toml Config</h2>
-      <p>Created in the project root on first <code>/forge</code> invocation if absent. Contains compaction settings only — Forge API credentials live in <code>~/forge/.credentials.json</code>, while provider and model config live in <code>~/forge/.forge.toml</code>.</p>
-      <div class="code-label">.forge.toml (project root — compaction only)</div>
-      <div class="code-block"><span class="comment"># API credentials: ~/forge/.credentials.json</span>
-
-<span class="comment"># Context compaction — validated defaults</span>
-<span class="key">max_tokens</span> = <span class="val">16384</span>         <span class="comment"># max output tokens per call</span>
-
-[<span class="key">compact</span>]
-<span class="key">token_threshold</span> = <span class="val">80000</span>   <span class="comment"># trigger at 80k tokens</span>
-<span class="key">eviction_window</span> = <span class="val">0.20</span>   <span class="comment"># evict oldest 20%</span>
-<span class="key">retention_window</span> = <span class="val">6</span>      <span class="comment"># always keep last 6 exchanges</span></div>
-      <h3>Global provider config (<code>~/forge/.forge.toml</code>)</h3>
-      <p>The global config sets the provider and model. The current Forge setup path highlights MiniMax Coding / MiniMax M2.7:</p>
-      <div class="code-label">~/forge/.forge.toml — MiniMax Coding</div>
-      <div class="code-block"><span class="key">"$schema"</span> = <span class="val">"https://forgecode.dev/schema.json"</span>
-<span class="key">max_tokens</span> = <span class="val">16384</span>
-
-[<span class="key">session</span>]
-<span class="key">provider_id</span> = <span class="val">"minimax"</span>
-<span class="key">model_id</span>    = <span class="val">"MiniMax-M2.7"</span></div>
-      <div class="callout callout-info">
-        <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>.forge.toml is gitignored by default.</strong> API credentials are stored globally in <code>~/forge/.credentials.json</code>, and provider/model config is stored in <code>~/forge/.forge.toml</code>, not in the project root. When the host guides you through setup, it writes these files through file-write tooling rather than shelling secrets through Bash.</div>
-      </div>
-
-      <h2 id="bootstrap-skills">Bootstrap Skills</h2>
-      <p>Four skills are pre-installed at <code>.forge/skills/</code> and available for injection:</p>
-      <table class="ref-table">
-        <thead><tr><th>Skill</th><th>Path</th><th>Inject when…</th></tr></thead>
-        <tbody>
-          <tr><td>testing-strategy</td><td>.forge/skills/testing-strategy/SKILL.md</td><td>Writing tests, TDD, test coverage tasks</td></tr>
-          <tr><td>code-review</td><td>.forge/skills/code-review/SKILL.md</td><td>Code quality, refactoring, review-driven changes</td></tr>
-          <tr><td>security</td><td>.forge/skills/security/SKILL.md</td><td>Auth, input validation, secrets handling</td></tr>
-          <tr><td>quality-gates</td><td>.forge/skills/quality-gates/SKILL.md</td><td>Multi-phase delivery, release prep</td></tr>
-        </tbody>
-      </table>
-
-      <h2 id="output-format">Forge Output Format</h2>
-      <p>Every Forge task response should include a structured output block with four mandatory fields. The host reads these fields to verify success, detect failures, review assumptions, and extract AGENTS.md guidance when appropriate.</p>
-      <table class="ref-table">
-        <thead><tr><th>Field</th><th>Description</th></tr></thead>
-        <tbody>
-          <tr><td>STATUS</td><td><code>SUCCESS</code> or <code>FAILURE</code>. The host checks this first — a <code>FAILURE</code> triggers fallback handling.</td></tr>
-          <tr><td>FILES_CHANGED</td><td>List of every file Forge created, modified, or deleted during the task. Used for output review and session logging.</td></tr>
-          <tr><td>ASSUMPTIONS</td><td>Any assumptions Forge made that were not explicit in the task prompt. The host surfaces these for user review.</td></tr>
-          <tr><td>PATTERNS_DISCOVERED</td><td>Codebase conventions, architecture patterns, or project quirks Forge noticed during the task. The host extracts these in its own words for AGENTS.md when they are new and safe to persist.</td></tr>
-        </tbody>
-      </table>
-      <div class="code-label">Example Forge output block</div>
-      <div class="code-block"><span class="key">STATUS:</span> <span class="val">SUCCESS</span>
-
-<span class="key">FILES_CHANGED:</span>
-<span class="val">  - src/auth/middleware.ts  (modified)</span>
-<span class="val">  - src/auth/middleware.test.ts  (created)</span>
-<span class="val">  - src/types/auth.ts  (modified)</span>
-
-<span class="key">ASSUMPTIONS:</span>
-<span class="val">  - JWT secret read from process.env.JWT_SECRET</span>
-<span class="val">  - Token expiry defaults to 24h if not configured</span>
-
-<span class="key">PATTERNS_DISCOVERED:</span>
-<span class="val">  - Project uses vitest, not jest</span>
-<span class="val">  - All middleware follows Express 5 async error pattern</span>
-<span class="val">  - TypeScript strict mode is enabled globally</span></div>
-      <div class="callout callout-info">
-        <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>PATTERNS_DISCOVERED feeds AGENTS.md carefully.</strong> After each task, the host reads this field, treats it as untrusted output, and writes only safe, deduplicated, action-oriented learnings to <code>./AGENTS.md</code> and <code>~/forge/AGENTS.md</code>.</div>
-      </div>
-
-      <h2 id="agents-md-format">AGENTS.md Format</h2>
-      <p>AGENTS.md is written in tiers when new guidance exists: global instructions live in <code>~/forge/AGENTS.md</code>, project instructions live in <code>./AGENTS.md</code>, and session history is appended to <code>site/sessions/YYYY-MM-DD-session.md</code>.</p>
-      <div class="code-label">Global AGENTS.md</div>
-      <div class="code-block"><span class="comment"># Forge Global Instructions</span>
-
-<span class="comment">## Code Style</span>
-<span class="val">- Cross-project style rules</span>
-
-<span class="comment">## Testing</span>
-<span class="val">- Cross-project test and verification habits</span>
-
-<span class="comment">## Git Workflow</span>
-<span class="val">- Cross-project commit and release habits</span>
-
-<span class="comment">## Forge Behavior</span>
-<span class="val">- Cross-project Forge corrections</span></div>
-      <div class="code-label">Project AGENTS.md</div>
-      <div class="code-block"><span class="comment"># Project Instructions</span>
-
-<span class="comment">## Project Conventions</span>
-<span class="val">- Repo-specific structure and naming rules</span>
-
-<span class="comment">## Task Patterns</span>
-<span class="val">- Repeated task shapes and workflow notes</span>
-
-<span class="comment">## Forge Corrections</span>
-<span class="val">- Repo-specific Forge mistakes and fixes</span></div>
-      <div class="code-label">Session log</div>
-      <div class="code-block"><span class="comment"># site/sessions/YYYY-MM-DD-session.md</span>
-<span class="val">- Task name</span>
-<span class="val">- Extracted instructions</span>
-<span class="val">- Deduplication decisions</span>
-<span class="val">- Tiers written</span></div>
-
-      <h2 id="file-structure">File Structure</h2>
-      <p>Files created and managed by Sidekick:</p>
-      <table class="ref-table">
-        <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td>skills/forge/SKILL.md</td><td>Forge delegation instruction set</td></tr>
-          <tr><td>skills/codex-delegate/SKILL.md</td><td>Kay delegate workflow and runtime guidance</td></tr>
-          <tr><td>.forge.toml</td><td>Project root compaction config (gitignored); credentials live in <code>~/forge/.credentials.json</code></td></tr>
-          <tr><td>.forge/conversations.idx</td><td>Project-local Forge task lookup ledger</td></tr>
-          <tr><td>host session marker</td><td>Forge state marker under the active host's session directory; this is created by <code>/forge</code> and removed by <code>/forge-stop</code></td></tr>
-          <tr><td><code>~/.sidekick/sessions/&lt;session&gt;/active-sidekick</code></td><td>Shared selector containing <code>forge</code> or <code>kay</code>; activation writes it so only one sidekick hook enforces per host session</td></tr>
-          <tr><td>~/.kay/sessions/&lt;session&gt;/.kay-delegation-active</td><td>Kay state marker used by Kay hooks when Kay mode is active</td></tr>
-          <tr><td>.kay/conversations.idx</td><td>Project-local Kay task lookup ledger</td></tr>
-          <tr><td>~/.kay/config.toml</td><td>Kay runtime config; legacy <code>~/.code/config.toml</code> and <code>~/.codex/config.toml</code> paths remain compatibility-only</td></tr>
-          <tr><td>.forge/skills/*/SKILL.md</td><td>4 bootstrap skills for injection</td></tr>
-          <tr><td>AGENTS.md</td><td>Project-level Forge standing instructions</td></tr>
-          <tr><td>~/forge/AGENTS.md</td><td>Global cross-project Forge instructions</td></tr>
-          <tr><td>site/sessions/</td><td>Per-session AGENTS.md evolution logs</td></tr>
-        </tbody>
-      </table>
-
-      <div class="page-nav-bottom">
-        <a href="../workflows/" class="pnav-btn"><i data-lucide="arrow-left"></i> Delegation Workflow</a>
-        <a href="../troubleshooting/" class="pnav-btn">Troubleshooting <i data-lucide="arrow-right"></i></a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <div class="container-wide">
-    <div class="footer-inner">
-      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
-      <div class="footer-links">
-        <a href="../">Help Home</a>
-        <a href="../../">Sidekick Home</a>
-        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
-      </div>
-    </div>
-  </div>
-</footer>
-
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
-<script>
-function applyTheme(dark){
-  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
-  document.getElementById('icon-sun').style.display=dark?'none':'';
-  document.getElementById('icon-moon').style.display=dark?'':'none';
-  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
-  localStorage.removeItem('sidekick-theme');
-}
-function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
-(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
-lucide.createIcons();
-</script>
+  <h2>Verification Commands</h2>
+  <p>Use the narrowest meaningful test first, then expand when release or integration risk increases.</p>
+  <div class="code">bash tests/run_unit.bash
+bash tests/run_all.bash
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash</div>
+</main>
 </body>
 </html>
