@@ -1,345 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark light">
-<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
-<title>Delegation Workflow — Sidekick Help</title>
-<meta name="description" content="The current end-to-end Sidekick workflow for Forge and Kay — from per-session readiness to delegated execution, hook summaries, task history, and AGENTS.md mentoring where applicable.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../tokens.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workflows - Sidekick Help</title>
+<meta name="description" content="Current Sidekick workflows for Kay exec and Codex exec delegation, review, retry, and stop behavior.">
 <link rel="icon" href="../../og-image.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
-h1,h2,h3,h4,h5,h6,.logo,.nav-logo,.section-title,.section-label,.tagline,.btn,.tag,.nav-cta,.hero-tagline-caps,.version-badge{font-family:var(--font-heading)}
-.container{max-width:860px;margin:0 auto;padding:0 24px}
-.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
-nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
-.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:0}
-.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
-.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
-.nav-breadcrumb a:hover{color:var(--accent-light)}
-.nav-breadcrumb .sep{color:var(--text-dim)}
-.nav-right{display:flex;align-items:center;gap:16px}
-.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
-.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
-.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
-.page-hero .container{position:relative;z-index:1}
-.breadcrumb-nav{font-size:.9rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
-.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
-.breadcrumb-nav a:hover{color:var(--accent-light)}
-.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:0;margin-bottom:16px;line-height:1.1}
-.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
-.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
-@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
-.doc-sidebar{position:sticky;top:88px;height:fit-content}
-.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
-.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
-.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
-.sidebar-nav li a.active{background:var(--accent-subtle);color:var(--accent-light);font-weight:600}
-@media(max-width:768px){.doc-sidebar{display:none}}
-.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:0;margin-bottom:16px;margin-top:48px;padding-top:16px}
-.doc-content h2:first-child{margin-top:0}
-.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
-.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
-.doc-content ul{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
-.doc-content li{margin-bottom:6px;line-height:1.7}
-.doc-content strong{color:var(--text-primary)}
-.doc-content a{color:var(--accent-light);text-decoration:none}
-.doc-content a:hover{text-decoration:underline}
-.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
-.callout-info{background:var(--accent-faint);border:1px solid var(--accent-border)}
-.callout-tip{background:var(--green-faint);border:1px solid var(--green-border)}
-.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
-.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
-.callout-body strong{color:var(--text-primary)}
-.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size: 1rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
-.code-block .comment{color:var(--text-dim)}
-.code-block .key{color:var(--cyan)}
-.code-block .val{color:var(--amber)}
-.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
-/* FLOW DIAGRAM */
-.flow{display:flex;flex-direction:column;gap:0;margin-bottom:32px}
-.flow-step{display:flex;gap:20px;align-items:flex-start}
-.flow-step+.flow-step{margin-top:0}
-.flow-connector{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
-.flow-num{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);flex-shrink:0}
-.flow-line{width:2px;height:32px;background:linear-gradient(180deg,var(--accent-stripe),var(--accent-subtle));margin:0 auto}
-.flow-body{padding-top:6px;padding-bottom:32px}
-.flow-body h4{font-size:.95rem;font-weight:700;margin-bottom:6px}
-.flow-body p{font-size:.875rem;color:var(--text-secondary);margin:0;line-height:1.7}
-footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
-.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
-footer a{color:var(--text-secondary);text-decoration:none}
-footer a:hover{color:var(--accent-light)}
-.footer-links{display:flex;gap:24px}
-.page-nav-bottom{display:flex;justify-content:space-between;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
-.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
-.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
-svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+:root{--bg:#f7faf8;--ink:#101815;--muted:#50605a;--line:#d8e2dd;--panel:#fff;--soft:#edf6f2;--green:#17724d;--blue:#1d6385;--gold:#9d6b1d;--mono:'IBM Plex Mono',monospace;--sans:'Manrope',system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65}.wrap{width:min(980px,calc(100% - 36px));margin:0 auto}header{padding:24px 0;border-bottom:1px solid var(--line);background:rgba(255,255,255,.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(16px)}.nav{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.nav a{color:var(--muted);text-decoration:none;font-weight:800}.nav .brand{color:var(--ink)}.links{display:flex;gap:14px;flex-wrap:wrap}main{padding:52px 0 78px}h1{font-size:clamp(2.4rem,6vw,4.4rem);line-height:1;margin:0 0 14px}h2{margin-top:40px}.lead,p,li{color:var(--muted)}.flow{display:grid;gap:14px;margin-top:20px}.step{display:grid;grid-template-columns:42px 1fr;gap:14px;align-items:start;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:18px}.num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:white;font-family:var(--mono);font-weight:700}.code{display:block;white-space:pre-wrap;font-family:var(--mono);background:#101815;color:#b4f2cf;border-radius:8px;padding:16px;margin:14px 0;overflow:auto}.inline{font-family:var(--mono);background:#e7f1ed;color:#153828;border-radius:7px;padding:2px 6px}.panel{border-left:4px solid var(--gold);background:var(--panel);padding:18px;border-radius:0 8px 8px 0;margin-top:18px}
 </style>
 </head>
 <body>
+<header><nav class="wrap nav"><a class="brand" href="../">Sidekick Help</a><div class="links"><a href="../getting-started/">Getting Started</a><a href="../concepts/">Concepts</a><a href="../workflows/">Workflows</a><a href="../reference/">Reference</a><a href="../troubleshooting/">Troubleshooting</a></div></nav></header>
+<main class="wrap">
+  <h1>Workflows</h1>
+  <p class="lead">Use one workflow shape for both supported sidekicks: activate, delegate, observe, verify, retry if needed, then stop or switch.</p>
 
-<nav>
-  <div class="nav-inner">
-    <div style="display:flex;align-items:center;gap:16px">
-      <a href="../../" class="nav-logo">Sidekick</a>
-      <span class="nav-breadcrumb">
-        <span class="sep">/</span>
-        <a href="../">Help</a>
-        <span class="sep">/</span>
-        Delegation Workflow
-      </span>
-    </div>
-    <div class="nav-right">
-      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
-        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
-        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
-      </button>
-    </div>
+  <h2>Kay Workflow</h2>
+  <div class="flow">
+    <div class="step"><div class="num">1</div><div><strong>Activate Kay.</strong><p>Run <span class="inline">/sidekick:kay-delegate</span>, optionally with <span class="inline">xiaomi</span> or <span class="inline">ocg</span>. The host records Kay as the active sidekick.</p></div></div>
+    <div class="step"><div class="num">2</div><div><strong>Run the child runtime.</strong><p>Active Kay mode delegates implementation through <span class="inline">kay exec</span>. The hook layer keeps the run bounded and surfaces compact task progress.</p></div></div>
+    <div class="step"><div class="num">3</div><div><strong>Review and verify.</strong><p>The host reviews changed files, checks assumptions, runs tests, and compares the result to the original request.</p></div></div>
   </div>
-</nav>
+  <div class="code">/sidekick:kay-delegate
+kay exec "&lt;bounded task&gt;"
+/sidekick:kay-stop</div>
 
-<div class="page-hero">
-  <div class="container">
-    <div class="breadcrumb-nav">
-      <a href="../">Help Center</a>
-      <span>/</span>
-      <span>Delegation Workflow</span>
-    </div>
-    <h1>Delegation Workflow</h1>
-    <p>The complete flow for delegating a coding task through Forge or Kay — from current-session readiness through output review, task history, and the Forge AGENTS.md mentoring loop. If you need the task-first docs map, read <a href="../../START-HERE.md">Start Here</a> first.</p>
+  <h2>Codex Workflow</h2>
+  <div class="flow">
+    <div class="step"><div class="num">1</div><div><strong>Activate Codex.</strong><p>Run <span class="inline">/sidekick:codex-delegate</span>. Sidekick verifies the local OpenAI Codex CLI path before handing over work.</p></div></div>
+    <div class="step"><div class="num">2</div><div><strong>Run the child runtime.</strong><p>Active Codex mode delegates through <span class="inline">codex exec</span> using <span class="inline">gpt-5.4-mini</span> with extra-high reasoning.</p></div></div>
+    <div class="step"><div class="num">3</div><div><strong>Review and verify.</strong><p>The host checks the diff, tests, integration behavior, and any assumptions before reporting completion.</p></div></div>
   </div>
-</div>
+  <div class="code">/sidekick:codex-delegate
+codex exec --model gpt-5.4-mini --reasoning-effort xhigh "&lt;bounded task&gt;"
+/sidekick:codex-stop</div>
 
-<div class="container">
-  <div class="callout callout-info">
-    <span class="callout-icon"><i data-lucide="info"></i></span>
-    <div class="callout-body"><strong>Working across runtimes?</strong> Keep <a href="../../AUDIENCE.md">Audience</a>, <a href="../../GLOSSARY.md">Glossary</a>, and <a href="../../COMPATIBILITY.md">Compatibility</a> handy while you read the workflow.</div>
-  </div>
-</div>
+  <h2>Retry Workflow</h2>
+  <p>If verification finds a missed requirement, regression, wrong file, syntax error, API failure, or incomplete trial, the host should relaunch the active sidekick with a narrower prompt that names the failed check and the expected final state.</p>
+  <div class="panel"><strong>Rule:</strong> Do not accept sidekick output because it says success. Accept it only after host verification confirms the requested behavior in the repository.</div>
 
-<div class="container-wide">
-  <div class="doc-layout">
-    <aside class="doc-sidebar">
-      <ul class="sidebar-nav">
-        <li class="sidebar-section">Setup</li>
-        <li><a href="#activation">1. Forge Activation</a></li>
-        <li><a href="#kay-workflow">Kay Workflow</a></li>
-        <li class="sidebar-section">Delegation</li>
-        <li><a href="#task-prompt">2. Task Prompt</a></li>
-        <li><a href="#monitoring">3. Monitoring</a></li>
-        <li><a href="#fallback">4. Fallback Handling</a></li>
-        <li class="sidebar-section">Completion</li>
-        <li><a href="#review">5. Output Review</a></li>
-        <li><a href="#agents-update">6. AGENTS.md Update</a></li>
-        <li><a href="#deactivation">7. Deactivation</a></li>
-      </ul>
-    </aside>
-
-    <div class="doc-content">
-
-      <h2 id="activation">Step 1 — Activate Forge</h2>
-      <div class="flow">
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Run /forge</h4>
-            <p>Type <code>/forge</code> in the host. Claude loads its rendered Sidekick skill from <code>agents/claude/forge/SKILL.md</code>; Codex loads the canonical <code>skills/forge/SKILL.md</code> workflow directly. The generated <code>agents/codex/forge/SKILL.md</code> copy remains a parity artifact for validation and docs.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Health check</h4>
-            <p>The host verifies four current conditions: (1) the Forge binary exists or is on PATH, (2) <code>forge info</code> exits successfully and reports a provider, (3) <code>~/forge/.credentials.json</code> is a non-empty array of credential entries with <code>id</code> and <code>auth_details</code>, and (4) <code>~/forge/.forge.toml</code> has non-empty <code>provider_id</code> and <code>model_id</code>. Any failure halts activation with a specific repair path.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">3</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Bootstrap project files if absent</h4>
-            <p>On first invocation only, the host creates missing Sidekick-owned project files without overwriting existing files: <code>.forge/agents/forge.md</code>, project <code>.forge.toml</code> compaction defaults, and the four <code>.forge/skills/</code> bootstrap skills. If <code>./AGENTS.md</code> is absent or empty, the Forge mentoring bootstrap creates the project instruction sections.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">4</div></div>
-          <div class="flow-body">
-            <h4>Confirm activation</h4>
-            <p>The host clears any Kay marker, writes <code>active-sidekick=forge</code>, then writes a fresh Forge activation marker under the current host session directory and confirms: "Forge-first delegation mode activated." The hook layer routes implementation work to Forge from the marker; the selector just prevents the Kay hook from enforcing during the same host session, and it stays active until you run <code>/forge-stop</code>.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="callout callout-tip">
-        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>Health check failing?</strong> See <a href="../troubleshooting/#health-check">Troubleshooting → Health Check Failures</a> for step-by-step fixes. The most common causes are a missing Forge binary, malformed <code>~/forge/.credentials.json</code>, or missing provider/model values in <code>~/forge/.forge.toml</code>.</div>
-      </div>
-
-      <h2 id="kay-workflow">Kay Workflow</h2>
-      <p>Kay uses its native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. Claude Code and Codex both activate Kay mode through <code>kay-delegate</code> or <code>sidekick:kay-delegate</code>; active Kay mode then launches Kay as a child execution runtime through <code>kay exec</code> while the host remains in the advisor and review role.</p>
-      <div class="flow">
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Verify Kay runtime</h4>
-            <p>Run <code>kay --version</code> and <code>kay exec --help</code>. If Kay provider login is missing, run <code>kay login --provider opencode-go --with-api-key</code>. Older binary names are compatibility-only.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Activate Kay mode</h4>
-            <p>Run <code>kay-delegate</code>, or <code>sidekick:kay-delegate</code> in plugin-prefixed hosts, then give the host the task to delegate. Activation clears any Forge marker and writes <code>active-sidekick=kay</code>. When Kay mode launches the child runtime, the hook keeps <code>kay exec --full-auto</code> in force and surfaces bounded, redacted output with <code>[KAY]</code>.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num">3</div></div>
-          <div class="flow-body">
-            <h4>Review the summary</h4>
-            <p>The Kay progress surface emits compact <code>[KAY-SUMMARY]</code> context when a STATUS block appears and preserves lookup metadata in <code>.kay/conversations.idx</code>. Review changed files, test output, and the final task summary before continuing.</p>
-          </div>
-        </div>
-      </div>
-
-      <h2 id="task-prompt">Step 2 — Compose Task Prompt</h2>
-      <p>When you describe a Forge task, the host builds a structured 5-field prompt capped at 2,000 tokens:</p>
-      <div class="code-label">task prompt structure</div>
-      <div class="code-block"><span class="key">OBJECTIVE:</span>     <span class="val">One-sentence statement of what Forge must accomplish</span>
-<span class="key">CONTEXT:</span>       <span class="val">Only relevant files + their current state</span>
-<span class="key">DESIRED STATE:</span> <span class="val">Specific, verifiable outcome (no ambiguity)</span>
-<span class="key">SUCCESS CRITERIA:</span> <span class="val">Checklist the host uses to verify Forge succeeded</span>
-<span class="key">INJECTED SKILLS:</span>  <span class="val">≤2 bootstrap skills relevant to the task type</span></div>
-      <div class="callout callout-info">
-        <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>The host writes this for you.</strong> You describe what you need in plain language. The host translates that into the 5-field structure with the right specificity and skill selection.</div>
-      </div>
-
-      <h2 id="monitoring">Step 3 — Monitor Forge Output</h2>
-      <p>The host streams Forge's output and checks for three failure signals on every response:</p>
-      <ul>
-        <li><strong>Error signal</strong> — <code>Error:</code>, <code>Failed:</code>, <code>fatal:</code>, or non-zero exit</li>
-        <li><strong>Wrong output</strong> — SUCCESS CRITERIA not satisfied, with the same failure mode confirmed on retry</li>
-        <li><strong>Stall</strong> — Forge asks questions without making progress</li>
-      </ul>
-      <p>If no failure signal is detected and SUCCESS CRITERIA are met, review the output summary in Step 5.</p>
-
-      <h2 id="fallback">Step 4 — Fallback Handling (on failure)</h2>
-      <p>Failures trigger the three-level fallback ladder in sequence:</p>
-
-      <div class="flow">
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#059669,#047857)">L1</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Guide — Reframe and retry once</h4>
-            <p>The host diagnoses the failure, rewrites the prompt with a tighter DESIRED STATE and code references, and resubmits. If this succeeds, jump to Step 5. If it fails, escalate to L2.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#d97706,#b45309)">L2</div><div class="flow-line"></div></div>
-          <div class="flow-body">
-            <h4>Handhold — Decompose and sequence</h4>
-            <p>The host breaks the task into atomic subtasks (≤200 tokens each) and submits them one at a time. Up to 3 subtask attempts total. If they fail, escalate to L3.</p>
-          </div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#dc2626,#b91c1c)">L3</div></div>
-          <div class="flow-body">
-            <h4>Take over — host implements directly</h4>
-            <p>The host runs <code>sidekick forge-level3 start</code>, implements only the failing subtask inside the project boundary, then runs <code>sidekick forge-level3 stop</code>. After completion, it produces a DEBRIEF with TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE fields. AGENTS_UPDATE is proposed for user confirmation before AGENTS.md is changed.</p>
-          </div>
-        </div>
-      </div>
-
-      <h2 id="review">Step 5 — Output Review</h2>
-      <p>Whether Forge succeeded or the host took over at L3, the host presents a structured output summary for your review. The summary is drawn from Forge's output block fields:</p>
-      <ul>
-        <li><strong>FILES_CHANGED</strong> — every file Forge created, modified, or deleted</li>
-        <li><strong>ASSUMPTIONS</strong> — anything Forge inferred that wasn't explicit in the prompt (review these carefully)</li>
-        <li><strong>PATTERNS_DISCOVERED</strong> — codebase conventions Forge noticed during the task</li>
-        <li><strong>Test results</strong> — if Forge ran tests, pass/fail summary</li>
-      </ul>
-      <p>Confirm the output looks correct. If something needs adjustment, describe the change in plain language — the host will compose a new 5-field delegation prompt for the follow-up task. There is no need to re-activate; delegation mode remains active.</p>
-
-      <div class="callout callout-warn">
-        <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>Always review ASSUMPTIONS.</strong> If Forge made an incorrect assumption (wrong env variable name, wrong test framework, etc.), correct it now. The host can convert the correction into deduplicated AGENTS.md guidance so Forge doesn't repeat the assumption.</div>
-      </div>
-      <p>The resulting <code>./AGENTS.md</code> also keeps a <code>## Forge Output Format</code> section so task responses stay structured around <code>STATUS</code>, <code>FILES_CHANGED</code>, <code>ASSUMPTIONS</code>, and <code>PATTERNS_DISCOVERED</code>.</p>
-
-      <h2 id="agents-update">Step 6 — AGENTS.md Update</h2>
-      <p>After each Forge task completion, the host runs the AGENTS.md mentoring loop. This is automatic for extraction and deduplication; L3 takeover updates are proposed for confirmation before being written.</p>
-
-      <h3>What gets written</h3>
-      <ul>
-        <li><strong>Successful tasks</strong> — PATTERNS_DISCOVERED and any user preferences expressed during review are extracted and written only when they are new and action-oriented</li>
-        <li><strong>L3 takeovers</strong> — the DEBRIEF's <code>AGENTS_UPDATE</code> field captures what Forge failed on and what the correct approach is; the host asks before applying it</li>
-        <li><strong>Session log</strong> — a full evolution log is appended to <code>site/sessions/YYYY-MM-DD-session.md</code>, recording every task, outcome, and AGENTS.md change from the session</li>
-      </ul>
-
-      <h3>Deduplication</h3>
-      <p>Before every write, the host runs a two-phase dedup check: exact substring match first, then semantic similarity. If either matches an existing AGENTS.md entry, the write is skipped — preventing duplicate or contradictory instructions from accumulating. Forge output is treated as untrusted data, so the host rewrites learnings in its own words.</p>
-
-      <div class="code-label">AGENTS.md three-tier write targets</div>
-      <div class="code-block"><span class="comment"># Global — applies to all projects</span>
-<span class="key">~/forge/AGENTS.md</span>
-
-<span class="comment"># Project — applies to this repo only</span>
-<span class="key">./AGENTS.md</span>
-
-<span class="comment"># Session log — audit trail</span>
-<span class="key">site/sessions/YYYY-MM-DD-session.md</span></div>
-
-      <h2 id="deactivation">Step 7 — Deactivate (optional)</h2>
-      <p>Forge delegation mode persists for the entire session. You can delegate as many tasks as needed without re-running <code>/forge</code>. To return to direct host implementation:</p>
-      <div class="code-block"><span class="key">/forge-stop</span></div>
-      <p>This removes the current-session Forge marker and restores normal direct-host behavior. The <code>.forge/conversations.idx</code> audit ledger and any accepted AGENTS.md updates are preserved.</p>
-
-      <div class="callout callout-info">
-        <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>You don't have to deactivate between tasks.</strong> Forge delegation mode is designed to stay active for a full working session. Only deactivate if you specifically want the host to implement something directly — for example, a quick one-liner that doesn't warrant the delegation overhead.</div>
-      </div>
-
-      <div class="page-nav-bottom">
-        <a href="../concepts/" class="pnav-btn"><i data-lucide="arrow-left"></i> Core Concepts</a>
-        <a href="../reference/" class="pnav-btn">Command Reference <i data-lucide="arrow-right"></i></a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <div class="container-wide">
-    <div class="footer-inner">
-      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
-      <div class="footer-links">
-        <a href="../">Help Home</a>
-        <a href="../../">Sidekick Home</a>
-        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
-      </div>
-    </div>
-  </div>
-</footer>
-
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
-<script>
-function applyTheme(dark){
-  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
-  document.getElementById('icon-sun').style.display=dark?'none':'';
-  document.getElementById('icon-moon').style.display=dark?'':'none';
-  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
-  localStorage.removeItem('sidekick-theme');
-}
-function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
-(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
-lucide.createIcons();
-</script>
+  <h2>Switching Sidekicks</h2>
+  <p>Stop the active sidekick first, then activate the other one. This keeps the <span class="inline">active-sidekick</span> selector unambiguous and prevents mixed runtime state in the same host session.</p>
+  <div class="code">/sidekick:kay-stop
+/sidekick:codex-delegate</div>
+</main>
 </body>
 </html>

@@ -1,385 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark light">
-<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
-<title>Troubleshooting — Sidekick Help</title>
-<meta name="description" content="Troubleshoot current Sidekick issues: per-session readiness, Forge provider config, Kay runtime config, hook enforcement, fallback behavior, AGENTS.md dedup, runtime compatibility, and session recovery.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../tokens.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting - Sidekick Help</title>
+<meta name="description" content="Troubleshoot Sidekick activation, routing, verification, runtime, generated bundle, and release-gate issues.">
 <link rel="icon" href="../../og-image.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
-h1,h2,h3,h4,h5,h6,.logo,.nav-logo,.section-title,.section-label,.tagline,.btn,.tag,.nav-cta,.hero-tagline-caps,.version-badge{font-family:var(--font-heading)}
-.container{max-width:860px;margin:0 auto;padding:0 24px}
-.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
-nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
-.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:0}
-.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
-.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
-.nav-breadcrumb a:hover{color:var(--accent-light)}
-.nav-breadcrumb .sep{color:var(--text-dim)}
-.nav-right{display:flex;align-items:center;gap:16px}
-.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
-.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
-.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
-.page-hero .container{position:relative;z-index:1}
-.breadcrumb-nav{font-size:.9rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
-.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
-.breadcrumb-nav a:hover{color:var(--accent-light)}
-.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:0;margin-bottom:16px;line-height:1.1}
-.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
-.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
-@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
-.doc-sidebar{position:sticky;top:88px;height:fit-content}
-.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
-.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
-.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
-.sidebar-nav li a.active{background:var(--accent-subtle);color:var(--accent-light);font-weight:600}
-@media(max-width:768px){.doc-sidebar{display:none}}
-.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:0;margin-bottom:16px;margin-top:48px;padding-top:16px;display:flex;align-items:center;gap:10px}
-.doc-content h2:first-child{margin-top:0}
-.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
-.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
-.doc-content ul{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
-.doc-content li{margin-bottom:6px;line-height:1.7}
-.doc-content strong{color:var(--text-primary)}
-.doc-content a{color:var(--accent-light);text-decoration:none}
-.doc-content a:hover{text-decoration:underline}
-.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
-.callout-info{background:var(--accent-faint);border:1px solid var(--accent-border)}
-.callout-tip{background:var(--green-faint);border:1px solid var(--green-border)}
-.callout-warn{background:var(--amber-faint);border:1px solid var(--amber-border)}
-.callout-error{background:var(--red-faint);border:1px solid var(--red-border)}
-.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
-.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
-.callout-body strong{color:var(--text-primary)}
-.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size: 1rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
-.code-block .comment{color:var(--text-dim)}
-.code-block .cmd{color:var(--accent-light)}
-.code-block .err{color:var(--red)}
-.code-block .ok{color:var(--green)}
-.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
-/* ISSUE BADGE */
-.issue-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-.badge-error{background:var(--red-subtle);color:var(--red)}
-.badge-config{background:var(--amber-subtle);color:var(--amber)}
-.badge-behavior{background:var(--accent-subtle);color:var(--accent-light)}
-footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
-.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
-footer a{color:var(--text-secondary);text-decoration:none}
-footer a:hover{color:var(--accent-light)}
-.footer-links{display:flex;gap:24px}
-.page-nav-bottom{display:flex;justify-content:flex-start;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
-.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
-.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
-svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+:root{--bg:#f7faf8;--ink:#101815;--muted:#50605a;--line:#d8e2dd;--panel:#fff;--soft:#edf6f2;--green:#17724d;--blue:#1d6385;--gold:#9d6b1d;--red:#b03030;--mono:'IBM Plex Mono',monospace;--sans:'Manrope',system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65}.wrap{width:min(980px,calc(100% - 36px));margin:0 auto}header{padding:24px 0;border-bottom:1px solid var(--line);background:rgba(255,255,255,.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(16px)}.nav{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.nav a{color:var(--muted);text-decoration:none;font-weight:800}.nav .brand{color:var(--ink)}.links{display:flex;gap:14px;flex-wrap:wrap}main{padding:52px 0 78px}h1{font-size:clamp(2.4rem,6vw,4.4rem);line-height:1;margin:0 0 14px}h2{margin-top:40px}.lead,p,li{color:var(--muted)}.issue{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:20px;margin-top:18px}.label{display:inline-block;font-family:var(--mono);font-size:.78rem;font-weight:700;color:white;background:var(--red);border-radius:999px;padding:3px 9px;margin-bottom:10px}.code{display:block;white-space:pre-wrap;font-family:var(--mono);background:#101815;color:#b4f2cf;border-radius:8px;padding:16px;margin:14px 0;overflow:auto}.inline{font-family:var(--mono);background:#e7f1ed;color:#153828;border-radius:7px;padding:2px 6px}
 </style>
 </head>
 <body>
+<header><nav class="wrap nav"><a class="brand" href="../">Sidekick Help</a><div class="links"><a href="../getting-started/">Getting Started</a><a href="../concepts/">Concepts</a><a href="../workflows/">Workflows</a><a href="../reference/">Reference</a><a href="../troubleshooting/">Troubleshooting</a></div></nav></header>
+<main class="wrap">
+  <h1>Troubleshooting</h1>
+  <p class="lead">Use this page when activation, routing, verification, generated host bundles, or release checks do not match the current Sidekick contract.</p>
 
-<nav>
-  <div class="nav-inner">
-    <div style="display:flex;align-items:center;gap:16px">
-      <a href="../../" class="nav-logo">Sidekick</a>
-      <span class="nav-breadcrumb">
-        <span class="sep">/</span>
-        <a href="../">Help</a>
-        <span class="sep">/</span>
-        Troubleshooting
-      </span>
-    </div>
-    <div class="nav-right">
-      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
-        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
-        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
-      </button>
-    </div>
+  <h2>Activation Fails</h2>
+  <div class="issue">
+    <span class="label">State</span>
+    <p><strong>Symptom:</strong> the host says a different sidekick is already active, or delegation commands appear to route to the wrong runtime.</p>
+    <p><strong>Fix:</strong> stop the current sidekick, then activate the one you want. Check the shared <span class="inline">active-sidekick</span> selector if state still looks stale.</p>
+    <div class="code">/sidekick:kay-stop
+/sidekick:codex-stop
+cat ~/.sidekick/sessions/&lt;session&gt;/active-sidekick</div>
   </div>
-</nav>
 
-<div class="page-hero">
-  <div class="container">
-    <div class="breadcrumb-nav">
-      <a href="../">Help Center</a>
-      <span>/</span>
-      <span>Troubleshooting</span>
-    </div>
-    <h1>Troubleshooting</h1>
-    <p>Common issues with per-session readiness, runtime config, hook enforcement, fallback behavior, and AGENTS.md — with fixes. If you need the reader map, start with <a href="../../START-HERE.md">Start Here</a>.</p>
+  <h2>Kay Runtime Fails</h2>
+  <div class="issue">
+    <span class="label">Runtime</span>
+    <p><strong>Symptom:</strong> Kay cannot launch, provider login is missing, or the selected provider route is not accepted.</p>
+    <p><strong>Fix:</strong> verify the runtime, check help output, then log in through Kay's provider flow. Use the session selector only after the runtime is healthy.</p>
+    <div class="code">kay --version
+kay exec --help
+kay login --provider opencode-go --with-api-key
+/sidekick:kay-delegate ocg</div>
   </div>
-</div>
 
-<div class="container">
-  <div class="callout callout-info">
-    <span class="callout-icon"><i data-lucide="info"></i></span>
-    <div class="callout-body"><strong>Before you troubleshoot, confirm the terms:</strong> <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a>.</div>
+  <h2>Codex Runtime Fails</h2>
+  <div class="issue">
+    <span class="label">Runtime</span>
+    <p><strong>Symptom:</strong> Codex activation succeeds but delegated work cannot start.</p>
+    <p><strong>Fix:</strong> confirm the local OpenAI Codex CLI is on PATH and can run non-interactive tasks. Sidekick does not install Codex for you.</p>
+    <div class="code">codex --version
+codex exec --help
+/sidekick:codex-delegate</div>
   </div>
-</div>
 
-<div class="container-wide">
-  <div class="doc-layout">
-    <aside class="doc-sidebar">
-      <ul class="sidebar-nav">
-        <li class="sidebar-section">Installation</li>
-        <li><a href="#forge-not-found">forge not found</a></li>
-        <li><a href="#kay-runtime">Kay runtime</a></li>
-        <li class="sidebar-section">Health &amp; Config</li>
-        <li><a href="#health-check">Health Check Failures</a></li>
-        <li><a href="#provider-config">Forge Provider Config</a></li>
-        <li class="sidebar-section">API Errors</li>
-        <li><a href="#rate-limit">429 Rate Limit</a></li>
-        <li><a href="#payment-required">402 / Billing Errors</a></li>
-        <li class="sidebar-section">Behavior</li>
-        <li><a href="#hook-enforcement">Hook Enforcement</a></li>
-        <li><a href="#forge-loop">Forge Stuck in Loop</a></li>
-        <li><a href="#fallback">Fallback Not Triggering</a></li>
-        <li><a href="#agents-md">AGENTS.md Issues</a></li>
-        <li class="sidebar-section">Recovery</li>
-        <li><a href="#recovery">Session Recovery</a></li>
-        <li><a href="#reinstall">Reinstall / Reset</a></li>
-      </ul>
-    </aside>
-
-    <div class="doc-content">
-
-      <h2 id="forge-not-found"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> "forge not found" After Install</h2>
-
-      <h3>forge binary not on PATH</h3>
-      <p><strong>Cause:</strong> The Forge binary was installed but your shell's <code>PATH</code> doesn't include the install directory. Sidekick expects <code>~/.local/bin/forge</code> or another <code>which forge</code> match.</p>
-      <p><strong>Fix:</strong></p>
-      <ul>
-        <li>Check where Forge was installed: <code>which forge</code> or <code>ls ~/.local/bin/forge</code></li>
-        <li>If found, add the install directory to your PATH in <code>~/.zshrc</code> or <code>~/.bashrc</code>:</li>
-      </ul>
-      <div class="code-label">~/.zshrc — add Forge to PATH</div>
-      <div class="code-block"><span class="comment"># Add Forge binary to PATH</span>
-<span class="cmd">export PATH="$HOME/.local/bin:$PATH"</span>
-<span class="comment"># Then reload your shell</span>
-<span class="cmd">source ~/.zshrc</span></div>
-      <ul>
-        <li>If Forge is not found at all, reinstall Sidekick from the host plugin surface or follow the safe repair path in <code>skills/forge.md</code> STEP 0A. Do not pipe a downloaded installer directly into a shell.</li>
-      </ul>
-      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span>
-<span class="comment"># then restart the host and run /forge to re-check current-session readiness</span></div>
-
-      <h3>Sidekick installed but forge binary was not</h3>
-      <p><strong>Cause:</strong> The first-run plugin bootstrap did not complete, or Forge was removed after the plugin was installed.</p>
-      <p><strong>Fix:</strong> Reinstall Sidekick from the host plugin surface, restart the host, then run <code>/forge</code> again so the current-session readiness check can verify the binary.</p>
-
-      <div class="callout callout-tip">
-        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>After installing, always run <code>/forge</code>.</strong> This verifies the binary is reachable, credentials are present, and the Forge provider/model config is valid before you delegate any task.</div>
-      </div>
-
-      <h2 id="kay-runtime"><span class="issue-badge badge-config"><i data-lucide="terminal"></i> Config</span> Kay Runtime Issues</h2>
-
-      <h3>kay exec is unavailable</h3>
-      <p><strong>Cause:</strong> The Kay runtime is not installed, not on PATH, or the installed runtime predates the <code>kay</code> binary name.</p>
-      <p><strong>Fix:</strong></p>
-      <ul>
-        <li>Run <code>kay --version</code> to verify the primary binary is available.</li>
-        <li>Run <code>kay exec --help</code> to verify non-interactive execution is available.</li>
-        <li>If only an old alias is available, reinstall Sidekick or install the Kay runtime path again before starting delegation.</li>
-      </ul>
-      <div class="code-block"><span class="cmd">kay exec --help</span></div>
-
-      <h3>Kay provider login missing</h3>
-      <p><strong>Cause:</strong> Kay's OpenCode Go provider route is unavailable because the Kay runtime has no provider credentials.</p>
-      <p><strong>Fix:</strong> Use Kay's native login flow:</p>
-      <div class="code-block"><span class="cmd">kay login --provider opencode-go --with-api-key</span></div>
-
-      <h2 id="health-check"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> Health Check Failures</h2>
-
-      <h3>✗ Forge provider or credentials not valid</h3>
-      <p><strong>Cause:</strong> Missing binary, malformed credential array, missing provider/model config, invalid API key, no network access, or provider-side service issue.</p>
-      <p><strong>Fix:</strong></p>
-      <ul>
-        <li>Run <code>which forge</code> or check <code>~/.local/bin/forge</code>.</li>
-        <li>Confirm <code>forge info</code> exits successfully and shows a provider.</li>
-        <li>Check <code>~/forge/.credentials.json</code> is a JSON array with at least one entry containing <code>id</code> and non-empty <code>auth_details</code>.</li>
-        <li>Confirm <code>provider_id</code> and <code>model_id</code> are set in <code>~/forge/.forge.toml</code>.</li>
-        <li>Confirm the chosen provider account has usable credits or quota.</li>
-      </ul>
-      <div class="code-label">credential schema: ~/forge/.credentials.json</div>
-      <div class="code-block">[
-  { "id": <span style="color:var(--amber)">"minimax"</span>, "auth_details": { "api_key": <span style="color:var(--amber)">"your-minimax-key"</span> } }
-]</div>
-
-      <h3>✗ Model not available</h3>
-      <p><strong>Cause:</strong> The model configured in <code>~/forge/.forge.toml</code> is unavailable for your provider account or temporarily unavailable provider-side.</p>
-      <p><strong>Fix:</strong> Verify the provider/model pair in <code>~/forge/.forge.toml</code>. For MiniMax Coding, use <code>provider_id = "minimax"</code> with <code>model_id = "MiniMax-M2.7"</code>.</p>
-
-      <h3>✗ Bootstrap skills not loaded</h3>
-      <p><strong>Cause:</strong> <code>.forge/skills/</code> directory is missing or corrupted.</p>
-      <p><strong>Fix:</strong> Reinstall Sidekick to restore bootstrap skills:</p>
-      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span></div>
-
-      <h2 id="provider-config"><span class="issue-badge badge-config"><i data-lucide="settings"></i> Config</span> Forge Provider Configuration</h2>
-
-      <h3>API key set but not persisting</h3>
-      <p><strong>Cause:</strong> <code>~/forge/.credentials.json</code> may not have been written correctly.</p>
-      <p><strong>Fix:</strong> Check if <code>~/forge/.credentials.json</code> exists and contains at least one credential entry with <code>auth_details.api_key</code>. If not, follow the STEP 0A setup in <code>skills/forge.md</code> to recreate it.</p>
-
-      <h3>Wrong model being used</h3>
-      <p><strong>Fix:</strong> Edit <code>~/forge/.forge.toml</code> and set an explicit provider/model pair. Use <code>minimax</code> with <code>MiniMax-M2.7</code>.</p>
-
-      <div class="callout callout-warn">
-        <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>Never commit API credentials.</strong> Forge API keys live in <code>~/forge/.credentials.json</code> (global, never in the repo). The project-root <code>.forge.toml</code> contains only compaction settings and is gitignored automatically.</div>
-      </div>
-
-      <h2 id="rate-limit"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 429 Rate Limit from Forge</h2>
-
-      <h3>Too many requests — provider rate limit hit</h3>
-      <p><strong>Cause:</strong> Your configured provider account has hit its per-minute or per-day request limit.</p>
-      <p><strong>Symptoms:</strong> Forge returns a 429 error mid-task, or the provider check fails with a rate limit message.</p>
-      <p><strong>Fix:</strong></p>
-      <ul>
-        <li>Wait 60 seconds and retry — per-minute limits reset quickly</li>
-        <li>If you hit daily limits frequently, add credits or raise limits with the provider you configured.</li>
-        <li>Switch providers if the other supported Forge path has better limits for your usage pattern (see <a href="../concepts/#provider-config">Provider Config</a>)</li>
-      </ul>
-      <div class="callout callout-warn">
-        <span class="callout-icon"><i data-lucide="alert-triangle"></i></span>
-        <div class="callout-body"><strong>L2 subtask decomposition can spike request counts.</strong> When the fallback ladder reaches L2, the host submits multiple atomic subtasks sequentially. If you're near your rate limit, L2 escalation may trigger a 429. Deactivate with <code>/forge-stop</code>, wait a minute, then reactivate and retry.</div>
-      </div>
-
-      <h2 id="payment-required"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> 402 Payment Required</h2>
-
-      <h3>Provider account has no credits</h3>
-      <p><strong>Cause:</strong> Your configured provider account balance is zero, below the minimum required for the configured model, or blocked by billing/quota rules.</p>
-      <p><strong>Symptoms:</strong> Health check passes (credentials valid) but the first task delegation immediately returns 402.</p>
-      <p><strong>Fix:</strong></p>
-      <ul>
-        <li>Add credits or quota to the provider account configured in <code>~/forge/.forge.toml</code>.</li>
-        <li>After adding credits, rerun <code>/forge</code> so the current session re-checks readiness.</li>
-      </ul>
-      <div class="code-label">Check your balance before delegating</div>
-      <div class="code-block"><span class="comment"># Visit the dashboard for the provider configured in ~/forge/.forge.toml</span>
-<span class="comment"># Then re-run the Sidekick readiness check</span>
-<span class="cmd">/forge</span></div>
-
-      <h2 id="hook-enforcement"><span class="issue-badge badge-behavior"><i data-lucide="shield-check"></i> Behavior</span> Hook Enforcement Issues</h2>
-
-      <h3>Direct edits are denied after /forge or Kay mode starts</h3>
-      <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. If the shared <code>active-sidekick</code> selector is present it suppresses the opposite sidekick for that host session, but the marker remains the source of truth for the active mode. It blocks direct implementation writes and asks the host to route work through Forge or Kay.</p>
-      <p><strong>Fix:</strong> Delegate the task through Forge mode for Forge, or <code>kay-delegate</code> / <code>sidekick:kay-delegate</code> for Kay. Inside active Kay mode, the child runtime command is <code>kay exec --full-auto "&lt;task&gt;"</code>. For Forge L3 takeover only, the host runs <code>sidekick forge-level3 start</code>, completes the failing subtask inside the project boundary, then runs <code>sidekick forge-level3 stop</code>.</p>
-
-      <h3>Forge says the conversation database is not writable</h3>
-      <p><strong>Cause:</strong> The Forge enforcer runs <code>forge conversation list</code> before injecting a conversation ID. If that database check fails, the hook refuses the delegation so it does not create untrackable work.</p>
-      <p><strong>Fix:</strong> Run <code>/forge-stop</code>, repair the Forge state using <code>skills/forge.md</code> STEP 0A, then run <code>/forge</code> again. The <code>.forge/conversations.idx</code> ledger is preserved.</p>
-
-      <h2 id="forge-loop"><span class="issue-badge badge-behavior"><i data-lucide="refresh-cw"></i> Behavior</span> Forge Stuck in a Loop</h2>
-
-      <h3>Forge keeps repeating the same action without progress</h3>
-      <p><strong>Cause:</strong> Forge entered a loop — typically trying the same fix repeatedly, or oscillating between two states. This is a known edge case in agentic coding systems when the DESIRED STATE is ambiguous or the SUCCESS CRITERIA is underspecified.</p>
-      <p><strong>Symptoms:</strong> Forge output shows the same file being edited multiple times with no net change, or the same error appearing after each attempt.</p>
-      <p><strong>Fix:</strong></p>
-      <ul>
-        <li>Interrupt the current task by telling the host: "Forge is looping — trigger L3 takeover"</li>
-        <li>The host will lift the delegation restriction for the project boundary, implement the task directly, and produce a DEBRIEF</li>
-        <li>The DEBRIEF's AGENTS_UPDATE field will propose instructions for AGENTS.md to prevent the loop pattern on similar future tasks</li>
-      </ul>
-
-      <h3>Forge loops on test failures</h3>
-      <p><strong>Cause:</strong> Forge is trying to fix a failing test but the test itself has a bug, or the test expects behaviour that conflicts with what's in AGENTS.md.</p>
-      <p><strong>Fix:</strong> Tell the host: "The test has a bug, not the implementation." The host will inspect both, fix the root cause, and propose AGENTS.md guidance with the correct testing pattern.</p>
-
-      <div class="callout callout-info">
-        <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Loops are L3 learning events.</strong> Every time Forge loops and the host takes over, the DEBRIEF captures what pattern caused the loop. Accepted AGENTS.md guidance helps prevent the same pattern in later tasks.</div>
-      </div>
-
-      <h2 id="fallback"><span class="issue-badge badge-behavior"><i data-lucide="layers"></i> Behavior</span> Fallback Ladder Not Triggering</h2>
-
-      <h3>Forge failed but the host didn't escalate</h3>
-      <p><strong>Cause:</strong> The failure signal wasn't in one of the three recognized patterns (error output, wrong output, stall).</p>
-      <p><strong>Fix:</strong> Describe to the host what went wrong — "Forge's output doesn't satisfy the success criteria because…". The host can manually trigger the fallback ladder from the appropriate level.</p>
-
-      <h3>L1 retry produced the same wrong output</h3>
-      <p>This is expected — L1 is a single retry with a reframed prompt. If L1 fails, the ladder escalates to L2. If you see the host not escalating after L1 fails, say "that's still wrong, escalate to L2".</p>
-
-      <h3>L3 takeover didn't produce a DEBRIEF</h3>
-      <p><strong>Fix:</strong> Ask the host explicitly: "Please produce a DEBRIEF for this L3 takeover." The DEBRIEF (TASK / FORGE_FAILURE / LEARNED / AGENTS_UPDATE) should always follow an L3 takeover.</p>
-
-      <h2 id="agents-md"><span class="issue-badge badge-behavior"><i data-lucide="brain"></i> Behavior</span> AGENTS.md Issues</h2>
-
-      <h3>New instructions not being added to AGENTS.md</h3>
-      <p><strong>Cause:</strong> The deduplication check found a semantically similar entry already exists.</p>
-      <p><strong>This is correct behavior</strong> — the dedup prevents duplicate entries. If you believe the new instruction is genuinely different, ask the host to add it with explicit phrasing that distinguishes it from existing entries.</p>
-
-      <h3>AGENTS.md bootstrapped with wrong content</h3>
-      <p><strong>Fix:</strong> Edit <code>./AGENTS.md</code> directly — it's a plain Markdown file. Remove incorrect entries and add your project's actual conventions. The host will use your edits on the next <code>/forge</code> invocation.</p>
-
-      <h3>~/forge/AGENTS.md not found</h3>
-      <p>The global AGENTS.md at <code>~/forge/AGENTS.md</code> is optional. If it doesn't exist, the host creates it on the first cross-session write. No action needed.</p>
-
-      <h2 id="recovery"><span class="issue-badge badge-config"><i data-lucide="refresh-cw"></i> Recovery</span> Session Recovery</h2>
-
-      <h3>Forge session appears stuck / host is confused about state</h3>
-      <p><strong>Fix:</strong> Deactivate and reactivate Forge:</p>
-      <div class="code-block"><span class="cmd">/forge-stop</span>
-<span class="cmd">/forge</span>   <span class="comment"># re-activate with fresh state</span></div>
-
-      <h3>After an L3 takeover, delegation isn't resuming</h3>
-      <p>After L3, Forge delegation mode remains active for the next task. If the host seems to be implementing directly instead of delegating, say "re-enter Forge delegation mode" — it will reload the delegation protocol from SKILL.md.</p>
-
-      <h2 id="reinstall"><span class="issue-badge badge-config"><i data-lucide="download"></i> Reset</span> Reinstall / Full Reset</h2>
-
-      <p>To do a clean reinstall of Sidekick from the host plugin surface (preserves AGENTS.md and session logs):</p>
-      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span>
-<span class="comment"># This refreshes the plugin surface but does not delete AGENTS.md or site/sessions/</span></div>
-
-      <p>To fully reset your API credentials (e.g. to change your API key):</p>
-      <div class="code-block"><span class="comment"># Delete credentials and re-run STEP 0A setup</span>
-<span class="cmd">rm ~/forge/.credentials.json</span>
-<span class="cmd">/forge</span>   <span class="comment"># will guide through credentials setup again</span></div>
-
-      <div class="callout callout-tip">
-        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>Still stuck?</strong> Open an issue at <a href="https://github.com/alo-exp/sidekick/issues" target="_blank">github.com/alo-exp/sidekick/issues</a> with your health check output and <code>.forge.toml</code> / <code>~/forge/.forge.toml</code> contents, with any API key redacted.</div>
-      </div>
-
-      <div class="page-nav-bottom">
-        <a href="../reference/" class="pnav-btn"><i data-lucide="arrow-left"></i> Command Reference</a>
-      </div>
-    </div>
+  <h2>Verification Fails</h2>
+  <div class="issue">
+    <span class="label">Quality</span>
+    <p><strong>Symptom:</strong> the sidekick reports success, but tests fail, the wrong file changed, a requirement is missing, or the implementation relies on an unverified assumption.</p>
+    <p><strong>Fix:</strong> keep the same sidekick active and relaunch it with a smaller prompt that names the failed check, the relevant file, and the desired final state. The host should verify again before reporting completion.</p>
+    <div class="code">bash tests/run_unit.bash
+bash tests/run_all.bash</div>
   </div>
-</div>
 
-<footer>
-  <div class="container-wide">
-    <div class="footer-inner">
-      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
-      <div class="footer-links">
-        <a href="../">Help Home</a>
-        <a href="../../">Sidekick Home</a>
-        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
-      </div>
-    </div>
+  <h2>Generated Bundles Are Stale</h2>
+  <div class="issue">
+    <span class="label">Build</span>
+    <p><strong>Symptom:</strong> Claude and Codex host surfaces show different skill text, or tests report a rendered-surface mismatch.</p>
+    <p><strong>Fix:</strong> update the canonical skill under <span class="inline">skills/</span>, rerun the renderer, then run unit checks.</p>
+    <div class="code">bash scripts/sync-host-surfaces.sh
+bash tests/run_unit.bash</div>
   </div>
-</footer>
 
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
-<script>
-function applyTheme(dark){
-  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
-  document.getElementById('icon-sun').style.display=dark?'none':'';
-  document.getElementById('icon-moon').style.display=dark?'':'none';
-  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
-  localStorage.removeItem('sidekick-theme');
-}
-function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
-(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
-lucide.createIcons();
-</script>
+  <h2>Release Gate Fails</h2>
+  <div class="issue">
+    <span class="label">Release</span>
+    <p><strong>Symptom:</strong> release checks fail in the live Codex path or the docs contract blocks the release.</p>
+    <p><strong>Fix:</strong> run the failing test directly, update the public docs or registry contract, then rerun the Kay-hosted live release command.</p>
+    <div class="code">bash tests/test_docs_contract.bash
+bash tests/test_help_site_navigation.bash
+bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash</div>
+  </div>
+</main>
 </body>
 </html>

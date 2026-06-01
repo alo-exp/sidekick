@@ -1,43 +1,68 @@
 # Start Here
 
-> The quickest path through the Sidekick docs.
+> The fastest path through current Sidekick docs.
 
----
+## Choose Your Task
 
-## What are you trying to do?
+### Install or refresh Sidekick
 
-### Install Sidekick
+Start with the [README](../README.md), then open [Getting Started](help/getting-started/). If canonical skill text changed, refresh generated host bundles:
 
-Start with [README.md](../README.md) for installation, then open the [Help Center](help/) for the guided setup flow.
+```bash
+bash scripts/sync-host-surfaces.sh
+```
 
-### Delegate a task
+### Delegate a task to Kay
 
-Read [help/getting-started/](help/getting-started/), then [help/workflows/](help/workflows/) for the full delegation loop.
+Use Kay when you want the Kay runtime:
 
-### Debug something that failed
+```text
+/sidekick:kay-delegate
+/sidekick:kay-delegate xiaomi
+/sidekick:kay-delegate ocg
+```
 
-Go straight to [help/troubleshooting/](help/troubleshooting/) and [help/reference/](help/reference/) for the exact surface area.
+Then read [Workflows](help/workflows/) for the review and retry loop.
 
-### Prepare for release
+### Delegate a task to Codex
 
-Use [TESTING.md](TESTING.md), [CICD.md](CICD.md), and [pre-release-quality-gate.md](pre-release-quality-gate.md).
+Use Codex when you want the local OpenAI Codex CLI:
 
-### Extend or package a plugin
+```text
+/sidekick:codex-delegate
+```
 
-Read [GLOSSARY.md](GLOSSARY.md), [COMPATIBILITY.md](COMPATIBILITY.md), and [internal/codex-command-packaging-guide.md](internal/codex-command-packaging-guide.md).
+The Codex sidekick runs through `codex exec` with `gpt-5.4-mini` and extra-high reasoning.
 
-### Understand the system shape
+### Stop or switch sidekicks
 
-Read [AUDIENCE.md](AUDIENCE.md) for the reader model and [ARCHITECTURE.md](ARCHITECTURE.md) for the high-level design.
+Stop the current sidekick before switching:
 
-## Good first sequence
+```text
+/sidekick:kay-stop
+/sidekick:codex-stop
+```
 
-1. [AUDIENCE.md](AUDIENCE.md)
-2. [GLOSSARY.md](GLOSSARY.md)
-3. [COMPATIBILITY.md](COMPATIBILITY.md)
-4. [Help Center](help/)
-5. [ARCHITECTURE.md](ARCHITECTURE.md)
+### Debug a failure
 
-## If you only remember one thing
+Use [Troubleshooting](help/troubleshooting/) first, then [Reference](help/reference/) for exact paths and commands.
 
-The docs are organized by task, not just by folder. Use this page first when you are unsure where to go.
+### Prepare a release
+
+Use [Testing](TESTING.md), then run the current release checks that match your risk level.
+
+## Good First Reading Order
+
+1. [Help](help/)
+2. [Getting Started](help/getting-started/)
+3. [Concepts](help/concepts/)
+4. [Workflows](help/workflows/)
+5. [Reference](help/reference/)
+6. [Troubleshooting](help/troubleshooting/)
+7. [Architecture](ARCHITECTURE.md)
+8. [Compatibility](COMPATIBILITY.md)
+9. [Glossary](GLOSSARY.md)
+
+## Remember This
+
+Sidekick delegates implementation. The host AI still owns correctness.
