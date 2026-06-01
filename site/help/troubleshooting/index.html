@@ -1,80 +1,313 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Troubleshooting - Sidekick Help</title>
-<meta name="description" content="Troubleshoot Sidekick activation, routing, verification, runtime, generated bundle, and release-gate issues.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
+<title>Troubleshooting — Sidekick Help</title>
+<meta name="description" content="Troubleshoot current Sidekick issues: per-session readiness, Codex provider config, Kay runtime config, hook enforcement, fallback behavior, AGENTS.md dedup, runtime compatibility, and session recovery.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,700;1,400&family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
 <link rel="icon" href="../../og-image.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f7faf8;--ink:#101815;--muted:#50605a;--line:#d8e2dd;--panel:#fff;--soft:#edf6f2;--green:#17724d;--blue:#1d6385;--gold:#9d6b1d;--red:#b03030;--mono:'IBM Plex Mono',monospace;--sans:'Manrope',system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65}.wrap{width:min(980px,calc(100% - 36px));margin:0 auto}header{padding:24px 0;border-bottom:1px solid var(--line);background:rgba(255,255,255,.9);position:sticky;top:0;z-index:10;backdrop-filter:blur(16px)}.nav{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.nav a{color:var(--muted);text-decoration:none;font-weight:800}.nav .brand{color:var(--ink)}.links{display:flex;gap:14px;flex-wrap:wrap}main{padding:52px 0 78px}h1{font-size:clamp(2.4rem,6vw,4.4rem);line-height:1;margin:0 0 14px}h2{margin-top:40px}.lead,p,li{color:var(--muted)}.issue{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:20px;margin-top:18px}.label{display:inline-block;font-family:var(--mono);font-size:.78rem;font-weight:700;color:white;background:var(--red);border-radius:999px;padding:3px 9px;margin-bottom:10px}.code{display:block;white-space:pre-wrap;font-family:var(--mono);background:#101815;color:#b4f2cf;border-radius:8px;padding:16px;margin:14px 0;overflow:auto}.inline{font-family:var(--mono);background:#e7f1ed;color:#153828;border-radius:7px;padding:2px 6px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+h1,h2,h3,h4,h5,h6,.logo,.nav-logo,.section-title,.section-label,.tagline,.btn,.tag,.nav-cta,.hero-tagline-caps,.version-badge{font-family:var(--font-heading)}
+.container{max-width:860px;margin:0 auto;padding:0 24px}
+.container-wide{max-width:1100px;margin:0 auto;padding:0 24px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
+nav .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{font-weight:800;font-size:1rem;color:var(--text-primary);text-decoration:none;letter-spacing:0}
+.nav-breadcrumb{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.nav-breadcrumb a{color:var(--text-secondary);text-decoration:none}
+.nav-breadcrumb a:hover{color:var(--accent-light)}
+.nav-breadcrumb .sep{color:var(--text-dim)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary);transition:all .2s;display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+.page-hero{background:var(--bg-hero);padding:120px 24px 64px;position:relative;overflow:hidden}
+.page-hero .container{position:relative;z-index:1}
+.breadcrumb-nav{font-size:.9rem;color:var(--text-dim);margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.breadcrumb-nav a{color:var(--text-dim);text-decoration:none}
+.breadcrumb-nav a:hover{color:var(--accent-light)}
+.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:0;margin-bottom:16px;line-height:1.1}
+.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
+.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:48px;padding:64px 0}
+@media(max-width:768px){.doc-layout{grid-template-columns:1fr}}
+.doc-sidebar{position:sticky;top:88px;height:fit-content}
+.sidebar-nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+.sidebar-nav li a{display:block;padding:7px 12px;border-radius:var(--radius-sm);font-size:.85rem;color:var(--text-secondary);text-decoration:none;transition:all .15s}
+.sidebar-nav li a:hover{background:var(--bg-code);color:var(--text-primary)}
+.sidebar-nav li a.active{background:var(--accent-subtle);color:var(--accent-light);font-weight:600}
+@media(max-width:768px){.doc-sidebar{display:none}}
+.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:0;margin-bottom:16px;margin-top:48px;padding-top:16px;display:flex;align-items:center;gap:10px}
+.doc-content h2:first-child{margin-top:0}
+.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
+.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
+.doc-content ul{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
+.doc-content li{margin-bottom:6px;line-height:1.7}
+.doc-content strong{color:var(--text-primary)}
+.doc-content a{color:var(--accent-light);text-decoration:none}
+.doc-content a:hover{text-decoration:underline}
+.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
+.callout-info{background:var(--accent-faint);border:1px solid var(--accent-border)}
+.callout-tip{background:var(--green-faint);border:1px solid var(--green-border)}
+.callout-warn{background:var(--amber-faint);border:1px solid var(--amber-border)}
+.callout-error{background:var(--red-faint);border:1px solid var(--red-border)}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
+.callout-body strong{color:var(--text-primary)}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size: 1rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
+.code-block .comment{color:var(--text-dim)}
+.code-block .cmd{color:var(--accent-light)}
+.code-block .err{color:var(--red)}
+.code-block .ok{color:var(--green)}
+.code-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px}
+/* ISSUE BADGE */
+.issue-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.badge-error{background:var(--red-subtle);color:var(--red)}
+.badge-config{background:var(--amber-subtle);color:var(--amber)}
+.badge-behavior{background:var(--accent-subtle);color:var(--accent-light)}
+footer{border-top:1px solid var(--border);padding:40px 0;color:var(--text-dim);font-size:.85rem}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+footer a{color:var(--text-secondary);text-decoration:none}
+footer a:hover{color:var(--accent-light)}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap}
+.page-nav-bottom{display:flex;justify-content:flex-start;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
+.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
-<header><nav class="wrap nav"><a class="brand" href="../">Sidekick Help</a><div class="links"><a href="../getting-started/">Getting Started</a><a href="../concepts/">Concepts</a><a href="../workflows/">Workflows</a><a href="../reference/">Reference</a><a href="../troubleshooting/">Troubleshooting</a></div></nav></header>
-<main class="wrap">
-  <h1>Troubleshooting</h1>
-  <p class="lead">Use this page when activation, routing, verification, generated host bundles, or release checks do not match the current Sidekick contract.</p>
 
-  <h2>Activation Fails</h2>
-  <div class="issue">
-    <span class="label">State</span>
-    <p><strong>Symptom:</strong> the host says a different sidekick is already active, or delegation commands appear to route to the wrong runtime.</p>
-    <p><strong>Fix:</strong> stop the current sidekick, then activate the one you want. Check the shared <span class="inline">active-sidekick</span> selector if state still looks stale.</p>
-    <div class="code">/sidekick:kay-stop
-/sidekick:codex-stop
-cat ~/.sidekick/sessions/&lt;session&gt;/active-sidekick</div>
+<nav>
+  <div class="nav-inner">
+    <div style="display:flex;align-items:center;gap:16px">
+      <a href="../../" class="nav-logo">Sidekick</a>
+      <span class="nav-breadcrumb">
+        <span class="sep">/</span>
+        <a href="../">Help</a>
+        <span class="sep">/</span>
+        Troubleshooting
+      </span>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme">
+        <span id="icon-sun" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+        <span id="icon-moon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+      </button>
+    </div>
   </div>
+</nav>
 
-  <h2>Kay Runtime Fails</h2>
-  <div class="issue">
-    <span class="label">Runtime</span>
-    <p><strong>Symptom:</strong> Kay cannot launch, provider login is missing, or the selected provider route is not accepted.</p>
-    <p><strong>Fix:</strong> verify the runtime, check help output, then log in through Kay's provider flow. Use the session selector only after the runtime is healthy.</p>
-    <div class="code">kay --version
-kay exec --help
-kay login --provider opencode-go --with-api-key
-/sidekick:kay-delegate ocg</div>
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb-nav">
+      <a href="../">Help Center</a>
+      <span>/</span>
+      <span>Troubleshooting</span>
+    </div>
+    <h1>Troubleshooting</h1>
+    <p>Common issues with per-session readiness, runtime config, hook enforcement, fallback behavior, and AGENTS.md — with fixes. If you need the reader map, start with <a href="../../START-HERE.md">Start Here</a>.</p>
   </div>
+</div>
 
-  <h2>Codex Runtime Fails</h2>
-  <div class="issue">
-    <span class="label">Runtime</span>
-    <p><strong>Symptom:</strong> Codex activation succeeds but delegated work cannot start.</p>
-    <p><strong>Fix:</strong> confirm the local OpenAI Codex CLI is on PATH and can run non-interactive tasks. Sidekick does not install Codex for you.</p>
-    <div class="code">codex --version
-codex exec --help
-/sidekick:codex-delegate</div>
+<div class="container">
+  <div class="callout callout-info">
+    <span class="callout-icon"><i data-lucide="info"></i></span>
+    <div class="callout-body"><strong>Before you troubleshoot, confirm the terms:</strong> <a href="../../GLOSSARY.md">Glossary</a> and <a href="../../COMPATIBILITY.md">Compatibility</a>.</div>
   </div>
+</div>
 
-  <h2>Verification Fails</h2>
-  <div class="issue">
-    <span class="label">Quality</span>
-    <p><strong>Symptom:</strong> the sidekick reports success, but tests fail, the wrong file changed, a requirement is missing, or the implementation relies on an unverified assumption.</p>
-    <p><strong>Fix:</strong> keep the same sidekick active and relaunch it with a smaller prompt that names the failed check, the relevant file, and the desired final state. The host should verify again before reporting completion.</p>
-    <div class="code">bash tests/run_unit.bash
-bash tests/run_all.bash</div>
-  </div>
+<div class="container-wide">
+  <div class="doc-layout">
+    <aside class="doc-sidebar">
+      <ul class="sidebar-nav">
+        <li class="sidebar-section">Installation</li>
+        <li><a href="#codex-not-found">codex not found</a></li>
+        <li><a href="#kay-runtime">Kay runtime</a></li>
+        <li class="sidebar-section">Health &amp; Config</li>
+        <li><a href="#health-check">Health Check Failures</a></li>
+        <li><a href="#provider-config">Provider Routing</a></li>
+        <li class="sidebar-section">Behavior</li>
+        <li><a href="#hook-enforcement">Hook Enforcement</a></li>
+        <li><a href="#codex-loop">Runtime Stuck</a></li>
+        <li><a href="#fallback">Verification Fails</a></li>
+        <li><a href="#agents-md">AGENTS.md Issues</a></li>
+        <li class="sidebar-section">Recovery</li>
+        <li><a href="#recovery">Session Recovery</a></li>
+        <li><a href="#reinstall">Reinstall / Reset</a></li>
+      </ul>
+    </aside>
 
-  <h2>Generated Bundles Are Stale</h2>
-  <div class="issue">
-    <span class="label">Build</span>
-    <p><strong>Symptom:</strong> Claude and Codex host surfaces show different skill text, or tests report a rendered-surface mismatch.</p>
-    <p><strong>Fix:</strong> update the canonical skill under <span class="inline">skills/</span>, rerun the renderer, then run unit checks.</p>
-    <div class="code">bash scripts/sync-host-surfaces.sh
-bash tests/run_unit.bash</div>
-  </div>
+    <div class="doc-content">
 
-  <h2>Release Gate Fails</h2>
-  <div class="issue">
-    <span class="label">Release</span>
-    <p><strong>Symptom:</strong> release checks fail in the live Codex path or the docs contract blocks the release.</p>
-    <p><strong>Fix:</strong> run the failing test directly, update the public docs or registry contract, then rerun the Kay-hosted live release command.</p>
-    <div class="code">bash tests/test_docs_contract.bash
-bash tests/test_help_site_navigation.bash
-bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash</div>
+      <h2 id="codex-not-found"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> "codex not found" After Install</h2>
+
+      <h3>codex binary not on PATH</h3>
+      <p><strong>Cause:</strong> The OpenAI Codex CLI is not installed, is not on PATH, or the command resolves to Kay's compatibility alias instead of the real Codex CLI.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Check <code>which codex</code> and <code>codex --version</code>.</li>
+        <li>Confirm <code>codex exec --help</code> includes <code>--ask-for-approval</code>.</li>
+        <li>If the command resolves to Kay, fix PATH so the real OpenAI Codex CLI is first.</li>
+      </ul>
+      <div class="code-label">Codex readiness</div>
+      <div class="code-block"><span class="cmd">which codex</span>
+<span class="cmd">codex --version</span>
+<span class="cmd">codex exec --help</span></div>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
+        <div class="callout-body"><strong>After installing, run <code>/sidekick:codex-delegate</code>.</strong> This verifies the real Codex CLI before Sidekick routes implementation work to it.</div>
+      </div>
+
+      <h2 id="kay-runtime"><span class="issue-badge badge-config"><i data-lucide="terminal"></i> Config</span> Kay Runtime Issues</h2>
+
+      <h3>kay exec is unavailable</h3>
+      <p><strong>Cause:</strong> The Kay runtime is not installed, not on PATH, or the installed runtime predates the <code>kay</code> binary name.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Run <code>kay --version</code> to verify the primary binary is available.</li>
+        <li>Run <code>kay exec --help</code> to verify non-interactive execution is available.</li>
+        <li>If only an old alias is available, reinstall Sidekick or install the Kay runtime path again before starting delegation.</li>
+      </ul>
+      <div class="code-block"><span class="cmd">kay exec --help</span></div>
+
+      <h3>Kay provider login missing</h3>
+      <p><strong>Cause:</strong> Kay's OpenCode Go provider route is unavailable because the Kay runtime has no provider credentials.</p>
+      <p><strong>Fix:</strong> Use Kay's native login flow:</p>
+      <div class="code-block"><span class="cmd">kay login --provider opencode-go --with-api-key</span></div>
+
+      <h2 id="health-check"><span class="issue-badge badge-error"><i data-lucide="alert-circle"></i> Error</span> Health Check Failures</h2>
+
+      <h3>✗ Codex CLI readiness failed</h3>
+      <p><strong>Cause:</strong> Missing binary, Kay alias masquerading as Codex, unauthenticated CLI, unsupported <code>codex exec</code> options, no network access, or provider-side service issue.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Run <code>which codex</code>, <code>codex --version</code>, and <code>codex exec --help</code>.</li>
+        <li>Confirm <code>codex --version</code> does not identify Kay.</li>
+        <li>Confirm <code>codex exec --help</code> includes <code>--ask-for-approval</code>.</li>
+        <li>Log in to the OpenAI Codex CLI if authentication is missing.</li>
+      </ul>
+      <h3>✗ Kay readiness failed</h3>
+      <p><strong>Fix:</strong> Verify <code>kay --version</code>, <code>kay exec --help</code>, and provider login. If provider routing is wrong, start Kay with <code>/sidekick:kay-delegate xiaomi</code>, <code>/sidekick:kay-delegate ocg</code>, or set <code>SIDEKICK_KAY_PROVIDER</code>.</p>
+
+      <h2 id="provider-config"><span class="issue-badge badge-config"><i data-lucide="settings"></i> Config</span> Provider Routing</h2>
+
+      <h3>Kay provider selector is wrong</h3>
+      <p><strong>Fix:</strong> Use the explicit activation form for the session:</p>
+      <div class="code-block"><span class="cmd">/sidekick:kay-delegate xiaomi</span>
+<span class="cmd">/sidekick:kay-delegate ocg</span></div>
+
+      <h3>Codex model is not what you expected</h3>
+      <p><strong>Cause:</strong> Codex sidekick mode intentionally pins <code>gpt-5.4-mini</code> with extra-high reasoning.</p>
+      <p><strong>Fix:</strong> Use Kay mode if you need Kay provider routing. Use Codex mode when you specifically want the local OpenAI Codex CLI sidekick.</p>
+
+      <h2 id="hook-enforcement"><span class="issue-badge badge-behavior"><i data-lucide="shield-check"></i> Behavior</span> Hook Enforcement Issues</h2>
+
+      <h3>Direct edits are denied after Kay or Codex mode starts</h3>
+      <p><strong>Cause:</strong> This is expected. The matching PreToolUse hook is active while the sidekick session marker exists. The shared <code>active-sidekick</code> selector suppresses the opposite sidekick for that host session.</p>
+      <p><strong>Fix:</strong> Delegate through the active sidekick. Use <code>kay exec</code> in Kay mode or <code>codex exec</code> in Codex mode; Sidekick manages the runtime flags.</p>
+
+      <h3>Audit index is not writable</h3>
+      <p><strong>Cause:</strong> The project-local <code>.kay/conversations.idx</code> or <code>.codex/conversations.idx</code> path is missing, unwritable, or symlinked outside the project.</p>
+      <p><strong>Fix:</strong> Remove any symlinked audit path, fix permissions, then reactivate the sidekick.</p>
+
+      <h2 id="codex-loop"><span class="issue-badge badge-behavior"><i data-lucide="refresh-cw"></i> Behavior</span> Runtime Stuck</h2>
+
+      <h3>Sidekick keeps repeating the same action without progress</h3>
+      <p><strong>Cause:</strong> The active runtime may be trying the same fix repeatedly or working from an ambiguous prompt.</p>
+      <p><strong>Symptoms:</strong> Output shows the same file being edited multiple times with no net change, or the same error appearing after each attempt.</p>
+      <p><strong>Fix:</strong></p>
+      <ul>
+        <li>Tell the host exactly what is repeating.</li>
+        <li>The host should classify the issue, narrow the correction prompt, and relaunch the active sidekick.</li>
+        <li>If the runtime or provider is externally blocked, the host should report the blocker instead of treating partial output as complete.</li>
+      </ul>
+
+      <h2 id="fallback"><span class="issue-badge badge-behavior"><i data-lucide="layers"></i> Behavior</span> Verification Fails</h2>
+
+      <h3>Sidekick claimed success but verification failed</h3>
+      <p><strong>Cause:</strong> A sidekick success message is not proof. The host found one or more failure classes during verification.</p>
+      <p><strong>Fix:</strong> The host should relaunch the active sidekick with the original task, failure code, evidence, relevant files/tests, and exact success criteria. Common failure codes include <code>MISSED_REQUIREMENT</code>, <code>INTEGRATION_ERROR</code>, <code>REGRESSION</code>, <code>WRONG_LOGIC</code>, <code>SYNTAX_ERROR</code>, and <code>WRONG_FILE</code>.</p>
+
+      <h3>Verification command fails because of an external dependency</h3>
+      <p><strong>Fix:</strong> Classify as <code>EXECUTION_ERROR_EXTERNAL</code> or <code>API_FAILURE</code>, retry after the dependency is available, or report the blocker with evidence. Do not mark the task complete from partial output.</p>
+
+      <h2 id="agents-md"><span class="issue-badge badge-behavior"><i data-lucide="brain"></i> Behavior</span> AGENTS.md Issues</h2>
+
+      <h3>New instructions not being added to AGENTS.md</h3>
+      <p><strong>Cause:</strong> The deduplication check found a semantically similar entry already exists.</p>
+      <p><strong>This is correct behavior</strong> — the dedup prevents duplicate entries. If you believe the new instruction is genuinely different, ask the host to add it with explicit phrasing that distinguishes it from existing entries.</p>
+
+      <h3>AGENTS.md has wrong content</h3>
+      <p><strong>Fix:</strong> Edit <code>./AGENTS.md</code> directly. Keep it focused on current Sidekick: Kay and Codex only, canonical workflows under <code>skills/</code>, generated host bundles under <code>agents/</code>, and host-owned verification.</p>
+
+      <h2 id="recovery"><span class="issue-badge badge-config"><i data-lucide="refresh-cw"></i> Recovery</span> Session Recovery</h2>
+
+      <h3>Wrong sidekick appears active</h3>
+      <p><strong>Fix:</strong> Stop the current sidekick, then activate the one you want:</p>
+      <div class="code-block"><span class="cmd">/sidekick:kay-stop</span>
+<span class="cmd">/sidekick:codex-stop</span>
+<span class="cmd">/sidekick:kay-delegate</span>
+<span class="cmd">/sidekick:codex-delegate</span></div>
+
+      <h2 id="reinstall"><span class="issue-badge badge-config"><i data-lucide="download"></i> Reset</span> Reinstall / Full Reset</h2>
+
+      <p>To do a clean reinstall of Sidekick from the host plugin surface (preserves AGENTS.md and session logs):</p>
+      <div class="code-block"><span class="cmd">/plugin install alo-labs/sidekick</span>
+<span class="comment"># This refreshes the plugin surface but does not delete AGENTS.md or site/sessions/</span></div>
+
+      <p>To reset a runtime credential or login, use the runtime's own login flow, then reactivate the sidekick for the current session.</p>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
+        <div class="callout-body"><strong>Still stuck?</strong> Open an issue at <a href="https://github.com/alo-exp/sidekick/issues" target="_blank">github.com/alo-exp/sidekick/issues</a> with the sidekick command, runtime readiness output, verification command output, and any relevant redacted logs.</div>
+      </div>
+
+      <div class="page-nav-bottom">
+        <a href="../reference/" class="pnav-btn"><i data-lucide="arrow-left"></i> Command Reference</a>
+      </div>
+    </div>
   </div>
-</main>
+</div>
+
+<footer>
+  <div class="container-wide">
+    <div class="footer-inner">
+      <div><span style="font-weight:700;color:var(--text-secondary)">Sidekick</span> Help Center</div>
+      <div class="footer-links">
+        <a href="../">Help Home</a>
+        <a href="../getting-started/">Getting Started</a>
+        <a href="../concepts/">Concepts</a>
+        <a href="../workflows/">Workflows</a>
+        <a href="../reference/">Reference</a>
+        <a href="../troubleshooting/">Troubleshooting</a>
+        <a href="../../">Sidekick Home</a>
+        <a href="https://github.com/alo-exp/sidekick" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
+<script>
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.getElementById('icon-sun').style.display=dark?'none':'';
+  document.getElementById('icon-moon').style.display=dark?'':'none';
+  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
+  localStorage.removeItem('sidekick-theme');
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
+(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
+lucide.createIcons();
+</script>
 </body>
 </html>
