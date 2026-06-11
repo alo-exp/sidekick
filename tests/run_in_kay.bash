@@ -256,8 +256,9 @@ CONTEXT:
 - Use the configured model provider ${KAY_LIVE_MODEL_PROVIDER} with model ${KAY_LIVE_MODEL} and low reasoning.
 
 DESIRED STATE:
-- Execute this command from the repository root:
-  bash ${SCRIPT_FILE}
+- Execute this exact script from the repository root:
+  ${SCRIPT_FILE}
+- Do not prefix it with `bash` or `sh`, and do not chain it with any other command.
 - After the command exits, write its numeric exit code to:
   ${RESULT_FILE}
 
@@ -267,10 +268,10 @@ SUCCESS CRITERIA:
 - Your final response includes STATUS and TEST_EXIT_CODE.
 
 IMPLEMENTATION:
-Run this exact command immediately as your next action. Do not inspect files first,
+Run this exact script immediately as your next action. Do not inspect files first,
 do not summarize the script first, and do not wait for more instructions:
 
-bash ${SCRIPT_FILE}
+${SCRIPT_FILE}
 EOF
 )
 
