@@ -25,7 +25,7 @@ expect_absent() {
 }
 
 echo "=== T1: homepage exposes supported sidekicks ==="
-expect_contains "Sidekick 0.7.0" "homepage shows release version"
+expect_contains "Sidekick 0.7.1" "homepage shows release version"
 expect_contains "Kay sidekick" "homepage includes Kay"
 expect_contains "Codex sidekick" "homepage includes Codex"
 expect_contains "/sidekick:kay-delegate" "homepage shows Kay activation"
