@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Sidekick \u2014 AI coding-agent delegation workflows for Codex. Kay and Codex are the supported sidekicks: Kay installs through Sidekick, while Codex delegates to the local OpenAI Codex CLI. Codex consumes the canonical Sidekick skills directly.",
   "author": {
     "name": "\u0100lo Labs",
