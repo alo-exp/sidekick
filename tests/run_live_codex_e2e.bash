@@ -38,6 +38,9 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
+LIVE_KAY_MODEL_PROVIDER="${KAY_LIVE_MODEL_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}}"
+LIVE_KAY_MODEL="${KAY_LIVE_MODEL:-${SIDEKICK_KAY_MODEL:-opencode-go/deepseek-v4-flash}}"
+
 resolve_codex_binary() {
   if [ -n "${SIDEKICK_KAY_BIN:-}" ]; then
     if [ -x "${SIDEKICK_KAY_BIN}" ] \
@@ -214,7 +217,7 @@ EOF
 echo "=== e2e_codex_delegation ==="
 echo "Sending 5-field prompt to Kay (timeout 180s)..."
 set +e
-CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider=opencode-go -c model=opencode-go/deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
+CODEX_OUT="$(cd "${SANDBOX}" && OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODEX_RUNNER[@]}" -c model_provider="${LIVE_KAY_MODEL_PROVIDER}" -c model="${LIVE_KAY_MODEL}" -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
 CODEX_RC=$?
 set -e
 echo "kay rc=${CODEX_RC}"

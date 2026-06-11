@@ -35,6 +35,8 @@ MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_SOURCE:-alo-labs/codex-plugins}"
 MARKETPLACE_NAME="${CODEX_MARKETPLACE_NAME:-alo-labs-codex}"
 EXPECTED_MARKETPLACE_SOURCE="${CODEX_MARKETPLACE_EXPECTED_SOURCE:-https://github.com/alo-labs/codex-plugins.git}"
 EXPECTED_MARKETPLACE_SOURCE_TYPE="${CODEX_MARKETPLACE_EXPECTED_SOURCE_TYPE:-git}"
+LIVE_KAY_MODEL_PROVIDER="${KAY_LIVE_MODEL_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}}"
+LIVE_KAY_MODEL="${KAY_LIVE_MODEL:-${SIDEKICK_KAY_MODEL:-opencode-go/deepseek-v4-flash}}"
 
 resolve_codex_runner() {
   if [ -n "${SIDEKICK_CODEX_BIN:-}" ]; then
@@ -388,7 +390,7 @@ if [ -z "${OPENCODE_GO_API_KEY_VALUE}" ]; then
   exit 1
 fi
 set +e
-EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_RUNNER[@]}" -c model_provider=opencode-go -c model=opencode-go/deepseek-v4-flash -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
+EXEC_OUT="$(cd "${WORKSPACE}/workspace" && CODEX_HOME="${CODE_HOME}" CODE_HOME="${CODE_HOME}" OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" run_with_timeout 180 "${CODE_RUNNER[@]}" -c model_provider="${LIVE_KAY_MODEL_PROVIDER}" -c model="${LIVE_KAY_MODEL}" -c model_reasoning_effort=low -c preferred_model_reasoning_effort=low "${TASK_PROMPT}" 2>&1)"
 EXEC_RC=$?
 set -e
 echo "kay rc=${EXEC_RC}"

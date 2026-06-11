@@ -219,6 +219,20 @@ else
   assert_fail "live model override env does not leak" "$(cat /tmp/sidekick-fake-kay-model-env.out)"
 fi
 
+echo "=== T6b: live Kay model override propagates into nested wrapper command ==="
+rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
+live_env_probe="${TMP_ROOT}/kay-live-model-env"
+if SIDEKICK_KAY_MODEL_PROVIDER=minimax SIDEKICK_KAY_MODEL=minimax/MiniMax-M3 FAKE_KAY_RUN_SCRIPT=1 \
+  run_wrapper bash "${ROOT}/tests/run_in_kay.bash" bash -c "printf '%s|%s' \"\${KAY_LIVE_MODEL_PROVIDER-}\" \"\${KAY_LIVE_MODEL-}\" > '${live_env_probe}'" >/tmp/sidekick-fake-kay-live-model-env.out 2>&1; then
+  if [ "$(cat "${live_env_probe}" 2>/dev/null || true)" = "minimax|minimax/MiniMax-M3" ]; then
+    assert_pass "live Kay model override propagates into nested wrapper command"
+  else
+    assert_fail "live Kay model override propagates" "$(cat "${live_env_probe}" 2>/dev/null || true)"
+  fi
+else
+  assert_fail "live Kay model override propagates" "$(cat /tmp/sidekick-fake-kay-live-model-env.out)"
+fi
+
 echo "=== T7: failed Kay/test exits suppress promotion ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 if FAKE_KAY_WRITE_CANDIDATE=1 FAKE_KAY_TEST_RC=7 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-fail.out 2>&1; then
