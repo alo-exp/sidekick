@@ -157,6 +157,9 @@ KAY_BIN="$(resolve_kay_binary)" || {
   exit 1
 }
 prepare_kay_runner
+KAY_LIVE_MODEL_PROVIDER="${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}"
+KAY_LIVE_MODEL="${SIDEKICK_KAY_MODEL:-opencode-go/deepseek-v4-flash}"
+unset SIDEKICK_KAY_MODEL_PROVIDER SIDEKICK_KAY_MODEL
 HOST_SESSION_ID="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}"
 
 mkdir -p "${RESULT_DIR}" "${PROOF_DIR}" "${ISOLATED_HOME}/.kay" "${ISOLATED_HOME}/.codex" "${ISOLATED_HOME}/.config" "${ISOLATED_HOME}/.cache" "${ISOLATED_HOME}/.local/share"
@@ -250,7 +253,7 @@ CONTEXT:
 - Repository root: ${REPO_ROOT}
 - This is a test-only Kay execution using isolated temporary HOME: ${ISOLATED_HOME}
 - Do not edit source files unless the test command itself does so.
-- Use OpenCode Go with deepseek-v4-flash and low reasoning, as already configured by this invocation.
+- Use the configured model provider ${KAY_LIVE_MODEL_PROVIDER} with model ${KAY_LIVE_MODEL} and low reasoning.
 
 DESIRED STATE:
 - Execute this command from the repository root:
@@ -290,8 +293,8 @@ printf '%s\n' "${PROMPT}" | run_with_timeout "${SIDEKICK_KAY_EXEC_TIMEOUT_SECOND
   CUSTOM_OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY_VALUE}" \
   "${KAY_RUNNER[@]}" \
   -C "${REPO_ROOT}" \
-  -c model_provider=opencode-go \
-  -c model=opencode-go/deepseek-v4-flash \
+  -c model_provider="${KAY_LIVE_MODEL_PROVIDER}" \
+  -c model="${KAY_LIVE_MODEL}" \
   -c model_reasoning_effort=low \
   -c preferred_model_reasoning_effort=low \
   - >"${KAY_OUTPUT_FILE}" 2>&1
