@@ -203,7 +203,21 @@ else
   assert_fail "env isolation wrapper command" "$(cat /tmp/sidekick-fake-kay-env.out)"
 fi
 
-echo "=== T6: failed Kay/test exits suppress promotion ==="
+echo "=== T6: live model override env does not leak into nested Kay command ==="
+rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
+env_probe="${TMP_ROOT}/kay-model-env"
+if SIDEKICK_KAY_MODEL_PROVIDER=minimax SIDEKICK_KAY_MODEL=minimax/MiniMax-M3 FAKE_KAY_RUN_SCRIPT=1 \
+  run_wrapper bash "${ROOT}/tests/run_in_kay.bash" bash -c "printf '%s|%s' \"\${SIDEKICK_KAY_MODEL_PROVIDER-}\" \"\${SIDEKICK_KAY_MODEL-}\" > '${env_probe}'" >/tmp/sidekick-fake-kay-model-env.out 2>&1; then
+  if [ "$(cat "${env_probe}" 2>/dev/null || true)" = "|" ]; then
+    assert_pass "live model override env does not leak into nested Kay command"
+  else
+    assert_fail "live model override env does not leak" "$(cat "${env_probe}" 2>/dev/null || true)"
+  fi
+else
+  assert_fail "live model override env does not leak" "$(cat /tmp/sidekick-fake-kay-model-env.out)"
+fi
+
+echo "=== T7: failed Kay/test exits suppress promotion ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 if FAKE_KAY_WRITE_CANDIDATE=1 FAKE_KAY_TEST_RC=7 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-fail.out 2>&1; then
   assert_fail "failed test exit suppresses promotion" "wrapper unexpectedly passed"
@@ -213,7 +227,7 @@ else
   assert_fail "failed test exit suppresses promotion" "$(cat "${TMP_ROOT}/host-qg/quality-gate-state")"
 fi
 
-echo "=== T7: wrapper honors pre-resolved host quality-gate state ==="
+echo "=== T8: wrapper honors pre-resolved host quality-gate state ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg" "${TMP_ROOT}/claude-qg"
 mkdir -p "${TMP_ROOT}/claude-qg"
 if FAKE_KAY_WRITE_CANDIDATE=1 SIDEKICK_QG_STATE="${TMP_ROOT}/claude-qg/quality-gate-state" run_wrapper_no_host_qg_override bash "${ROOT}/tests/run_in_kay.bash" SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash >/tmp/sidekick-fake-kay-claude-state.out 2>&1; then
@@ -226,7 +240,7 @@ else
   assert_fail "wrapper honors pre-resolved host quality-gate state" "$(cat /tmp/sidekick-fake-kay-claude-state.out)"
 fi
 
-echo "=== T8: fake Kay executes generated script path ==="
+echo "=== T9: fake Kay executes generated script path ==="
 rm -rf "${TMP_ROOT}/host-home" "${TMP_ROOT}/host-qg"
 side_effect="${TMP_ROOT}/script-executed"
 if FAKE_KAY_RUN_SCRIPT=1 run_wrapper bash "${ROOT}/tests/run_in_kay.bash" bash -c "printf ok > '${side_effect}'" >/tmp/sidekick-fake-kay-script.out 2>&1; then
