@@ -257,7 +257,11 @@ Execute this exact script as a single direct argv element:
 
 ${SCRIPT_FILE}
 
+When you call exec_command, use this exact argv array:
+["${SCRIPT_FILE}"]
+
 Do not prefix it with bash or sh, do not use bash -lc, and do not chain it with any other command.
+After it exits, report only the numeric exit code and stop.
 EOF
 )
 

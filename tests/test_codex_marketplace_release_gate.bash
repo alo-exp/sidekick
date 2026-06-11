@@ -20,7 +20,7 @@ mkdir -p "${FIXTURE_REPO}"
 
 (
   cd "${ROOT}"
-  COPYFILE_DISABLE=1 tar --exclude ./.git --exclude './~' -cf - .
+  COPYFILE_DISABLE=1 tar --exclude ./.git --exclude './~' --exclude './.kay' --exclude './.codex' -cf - .
 ) | (
   cd "${FIXTURE_REPO}"
   tar -xf -
