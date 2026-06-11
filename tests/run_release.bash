@@ -19,9 +19,11 @@
 #
 # CI should run tests/run_unit.bash. This runner is for release operators: the
 # live stages skip cleanly when env vars are unset, and Codex live runs are
-# release-authorizing. Kay/Codex live tests force OpenCode Go with
+# release-authorizing. Kay/Codex live tests default to OpenCode Go with
 # deepseek-v4-flash and low reasoning so release evidence uses the verifier
-# profile, not the general implementation profile. A run with
+# profile, not the general implementation profile, but they honor the
+# wrapper-provided KAY_LIVE_MODEL_PROVIDER/KAY_LIVE_MODEL override when present.
+# A run with
 # SIDEKICK_LIVE_CODEX=1 writes an isolated current-session, current-commit
 # live-pyramid candidate marker. The Kay wrapper promotes successful canonical
 # runs to proof-bound final markers. Release operators verify two final markers
