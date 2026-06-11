@@ -201,7 +201,12 @@ CONTEXT:
 - sub is already correct and must NOT be changed.
 
 DESIRED STATE:
-- calc.py's add returns a + b.
+- calc.py should contain exactly:
+  def add(a, b):
+      return a + b
+
+  def sub(a, b):
+      return a - b
 - sub is unchanged.
 - No new files or imports.
 
@@ -211,7 +216,10 @@ SUCCESS CRITERIA:
 
 INJECTED SKILLS: quality-gates, testing-strategy
 
-After making the edit, verify by running the tests.
+IMPLEMENTATION:
+- Edit calc.py directly in the workspace.
+- Do not use python3 -c, ad hoc shell one-liners, or any indirect rewrite to modify calc.py.
+- After the edit, run python3 -m unittest test_calc and confirm it passes.
 EOF
 
 echo "=== e2e_codex_delegation ==="
