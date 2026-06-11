@@ -12,10 +12,10 @@
       "source": {
         "source": "github",
         "repo": "alo-exp/sidekick",
-        "ref": "v0.7.0"
+        "ref": "v0.7.1"
       },
       "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code. Kay installs through Sidekick, Codex delegates to the local OpenAI Codex CLI, and Claude stays in the orchestrator role.",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "author": {
         "name": "\u0100lo Labs",
         "url": "https://alolabs.dev"

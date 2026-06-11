@@ -1,9 +1,14 @@
 # Changelog
 
-## Unreleased
+## v0.7.1 -- 2026-06-12
+
+### Kay delegate cleanup and release-surface refresh
 
 - Removed the redundant `sidekick:kay:delegate` alias; `sidekick:kay-delegate` is the only Kay delegate activation skill.
 - Kay activation now accepts provider keywords: `ocg` for existing OpenCode Go routing and `xiaomi` for Xiaomi-specific routing. The selected provider is persisted per host session and used by Kay command rewriting.
+- Refreshed the June 2026 knowledge and lessons index so the current month remains visible in the docs.
+
+## Unreleased
 
 ## v0.7.0 -- 2026-05-29
 
