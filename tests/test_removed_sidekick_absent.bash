@@ -121,6 +121,13 @@ else
   assert_fail "public docs" "Forge references remain in: ${stale_docs[*]}"
 fi
 
+echo "=== T5: internal packaging guide no longer advertises Forge ==="
+if grep -Eqi 'Forge|forge|ForgeCode|/forge|SIDEKICK_LIVE_FORGE' "${PLUGIN_DIR}/site/internal/codex-command-packaging-guide.md"; then
+  assert_fail "internal packaging guide" "Forge references remain in site/internal/codex-command-packaging-guide.md"
+else
+  assert_pass "internal packaging guide is Forge-free"
+fi
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"

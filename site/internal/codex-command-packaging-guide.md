@@ -69,17 +69,14 @@ To keep deterministic order across picker surfaces:
 
 For Sidekick, the canonical 4-skill delegation surface is:
 
-1. `sidekick:forge-delegate`
-2. `sidekick:forge-stop`
+1. `sidekick:codex-delegate`
+2. `sidekick:codex-stop`
 3. `sidekick:kay-delegate`
 4. `sidekick:kay-stop`
 
-Sidekick also ships thin setup aliases for website copy and slash-style activation:
+Sidekick does not ship thin setup aliases in the current tree. Keep the packaged surfaces on the canonical workflows above and avoid adding duplicate alias skills for picker visibility.
 
-1. `sidekick:forge:delegate`
-2. `sidekick:kay:delegate`
-
-Codex currently reports plugin skills in lexicographic order, so `plugin/read` surfaces the Forge entries before the Kay entries even though both agent families are canonical.
+Codex currently reports plugin skills in lexicographic order, so `plugin/read` surfaces the Codex entries before the Kay entries even though both agent families are canonical.
 
 ## Cross-plugin rollout checklist
 
