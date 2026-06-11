@@ -251,31 +251,13 @@ EOF
 chmod +x "${SCRIPT_FILE}"
 
 PROMPT=$(cat <<EOF
-OBJECTIVE: Run the Sidekick test command exactly as provided and report the real exit code.
+Run the Sidekick test command immediately and report the real exit code.
 
-CONTEXT:
-- Repository root: ${REPO_ROOT}
-- This is a test-only Kay execution using isolated temporary HOME: ${ISOLATED_HOME}
-- Do not edit source files unless the test command itself does so.
-- Use the configured model provider ${KAY_LIVE_MODEL_PROVIDER} with model ${KAY_LIVE_MODEL} and low reasoning.
-
-DESIRED STATE:
-- Execute this exact script from the repository root:
-  ${SCRIPT_FILE}
-- Do not prefix it with `bash` or `sh`, and do not chain it with any other command.
-- After the command exits, write its numeric exit code to:
-  ${RESULT_FILE}
-
-SUCCESS CRITERIA:
-- The command actually ran inside Kay.
-- ${RESULT_FILE} exists and contains the command exit code.
-- Your final response includes STATUS and TEST_EXIT_CODE.
-
-IMPLEMENTATION:
-Run this exact script immediately as your next action. Do not inspect files first,
-do not summarize the script first, and do not wait for more instructions:
+Execute this exact script as a single direct argv element:
 
 ${SCRIPT_FILE}
+
+Do not prefix it with bash or sh, do not use bash -lc, and do not chain it with any other command.
 EOF
 )
 
