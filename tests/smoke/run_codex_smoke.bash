@@ -37,9 +37,11 @@ echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━�
 PASS=0; FAIL=0
 pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
 fail() { echo -e "${red}FAIL${reset} $1: $2"; FAIL=$((FAIL+1)); }
+LIVE_KAY_MODEL_PROVIDER="${KAY_LIVE_MODEL_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}}"
+LIVE_KAY_MODEL="${KAY_LIVE_MODEL:-${SIDEKICK_KAY_MODEL:-opencode-go/deepseek-v4-flash}}"
 LIVE_KAY_MODEL_ARGS=(
-  -c model_provider=opencode-go
-  -c model=opencode-go/deepseek-v4-flash
+  -c model_provider="${LIVE_KAY_MODEL_PROVIDER}"
+  -c model="${LIVE_KAY_MODEL}"
   -c model_reasoning_effort=low
   -c preferred_model_reasoning_effort=low
 )

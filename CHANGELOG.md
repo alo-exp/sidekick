@@ -12,6 +12,7 @@
 ## Unreleased
 
 - The Kay live release wrapper now asks Kay to execute the generated test script directly instead of re-wrapping it in `bash`, which avoids a hung interactive shell when the live release gate starts.
+- The live marketplace, smoke, and E2E release stages now inherit the wrapper's Kay model provider/model override, so the live release gate can run end-to-end on MiniMax M3 instead of falling back to the default verifier profile.
 
 ## v0.7.0 -- 2026-05-29
 
