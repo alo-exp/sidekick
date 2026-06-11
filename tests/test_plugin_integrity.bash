@@ -57,13 +57,11 @@ check_hash "claude_kay_delegate_skill_md_sha256" "agents/claude/kay-delegate/SKI
 check_hash "claude_kay_stop_skill_md_sha256" "agents/claude/kay-stop/SKILL.md"
 check_hash "claude_codex_delegate_skill_md_sha256" "agents/claude/codex-delegate/SKILL.md"
 check_hash "claude_codex_delegate_md_sha256" "agents/claude/codex-delegate.md"
-check_hash "claude_kay_delegate_alias_skill_md_sha256" "agents/claude/kay:delegate/SKILL.md"
 check_hash "claude_codex_stop_skill_md_sha256" "agents/claude/codex-stop/SKILL.md"
 check_hash "codex_kay_delegate_skill_md_sha256" "agents/codex/kay-delegate/SKILL.md"
 check_hash "codex_kay_stop_skill_md_sha256" "agents/codex/kay-stop/SKILL.md"
 check_hash "codex_codex_delegate_skill_md_sha256" "agents/codex/codex-delegate/SKILL.md"
 check_hash "codex_codex_delegate_md_sha256" "agents/codex/codex-delegate.md"
-check_hash "codex_kay_delegate_alias_skill_md_sha256" "agents/codex/kay:delegate/SKILL.md"
 check_hash "codex_codex_stop_skill_md_sha256" "agents/codex/codex-stop/SKILL.md"
 check_hash "render_agent_bundle_sha256" "scripts/render-agent-bundle.py"
 check_hash "sync_host_surfaces_sha256" "scripts/sync-host-surfaces.sh"
@@ -77,15 +75,17 @@ check_hash "legacy_hooks_scrub_sha256" "hooks/scrub-legacy-user-hooks.py"
 check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
 check_hash "output_style_kay_sha256" "output-styles/kay.md"
 check_hash "output_style_codex_sha256" "output-styles/codex.md"
-check_hash "kay_delegate_alias_skill_md_sha256" "skills/kay:delegate/SKILL.md"
 check_hash "codex_stop_skill_md_sha256" "skills/codex-stop/SKILL.md"
 
 # Removed-skill surface must stay removed.
 echo "=== Removed skill surface ==="
 if [ ! -f "${PLUGIN_DIR}/skills/codex/SKILL.md" ] \
   && [ ! -f "${PLUGIN_DIR}/skills/codex.md" ] \
-  && [ ! -f "${PLUGIN_DIR}/skills/codex-history/SKILL.md" ]; then
-  assert_pass "removed Codex history skill files are absent"
+  && [ ! -f "${PLUGIN_DIR}/skills/codex-history/SKILL.md" ] \
+  && [ ! -f "${PLUGIN_DIR}/skills/kay:delegate/SKILL.md" ] \
+  && [ ! -f "${PLUGIN_DIR}/agents/claude/kay:delegate/SKILL.md" ] \
+  && [ ! -f "${PLUGIN_DIR}/agents/codex/kay:delegate/SKILL.md" ]; then
+  assert_pass "removed Codex history and redundant Kay alias skill files are absent"
 else
   assert_fail "removed skill surface" "one or more removed skill files still present"
 fi
@@ -96,8 +96,8 @@ CLAIMED_CODEX_INSTALL="$(claim codex_installer_sha256)"
 REGISTRY_KAY_URL="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['url'])")"
 REGISTRY_KAY_VERSION="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['version'])")"
 REGISTRY_KAY_SHA="$(python3 -c "import json; d=json.load(open('${PLUGIN_DIR}/sidekicks/registry.json')); print(d['kay']['install']['sha256'])")"
-if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/v0.9.4/scripts/install/install.sh" ] \
-  && [ "${REGISTRY_KAY_VERSION}" = "v0.9.4" ] \
+if [ "${REGISTRY_KAY_URL}" = "https://raw.githubusercontent.com/alo-labs/kay/v0.9.17/scripts/install/install.sh" ] \
+  && [ "${REGISTRY_KAY_VERSION}" = "v0.9.17" ] \
   && [ "${REGISTRY_KAY_SHA}" = "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555" ] \
   && [ "${CLAIMED_CODEX_INSTALL}" = "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555" ]; then
   assert_pass "kay installer points at the pinned Kay installer with kay primary binary support"

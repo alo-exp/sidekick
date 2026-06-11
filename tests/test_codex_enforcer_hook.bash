@@ -34,6 +34,7 @@ CODEX_MARKER_DIR="${HOME_SANDBOX}/.codex/sessions/${TEST_SESSION_ID}"
 CODEX_MARKER_FILE="${CODEX_MARKER_DIR}/.codex-delegation-active"
 ACTIVE_MODE_DIR="${HOME_SANDBOX}/.sidekick/sessions/${TEST_SESSION_ID}"
 ACTIVE_MODE_FILE="${ACTIVE_MODE_DIR}/active-sidekick"
+KAY_PROVIDER_FILE="${ACTIVE_MODE_DIR}/kay-provider"
 trap 'rm -rf "${HOME_SANDBOX}" "${PROJECT_SANDBOX}"' EXIT
 mkdir -p "${KAY_MARKER_DIR}" "${CODEX_MARKER_DIR}" "${ACTIVE_MODE_DIR}" "${STUB_DIR}"
 
@@ -44,7 +45,7 @@ if [ -f "${HOME}/kay-capture-enable" ]; then
   printf 'STATUS: SUCCESS\naccess_token=child-secret-token\nPATTERNS_DISCOVERED: []\n'
 fi
 if [ "${1:-}" = "--version" ]; then
-  printf 'kay 0.9.4\n'
+  printf 'kay 0.9.17\n'
   exit 0
 fi
 if [ "${1:-}" = "exec" ] && [ "${2:-}" = "--help" ]; then
@@ -61,7 +62,7 @@ cat > "${STUB_DIR}/codex" <<'STUB'
 #!/usr/bin/env bash
 if [ "${SIDEKICK_TEST_FAKE_CODEX_IS_KAY:-0}" = "1" ]; then
   if [ "${1:-}" = "--version" ]; then
-    printf 'kay 0.9.4\n'
+    printf 'kay 0.9.17\n'
     exit 0
   fi
   if [ "${1:-}" = "exec" ] && [ "${2:-}" = "--help" ]; then
@@ -101,13 +102,13 @@ run_hook() {
 }
 
 activate_kay() {
-  rm -f "${ACTIVE_MODE_FILE}" "${CODEX_MARKER_FILE}"
+  rm -f "${ACTIVE_MODE_FILE}" "${CODEX_MARKER_FILE}" "${KAY_PROVIDER_FILE}"
   touch "${KAY_MARKER_FILE}"
   printf '%s\n' "kay" > "${ACTIVE_MODE_FILE}"
 }
 
 activate_codex() {
-  rm -f "${ACTIVE_MODE_FILE}" "${KAY_MARKER_FILE}"
+  rm -f "${ACTIVE_MODE_FILE}" "${KAY_MARKER_FILE}" "${KAY_PROVIDER_FILE}"
   touch "${CODEX_MARKER_FILE}"
   printf '%s\n' "codex" > "${ACTIVE_MODE_FILE}"
 }
@@ -191,6 +192,78 @@ if [ "${dec}" = "allow" ] \
 else
   assert_fail "test_kay_mode_rewrites_exec_for_safe_runner" "dec='${dec}' cmd='${cmd}'"
 fi
+
+echo "=== test_kay_mode_routes_xiaomi_non_visual_work_to_pro ==="
+out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Refactor utils.py\""}}' 'SIDEKICK_KAY_PROVIDER=xiaomi')"
+dec="$(extract_decision "${out}")"
+cmd="$(extract_command "${out}")"
+if [ "${dec}" = "allow" ] \
+  && echo "${cmd}" | grep -q 'sidekick-safe-runner.sh' \
+  && echo "${cmd}" | grep -q -- '-c model_provider=xiaomi' \
+  && echo "${cmd}" | grep -Eq -- '(^|[[:space:]])-c model=xiaomi/mimo-v2\.5-pro([[:space:]]|$)' \
+  && echo "${cmd}" | grep -Eq -- ' --full-auto( |$)'; then
+  assert_pass "test_kay_mode_routes_xiaomi_non_visual_work_to_pro"
+else
+  assert_fail "test_kay_mode_routes_xiaomi_non_visual_work_to_pro" "dec='${dec}' cmd='${cmd}'"
+fi
+
+echo "=== test_kay_mode_routes_xiaomi_visual_work_to_mimo ==="
+out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Inspect this screenshot and explain what is shown\""}}' 'SIDEKICK_KAY_PROVIDER=xiaomi')"
+dec="$(extract_decision "${out}")"
+cmd="$(extract_command "${out}")"
+if [ "${dec}" = "allow" ] \
+  && echo "${cmd}" | grep -q 'sidekick-safe-runner.sh' \
+  && echo "${cmd}" | grep -q -- '-c model_provider=xiaomi' \
+  && echo "${cmd}" | grep -Eq -- '(^|[[:space:]])-c model=xiaomi/mimo-v2\.5([[:space:]]|$)' \
+  && ! echo "${cmd}" | grep -q -- 'mimo-v2.5-pro' \
+  && echo "${cmd}" | grep -Eq -- ' --full-auto( |$)'; then
+  assert_pass "test_kay_mode_routes_xiaomi_visual_work_to_mimo"
+else
+  assert_fail "test_kay_mode_routes_xiaomi_visual_work_to_mimo" "dec='${dec}' cmd='${cmd}'"
+fi
+
+echo "=== test_kay_mode_uses_session_xiaomi_provider ==="
+printf '%s\n' "xiaomi" > "${KAY_PROVIDER_FILE}"
+out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Refactor utils.py\""}}')"
+dec="$(extract_decision "${out}")"
+cmd="$(extract_command "${out}")"
+if [ "${dec}" = "allow" ] \
+  && echo "${cmd}" | grep -q 'sidekick-safe-runner.sh' \
+  && echo "${cmd}" | grep -q -- '-c model_provider=xiaomi' \
+  && echo "${cmd}" | grep -Eq -- '(^|[[:space:]])-c model=xiaomi/mimo-v2\.5-pro([[:space:]]|$)'; then
+  assert_pass "test_kay_mode_uses_session_xiaomi_provider"
+else
+  assert_fail "test_kay_mode_uses_session_xiaomi_provider" "dec='${dec}' cmd='${cmd}'"
+fi
+
+echo "=== test_kay_mode_invalid_env_provider_fails_safe_over_session ==="
+printf '%s\n' "xiaomi" > "${KAY_PROVIDER_FILE}"
+out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Refactor utils.py\""}}' 'SIDEKICK_KAY_PROVIDER=unknown')"
+dec="$(extract_decision "${out}")"
+cmd="$(extract_command "${out}")"
+if [ "${dec}" = "allow" ] \
+  && echo "${cmd}" | grep -q 'sidekick-safe-runner.sh' \
+  && echo "${cmd}" | grep -q -- '-c model_provider=opencode-go' \
+  && echo "${cmd}" | grep -Eq -- '(^|[[:space:]])-c model=opencode-go/mimo-v2\.5-pro([[:space:]]|$)'; then
+  assert_pass "test_kay_mode_invalid_env_provider_fails_safe_over_session"
+else
+  assert_fail "test_kay_mode_invalid_env_provider_fails_safe_over_session" "dec='${dec}' cmd='${cmd}'"
+fi
+
+echo "=== test_kay_mode_uses_session_ocg_provider_alias ==="
+printf '%s\n' "ocg" > "${KAY_PROVIDER_FILE}"
+out="$(run_hook '{"tool_name":"Bash","tool_input":{"command":"kay exec \"Run tests\""}}')"
+dec="$(extract_decision "${out}")"
+cmd="$(extract_command "${out}")"
+if [ "${dec}" = "allow" ] \
+  && echo "${cmd}" | grep -q 'sidekick-safe-runner.sh' \
+  && echo "${cmd}" | grep -q -- '-c model_provider=opencode-go' \
+  && echo "${cmd}" | grep -Eq -- '(^|[[:space:]])-c model=opencode-go/deepseek-v4-flash([[:space:]]|$)'; then
+  assert_pass "test_kay_mode_uses_session_ocg_provider_alias"
+else
+  assert_fail "test_kay_mode_uses_session_ocg_provider_alias" "dec='${dec}' cmd='${cmd}'"
+fi
+rm -f "${KAY_PROVIDER_FILE}"
 
 echo "=== test_kay_mode_records_project_local_audit_index ==="
 idx="${PROJECT_SANDBOX}/.kay/conversations.idx"

@@ -9,4 +9,6 @@ Sidekick gives Claude Code and Codex a consistent delegation layer for supported
 
 Kay and Codex are mutually exclusive per host session. The shared selector lives at `~/.sidekick/sessions/<session>/active-sidekick` and contains either `kay` or `codex`.
 
+Kay defaults to the existing `opencode-go` routing. Activate Kay with `/sidekick:kay-delegate xiaomi` to use Xiaomi routing, or `/sidekick:kay-delegate ocg` to force OpenCode Go routing for the session. The shared provider selector lives at `~/.sidekick/sessions/<session>/kay-provider`.
+
 The host AI owns planning, user communication, review, and verification. A sidekick result is never accepted only because it reports success; the host verifies the diff, tests, integration points, and task requirements first.

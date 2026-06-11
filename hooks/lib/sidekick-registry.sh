@@ -277,49 +277,128 @@ for idx, tok in enumerate(toks):
   printf '%s' "$hint"
 }
 
-sidekick_kay_model_provider() {
-  printf '%s' 'opencode-go'
+sidekick_kay_provider_state_file() {
+  local session_id
+  session_id="$(sidekick_session_id)" || return 1
+  printf '%s/.sidekick/sessions/%s/kay-provider' "${HOME}" "${session_id}"
 }
 
-sidekick_kay_model_for_prompt() {
-  local prompt normalized
-  prompt="${1:-}"
-  normalized="$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')"
-
-  # Vision and visual-reasoning prompts use MiMo-V2.5's native multimodal path.
-  case "$normalized" in
-    *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*picture*|*diagram*|*chart*|*ocr*|*mockup*|*wireframe*)
-      printf '%s' 'mimo-v2.5'
+sidekick_kay_normalize_provider() {
+  local provider="${1:-}"
+  case "$provider" in
+    ocg|opencode-go)
+      printf '%s' 'opencode-go'
       return 0
       ;;
+    xiaomi)
+      printf '%s' 'xiaomi'
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
   esac
-  if [[ "$normalized" =~ (^|[^[:alnum:]_])graph([^[:alnum:]_]|$) ]]; then
-    printf '%s' 'mimo-v2.5'
+}
+
+sidekick_kay_session_provider() {
+  local provider_file provider
+  provider_file="$(sidekick_kay_provider_state_file)" || return 1
+  [[ -f "$provider_file" ]] || return 1
+  IFS= read -r provider < "$provider_file" 2>/dev/null || provider=""
+  sidekick_kay_normalize_provider "$provider" || return 1
+}
+
+sidekick_kay_model_provider() {
+  local provider="${SIDEKICK_KAY_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-}}"
+
+  if [[ -n "$provider" ]]; then
+    if sidekick_kay_normalize_provider "$provider"; then
+      return 0
+    fi
+    printf '%s' 'opencode-go'
     return 0
   fi
 
-  case "$normalized" in
-    *run\ tests*|*rerun\ tests*|*test\ run*|*test\ running*|*test\ results*|*test\ report*|*issue\ reporting*|*report\ issues*|*issue\ report*|*issue\ triage*|*failure\ report*|*bug\ report*|*find\ issues*|*verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)
-      printf '%s' 'deepseek-v4-flash'
-      return 0
-      ;;
-  esac
+  if provider="$(sidekick_kay_session_provider 2>/dev/null)"; then
+    printf '%s' "$provider"
+    return 0
+  fi
 
-  case "$normalized" in
-    *review*|*reviewing*|*code\ review*|*audit*|*critique*)
+  printf '%s' 'opencode-go'
+}
+
+sidekick_kay_model_ref() {
+  local provider="$1"
+  local model="$2"
+  printf '%s/%s' "$provider" "$model"
+}
+
+sidekick_kay_model_for_prompt() {
+  local provider="${1:-}"
+  local prompt="${2:-}"
+  local normalized
+
+  if [[ -z "$prompt" ]]; then
+    prompt="$provider"
+    provider="$(sidekick_kay_model_provider)"
+  fi
+
+  normalized="$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')"
+
+  case "$provider" in
+    xiaomi)
+      # Xiaomi uses mimo-v2.5 for screenshot / image-analysis work and
+      # mimo-v2.5-pro for every other use case.
+      case "$normalized" in
+        *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*pictures*|*picture*|*diagram*|*chart*|*ocr*|*mockup*|*wireframe*)
+          printf '%s' 'mimo-v2.5'
+          return 0
+          ;;
+      esac
+      if [[ "$normalized" =~ (^|[^[:alnum:]_])graph([^[:alnum:]_]|$) ]]; then
+        printf '%s' 'mimo-v2.5'
+        return 0
+      fi
       printf '%s' 'mimo-v2.5-pro'
       return 0
       ;;
-  esac
+    *)
+      # Vision and visual-reasoning prompts use MiMo-V2.5's native multimodal path.
+      case "$normalized" in
+        *vision*|*visual\ reasoning*|*visual*|*screenshot*|*screen\ shot*|*image*|*images*|*photo*|*picture*|*diagram*|*chart*|*ocr*|*mockup*|*wireframe*)
+          printf '%s' 'mimo-v2.5'
+          return 0
+          ;;
+      esac
+      if [[ "$normalized" =~ (^|[^[:alnum:]_])graph([^[:alnum:]_]|$) ]]; then
+        printf '%s' 'mimo-v2.5'
+        return 0
+      fi
 
-  case "$normalized" in
-    *trivial*|*tiny*|*small*|*quick*|*simple*|*typo*|*whitespace*|*format*|*formatting*|*comment*|*rename*|*config*|*minor*|*one-liner*|*cleanup*)
-      printf '%s' 'minimax-m2.7'
-      return 0
+      case "$normalized" in
+        *run\ tests*|*rerun\ tests*|*test\ run*|*test\ running*|*test\ results*|*test\ report*|*issue\ reporting*|*report\ issues*|*issue\ report*|*issue\ triage*|*failure\ report*|*bug\ report*|*find\ issues*|*verify*|*verification*|*verifier*|*completion\ check*|*completion\ verifier*|*final\ check*|*final\ verification*|*smoke*|*sanity*|*confirm\ completion*|*validate\ completion*)
+          printf '%s' 'deepseek-v4-flash'
+          return 0
+          ;;
+      esac
+
+      case "$normalized" in
+        *review*|*reviewing*|*code\ review*|*audit*|*critique*)
+          printf '%s' 'mimo-v2.5-pro'
+          return 0
+          ;;
+      esac
+
+      case "$normalized" in
+        *trivial*|*tiny*|*small*|*quick*|*simple*|*typo*|*whitespace*|*format*|*formatting*|*comment*|*rename*|*config*|*minor*|*one-liner*|*cleanup*)
+          printf '%s' 'minimax-m2.7'
+          return 0
+          ;;
+      esac
+
+      printf '%s' 'mimo-v2.5-pro'
       ;;
   esac
-
-  printf '%s' 'mimo-v2.5-pro'
 }
 
 sidekick_append_idx_row() {
