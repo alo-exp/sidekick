@@ -7,6 +7,7 @@
 - Removed the redundant `sidekick:kay:delegate` alias; `sidekick:kay-delegate` is the only Kay delegate activation skill.
 - Kay activation now accepts provider keywords: `ocg` for existing OpenCode Go routing and `xiaomi` for Xiaomi-specific routing. The selected provider is persisted per host session and used by Kay command rewriting.
 - Refreshed the June 2026 knowledge and lessons index so the current month remains visible in the docs.
+- The Kay live release wrapper now accepts explicit model provider/model overrides and keeps them isolated from nested strict suites, which lets maintainers run the live gate against MiniMax M3 when the default verifier path is unavailable.
 
 ## Unreleased
 
