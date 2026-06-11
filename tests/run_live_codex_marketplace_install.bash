@@ -237,6 +237,7 @@ if [ -f "${SKILL_ROOT}/codex-delegate/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/codex-stop/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/kay-delegate/SKILL.md" ] \
   && [ -f "${SKILL_ROOT}/kay-stop/SKILL.md" ] \
+  && [ ! -f "${SKILL_ROOT}/kay:delegate/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex-history/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/forge/SKILL.md" ] \
@@ -343,7 +344,6 @@ try:
         "sidekick:codex-stop",
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
-        "sidekick:kay:delegate",
     ]
     if names != expected:
         raise SystemExit(

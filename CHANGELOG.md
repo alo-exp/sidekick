@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-_No unreleased changes._
+- Removed the redundant `sidekick:kay:delegate` alias; `sidekick:kay-delegate` is the only Kay delegate activation skill.
+- Kay activation now accepts provider keywords: `ocg` for existing OpenCode Go routing and `xiaomi` for Xiaomi-specific routing. The selected provider is persisted per host session and used by Kay command rewriting.
 
 ## v0.7.0 -- 2026-05-29
 
@@ -126,7 +127,7 @@ Sidekick now presents Kay as the primary runtime identity everywhere, keeps `cod
 
 - **`hooks/scrub-legacy-user-hooks.py`**: legacy hook cleanup now recognizes stale Sidekick-owned runtime-sync hook blocks while preserving unrelated user hooks with the same script basenames.
 - **`tests/test_clean_reinstall.bash`**, **`tests/test_legacy_hook_scrub.bash`**, **`tests/test_validate_release_gate_hook.bash`**, plus docs/homepage/OG/integrity tests: expanded coverage for clean reinstall behavior, Sidekick-owned legacy hook cleanup, current-session release-gate markers, Kay activation copy, homepage setup commands, and social preview claims.
-- **`install.sh`**, **`sidekicks/registry.json`**, **`skills/codex-delegate/SKILL.md`**, **`skills/codex-delegate.md`**, **`skills/codex-stop/SKILL.md`**: Kay is now the canonical command family (`kay`, with active Kay mode routing child work through `kay exec --full-auto`) and installer target; the installer is pinned to Kay `v0.9.4`, while legacy `code`, `codex`, and `coder` names remain compatibility-only aliases.
+- **`install.sh`**, **`sidekicks/registry.json`**, **`skills/codex-delegate/SKILL.md`**, **`skills/codex-delegate.md`**, **`skills/codex-stop/SKILL.md`**: Kay is now the canonical command family (`kay`, with active Kay mode routing child work through `kay exec --full-auto`) and installer target; the installer is pinned to Kay `v0.9.17`, while legacy `code`, `codex`, and `coder` names remain compatibility-only aliases.
 - **`hooks/forge-delegation-enforcer.sh`**, **`hooks/codex-delegation-enforcer.sh`**, **`hooks/lib/sidekick-safe-runner.sh`**: delegated Forge/Kay subprocesses now run with a sanitized environment and surface only bounded, redacted output back to the host transcript.
 - **`README.md`**, **`docs/ARCHITECTURE.md`**, **`docs/PRD-Overview.md`**, **`docs/index.html`**, **`docs/help/*`**, **`docs/og-image.*`**: public-facing surfaces now describe both Claude Code and Codex hosts, both Forge and Kay execution agents, MiniMax/OpenCode Go backend paths, and the current Terminal-Bench 2.0 positioning.
 - **`docs/pre-release-quality-gate.md`**, **`docs/internal/pre-release-quality-gate.md`**, **`tests/run_release.bash`**, **`hooks/validate-release-gate.sh`**: release-gate markers are scoped to the current host session, use the active host state path, and require four stage markers plus two successful full live-pyramid markers before `gh release create`.

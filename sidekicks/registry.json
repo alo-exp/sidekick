@@ -9,8 +9,8 @@
     "output_style": "output-styles/kay.md",
     "install": {
       "kind": "codex-install-script",
-      "version": "v0.9.4",
-      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.9.4/scripts/install/install.sh",
+      "version": "v0.9.17",
+      "url": "https://raw.githubusercontent.com/alo-labs/kay/v0.9.17/scripts/install/install.sh",
       "sha256": "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555",
       "binary": "kay",
       "alias": "code",

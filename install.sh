@@ -236,13 +236,11 @@ hash_targets = {
     "claude_kay_stop_skill_md_sha256": "agents/claude/kay-stop/SKILL.md",
     "claude_codex_delegate_skill_md_sha256": "agents/claude/codex-delegate/SKILL.md",
     "claude_codex_delegate_md_sha256": "agents/claude/codex-delegate.md",
-    "claude_kay_delegate_alias_skill_md_sha256": "agents/claude/kay:delegate/SKILL.md",
     "claude_codex_stop_skill_md_sha256": "agents/claude/codex-stop/SKILL.md",
     "codex_kay_delegate_skill_md_sha256": "agents/codex/kay-delegate/SKILL.md",
     "codex_kay_stop_skill_md_sha256": "agents/codex/kay-stop/SKILL.md",
     "codex_codex_delegate_skill_md_sha256": "agents/codex/codex-delegate/SKILL.md",
     "codex_codex_delegate_md_sha256": "agents/codex/codex-delegate.md",
-    "codex_kay_delegate_alias_skill_md_sha256": "agents/codex/kay:delegate/SKILL.md",
     "codex_codex_stop_skill_md_sha256": "agents/codex/codex-stop/SKILL.md",
     "render_agent_bundle_sha256": "scripts/render-agent-bundle.py",
     "sync_host_surfaces_sha256": "scripts/sync-host-surfaces.sh",
@@ -256,7 +254,6 @@ hash_targets = {
     "codex_progress_surface_sha256": "hooks/codex-progress-surface.sh",
     "output_style_kay_sha256": "output-styles/kay.md",
     "output_style_codex_sha256": "output-styles/codex.md",
-    "kay_delegate_alias_skill_md_sha256": "skills/kay:delegate/SKILL.md",
     "codex_stop_skill_md_sha256": "skills/codex-stop/SKILL.md",
 }
 

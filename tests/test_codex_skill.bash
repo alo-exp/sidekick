@@ -13,11 +13,11 @@ CODEX_DELEGATE_LEGACY_FILE="${PLUGIN_DIR}/skills/codex-delegate.md"
 CODEX_STOP_FILE="${PLUGIN_DIR}/skills/codex-stop/SKILL.md"
 KAY_DELEGATE_FILE="${PLUGIN_DIR}/skills/kay-delegate/SKILL.md"
 KAY_STOP_FILE="${PLUGIN_DIR}/skills/kay-stop/SKILL.md"
-KAY_ALIAS_FILE="${PLUGIN_DIR}/skills/kay:delegate/SKILL.md"
 REGISTRY_FILE="${PLUGIN_DIR}/sidekicks/registry.json"
 REMOVED_CODEX_FILE="${PLUGIN_DIR}/skills/codex/SKILL.md"
 REMOVED_CODEX_LEGACY="${PLUGIN_DIR}/skills/codex.md"
 REMOVED_HISTORY_FILE="${PLUGIN_DIR}/skills/codex-history/SKILL.md"
+REMOVED_KAY_ALIAS_FILE="${PLUGIN_DIR}/skills/kay:delegate/SKILL.md"
 
 green='\033[0;32m'; red='\033[0;31m'; reset='\033[0m'
 assert_pass() { echo -e "${green}PASS${reset} $1"; PASS=$((PASS+1)); }
@@ -29,7 +29,6 @@ for path in \
   "${CODEX_STOP_FILE}" \
   "${KAY_DELEGATE_FILE}" \
   "${KAY_STOP_FILE}" \
-  "${KAY_ALIAS_FILE}" \
   "${REGISTRY_FILE}"; do
   [ -f "${path}" ] || { echo "ERROR: ${path} missing"; exit 1; }
 done
@@ -103,6 +102,15 @@ if grep -q 'kay exec --full-auto' "${KAY_DELEGATE_FILE}" \
   && grep -q 'for candidate in kay code coder' "${KAY_DELEGATE_FILE}" \
   && grep -q 'No Kay-compatible runtime found' "${KAY_DELEGATE_FILE}" \
   && grep -q '\.kay-delegation-active' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'SIDEKICK_KAY_PROVIDER' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'SIDEKICK_KAY_PROVIDER_ARG' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'kay-provider' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'ocg' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'xiaomi' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'Unsupported Kay provider' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'image analysis or screenshot understanding' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'mimo-v2.5-pro' "${KAY_DELEGATE_FILE}" \
+  && grep -q 'mimo-v2.5' "${KAY_DELEGATE_FILE}" \
   && ! grep -q 'gpt-5.4-mini' "${KAY_DELEGATE_FILE}"; then
   assert_pass "Kay canonical workflow remains Kay-specific"
 else
@@ -172,14 +180,11 @@ else
   assert_fail "legacy codex wrapper" "missing canonical Codex reference, hidden flag, or updated wrapper wording"
 fi
 
-echo "=== T9: /kay:delegate alias points at the explicit Kay canonical skill ==="
-if grep -q '^name: kay:delegate' "${KAY_ALIAS_FILE}" \
-  && grep -q 'skills/kay-delegate/SKILL.md' "${KAY_ALIAS_FILE}" \
-  && grep -q '/sidekick:kay-stop' "${KAY_ALIAS_FILE}" \
-  && ! grep -q 'skills/codex-delegate/SKILL.md' "${KAY_ALIAS_FILE}"; then
-  assert_pass "Kay delegate alias references explicit Kay canonical skill"
+echo "=== T9: redundant /kay:delegate alias stays absent ==="
+if [ ! -f "${REMOVED_KAY_ALIAS_FILE}" ]; then
+  assert_pass "Kay delegate alias skill is absent"
 else
-  assert_fail "Kay delegate alias" "missing /kay:delegate backing skill or still points at codex-delegate"
+  assert_fail "Kay delegate alias" "redundant alias still exists at ${REMOVED_KAY_ALIAS_FILE}"
 fi
 
 echo "=== T10: sidekick registry exposes separate Codex and Kay entries ==="

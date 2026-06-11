@@ -162,7 +162,6 @@ try:
         "sidekick:codex-stop",
         "sidekick:kay-delegate",
         "sidekick:kay-stop",
-        "sidekick:kay:delegate",
     ]
     canonical_order = [
         "sidekick:codex-delegate",
@@ -190,17 +189,8 @@ try:
     manifest = json.loads((sidekick_dir / ".codex-plugin" / "plugin.json").read_text())
     if manifest.get("skills") != "./skills/":
         raise SystemExit("Codex manifest must select ./skills/ as the skill root")
-    alias_expectations = {
-        "skills/kay:delegate/SKILL.md": [
-            "name: kay:delegate",
-            "canonical `kay-delegate` workflow",
-        ],
-    }
-    for rel, needles in alias_expectations.items():
-        text = (sidekick_dir / rel).read_text()
-        for needle in needles:
-            if needle not in text:
-                raise SystemExit(f"{rel} does not point to its canonical workflow")
+    if (sidekick_dir / "skills/kay:delegate/SKILL.md").exists():
+        raise SystemExit("redundant skills/kay:delegate/SKILL.md alias must be absent")
 finally:
     proc.terminate()
     try:
@@ -209,9 +199,9 @@ finally:
         proc.kill()
 PY
 then
-  pass "Kay plugin/read surfaces canonical skills plus delegate aliases"
+  pass "Kay plugin/read surfaces canonical skills without redundant delegate aliases"
 else
-  fail "plugin_read" "Kay plugin/read did not match the expected Sidekick skill surface"
+  fail "plugin_read" "Kay plugin/read did not match the expected canonical Sidekick skill surface"
 fi
 
 echo ""

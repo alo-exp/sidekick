@@ -9,6 +9,8 @@
 | **Kay** | `/sidekick:kay-delegate` | Kay runtime installed and repaired through Sidekick |
 | **Codex** | `/sidekick:codex-delegate` | Local OpenAI Codex CLI, using `gpt-5.4-mini` with extra-high reasoning |
 
+Kay defaults to the existing `opencode-go` routing. Activate Kay with `/sidekick:kay-delegate xiaomi` to use Xiaomi routing, or `/sidekick:kay-delegate ocg` to force OpenCode Go routing for the session. `SIDEKICK_KAY_PROVIDER` remains supported as an environment override. Sidekick selects the model automatically per provider.
+
 Stop commands:
 
 | Sidekick | Stop |

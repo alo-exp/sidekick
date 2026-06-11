@@ -67,7 +67,7 @@ resolve_codex_binary_name() {
 deny_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf 'Sidekick /sidekick:kay-delegate mode is active: direct file edits are delegated to Kay. Use: Bash { command: '\''%s --full-auto "<your task description>"'\'' }. Sidekick injects the OpenCode Go provider and task model automatically; legacy code/coder aliases remain compatibility-only.' "$(delegate_command)"
+      printf 'Sidekick /sidekick:kay-delegate mode is active: direct file edits are delegated to Kay. Use: Bash { command: '\''%s --full-auto "<your task description>"'\'' }. Sidekick injects the active provider and task model automatically; activate Kay with provider keyword ocg or xiaomi, or set SIDEKICK_KAY_PROVIDER, to select the backend. Legacy code/coder aliases remain compatibility-only.' "$(delegate_command)"
       ;;
     codex)
       printf 'Sidekick /sidekick:codex-delegate mode is active: direct file edits are delegated to Codex. Use: Bash { command: '\''%s "<your task description>"'\'' }. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$(delegate_command)"
@@ -125,14 +125,15 @@ has_delegate_exec_command() {
 
 rewrite_kay_exec() {
   local cmd="$1"
-  local stripped binary_name original_binary prompt route_provider route_model
+  local stripped binary_name original_binary prompt route_provider route_model_name route_model
 
   stripped="$(strip_env_prefix "$cmd")"
   original_binary="$(printf '%s' "$stripped" | awk '{print $1}')"
   binary_name="$(resolve_kay_binary_name || printf '%s' "$original_binary")"
   prompt="$(sidekick_extract_exec_prompt_raw "$stripped")"
   route_provider="$(sidekick_kay_model_provider)"
-  route_model="$(sidekick_kay_model_for_prompt "$prompt")"
+  route_model_name="$(sidekick_kay_model_for_prompt "$route_provider" "$prompt")"
+  route_model="$(sidekick_kay_model_ref "$route_provider" "$route_model_name")"
 
   python3 - "$binary_name" "$stripped" "$route_provider" "$route_model" "${HOOK_DIR}/lib/sidekick-safe-runner.sh" <<'PY'
 import shlex
