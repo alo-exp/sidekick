@@ -11,6 +11,8 @@
 
 ## Unreleased
 
+- The Kay live release wrapper now asks Kay to execute the generated test script directly instead of re-wrapping it in `bash`, which avoids a hung interactive shell when the live release gate starts.
+
 ## v0.7.0 -- 2026-05-29
 
 ### Remove Forge sidekick and retain Kay/Codex delegation
