@@ -87,6 +87,8 @@ expect_contains "tests/run_in_kay.bash" "deepseek-v4-flash" "Kay test wrapper us
 expect_contains "tests/run_in_kay.bash" "SIDEKICK_KAY_MODEL_PROVIDER" "Kay test wrapper allows live model provider override"
 expect_contains "tests/run_in_kay.bash" "SIDEKICK_KAY_MODEL" "Kay test wrapper allows live model override"
 expect_contains "tests/run_in_kay.bash" "unset SIDEKICK_KAY_MODEL_PROVIDER SIDEKICK_KAY_MODEL" "Kay test wrapper clears live model override env before nested tests"
+expect_contains "tests/run_in_kay.bash" "Execute this exact script" "Kay test wrapper runs the generated script directly"
+expect_contains "tests/run_in_kay.bash" "Do not prefix it with" "Kay test wrapper rejects wrapping the generated script in bash"
 expect_contains "tests/run_in_kay.bash" "model_reasoning_effort=low" "Kay test wrapper uses low reasoning"
 expect_contains "tests/run_in_kay.bash" "current-session" "Kay test wrapper writes current session file"
 expect_contains "tests/run_in_kay.bash" "SIDEKICK_HOST_HOME" "Kay test wrapper preserves the real host home for release-gate lookups"

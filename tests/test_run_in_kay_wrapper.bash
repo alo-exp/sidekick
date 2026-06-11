@@ -38,7 +38,9 @@ if [ "${1:-}" != "exec" ]; then
 fi
 
 prompt="$(cat)"
-script="$(printf '%s\n' "${prompt}" | awk '/^bash .*\.bash$/ {print $2; exit}')"
+script="$(printf '%s\n' "${prompt}" | awk '
+  /^[[:space:]]*\/.*\.bash$/ {sub(/^[[:space:]]+/, "", $0); print $0; exit}
+')"
 if [ -z "${script}" ] || [ ! -f "${script}" ]; then
   echo "fake kay could not find generated wrapper script" >&2
   exit 2
