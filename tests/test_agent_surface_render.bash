@@ -24,6 +24,15 @@ expect_file() {
   fi
 }
 
+expect_absent() {
+  local path="$1"
+  if [ ! -e "${PLUGIN_DIR}/${path}" ]; then
+    assert_pass "path absent: ${path}"
+  else
+    assert_fail "path absent: ${path}" "unexpected path exists"
+  fi
+}
+
 expect_executable() {
   local path="$1"
   if [ -x "${PLUGIN_DIR}/${path}" ]; then
@@ -104,10 +113,9 @@ for path in \
   expect_contains "$path" ".codex/sessions" "Codex generated ${path} uses Codex session path"
 done
 
-echo "=== T5: generated aliases point at host-specific surfaces ==="
+echo "=== T5: redundant Kay alias is absent and wrappers point at host-specific surfaces ==="
 for agent in claude codex; do
-  expect_contains "agents/${agent}/kay:delegate/SKILL.md" "agents/${agent}/kay-delegate/SKILL.md" "${agent} Kay alias names generated skill surface"
-  expect_not_contains "agents/${agent}/kay:delegate/SKILL.md" 'skills/kay-delegate/SKILL.md' "${agent} Kay alias does not point at canonical skills tree"
+  expect_absent "agents/${agent}/kay:delegate/SKILL.md"
   expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Codex wrapper names generated skill surface"
   expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Codex wrapper does not point at canonical skills tree"
   expect_contains "agents/${agent}/kay-delegate/SKILL.md" "agents/${agent}/kay-stop/SKILL.md" "${agent} Kay skill names generated stop skill"

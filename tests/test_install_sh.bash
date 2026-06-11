@@ -429,7 +429,7 @@ if [ "${1:-}" = "exec" ]; then
   exit 0
 fi
 if [ "${1:-}" = "--version" ]; then
-  printf 'kay 0.9.4\n'
+  printf 'kay 0.9.17\n'
   exit 0
 fi
 exit 0
@@ -527,7 +527,7 @@ if [ "${1:-}" = "exec" ]; then
   exit 0
 fi
 if [ "${1:-}" = "--version" ]; then
-  printf 'kay 0.9.4\n'
+  printf 'kay 0.9.17\n'
   exit 0
 fi
 exit 0
