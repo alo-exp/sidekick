@@ -35,7 +35,7 @@ run_hook() {
 }
 
 extract_context() {
-  printf '%s' "$1" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null
+  printf '%s' "$1" | jq -r '.hookSpecificOutput.additionalContext // .additional_context // empty' 2>/dev/null
 }
 
 echo "=== test_noop_when_marker_absent ==="
@@ -152,6 +152,18 @@ if echo "${ctx}" | grep -q '\[CODEX-SUMMARY\]' \
   assert_pass "test_codex_mode_accepts_safe_runner_command_shape"
 else
   assert_fail "test_codex_mode_accepts_safe_runner_command_shape" "ctx='${ctx}'"
+fi
+
+echo "=== test_cursor_kay_mode_emits_additional_context_for_shell ==="
+touch "${KAY_MARKER_FILE}"
+printf '%s\n' "kay" > "${ACTIVE_MODE_DIR}/active-sidekick"
+rm -f "${CODEX_MARKER_FILE}"
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${HOME_SANDBOX}" SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"'"${TEST_SESSION_ID}"'","tool_name":"Shell","tool_input":{"command":"kay exec --full-auto \"Refactor utils\""},"tool_response":{"output":"[KAY] STATUS: SUCCESS\n[KAY] FILES_CHANGED: [utils.py]\n[KAY] ASSUMPTIONS: []\n[KAY] PATTERNS_DISCOVERED: []"}}' 2>/dev/null)"
+if printf '%s' "${out}" | jq -e '.additional_context | length > 0' >/dev/null 2>&1; then
+  assert_pass "test_cursor_kay_mode_emits_additional_context_for_shell"
+else
+  assert_fail "test_cursor_kay_mode_emits_additional_context_for_shell" "out='${out}'"
 fi
 
 echo ""

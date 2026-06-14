@@ -10,6 +10,7 @@ State file:
 
 - Claude/source installs: `~/.claude/.sidekick/quality-gate-state`
 - Codex installs: `~/.codex/.sidekick/quality-gate-state`
+- Cursor installs: `~/.cursor/.sidekick/quality-gate-state`
 
 Marker format:
 
@@ -30,7 +31,9 @@ Resolve the release state path once in the release shell:
 
 ```bash
 SIDEKICK_QG_DIR="${HOME}/.claude/.sidekick"
-if [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ]; then
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || [ -n "${CURSOR_VERSION:-}" ] || [ -n "${CURSOR_PROJECT_DIR:-}" ]; then
+  SIDEKICK_QG_DIR="${HOME}/.cursor/.sidekick"
+elif [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_HOME:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ]; then
   SIDEKICK_QG_DIR="${HOME}/.codex/.sidekick"
 fi
 SIDEKICK_QG_STATE="${SIDEKICK_QG_DIR}/quality-gate-state"

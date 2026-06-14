@@ -15,8 +15,9 @@ Codex   = Hands
 
 ## Host Routing
 
-- Claude Code and Codex hosts both follow STEP 0 through STEP 3.
+- Claude Code, Codex, and Cursor hosts all follow STEP 0 through STEP 3.
 - When the active host is Codex, treat the delegated Codex CLI session as a child execution process, not as a replacement for the host's own planning and communication role.
+- When the active host is Cursor, treat the delegated Codex CLI session as a child execution process; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation.
 
 ## Runtime Readiness
 
@@ -52,7 +53,9 @@ Create the current-session Codex marker before delegating so Sidekick hooks can 
 
 ```bash
 if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+  if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.cursor"
+  elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
     SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
   elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
     SIDEKICK_HOST_HOME="${HOME}/.claude"

@@ -40,6 +40,7 @@ contains "README.md" "/sidekick:codex-delegate" "README documents Codex activati
 contains "README.md" "gpt-5.4-mini" "README documents Codex model"
 contains "context.md" "active-sidekick" "context documents active selector"
 contains "site/COMPATIBILITY.md" "Kay compatibility aliases" "compatibility documents Kay aliases"
+contains "site/COMPATIBILITY.md" "Cursor host" "compatibility documents Cursor host"
 contains "site/ARCHITECTURE.md" "Supported Sidekicks" "architecture documents supported sidekicks"
 contains "site/GLOSSARY.md" "Host verification" "glossary defines host verification"
 contains "site/TESTING.md" "SIDEKICK_LIVE_CODEX=1" "testing documents live release flag"

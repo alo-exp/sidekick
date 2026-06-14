@@ -1,6 +1,6 @@
 # Sidekick
 
-**AI coding-agent delegation for Claude Code and Codex.** Sidekick lets the host AI stay focused on planning, review, mentoring, and communication while supported sidekicks perform implementation work.
+**AI coding-agent delegation for Claude Code, Codex, and Cursor.** Sidekick lets the host AI stay focused on planning, review, mentoring, and communication while supported sidekicks perform implementation work.
 
 ## Supported Sidekicks
 

@@ -12,7 +12,9 @@ Stop Codex mode and restore normal direct-host behavior.
 1. Resolve the active host session id, then check whether the matching Codex marker exists:
    ```bash
    if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-     if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+     if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
+       SIDEKICK_HOST_HOME="${HOME}/.cursor"
+     elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
        SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
      elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
        SIDEKICK_HOST_HOME="${HOME}/.claude"

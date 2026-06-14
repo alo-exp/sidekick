@@ -15,8 +15,9 @@ Kay     = Hands
 
 ## Host Routing
 
-- Claude Code and Codex hosts both follow STEP 0 through STEP 3.
+- Claude Code, Codex, and Cursor hosts all follow STEP 0 through STEP 3.
 - When the active host is Codex, treat Kay as a child execution process launched through `kay exec`; do not confuse host Codex planning work with delegated Kay implementation work.
+- When the active host is Cursor, treat Kay as a child execution process launched through `kay exec`; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation.
 
 The stop workflow lives canonically in `skills/kay-stop/SKILL.md`.
 
@@ -86,7 +87,9 @@ Provider argument handling:
 
 ```bash
 if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+  if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.cursor"
+  elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
     SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
   elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
     SIDEKICK_HOST_HOME="${HOME}/.claude"

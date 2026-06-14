@@ -68,6 +68,10 @@ expect_file "agents/codex/kay-delegate/SKILL.md"
 expect_file "agents/claude/codex-delegate/SKILL.md"
 expect_file "agents/codex/codex-delegate/SKILL.md"
 
+echo "=== T1b: cursor host bundle exists ==="
+expect_file "agents/cursor/kay-delegate/SKILL.md"
+expect_file "agents/cursor/codex-delegate/SKILL.md"
+
 echo "=== T2: canonical skills use host placeholders ==="
 for path in \
   skills/kay-delegate/SKILL.md \
@@ -113,8 +117,24 @@ for path in \
   expect_contains "$path" ".codex/sessions" "Codex generated ${path} uses Codex session path"
 done
 
+echo "=== T4b: generated Cursor skills are Cursor-specific ==="
+for path in \
+  agents/cursor/kay-delegate/SKILL.md \
+  agents/cursor/kay-stop/SKILL.md \
+  agents/cursor/codex-delegate/SKILL.md \
+  agents/cursor/codex-stop/SKILL.md; do
+  expect_contains "$path" "SIDEKICK_SESSION_ID" "Cursor generated ${path} uses SIDEKICK_SESSION_ID"
+  expect_not_contains "$path" "CODEX_THREAD_ID" "Cursor generated ${path} has no Codex thread var"
+  expect_not_contains "$path" "CLAUDE_SESSION_ID" "Cursor generated ${path} has no Claude session var"
+done
+for path in \
+  agents/cursor/kay-delegate/SKILL.md \
+  agents/cursor/codex-delegate/SKILL.md; do
+  expect_contains "$path" ".cursor/sessions" "Cursor generated ${path} uses Cursor session path"
+done
+
 echo "=== T5: redundant Kay alias is absent and wrappers point at host-specific surfaces ==="
-for agent in claude codex; do
+for agent in claude codex cursor; do
   expect_absent "agents/${agent}/kay:delegate/SKILL.md"
   expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Codex wrapper names generated skill surface"
   expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Codex wrapper does not point at canonical skills tree"
@@ -127,11 +147,13 @@ if [ -f "${RENDERER}" ]; then
   trap 'rm -rf "${tmp}" 2>/dev/null || true' EXIT
   if python3 "${RENDERER}" render --agent claude --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/claude" \
     && python3 "${RENDERER}" render --agent codex --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/codex" \
+    && python3 "${RENDERER}" render --agent cursor --source-root "${PLUGIN_DIR}/skills" --dest-root "${tmp}/cursor" \
     && diff -qr "${tmp}/claude" "${PLUGIN_DIR}/agents/claude" >"${tmp}/sidekick-agent-claude.diff" 2>&1 \
-    && diff -qr "${tmp}/codex" "${PLUGIN_DIR}/agents/codex" >"${tmp}/sidekick-agent-codex.diff" 2>&1; then
+    && diff -qr "${tmp}/codex" "${PLUGIN_DIR}/agents/codex" >"${tmp}/sidekick-agent-codex.diff" 2>&1 \
+    && diff -qr "${tmp}/cursor" "${PLUGIN_DIR}/agents/cursor" >"${tmp}/sidekick-agent-cursor.diff" 2>&1; then
     assert_pass "generated host bundles match renderer output"
   else
-    assert_fail "generated host bundles in sync" "$(cat "${tmp}/sidekick-agent-claude.diff" "${tmp}/sidekick-agent-codex.diff" 2>/dev/null | head -20)"
+    assert_fail "generated host bundles in sync" "$(cat "${tmp}/sidekick-agent-claude.diff" "${tmp}/sidekick-agent-codex.diff" "${tmp}/sidekick-agent-cursor.diff" 2>/dev/null | head -20)"
   fi
 else
   assert_fail "generated host bundles in sync" "renderer missing"

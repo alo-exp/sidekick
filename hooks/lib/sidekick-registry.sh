@@ -13,6 +13,11 @@ IFS=$'\n\t'
 _SIDEKICK_REGISTRY_LOADED=1
 
 sidekick_plugin_root() {
+  if [[ -n "${CURSOR_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${CURSOR_PLUGIN_ROOT}"
+    return 0
+  fi
+
   if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
     sidekick_normalize_codex_path "${SIDEKICK_PLUGIN_ROOT}"
     return 0
@@ -122,6 +127,8 @@ sidekick_session_marker_file() {
   marker_template="$(sidekick_registry_get "$sidekick" '.[$sidekick].marker_file')"
   session_id="$(sidekick_session_id)" || return 1
 
+  marker_template="${marker_template//\$\{SIDEKICK_SESSION_ID\}/$session_id}"
+  marker_template="${marker_template//\$SIDEKICK_SESSION_ID/$session_id}"
   marker_template="${marker_template//\$\{CODEX_THREAD_ID\}/$session_id}"
   marker_template="${marker_template//\$CODEX_THREAD_ID/$session_id}"
   marker_template="${marker_template//\$\{CLAUDE_SESSION_ID\}/$session_id}"
@@ -160,7 +167,7 @@ sidekick_active_mode_allows() {
 }
 
 sidekick_project_root() {
-  local root="${SIDEKICK_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}"
+  local root="${SIDEKICK_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}}"
   if command -v realpath >/dev/null 2>&1; then
     realpath "$root" 2>/dev/null && return 0
   fi

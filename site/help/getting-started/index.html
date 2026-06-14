@@ -145,7 +145,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="what-is-sidekick">What is Sidekick?</h2>
-      <p>Sidekick is a Claude Code and Codex plugin that gives the active host two implementation sidekicks. <strong>Kay</strong> routes work through the Kay runtime and <code>kay exec</code>. <strong>Codex</strong> routes work through the local OpenAI Codex CLI and <code>codex exec</code>, pinned to <code>gpt-5.4-mini</code> with extra-high reasoning.</p>
+      <p>Sidekick is a Claude Code, Codex, and Cursor plugin that gives the active host two implementation sidekicks. <strong>Kay</strong> routes work through the Kay runtime and <code>kay exec</code>. <strong>Codex</strong> routes work through the local OpenAI Codex CLI and <code>codex exec</code>, pinned to <code>gpt-5.4-mini</code> with extra-high reasoning.</p>
       <p>When you activate a sidekick, the host stops making direct implementation edits. The selected sidekick writes files and runs commands, while the host stays responsible for architecture, review, verification, and communication.</p>
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="zap"></i></span>
@@ -194,7 +194,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h3>Kay health check</h3>
-      <p>For the Kay path, verify that the Kay runtime is reachable. Claude Code and Codex both start Kay mode through <code>/sidekick:kay-delegate</code>; active Kay mode then routes implementation through the native <code>kay exec</code> child runtime while Sidekick maintains <code>.kay/conversations.idx</code>.</p>
+      <p>For the Kay path, verify that the Kay runtime is reachable. Claude Code, Codex, and Cursor both start Kay mode through <code>/sidekick:kay-delegate</code>; active Kay mode then routes implementation through the native <code>kay exec</code> child runtime while Sidekick maintains <code>.kay/conversations.idx</code>.</p>
       <div class="code-label">Kay runtime</div>
       <div class="code-block"><span class="cmd">kay --version</span> <span class="comment"># legacy aliases may also exist</span>
 <span class="cmd">kay exec --help</span>

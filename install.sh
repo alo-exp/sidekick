@@ -57,6 +57,11 @@ detect_install_host() {
     return 0
   fi
 
+  if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+    printf '%s' "cursor"
+    return 0
+  fi
+
   if [ -n "${CODEX_PLUGIN_ROOT:-}" ]; then
     printf '%s' "codex"
     return 0
@@ -64,6 +69,11 @@ detect_install_host() {
 
   if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
     printf '%s' "claude"
+    return 0
+  fi
+
+  if [ -n "${CURSOR_VERSION:-}" ] || [ -n "${CURSOR_PROJECT_DIR:-}" ]; then
+    printf '%s' "cursor"
     return 0
   fi
 
@@ -96,7 +106,7 @@ import sys
 root = Path(sys.argv[1])
 host = sys.argv[2]
 
-if host not in {"codex", "claude"}:
+if host not in {"codex", "claude", "cursor"}:
     raise SystemExit(0)
 
 def rewrite_registry_helper(text: str, selected_host: str) -> str:
@@ -115,6 +125,21 @@ def rewrite_registry_helper(text: str, selected_host: str) -> str:
 
   if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
     sidekick_normalize_codex_path "${SIDEKICK_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
+}
+"""
+    elif selected_host == "cursor":
+        body = """sidekick_plugin_root() {
+  if [[ -n "${CURSOR_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${CURSOR_PLUGIN_ROOT}"
+    return 0
+  fi
+
+  if [[ -n "${SIDEKICK_PLUGIN_ROOT:-}" ]]; then
+    printf '%s' "${SIDEKICK_PLUGIN_ROOT}"
     return 0
   fi
 
@@ -155,6 +180,8 @@ replacements = {
         ("CLAUDE_PROJECT_DIR", "CODEX_PROJECT_DIR"),
         ("CLAUDE_SESSION_ID", "CODEX_THREAD_ID"),
         (".claude/sessions/${CODEX_THREAD_ID}", ".codex/sessions/${CODEX_THREAD_ID}"),
+        ("${SIDEKICK_SESSION_ID}", "${CODEX_THREAD_ID}"),
+        ("$SIDEKICK_SESSION_ID", "$CODEX_THREAD_ID"),
     ],
     "claude": [
         ("ROOT=\\\"$(printf '%s' \\\"${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";", "ROOT=\\\"$(printf '%s' \\\"${CLAUDE_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\" | sed 's#/.Codex/#/.codex/#g; s#/.Codex$#/.codex#')\\\";"),
@@ -171,14 +198,44 @@ replacements = {
         ("CODEX_PROJECT_DIR", "CLAUDE_PROJECT_DIR"),
         ("CODEX_THREAD_ID", "CLAUDE_SESSION_ID"),
         (".codex/sessions/${CODEX_THREAD_ID}", ".claude/sessions/${CLAUDE_SESSION_ID}"),
+        ("${SIDEKICK_SESSION_ID}", "${CLAUDE_SESSION_ID}"),
+        ("$SIDEKICK_SESSION_ID", "$CLAUDE_SESSION_ID"),
+    ],
+    "cursor": [
+        ("ROOT=\\\"$(printf '%s' \\\"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\")\\\";", "ROOT=\\\"$(printf '%s' \\\"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\\\")\\\";"),
+        ("ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\";", "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\";"),
+        ("if [[ -n \"${CODEX_PLUGIN_ROOT:-}\" ]]; then\n    sidekick_normalize_codex_path \"${CODEX_PLUGIN_ROOT}\"\n    return 0\n  fi\n", ""),
+        ("if [[ -n \"${CLAUDE_PLUGIN_ROOT:-}\" ]]; then\n    printf '%s' \"${CLAUDE_PLUGIN_ROOT}\"\n    return 0\n  fi\n", ""),
+        ("if [[ -n \"${CODEX_THREAD_ID:-}\" ]]; then\n    printf '%s' \"${CODEX_THREAD_ID}\"\n    return 0\n  fi\n", ""),
+        ("if [[ -n \"${CLAUDE_SESSION_ID:-}\" ]]; then\n    printf '%s' \"${CLAUDE_SESSION_ID}\"\n    return 0\n  fi\n", ""),
+        ("local root=\"${SIDEKICK_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-${CODEX_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}}}\"", "local root=\"${SIDEKICK_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-$PWD}}\""),
+        ("~/.codex", "~/.cursor"),
+        ("~/.claude", "~/.cursor"),
+        (".codex/", ".cursor/"),
+        (".claude/", ".cursor/"),
+        ("CODEX_PLUGIN_ROOT", "CURSOR_PLUGIN_ROOT"),
+        ("CLAUDE_PLUGIN_ROOT", "CURSOR_PLUGIN_ROOT"),
+        ("CODEX_PROJECT_DIR", "CURSOR_PROJECT_DIR"),
+        ("CLAUDE_PROJECT_DIR", "CURSOR_PROJECT_DIR"),
+        ("CODEX_THREAD_ID", "SIDEKICK_SESSION_ID"),
+        ("CLAUDE_SESSION_ID", "SIDEKICK_SESSION_ID"),
     ],
 }
 
+hook_files = {
+    "codex": ["hooks/hooks.json"],
+    "claude": ["hooks/hooks.json"],
+    "cursor": ["hooks/cursor-hooks.json"],
+}
+
 for rel in [
-    "hooks/hooks.json",
+    *hook_files[host],
     "hooks/lib/sidekick-registry.sh",
     "sidekicks/registry.json",
     "hooks/codex-delegation-enforcer.sh",
+    "hooks/codex-progress-surface.sh",
+    "hooks/cursor-session-bootstrap.sh",
+    "hooks/lib/sidekick-hook-io.sh",
 ]:
     path = root / rel
     if not path.exists():
@@ -206,6 +263,11 @@ for rel in [
         text = text.replace(
             "Set SIDEKICK_SESSION_ID, CLAUDE_SESSION_ID, CLAUDE_SESSION_ID, or SESSION_ID",
             "Set SIDEKICK_SESSION_ID, CLAUDE_SESSION_ID, or SESSION_ID",
+        )
+    elif host == "cursor":
+        text = text.replace(
+            "${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}",
+            "${SIDEKICK_SESSION_ID:-${SESSION_ID:-}}",
         )
     if text != original:
         path.write_text(text, encoding="utf-8")
@@ -242,9 +304,16 @@ hash_targets = {
     "codex_codex_delegate_skill_md_sha256": "agents/codex/codex-delegate/SKILL.md",
     "codex_codex_delegate_md_sha256": "agents/codex/codex-delegate.md",
     "codex_codex_stop_skill_md_sha256": "agents/codex/codex-stop/SKILL.md",
+    "cursor_kay_delegate_skill_md_sha256": "agents/cursor/kay-delegate/SKILL.md",
+    "cursor_kay_stop_skill_md_sha256": "agents/cursor/kay-stop/SKILL.md",
+    "cursor_codex_delegate_skill_md_sha256": "agents/cursor/codex-delegate/SKILL.md",
+    "cursor_codex_stop_skill_md_sha256": "agents/cursor/codex-stop/SKILL.md",
     "render_agent_bundle_sha256": "scripts/render-agent-bundle.py",
     "sync_host_surfaces_sha256": "scripts/sync-host-surfaces.sh",
     "hooks_json_sha256": "hooks/hooks.json",
+    "cursor_hooks_json_sha256": "hooks/cursor-hooks.json",
+    "cursor_session_bootstrap_sha256": "hooks/cursor-session-bootstrap.sh",
+    "sidekick_hook_io_sha256": "hooks/lib/sidekick-hook-io.sh",
     "codex_delegation_enforcer_sha256": "hooks/codex-delegation-enforcer.sh",
     "enforcer_utils_sha256": "hooks/lib/enforcer-utils.sh",
     "sidekick_registry_lib_sha256": "hooks/lib/sidekick-registry.sh",

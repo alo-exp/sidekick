@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\"; bash \"${ROOT}/hooks/cursor-session-bootstrap.sh\""
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\"; SIDEKICK_HOOK_HOST=cursor bash \"${ROOT}/hooks/codex-delegation-enforcer.sh\"",
+        "failClosed": true
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\"; SIDEKICK_HOOK_HOST=cursor bash \"${ROOT}/hooks/codex-progress-surface.sh\""
+      }
+    ]
+  }
+}

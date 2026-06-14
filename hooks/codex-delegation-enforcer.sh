@@ -11,27 +11,14 @@ HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${HOOK_DIR}/lib/enforcer-utils.sh"
 # shellcheck source=hooks/lib/sidekick-registry.sh
 source "${HOOK_DIR}/lib/sidekick-registry.sh"
+# shellcheck source=hooks/lib/sidekick-hook-io.sh
+source "${HOOK_DIR}/lib/sidekick-hook-io.sh"
 
 SIDEKICK_NAME=""
 MARKER_FILE=""
 
 emit_decision() {
-  local decision="$1"
-  local reason="$2"
-  local updated_cmd="${3:-}"
-
-  if [[ -n "$updated_cmd" ]]; then
-    jq -cn \
-      --arg d "$decision" \
-      --arg r "$reason" \
-      --arg c "$updated_cmd" \
-      '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: $d, permissionDecisionReason: $r, updatedInput: {command: $c}}}'
-  else
-    jq -cn \
-      --arg d "$decision" \
-      --arg r "$reason" \
-      '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: $d, permissionDecisionReason: $r}}'
-  fi
+  sidekick_emit_pre_tool_decision "$1" "$2" "${3:-}"
 }
 
 delegate_command() {
@@ -65,12 +52,23 @@ resolve_codex_binary_name() {
 }
 
 deny_reason() {
+  local shell_hint
   case "$SIDEKICK_NAME" in
     kay)
-      printf 'Sidekick /sidekick:kay-delegate mode is active: direct file edits are delegated to Kay. Use: Bash { command: '\''%s --full-auto "<your task description>"'\'' }. Sidekick injects the active provider and task model automatically; activate Kay with provider keyword ocg or xiaomi, or set SIDEKICK_KAY_PROVIDER, to select the backend. Legacy code/coder aliases remain compatibility-only.' "$(delegate_command)"
+      if sidekick_is_cursor_host; then
+        shell_hint="$(sidekick_delegate_shell_hint "$(delegate_command) --full-auto")"
+      else
+        shell_hint="Bash { command: '$(delegate_command) --full-auto \"<your task description>\"' }"
+      fi
+      printf 'Sidekick /sidekick:kay-delegate mode is active: direct file edits are delegated to Kay. Use: %s. Sidekick injects the active provider and task model automatically; activate Kay with provider keyword ocg or xiaomi, or set SIDEKICK_KAY_PROVIDER, to select the backend. Legacy code/coder aliases remain compatibility-only.' "$shell_hint"
       ;;
     codex)
-      printf 'Sidekick /sidekick:codex-delegate mode is active: direct file edits are delegated to Codex. Use: Bash { command: '\''%s "<your task description>"'\'' }. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$(delegate_command)"
+      if sidekick_is_cursor_host; then
+        shell_hint="$(sidekick_delegate_shell_hint "$(delegate_command)")"
+      else
+        shell_hint="Bash { command: '$(delegate_command) \"<your task description>\"' }"
+      fi
+      printf 'Sidekick /sidekick:codex-delegate mode is active: direct file edits are delegated to Codex. Use: %s. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$shell_hint"
       ;;
   esac
 }
@@ -100,6 +98,26 @@ decide_mcp_write() {
   if is_allowed_doc_path "$file_path"; then
     return 0
   fi
+  deny_direct_edit
+}
+
+decide_task() {
+  local reason
+  case "$SIDEKICK_NAME" in
+    kay)
+      reason='Sidekick /sidekick:kay-delegate mode is active: Task subagents bypass Kay delegation. Delegate via kay exec --full-auto instead.'
+      ;;
+    codex)
+      reason='Sidekick /sidekick:codex-delegate mode is active: Task subagents bypass Codex delegation. Delegate via codex exec instead.'
+      ;;
+    *)
+      reason='Sidekick delegation mode is active: Task subagents are blocked while a sidekick owns implementation work.'
+      ;;
+  esac
+  emit_decision "deny" "$reason" ""
+}
+
+decide_delete() {
   deny_direct_edit
 }
 
@@ -425,28 +443,36 @@ decide_bash() {
 }
 
 main() {
+  local input tool_name normalized_tool tool_input
+
+  if command -v jq >/dev/null 2>&1; then
+    input="$(cat)"
+    sidekick_bind_hook_session_from_input "$input"
+  else
+    input=""
+  fi
+
   SIDEKICK_NAME="$(sidekick_active_mode 2>/dev/null || true)"
   case "$SIDEKICK_NAME" in
     kay|codex) ;;
     *) exit 0 ;;
   esac
 
-  MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
-
   if ! command -v jq >/dev/null 2>&1; then
-    printf '%s\n' "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Sidekick /${SIDEKICK_NAME} mode requires jq for hook enforcement. Install jq and re-run.\"}}"
+    sidekick_emit_jq_missing_denial "$SIDEKICK_NAME"
     exit 0
   fi
 
+  MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
   [[ -n "$MARKER_FILE" ]] || exit 0
   [[ -f "$MARKER_FILE" ]] || exit 0
 
-  local input tool_name tool_input
-  input="$(cat)"
+  SIDEKICK_HOOK_INPUT="$input"
   tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
+  normalized_tool="$(sidekick_normalize_tool_name "$tool_name")"
   tool_input="$(printf '%s' "$input" | jq -c '.tool_input // {}' 2>/dev/null)"
 
-  case "$tool_name" in
+  case "$normalized_tool" in
     Write|Edit)
       decide_write_edit "$tool_input"
       ;;
@@ -456,10 +482,23 @@ main() {
     Bash)
       decide_bash "$tool_input"
       ;;
+    Task)
+      decide_task
+      ;;
+    Delete)
+      decide_delete
+      ;;
     mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__filesystem__move_file|mcp__filesystem__create_directory)
       decide_mcp_write "$tool_input"
       ;;
     *)
+      case "$tool_name" in
+        MCP:*)
+          if [[ "$tool_name" == *write* ]] || [[ "$tool_name" == *edit* ]] || [[ "$tool_name" == *move* ]] || [[ "$tool_name" == *create* ]]; then
+            decide_mcp_write "$tool_input"
+          fi
+          ;;
+      esac
       return 0
       ;;
   esac
