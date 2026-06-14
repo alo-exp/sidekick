@@ -53,21 +53,13 @@ Create the current-session Codex marker before delegating so Sidekick hooks can 
 
 ```bash
 if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
-    SIDEKICK_HOST_HOME="${HOME}/.cursor"
-  elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
-    SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
-  elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
-    SIDEKICK_HOST_HOME="${HOME}/.claude"
-  else
-    echo "No host home found for Codex mode"; exit 1
-  fi
+  SIDEKICK_HOST_HOME="${HOME}/.cursor"
 fi
-SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SESSION_ID:-}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Codex mode"; exit 1; }
 CODEX_STATE_ROOT="${HOME}/.codex"
 mkdir -p "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}" \
-  "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.cursor/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.kay/sessions/${SIDEKICK_SESSION}"
 rm -f "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"

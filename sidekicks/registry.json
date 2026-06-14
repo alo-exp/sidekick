@@ -1,7 +1,7 @@
 {
   "kay": {
     "display_name": "Kay",
-    "marker_file": ".kay/sessions/${CODEX_THREAD_ID}/.kay-delegation-active",
+    "marker_file": ".kay/sessions/${SIDEKICK_SESSION_ID}/.kay-delegation-active",
     "idx_dir": ".kay",
     "delegate_command": "kay exec",
     "stop_command": "/sidekick:kay-stop",
@@ -19,7 +19,7 @@
   },
   "codex": {
     "display_name": "Codex",
-    "marker_file": ".codex/sessions/${CODEX_THREAD_ID}/.codex-delegation-active",
+    "marker_file": ".codex/sessions/${SIDEKICK_SESSION_ID}/.codex-delegation-active",
     "idx_dir": ".codex",
     "delegate_command": "codex exec",
     "stop_command": "/sidekick:codex-stop",

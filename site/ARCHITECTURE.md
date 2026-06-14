@@ -2,14 +2,14 @@
 
 > Current Sidekick architecture for the Kay and Codex sidekicks.
 
-**Plugin version:** Sidekick 0.7.1
-**Hosts:** Claude Code and Codex
+**Plugin version:** Sidekick 0.8.0
+**Hosts:** Claude Code, Codex, and Cursor
 **Stack:** Shell/Bash plus Markdown
 **Supported sidekicks:** Kay and Codex
 
 ## System Overview
 
-Sidekick gives Claude Code and Codex a shared delegation layer. The host AI stays responsible for planning, user communication, review, and final correctness. The active sidekick performs bounded implementation work through its native runtime.
+Sidekick gives Claude Code, Codex, and Cursor a shared delegation layer. The host AI stays responsible for planning, user communication, review, and final correctness. The active sidekick performs bounded implementation work through its native runtime.
 
 The system has two durable roles:
 
@@ -53,7 +53,8 @@ Hooks use this state to decide which runtime boundary is active. Direct host mut
 | Codex delegate skill | `skills/codex-delegate/SKILL.md` | Canonical Codex activation workflow. |
 | Codex stop skill | `skills/codex-stop/SKILL.md` | Canonical Codex deactivation workflow. |
 | Registry | `sidekicks/registry.json` | Runtime names, commands, markers, and install metadata. |
-| Generated host bundles | `agents/claude/`, `agents/codex/` | Rendered from `skills/`; do not edit by hand. |
+| Generated host bundles | `agents/claude/`, `agents/codex/`, `agents/cursor/` | Rendered from `skills/`; do not edit by hand. |
+| Cursor hooks | `hooks/cursor-hooks.json` | Native Cursor `sessionStart`, `preToolUse`, and `postToolUse` wiring. |
 | Renderer | `scripts/sync-host-surfaces.sh` | Rebuilds generated host surfaces. |
 
 Generated copies are implementation artifacts. Update the canonical skill first, then run:

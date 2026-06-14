@@ -1,10 +1,10 @@
 {
   "name": "alo-labs",
   "owner": {
-    "name": "\u0100lo Labs"
+    "name": "Ālo Labs"
   },
   "metadata": {
-    "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code, Codex, and Cursor. Kay and Codex are the supported sidekicks."
+    "description": "Sidekick — AI coding-agent delegation workflows for Cursor. Kay and Codex are the supported sidekicks."
   },
   "plugins": [
     {
@@ -14,10 +14,10 @@
         "repo": "alo-exp/sidekick",
         "ref": "v0.8.0"
       },
-      "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code, Codex, and Cursor. Kay installs through Sidekick, Codex delegates to the local OpenAI Codex CLI, and Claude stays in the orchestrator role.",
+      "description": "Sidekick — AI coding-agent delegation workflows for Cursor. Kay installs through Sidekick, Codex delegates to the local OpenAI Codex CLI, and Cursor stays in the orchestrator role.",
       "version": "0.8.0",
       "author": {
-        "name": "\u0100lo Labs",
+        "name": "Ālo Labs",
         "url": "https://alolabs.dev"
       },
       "homepage": "https://github.com/alo-exp/sidekick",
@@ -25,7 +25,7 @@
       "license": "MIT",
       "keywords": [
         "sidekick",
-        "claude-code",
+        "cursor",
         "codex",
         "kay",
         "terminal-agent",

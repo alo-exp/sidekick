@@ -23,6 +23,13 @@ HOST_REPLACEMENTS = {
         ("SIDEKICK_HOST_PROJECT_DIR", "CODEX_PROJECT_DIR"),
         ("SIDEKICK_HOST_PLUGIN_ROOT", "CODEX_PLUGIN_ROOT"),
     ],
+    "cursor": [
+        ("${SIDEKICK_HOST_HOME}", "${HOME}/.cursor"),
+        ("$SIDEKICK_HOST_HOME", "$HOME/.cursor"),
+        ("SIDEKICK_HOST_SESSION_ID", "SIDEKICK_SESSION_ID"),
+        ("SIDEKICK_HOST_PROJECT_DIR", "CURSOR_PROJECT_DIR"),
+        ("SIDEKICK_HOST_PLUGIN_ROOT", "CURSOR_PLUGIN_ROOT"),
+    ],
 }
 
 
@@ -67,70 +74,85 @@ def host_alias_replacements(agent: str) -> list[tuple[str, str]]:
     ]
 
 
-def host_logic_replacements(agent: str) -> list[tuple[str, str]]:
-    host_home_blocks = [
-        (
-            """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+CANONICAL_MULTI_HOST_KAY = """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.cursor"
+  elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
     SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
   elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
     SIDEKICK_HOST_HOME="${HOME}/.claude"
   else
-""",
-            "    ",
-            "  ",
-            "",
-        ),
-        (
-            """   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-     if [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+    echo "No host home found for Kay mode"; exit 1
+  fi
+fi"""
+
+CANONICAL_MULTI_HOST_CODEX = """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.cursor"
+  elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
+    SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+  elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
+    SIDEKICK_HOST_HOME="${HOME}/.claude"
+  else
+    echo "No host home found for Codex mode"; exit 1
+  fi
+fi"""
+
+CANONICAL_MULTI_HOST_CODEX_INDENTED = """   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+     if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
+       SIDEKICK_HOST_HOME="${HOME}/.cursor"
+     elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
        SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
      elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
        SIDEKICK_HOST_HOME="${HOME}/.claude"
      else
-""",
-            "       ",
-            "     ",
-            "   ",
-        ),
+       echo "No host home found for Codex mode"; exit 1
+     fi
+   fi"""
+
+CANONICAL_SESSION_LINE = (
+    'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-'
+    '${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"'
+)
+
+SIMPLIFIED_HOST_HOME = {
+    "claude": """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  SIDEKICK_HOST_HOME="${HOME}/.claude"
+fi""",
+    "codex": """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+fi""",
+    "cursor": """if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  SIDEKICK_HOST_HOME="${HOME}/.cursor"
+fi""",
+}
+
+SIMPLIFIED_HOST_HOME_INDENTED = {
+    "claude": """   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+     SIDEKICK_HOST_HOME="${HOME}/.claude"
+   fi""",
+    "codex": """   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+     SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+   fi""",
+    "cursor": """   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+     SIDEKICK_HOST_HOME="${HOME}/.cursor"
+   fi""",
+}
+
+SIMPLIFIED_SESSION_LINE = {
+    "claude": 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"',
+    "codex": 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"',
+    "cursor": 'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SESSION_ID:-}}"',
+}
+
+
+def host_logic_replacements(agent: str) -> list[tuple[str, str]]:
+    replacements: list[tuple[str, str]] = [
+        (CANONICAL_MULTI_HOST_KAY, SIMPLIFIED_HOST_HOME[agent]),
+        (CANONICAL_MULTI_HOST_CODEX, SIMPLIFIED_HOST_HOME[agent]),
+        (CANONICAL_MULTI_HOST_CODEX_INDENTED, SIMPLIFIED_HOST_HOME_INDENTED[agent]),
+        (CANONICAL_SESSION_LINE, SIMPLIFIED_SESSION_LINE[agent]),
     ]
-
-    replacements: list[tuple[str, str]] = []
-    for host_home_block, echo_indent, inner_fi_indent, outer_fi_indent in host_home_blocks:
-        replacements.extend(
-            [
-                (
-                    host_home_block
-                    + f'{echo_indent}echo "No host home found for Kay mode"; exit 1\n'
-                    + f"{inner_fi_indent}fi\n"
-                    + f"{outer_fi_indent}fi\n",
-                    "",
-                ),
-                (
-                    host_home_block
-                    + f'{echo_indent}echo "No host home found for Codex mode"; exit 1\n'
-                    + f"{inner_fi_indent}fi\n"
-                    + f"{outer_fi_indent}fi\n",
-                    "",
-                ),
-            ]
-        )
-
-    if agent == "codex":
-        replacements.append(
-            (
-                'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"',
-                'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"',
-            )
-        )
-        return replacements
-
-    replacements.append(
-        (
-            'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"',
-            'SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"',
-        )
-    )
     return replacements
 
 
@@ -141,9 +163,9 @@ def rewrite_file(path: pathlib.Path, agent: str) -> bool:
         return False
 
     updated = text
-    for old, new in HOST_REPLACEMENTS[agent]:
-        updated = updated.replace(old, new)
     for old, new in host_logic_replacements(agent):
+        updated = updated.replace(old, new)
+    for old, new in HOST_REPLACEMENTS[agent]:
         updated = updated.replace(old, new)
     for old, new in host_alias_replacements(agent):
         updated = updated.replace(old, new)
@@ -232,7 +254,7 @@ def render_bundle(source_root: pathlib.Path, dest_root: pathlib.Path, agent: str
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("render", "sanitize"))
-    parser.add_argument("--agent", required=True, choices=("claude", "codex"))
+    parser.add_argument("--agent", required=True, choices=("claude", "codex", "cursor"))
     parser.add_argument("--source-root")
     parser.add_argument("--dest-root")
     parser.add_argument("--root")

@@ -21,6 +21,11 @@ prepare_surface_sandbox() {
   cp -R "${PLUGIN_DIR}/agents" "${root}/agents"
   cp "${PLUGIN_DIR}/hooks/lib/sidekick-registry.sh" "${root}/hooks/lib/sidekick-registry.sh"
   cp "${PLUGIN_DIR}/hooks/hooks.json" "${root}/hooks/hooks.json"
+  cp "${PLUGIN_DIR}/hooks/cursor-hooks.json" "${root}/hooks/cursor-hooks.json"
+  cp "${PLUGIN_DIR}/hooks/cursor-session-bootstrap.sh" "${root}/hooks/cursor-session-bootstrap.sh"
+  cp "${PLUGIN_DIR}/hooks/codex-delegation-enforcer.sh" "${root}/hooks/codex-delegation-enforcer.sh"
+  cp "${PLUGIN_DIR}/hooks/codex-progress-surface.sh" "${root}/hooks/codex-progress-surface.sh"
+  cp "${PLUGIN_DIR}/hooks/lib/sidekick-hook-io.sh" "${root}/hooks/lib/sidekick-hook-io.sh"
   cp "${PLUGIN_DIR}/skills/kay-delegate/SKILL.md" "${root}/skills/kay-delegate/SKILL.md"
   cp "${PLUGIN_DIR}/skills/kay-stop/SKILL.md" "${root}/skills/kay-stop/SKILL.md"
   cp "${PLUGIN_DIR}/skills/codex-delegate/SKILL.md" "${root}/skills/codex-delegate/SKILL.md"
@@ -88,6 +93,13 @@ run_case() {
       SIDEKICK_INSTALL_CODE=0 \
       CODEX_PLUGIN_ROOT="${root}" \
       bash "${root}/install.sh" >/dev/null 2>&1
+  elif [ "${host}" = "cursor" ]; then
+    env -u CLAUDE_PLUGIN_ROOT -u CLAUDE_SESSION_ID -u CLAUDE_PROJECT_DIR \
+      -u CODEX_PLUGIN_ROOT -u CODEX_HOME -u CODEX_THREAD_ID -u CODEX_PROJECT_DIR \
+      HOME="${root}/home" \
+      SIDEKICK_INSTALL_CODE=0 \
+      CURSOR_PLUGIN_ROOT="${root}" \
+      bash "${root}/install.sh" >/dev/null 2>&1
   else
     env -u CODEX_PLUGIN_ROOT -u CODEX_HOME -u CODEX_THREAD_ID -u CODEX_PROJECT_DIR \
       HOME="${root}/home" \
@@ -97,6 +109,9 @@ run_case() {
   fi
 
   local hooks="${root}/hooks/hooks.json"
+  if [ "${host}" = "cursor" ]; then
+    hooks="${root}/hooks/cursor-hooks.json"
+  fi
   local registry="${root}/sidekicks/registry.json"
   local registry_helper="${root}/hooks/lib/sidekick-registry.sh"
   local canonical_kay_skill="${root}/skills/kay-delegate/SKILL.md"
@@ -179,7 +194,10 @@ run_case "codex" "CODEX_PLUGIN_ROOT" "CODEX_THREAD_ID" "CLAUDE_PLUGIN_ROOT" "CLA
 echo "=== T2: Claude install rewrites host-specific paths ==="
 run_case "claude" "CLAUDE_PLUGIN_ROOT" "CLAUDE_SESSION_ID" "CODEX_PLUGIN_ROOT" "CODEX_THREAD_ID" ".claude" "~/.claude"
 
-echo "=== T3: Explicit plugin roots win mixed host detection ==="
+echo "=== T3: Cursor install rewrites host-specific paths ==="
+run_case "cursor" "CURSOR_PLUGIN_ROOT" "SIDEKICK_SESSION_ID" "CLAUDE_PLUGIN_ROOT" "CLAUDE_SESSION_ID" ".cursor" "~/.cursor"
+
+echo "=== T4: Explicit plugin roots win mixed host detection ==="
 run_mixed_detection_case "claude"
 run_mixed_detection_case "codex"
 
