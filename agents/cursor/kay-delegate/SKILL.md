@@ -19,7 +19,7 @@ Kay     = Hands
 - When the active host is Codex, treat Kay as a child execution process launched through `kay exec`; do not confuse host Codex planning work with delegated Kay implementation work.
 - When the active host is Cursor, treat Kay as a child execution process launched through `kay exec`; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation.
 
-The stop workflow lives canonically in `skills/kay-stop/SKILL.md`.
+The stop workflow lives canonically in `kay-stop/SKILL.md` in this generated cursor skill root (`agents/cursor/kay-stop/SKILL.md` in the repository).
 
 ## Runtime Readiness
 
@@ -87,17 +87,9 @@ Provider argument handling:
 
 ```bash
 if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
-    SIDEKICK_HOST_HOME="${HOME}/.cursor"
-  elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
-    SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
-  elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
-    SIDEKICK_HOST_HOME="${HOME}/.claude"
-  else
-    echo "No host home found for Kay mode"; exit 1
-  fi
+  SIDEKICK_HOST_HOME="${HOME}/.cursor"
 fi
-SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"
+SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SESSION_ID:-}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Kay mode"; exit 1; }
 KAY_PROVIDER_INPUT="${SIDEKICK_KAY_PROVIDER_ARG:-${SIDEKICK_KAY_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}}}"
 case "${KAY_PROVIDER_INPUT}" in
@@ -114,7 +106,7 @@ esac
 KAY_STATE_ROOT="${HOME}/.kay"
 CODEX_STATE_ROOT="${HOME}/.codex"
 mkdir -p "${KAY_STATE_ROOT}/sessions/${SIDEKICK_SESSION}" \
-  "${SIDEKICK_HOST_HOME}/sessions/${SIDEKICK_SESSION}" \
+  "${HOME}/.cursor/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
 rm -f "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.codex-delegation-active"
 printf '%s\n' "kay" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"

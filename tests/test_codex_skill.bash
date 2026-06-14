@@ -198,7 +198,7 @@ codex = registry["codex"]
 kay = registry["kay"]
 
 assert codex["display_name"] == "Codex"
-assert codex["marker_file"] == ".codex/sessions/${CODEX_THREAD_ID}/.codex-delegation-active"
+assert codex["marker_file"] == ".codex/sessions/${SIDEKICK_SESSION_ID}/.codex-delegation-active"
 assert codex["idx_dir"] == ".codex"
 assert codex["delegate_command"] == "codex exec"
 assert codex["stop_command"] == "/sidekick:codex-stop"

@@ -76,6 +76,13 @@ check_hash "codex_progress_surface_sha256" "hooks/codex-progress-surface.sh"
 check_hash "output_style_kay_sha256" "output-styles/kay.md"
 check_hash "output_style_codex_sha256" "output-styles/codex.md"
 check_hash "codex_stop_skill_md_sha256" "skills/codex-stop/SKILL.md"
+check_hash "cursor_kay_delegate_skill_md_sha256" "agents/cursor/kay-delegate/SKILL.md"
+check_hash "cursor_kay_stop_skill_md_sha256" "agents/cursor/kay-stop/SKILL.md"
+check_hash "cursor_codex_delegate_skill_md_sha256" "agents/cursor/codex-delegate/SKILL.md"
+check_hash "cursor_codex_stop_skill_md_sha256" "agents/cursor/codex-stop/SKILL.md"
+check_hash "cursor_hooks_json_sha256" "hooks/cursor-hooks.json"
+check_hash "cursor_session_bootstrap_sha256" "hooks/cursor-session-bootstrap.sh"
+check_hash "sidekick_hook_io_sha256" "hooks/lib/sidekick-hook-io.sh"
 
 # Removed-skill surface must stay removed.
 echo "=== Removed skill surface ==="

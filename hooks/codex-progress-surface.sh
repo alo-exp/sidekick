@@ -11,6 +11,8 @@ HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${HOOK_DIR}/lib/enforcer-utils.sh"
 # shellcheck source=hooks/lib/sidekick-registry.sh
 source "${HOOK_DIR}/lib/sidekick-registry.sh"
+# shellcheck source=hooks/lib/sidekick-hook-io.sh
+source "${HOOK_DIR}/lib/sidekick-hook-io.sh"
 
 SIDEKICK_NAME=""
 MARKER_FILE=""
@@ -81,24 +83,30 @@ stop_command() {
 }
 
 main() {
+  local input tool_name normalized_tool cmd output summary header footer payload prefix name
+
+  if ! command -v jq >/dev/null 2>&1; then
+    exit 0
+  fi
+
+  input="$(head -c 2097152)"
+  sidekick_bind_hook_session_from_input "$input"
+
   SIDEKICK_NAME="$(sidekick_active_mode 2>/dev/null || true)"
   case "$SIDEKICK_NAME" in
     kay|codex) ;;
     *) exit 0 ;;
   esac
 
-  if ! command -v jq >/dev/null 2>&1; then
-    exit 0
-  fi
+  SIDEKICK_HOOK_INPUT="$input"
 
   MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
   [[ -n "$MARKER_FILE" ]] || exit 0
   [[ -f "$MARKER_FILE" ]] || exit 0
 
-  local input tool_name cmd output summary header footer payload prefix name
-  input="$(head -c 2097152)"
   tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
-  [[ "$tool_name" = "Bash" ]] || exit 0
+  normalized_tool="$(sidekick_normalize_tool_name "$tool_name")"
+  [[ "$normalized_tool" = "Bash" ]] || exit 0
 
   cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
   [[ -n "$cmd" ]] || exit 0
@@ -117,7 +125,7 @@ main() {
   footer="${prefix} [UNTRUSTED] Stop delegation: $(stop_command)"
   payload="$(printf '%s\n%s\n%s' "$header" "$(printf '%s' "$summary" | sed "s/^/${prefix} [UNTRUSTED] /")" "$footer")"
 
-  jq -cn --arg ctx "$payload" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'
+  sidekick_emit_post_tool_context "$payload"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0:-}" ]]; then

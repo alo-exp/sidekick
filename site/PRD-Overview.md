@@ -2,9 +2,10 @@
 
 > Product-level summary for the current Sidekick site and plugin contract.
 
-**Current public version:** Sidekick 0.7.1
+**Current public version:** Sidekick 0.8.0
+**Supported hosts:** Claude Code, Codex, and Cursor
 **Supported sidekicks:** Kay and Codex
-**Primary users:** Developers using Claude Code or Codex who want delegated implementation with host-owned review.
+**Primary users:** Developers using Claude Code, Codex, or Cursor who want delegated implementation with host-owned review.
 
 ## Product Vision
 

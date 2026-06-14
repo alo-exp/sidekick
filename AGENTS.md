@@ -4,10 +4,11 @@
 
 - Shell/Bash + Markdown stack -- no compiled languages.
 - Supported sidekicks are Kay and Codex.
+- Supported hosts are Claude Code, Codex, and Cursor.
 - Canonical workflows live under `skills/`: `kay-delegate`, `kay-stop`, `codex-delegate`, and `codex-stop`.
-- Generated host bundles under `agents/claude/` and `agents/codex/` are rendered by `bash scripts/sync-host-surfaces.sh`; do not hand-edit generated copies unless you also update the canonical source and renderer contract.
+- Generated host bundles under `agents/claude/`, `agents/codex/`, and `agents/cursor/` are rendered by `bash scripts/sync-host-surfaces.sh`; do not hand-edit generated copies unless you also update the canonical source and renderer contract.
 - Tests live in `tests/` and run via `bash tests/run_all.bash`.
-- Plugin manifests live in `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`; refresh `_integrity` SHA-256 values when install, hook, skill, generated surface, output-style, or registry files change.
+- Plugin manifests live in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.cursor-plugin/plugin.json`; refresh `_integrity` SHA-256 values when install, hook, skill, generated surface, output-style, or registry files change.
 
 ## Delegation Contract
 

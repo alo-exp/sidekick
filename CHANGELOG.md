@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.0 -- 2026-06-13
+
+### Cursor host support
+
+- Added Cursor as a third first-class host alongside Claude Code and Codex, with native `hooks/cursor-hooks.json`, `sessionStart` bootstrap for `SIDEKICK_SESSION_ID`, and generated `agents/cursor/` skill bundles.
+- Refactored hook I/O into `hooks/lib/sidekick-hook-io.sh` so enforcement and progress surfaces emit Claude/Codex or Cursor JSON shapes (`Shell`/`Task`/`Delete` mapping, `additional_context` progress).
+- Extended `install.sh` host detection and rewrite for Cursor installs, added `.cursor-plugin` packaging, and moved registry session markers to host-neutral `${SIDEKICK_SESSION_ID}` placeholders.
+
 ## v0.7.1 -- 2026-06-12
 
 ### Kay delegate cleanup and release-surface refresh

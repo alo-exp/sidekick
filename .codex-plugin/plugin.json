@@ -1,7 +1,7 @@
 {
   "name": "sidekick",
-  "version": "0.7.1",
-  "description": "Sidekick \u2014 AI coding-agent delegation workflows for Codex. Kay and Codex are the supported sidekicks: Kay installs through Sidekick, while Codex delegates to the local OpenAI Codex CLI. Codex consumes the canonical Sidekick skills directly.",
+  "version": "0.8.0",
+  "description": "Sidekick \u2014 AI coding-agent delegation workflows for Codex. Kay and Codex are the supported sidekicks on Claude Code, Codex, and Cursor hosts. Codex consumes the canonical Sidekick skills directly.",
   "author": {
     "name": "\u0100lo Labs",
     "url": "https://alolabs.dev"
@@ -38,5 +38,45 @@
       "Review this repo with Sidekick."
     ],
     "brandColor": "#0F172A"
+  },
+  "_integrity": {
+    "_note": "SHA-256 hashes of plugin files \u2014 update on each release. Verify source at https://github.com/alo-exp/sidekick. (SENTINEL FINDING-R8-4/R10-3)",
+    "source": "https://github.com/alo-exp/sidekick",
+    "install_sh_sha256": "8927b347ea18637d465190fb08934ec888a25c0792fa845deba81b03b543ee3a",
+    "kay_delegate_skill_md_sha256": "7a5e072a5170a9e987a7f9d4d83d0c322a7b5f2fbfa33c328cf72b9de6a1d88b",
+    "kay_stop_skill_md_sha256": "ccfcc5ade10f6899c685b99638dd3da4ec10f3b34a2e4013d3c3ffb39a3122ae",
+    "codex_delegate_skill_md_sha256": "eb0b71ab0c2ca4a27cfe3d64320bdcd9fea49079d66dae740482f49b2895d5a3",
+    "codex_delegate_md_sha256": "cbc234fdbd0f1802c4e82912ebdb1de55f9ae7a2797395a341e8dfece796bb52",
+    "codex_stop_skill_md_sha256": "0683baceb8538ea8997bc6473684e8886fee9b3652381ca7d5898c4f76a8fe75",
+    "claude_kay_delegate_skill_md_sha256": "b4409e8cc97898dee969fae67d96dce9b818dc98f6b57496a21eca0653c9c549",
+    "claude_kay_stop_skill_md_sha256": "49495b8964a50b3d9bd59b272b336cb773f9c65d3efcd65413f00ce1a9b14732",
+    "claude_codex_delegate_skill_md_sha256": "83bed39c36a88737f551f07537c9e25c20471bf7aa5a22a963755a3dbe5a173a",
+    "claude_codex_delegate_md_sha256": "264047ec5c7432f5a1ea27610db76a4ba45ecdf45ed730cf72dba1686294b5e8",
+    "claude_codex_stop_skill_md_sha256": "8a3d68408c1cac555757f1461b152edddf80d27d43e7415dc594f7b0abf89359",
+    "codex_kay_delegate_skill_md_sha256": "0b1aec50951da34037a637b31a93263bf688b7b639ad4fc8d090e574f49d3d8b",
+    "codex_kay_stop_skill_md_sha256": "02a24069760a56a9db96a9d28bae35d1bb2ee49e81321d22058006b1730bbec5",
+    "codex_codex_delegate_skill_md_sha256": "774287da6db9393dcb0cc08b90622d1b4d664606855845e14900ddecf3bf2074",
+    "codex_codex_delegate_md_sha256": "264047ec5c7432f5a1ea27610db76a4ba45ecdf45ed730cf72dba1686294b5e8",
+    "codex_codex_stop_skill_md_sha256": "209ab36c18c1e3dc4304683a113afab04619fa595bc710739974065cc6dca68e",
+    "cursor_kay_delegate_skill_md_sha256": "c2c3e75a2514f8d787435cb52db182d74f4416e26d62ad82a240ae0cba927342",
+    "cursor_kay_stop_skill_md_sha256": "f4a533b9236b5131068d058fc94c8f1d7ae4959ea2aa6b4de73364720b54ad23",
+    "cursor_codex_delegate_skill_md_sha256": "7781eb0c0492859ce573543c93e82000a5c16efebda200e0e277fc1c768f8304",
+    "cursor_codex_stop_skill_md_sha256": "527c4c85954b3e9621910faffdc9fd94540e281bf957a5064efa4676f495033a",
+    "render_agent_bundle_sha256": "eb8200dd1a01154aa259d51f53f75333f1b3163a60a90a0ed7a861fa0b27a1f1",
+    "sync_host_surfaces_sha256": "1db87781c806134cb896d28bb0da73634c4ef2c6bb071551bda5c5ba723183e6",
+    "hooks_json_sha256": "c0d23f2a49e00563aa9b249ade5a46c869150e1eecce00da614bb0f233f3f025",
+    "cursor_hooks_json_sha256": "f217ee870e8fb69633db0de751a9a5722cff7fa3643c75adecc6dd4279092870",
+    "cursor_session_bootstrap_sha256": "df427990759b3bdf94fa8efbc584c06a47be7d2c75408cd8cbd263c0bdaf805e",
+    "sidekick_hook_io_sha256": "c1562c625035a64c342fffcc29c5e3ab0eb79871754cea6eb8ae4cd1da6b7896",
+    "codex_delegation_enforcer_sha256": "139d2cfbb4a7a0960854debd8953c0a7fcb29da4856cc17cea294544246e14ae",
+    "codex_progress_surface_sha256": "378e4542d885f3c2082d6861edd41933a382432aef11342419586927f7b57a7b",
+    "enforcer_utils_sha256": "8f58aa9e166726682dbea119f179af1acb062563a44cc87b51218dd4fc379ad9",
+    "sidekick_registry_lib_sha256": "d4a9b57e6cbdb9707b0feaa20b185157a66e4edf9cec026679ad704c4ef8f0e4",
+    "safe_runner_sha256": "79c735063b9a83b139d052a4ab5b3039aded0b133b678c5b12595d53aedd7110",
+    "sidekick_registry_sha256": "a0798d4356be99c072a6359ecff5caffb00f6660bc1df7b71924e76d3f1d5fc6",
+    "legacy_hooks_scrub_sha256": "2b0d7237d50a35e8f670bcbb2a33584a3bb589fa72aa6ab74bce36f12feb316a",
+    "output_style_kay_sha256": "83744fa58536c2b012bfa0efeb050cc13f141ffe72ea331cb911eac4d6de72d4",
+    "output_style_codex_sha256": "c88b9ac68514e1e8a8cdd3e08c3f2f34d261b0e6082b942686b015a862b49284",
+    "codex_installer_sha256": "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555"
   }
 }

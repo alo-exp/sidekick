@@ -114,15 +114,15 @@ activate_codex() {
 }
 
 extract_decision() {
-  printf '%s' "$1" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null
+  printf '%s' "$1" | jq -r '.hookSpecificOutput.permissionDecision // .permission // empty' 2>/dev/null
 }
 
 extract_reason() {
-  printf '%s' "$1" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null
+  printf '%s' "$1" | jq -r '.hookSpecificOutput.permissionDecisionReason // .user_message // .agent_message // empty' 2>/dev/null
 }
 
 extract_command() {
-  printf '%s' "$1" | jq -r '.hookSpecificOutput.updatedInput.command // empty' 2>/dev/null
+  printf '%s' "$1" | jq -r '.hookSpecificOutput.updatedInput.command // .updated_input.command // empty' 2>/dev/null
 }
 
 assert_deny_reason_contains() {
@@ -328,6 +328,41 @@ if [ -f "${idx}" ] \
   assert_pass "test_codex_mode_records_project_local_audit_index"
 else
   assert_fail "test_codex_mode_records_project_local_audit_index" "idx='${idx}' contents='$(cat "${idx}" 2>/dev/null || true)'"
+fi
+
+echo "=== test_cursor_kay_mode_denies_shell ==="
+activate_kay
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Shell","tool_input":{"command":"sed -E -i '\''s/foo/bar/'\'' README.md"}}' 2>/dev/null)"
+dec="$(extract_decision "${out}")"
+rsn="$(extract_reason "${out}")"
+if [ "${dec}" = "deny" ] && echo "${rsn}" | grep -qi 'kay'; then
+  assert_pass "test_cursor_kay_mode_denies_shell"
+else
+  assert_fail "test_cursor_kay_mode_denies_shell" "dec='${dec}' reason='${rsn}' out='${out}'"
+fi
+
+echo "=== test_cursor_kay_mode_denies_task ==="
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Task","tool_input":{"description":"do work"}}' 2>/dev/null)"
+dec="$(extract_decision "${out}")"
+rsn="$(extract_reason "${out}")"
+if [ "${dec}" = "deny" ] && echo "${rsn}" | grep -qi 'Task subagents'; then
+  assert_pass "test_cursor_kay_mode_denies_task"
+else
+  assert_fail "test_cursor_kay_mode_denies_task" "dec='${dec}' reason='${rsn}' out='${out}'"
+fi
+
+echo "=== test_cursor_kay_mode_emits_flat_permission_json ==="
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Write","tool_input":{"file_path":"/tmp/x","content":"y"}}' 2>/dev/null)"
+if printf '%s' "${out}" | jq -e '.permission == "deny" and (.user_message|length) > 0' >/dev/null 2>&1; then
+  assert_pass "test_cursor_kay_mode_emits_flat_permission_json"
+else
+  assert_fail "test_cursor_kay_mode_emits_flat_permission_json" "out='${out}'"
 fi
 
 echo ""

@@ -15,8 +15,9 @@ Kay     = Hands
 
 ## Host Routing
 
-- Claude Code and Codex hosts both follow STEP 0 through STEP 3.
+- Claude Code, Codex, and Cursor hosts all follow STEP 0 through STEP 3.
 - When the active host is Codex, treat Kay as a child execution process launched through `kay exec`; do not confuse host Codex planning work with delegated Kay implementation work.
+- When the active host is Cursor, treat Kay as a child execution process launched through `kay exec`; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation.
 
 The stop workflow lives canonically in `kay-stop/SKILL.md` in this generated claude skill root (`agents/claude/kay-stop/SKILL.md` in the repository).
 
@@ -85,6 +86,9 @@ Provider argument handling:
 - If no provider keyword was supplied, leave `SIDEKICK_KAY_PROVIDER_ARG` unset and use the default OpenCode Go routing.
 
 ```bash
+if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+  SIDEKICK_HOST_HOME="${HOME}/.claude"
+fi
 SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Kay mode"; exit 1; }
 KAY_PROVIDER_INPUT="${SIDEKICK_KAY_PROVIDER_ARG:-${SIDEKICK_KAY_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}}}"

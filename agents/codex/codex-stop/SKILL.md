@@ -11,6 +11,9 @@ Stop Codex mode and restore normal direct-host behavior.
 
 1. Resolve the active host session id, then check whether the matching Codex marker exists:
    ```bash
+   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
+     SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
+   fi
    SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CODEX_THREAD_ID:-${SESSION_ID:-}}}"
    test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Codex mode"; exit 1; }
    CODEX_STATE_ROOT="${HOME}/.codex"

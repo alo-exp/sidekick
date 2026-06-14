@@ -1,6 +1,6 @@
 # Sidekick Context
 
-Sidekick gives Claude Code and Codex a consistent delegation layer for supported coding sidekicks.
+Sidekick gives Claude Code, Codex, and Cursor a consistent delegation layer for supported coding sidekicks.
 
 | Sidekick | Runtime | Activation | State Root |
 | --- | --- | --- | --- |
