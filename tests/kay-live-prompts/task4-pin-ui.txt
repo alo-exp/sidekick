@@ -1,0 +1,24 @@
+OBJECTIVE: Add PATCH /api/notes/:id/pin to toggle pinned state and expose a Pin toggle in the notes list UI.
+
+CONTEXT:
+- API routes in src/routes/notes.js; UI in src/public/notes-ui.js and src/public/index.html.
+- PATCH should flip pinned boolean without requiring full PUT body; return updated note JSON.
+- node_modules installed; do NOT run npm install.
+
+DESIRED STATE:
+- PATCH /api/notes/:id/pin toggles pinned for existing note; 404 if missing; 400 for invalid id.
+- List UI shows a Pin/Unpin control per note that calls the endpoint and refreshes the list.
+- Existing editor flows still work.
+
+SUCCESS CRITERIA:
+1. scripts/verify-pin-toggle.sh:
+   - POST a note (pinned false)
+   - PATCH pin twice via curl; assert pinned true then false
+   - exit 0
+2. Final message STATUS: SUCCESS with FILES_CHANGED and TESTS_RUN.
+3. Do not break scripts/e2e-smoke.sh behavior (health ok).
+
+INJECTED SKILLS: testing-strategy, usability
+
+IMPLEMENTATION:
+- Backend route + UI button + verification script; run all verification scripts you add.

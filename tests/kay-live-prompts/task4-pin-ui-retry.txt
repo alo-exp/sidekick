@@ -1,0 +1,26 @@
+OBJECTIVE: Complete the PATCH /api/notes/:id/pin feature and verification that was left incomplete.
+
+CONTEXT:
+- Prior attempt added router.patch('/:id/pin', ...) AFTER `module.exports = router` in src/routes/notes.js, which is dead code.
+- UI changes to notes-ui.js may be partial (CSS for pin button may be missing).
+- node_modules installed; do NOT run npm install.
+
+DESIRED STATE:
+- PATCH route registered BEFORE module.exports and works.
+- scripts/verify-pin-toggle.sh exists and passes (curl-based).
+- List UI has working Pin/Unpin control per note.
+
+SUCCESS CRITERIA:
+1. Fix src/routes/notes.js route placement (no code after module.exports).
+2. scripts/verify-pin-toggle.sh exits 0.
+3. Final message MUST include:
+   STATUS: SUCCESS
+   FILES_CHANGED: [...]
+   TESTS_RUN: scripts/verify-pin-toggle.sh
+   ASSUMPTIONS: []
+
+INJECTED SKILLS: testing-strategy, quality-gates
+
+IMPLEMENTATION:
+- Use direct file edits or `cat file | apply_patch` (not inline escaped apply_patch in bash -lc).
+- Run verify script before finishing.

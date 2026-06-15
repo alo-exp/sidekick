@@ -1,0 +1,20 @@
+OBJECTIVE: Full regression on the golden notes-app seed — run every verify script and close out.
+
+CONTEXT:
+- This workspace is the full golden seed: export/import, bulk-archive, sort, and related APIs/UI.
+- scripts/verify-*.sh must all pass (export, bulk-archive, sort, hardening if present).
+- node_modules installed. Do NOT run npm install.
+
+SUCCESS CRITERIA:
+1. Run every file matching scripts/verify-*.sh (not e2e-smoke unless present) — all exit 0.
+2. Final message MUST end with:
+   STATUS: SUCCESS
+   FILES_CHANGED: [...]
+   TESTS_RUN: (comma-separated list of every verify script executed)
+   ASSUMPTIONS: []
+
+INJECTED SKILLS: quality-gates
+
+IMPLEMENTATION:
+- `ls scripts/verify-*.sh` and run each in order.
+- Fix only failing scripts/features. Emit STATUS block as the last lines.

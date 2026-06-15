@@ -1,0 +1,22 @@
+OBJECTIVE: Emit the required delegation closeout only — implementation is already complete.
+
+CONTEXT:
+- Export/import API, UI, and verify scripts already exist in this workspace.
+- node_modules installed. Do NOT run npm install or re-implement features.
+
+DESIRED STATE:
+- Run scripts/verify-export-api.sh and scripts/verify-export-ui.sh.
+- If either fails, apply the smallest fix only.
+
+SUCCESS CRITERIA:
+- Both verify scripts exit 0.
+- Your final message MUST be exactly this block (fill in real lists):
+  STATUS: SUCCESS
+  FILES_CHANGED: [...]
+  TESTS_RUN: scripts/verify-export-api.sh scripts/verify-export-ui.sh
+  ASSUMPTIONS: []
+
+INJECTED SKILLS: quality-gates
+
+IMPLEMENTATION:
+- Run verifies first. Fix only if needed. Print STATUS block as the last lines of your response.

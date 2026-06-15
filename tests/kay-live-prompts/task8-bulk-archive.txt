@@ -1,0 +1,23 @@
+OBJECTIVE: Add bulk archive workflow: API endpoint, UI control, and two verification scripts.
+
+CONTEXT:
+- Notes app with existing CRUD, filters, export/import may exist.
+- node_modules installed. Do NOT run npm install.
+- Use `cat /tmp/patch.txt | apply_patch` for edits.
+
+DESIRED STATE:
+1. POST /api/notes/bulk-archive — body `{ "ids": [1,2,3] }` sets archived=1 for each; 400 if ids missing/invalid; returns `{ "archived": n }`
+2. UI: "Archive selected" for multi-select checkboxes on note list (add checkboxes if missing)
+3. scripts/verify-bulk-archive-api.sh — curl test
+4. scripts/verify-bulk-archive-ui.sh — grep-based UI test
+
+SUCCESS CRITERIA:
+- Both verify scripts exit 0.
+- No code after module.exports.
+- Final message:
+  STATUS: SUCCESS
+  FILES_CHANGED: [...]
+  TESTS_RUN: scripts/verify-bulk-archive-api.sh scripts/verify-bulk-archive-ui.sh
+  ASSUMPTIONS: []
+
+INJECTED SKILLS: testing-strategy, usability

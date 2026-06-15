@@ -34,6 +34,14 @@ bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 | `tests/test_docs_contract.bash` | Public Markdown docs align with the current Sidekick contract. |
 | `tests/test_og_image.bash` | Social preview source names Kay and Codex delegation and the host verification promise. |
 
+## Kay release matrix (multi-model)
+
+For pre-release Kay retests across OpenCode Go and MiniMax profiles, use `tests/run_kay_release_matrix.bash` (documented in `tests/kay-live-matrix.md`). Example: `KAY_RELEASE=v0.9.31 KAY_MATRIX_PREFIX=v0931 KAY_MATRIX_PARALLEL=1 bash tests/run_kay_release_matrix.bash`.
+
+## Live E2E fixture
+
+The Kay live E2E driver (`tests/run_live_codex_e2e.bash`) copies `tests/test-notes-app/` into `$TMPDIR`, pre-installs npm dependencies on the host, verifies `scripts/e2e-smoke.sh` fails on the seeded `/api/health` bug, delegates the fix through Kay, and re-runs the smoke script. The canonical tree keeps `status: "broken"` in `src/server.js` on purpose.
+
 ## Generated Surface Checks
 
 Generated host bundles are not hand-maintained. When a canonical skill changes, run:
