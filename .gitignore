@@ -6,7 +6,17 @@ __pycache__/
 docs/sessions/
 .forge/conversations.idx
 .forge/.db_check_ok
-.kay/conversations.idx
+tests/.kay-live-logs/
 temp_auto_push.bat
 temp_interactive_push.bat
 .gitignore
+.env.local
+
+# Kay agent runtime (exec logs, local state)
+.kay/
+
+# Live E2E notes fixtures (generated at test time)
+tests/test-notes-app/node_modules/
+tests/test-notes-app/data/
+tests/test-notes-app-seeds/**/node_modules/
+tests/test-notes-app-seeds/**/data/

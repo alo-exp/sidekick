@@ -1,0 +1,26 @@
+OBJECTIVE: Finish task7 export/import — fix verify-export-ui.sh and emit required closeout.
+
+CONTEXT:
+- Prior run implemented GET /api/notes/export and POST /api/notes/import API (verify-export-api.sh passes).
+- notes-ui.js uses template literals: fetch(`${API}/export`) and fetch(`${API}/import`, ...) — this is correct.
+- scripts/verify-export-ui.sh incorrectly greps for literal strings 'notes/import' and 'notes/export' and fails.
+- node_modules installed; do NOT run npm install.
+
+DESIRED STATE:
+- verify-export-ui.sh accepts either literal `/api/notes/export` paths OR `${API}/export` / `${API}/import` patterns in notes-ui.js.
+- Both verify-export-api.sh and verify-export-ui.sh exit 0.
+- index.html has export/import UI controls wired.
+
+SUCCESS CRITERIA:
+1. Run scripts/verify-export-api.sh and scripts/verify-export-ui.sh — both exit 0.
+2. No code after module.exports in routes.
+3. Final message:
+   STATUS: SUCCESS
+   FILES_CHANGED: [...]
+   TESTS_RUN: scripts/verify-export-api.sh scripts/verify-export-ui.sh
+   ASSUMPTIONS: []
+
+INJECTED SKILLS: testing-strategy
+
+IMPLEMENTATION:
+- Fix verify script (minimal change). Re-run both verifies. Emit STATUS block.

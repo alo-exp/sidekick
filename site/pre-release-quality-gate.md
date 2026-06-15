@@ -4,6 +4,9 @@
 
 This gate runs after the release candidate commit exists and before a GitHub release or tag is published. The gate is scoped to the current host session and current git commit.
 
+
+- Optional multi-model Kay matrix before release: `tests/run_kay_release_matrix.bash` (`tests/kay-live-matrix.md`).
+
 ## Release State
 
 State file:

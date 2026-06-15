@@ -1,0 +1,32 @@
+OBJECTIVE: Add GET /api/stats that returns JSON counts for the notes database.
+
+CONTEXT:
+- Node.js Express app under src/ with SQLite via better-sqlite3 (see src/db/database.js).
+- Notes live in table `notes` with columns including pinned and archived (0/1 integers).
+- node_modules is installed; do NOT run npm install.
+- Health endpoint already returns ok.
+
+DESIRED STATE:
+- New route GET /api/stats returns exactly:
+  `{ "total": <int>, "pinned": <int>, "archived": <int>, "active": <int> }`
+  where active = non-archived notes count.
+- Route is registered in the appropriate router or server file following existing patterns.
+
+SUCCESS CRITERIA:
+1. Create scripts/verify-stats.sh that:
+   - starts the server on a free PORT in background
+   - POSTs two notes (one pinned, one archived)
+   - curls GET /api/stats and asserts total/pinned/archived/active match
+   - stops the server
+2. scripts/verify-stats.sh exits 0 when run from repo root.
+3. Final message includes:
+   STATUS: SUCCESS
+   FILES_CHANGED: [...]
+   TESTS_RUN: scripts/verify-stats.sh
+   ASSUMPTIONS: []
+
+INJECTED SKILLS: testing-strategy, quality-gates
+
+IMPLEMENTATION:
+- Implement the endpoint and verification script.
+- Run scripts/verify-stats.sh before finishing.

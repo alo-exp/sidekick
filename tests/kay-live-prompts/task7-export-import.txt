@@ -1,0 +1,32 @@
+OBJECTIVE: Ship a notes export/import feature end-to-end: API, UI, and two verification scripts.
+
+CONTEXT:
+- Node/Express notes app: src/routes/notes.js, src/server.js, src/public/notes-ui.js, src/public/index.html.
+- SQLite via better-sqlite3; node_modules installed. Do NOT run npm install.
+- Use `cat /tmp/patch.txt | apply_patch` for multi-line patches (avoid inline escaped apply_patch in bash -lc).
+
+DESIRED STATE:
+1. **API**
+   - GET /api/notes/export → JSON `{ "version": 1, "exported_at": <iso>, "notes": [ ...all notes... ] }`
+   - POST /api/notes/import → body same shape; merges by id (update if exists, insert if new); returns `{ "imported": n, "updated": n }`
+   - 400 on invalid import payload
+2. **UI**
+   - Export button downloads `notes-export.json`
+   - Import file input + button; shows success/error in status pill
+3. **Verification**
+   - scripts/verify-export-api.sh — curl export/import round-trip (no full server if EPERM; mock or node script OK if documented)
+   - scripts/verify-export-ui.sh — asserts index.html and notes-ui.js contain export/import hooks (grep-based)
+
+SUCCESS CRITERIA:
+- Both verify scripts exit 0.
+- No route code after `module.exports`.
+- Final message MUST include:
+  STATUS: SUCCESS
+  FILES_CHANGED: [...]
+  TESTS_RUN: scripts/verify-export-api.sh scripts/verify-export-ui.sh
+  ASSUMPTIONS: []
+
+INJECTED SKILLS: testing-strategy, usability
+
+IMPLEMENTATION:
+- Implement API + UI + both scripts; run both before finishing.

@@ -41,7 +41,7 @@ expect_valid_json() {
 }
 
 echo "=== T1: Top-level project shape ==="
-for dir in .claude .claude-plugin .codex-plugin .cursor-plugin .github .planning agents agents/claude agents/codex agents/cursor hooks output-styles scripts sidekicks site skills tests; do
+for dir in .claude .claude-plugin .codex-plugin .cursor-plugin .github .planning agents agents/claude agents/codex agents/cursor hooks output-styles scripts sidekicks site skills tests tests/test-notes-app; do
   expect_dir "${dir}"
 done
 if [ -e "${ROOT}/.forge" ]; then
@@ -76,6 +76,21 @@ done
 for file in site/doc-scheme.md site/START-HERE.md site/AUDIENCE.md site/GLOSSARY.md site/COMPATIBILITY.md site/TESTING.md site/ARCHITECTURE.md site/CICD.md site/pre-release-quality-gate.md site/ADR/README.md; do
   expect_file "${file}"
 done
+
+echo "=== T3b: live E2E notes app fixture ==="
+for file in tests/test-notes-app/package.json tests/test-notes-app/src/server.js tests/test-notes-app/scripts/e2e-smoke.sh; do
+  expect_file "${file}"
+done
+if grep -q "status: 'broken'" "${ROOT}/tests/test-notes-app/src/server.js"; then
+  assert_pass "test-notes-app seeds the live E2E health bug"
+else
+  assert_fail "test-notes-app seeds the live E2E health bug" "expected broken health status in canonical server.js"
+fi
+if [ -d "${ROOT}/tests/testapp" ]; then
+  assert_fail "legacy tests/testapp removed" "tests/testapp still exists"
+else
+  assert_pass "legacy tests/testapp removed"
+fi
 
 echo "=== T4: Editor configs match this Bash/Markdown repo ==="
 for file in .vscode/settings.json .vscode/tasks.json .vscode/launch.json .vscode/extensions.json; do
