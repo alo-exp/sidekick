@@ -1,0 +1,25 @@
+OBJECTIVE: Fix sort API ordering and finish with required STATUS closeout.
+
+CONTEXT:
+- GET /api/notes sort param was added but scripts/verify-sort-api.sh fails on updated_desc ordering.
+- scripts/verify-sort-ui.sh already passes.
+- node_modules installed. Do NOT run npm install.
+
+DESIRED STATE:
+- sort=updated_desc returns notes newest-first by updated_at (then id).
+- sort=title_asc returns alphabetical by title.
+- verify-sort-api.sh and verify-sort-ui.sh both exit 0.
+
+SUCCESS CRITERIA:
+1. Run both verify scripts — exit 0.
+2. Final message MUST end with:
+   STATUS: SUCCESS
+   FILES_CHANGED: [...]
+   TESTS_RUN: scripts/verify-sort-api.sh scripts/verify-sort-ui.sh
+   ASSUMPTIONS: []
+
+INJECTED SKILLS: testing-strategy
+
+IMPLEMENTATION:
+- Fix SQL ORDER BY in src/routes/notes.js only if needed.
+- Run verifies. Do not stop until STATUS block is printed.

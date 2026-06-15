@@ -1,0 +1,30 @@
+OBJECTIVE: Deliver a cohesive notes API hardening pass: input validation, error shape consistency, and an integration verify script.
+
+CONTEXT:
+- Express + SQLite notes app (src/routes/notes.js, src/server.js).
+- node_modules installed; do NOT run npm install.
+- Existing endpoints include GET/POST/PUT/DELETE notes, filters, pagination, pin patch, stats, health.
+
+DESIRED STATE:
+1. All 400/404 JSON errors use `{ "error": "<message>" }` consistently (audit routes).
+2. POST /api/notes rejects non-object JSON body with 400.
+3. Add scripts/verify-hardening.sh that:
+   - POST invalid JSON content-type body → 400
+   - GET /api/notes/not-a-number → 400
+   - GET /api/notes/999999 → 404
+   - exits 0
+
+SUCCESS CRITERIA:
+- scripts/verify-hardening.sh passes on host.
+- No routes registered after module.exports.
+- Final message:
+  STATUS: SUCCESS
+  FILES_CHANGED: [...]
+  TESTS_RUN: scripts/verify-hardening.sh
+  ASSUMPTIONS: []
+
+INJECTED SKILLS: security, testing-strategy
+
+IMPLEMENTATION:
+- Use `cat /tmp/patch.txt | apply_patch` for multi-line edits.
+- Run verify script before finishing.

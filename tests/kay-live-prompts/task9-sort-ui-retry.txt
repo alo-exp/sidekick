@@ -1,0 +1,30 @@
+OBJECTIVE: Add note sorting API parameter and wire UI sort dropdown end-to-end.
+
+CONTEXT:
+- GET /api/notes supports filters; add sort=updated_desc|updated_asc|title_asc|title_desc (default updated_desc).
+- UI: sort dropdown in index.html + notes-ui.js passes sort query param.
+- node_modules installed. Do NOT run npm install.
+
+DESIRED STATE:
+- Invalid sort → 400 `{ "error": "..." }`
+- scripts/verify-sort-api.sh seeds notes and asserts order
+- scripts/verify-sort-ui.sh asserts sort control wired
+
+SUCCESS CRITERIA:
+- Both verify scripts exit 0.
+- STATUS: SUCCESS with FILES_CHANGED and TESTS_RUN in final message.
+
+INJECTED SKILLS: testing-strategy
+
+IMPLEMENTATION:
+- Implement, run both verifies, emit STATUS block before stopping.
+
+CORRECTION (prior run incomplete — stopped before verify scripts / STATUS):
+- Finish sort= query param on GET /api/notes (updated_desc|updated_asc|title_asc|title_desc; invalid → 400), sort dropdown in HTML, wire notes-ui.js, scripts/verify-sort-api.sh and scripts/verify-sort-ui.sh.
+- verify-sort-api.sh: PORT=3457; export PORT; live server test with seeded notes asserting order.
+- Run both verify scripts; both must exit 0.
+- Final message last lines MUST be:
+STATUS: SUCCESS
+FILES_CHANGED: [...]
+TESTS_RUN: scripts/verify-sort-api.sh scripts/verify-sort-ui.sh
+ASSUMPTIONS: []

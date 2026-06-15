@@ -1,0 +1,23 @@
+OBJECTIVE: Add API rate limiting and document the full API in README.md.
+
+CONTEXT:
+- Express notes app: src/server.js, src/routes/notes.js.
+- Implement simple in-memory rate limit: max 60 requests per minute per IP for /api/* (429 when exceeded).
+- Put middleware in src/middleware/rateLimit.js.
+- node_modules installed; do NOT run npm install.
+
+DESIRED STATE:
+- src/middleware/rateLimit.js + wired in server.js before /api routes.
+- README.md new section "API Reference" listing all endpoints with method, path, brief description (health, stats if present, notes CRUD, pagination query params, pin patch).
+- scripts/verify-rate-limit.sh sends 61 rapid GET /api/health and asserts last response is 429.
+
+SUCCESS CRITERIA:
+1. scripts/verify-rate-limit.sh exits 0.
+2. README API Reference section includes at least 8 endpoint lines.
+3. Final message STATUS: SUCCESS with FILES_CHANGED and TESTS_RUN.
+
+INJECTED SKILLS: security, testing-strategy
+
+IMPLEMENTATION:
+- Prefer `cat /tmp/patch.txt | apply_patch` over inline apply_patch strings.
+- Run verify script before finishing.

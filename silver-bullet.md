@@ -793,6 +793,7 @@ Last updated: 2026-05-23
 | Workflow | Step skipped | Condition | Since |
 |----------|-------------|-----------|-------|
 | Forge testing | All Forge test suites and any MiniMax.io provider-required tests | MiniMax key expired; use OpenCode Go's MiniMax model via OCG key instead | 2026-05-21 |
+| Kay live QA / release pyramid | `silver-context`, `silver-plan` at stop tier | Harness work — see `docs/workflows/kay-live-qa.md`; keep `required_planning` at `silver-quality-gates` only | 2026-06-14 |
 
 ### 10c. Tool Preferences
 | Decision point | Preferred tool | Since |

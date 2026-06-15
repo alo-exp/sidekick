@@ -14,7 +14,7 @@
 #                             — live `kay --version` + trivial kay exec
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #   4. run_live_codex_e2e.bash
-#                             — full host→Kay delegation on seeded testapp
+#                             — full host→Kay delegation on seeded test-notes-app
 #                              (requires SIDEKICK_LIVE_CODEX=1)
 #
 # CI should run tests/run_unit.bash. This runner is for release operators: the
@@ -142,7 +142,7 @@ echo -e "${bold}━━━━━━━━━━━━━━━━━━━━━�
 run_stage "Strict non-live unit + integration suites" "${SCRIPT_DIR}/run_unit.bash"
 run_stage "Live-Codex marketplace install" "${SCRIPT_DIR}/run_live_codex_marketplace_install.bash"
 run_stage "Live-Kay smoke harness"       "${SCRIPT_DIR}/smoke/run_codex_smoke.bash"
-run_stage "Live-Kay E2E testapp"         "${SCRIPT_DIR}/run_live_codex_e2e.bash"
+run_stage "Live-Kay E2E test-notes-app"   "${SCRIPT_DIR}/run_live_codex_e2e.bash"
 
 echo ""
 echo -e "${bold}═══════════════════════════════════════════${reset}"

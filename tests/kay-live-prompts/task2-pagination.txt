@@ -1,0 +1,24 @@
+OBJECTIVE: Add backward-compatible pagination to GET /api/notes using limit and offset query parameters.
+
+CONTEXT:
+- Existing GET /api/notes in src/routes/notes.js returns a JSON array and supports query, tag, archived, pinned filters.
+- node_modules is installed; do NOT run npm install.
+
+DESIRED STATE:
+- When neither limit nor offset is provided, response remains a JSON array (unchanged clients).
+- When limit and/or offset is provided:
+  - limit must be integer 1-100 (400 on invalid)
+  - offset must be integer >= 0 (400 on invalid)
+  - response shape: `{ "items": [...], "total": <int>, "limit": <int|null>, "offset": <int> }`
+- Ordering stays pinned DESC, updated_at DESC, id DESC.
+
+SUCCESS CRITERIA:
+1. Add scripts/verify-pagination.sh that seeds >=3 notes, checks array mode unchanged, paginated mode returns correct items/total, invalid limit returns 400.
+2. scripts/verify-pagination.sh exits 0.
+3. Final message includes STATUS: SUCCESS, FILES_CHANGED, TESTS_RUN, ASSUMPTIONS.
+
+INJECTED SKILLS: testing-strategy, quality-gates
+
+IMPLEMENTATION:
+- Edit src/routes/notes.js (and only other files if required).
+- Write and run scripts/verify-pagination.sh.

@@ -151,6 +151,7 @@ expect_contains "tests/run_live_codex_marketplace_install.bash" "KAY_LIVE_MODEL_
 expect_contains "tests/run_live_codex_marketplace_install.bash" "KAY_LIVE_MODEL" "marketplace install respects the wrapper model override"
 expect_contains "tests/smoke/run_codex_smoke.bash" "KAY_LIVE_MODEL_PROVIDER" "Kay smoke respects the wrapper model-provider override"
 expect_contains "tests/smoke/run_codex_smoke.bash" "KAY_LIVE_MODEL" "Kay smoke respects the wrapper model override"
+expect_contains "tests/run_live_codex_e2e.bash" "test-notes-app" "Kay live E2E targets test-notes-app"
 expect_contains "tests/run_live_codex_e2e.bash" "KAY_LIVE_MODEL_PROVIDER" "Kay live E2E respects the wrapper model-provider override"
 expect_contains "tests/run_live_codex_e2e.bash" "KAY_LIVE_MODEL" "Kay live E2E respects the wrapper model override"
 expect_absent "tests/run_live_codex_plugin_read.bash" "/Users/" "Codex probe avoids absolute maintainer home paths"

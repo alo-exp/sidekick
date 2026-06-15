@@ -1,0 +1,20 @@
+OBJECTIVE: Add request logging middleware and prove it runs for API traffic.
+
+CONTEXT:
+- Express app entry: src/server.js mounts /api/notes and /api/health.
+- node_modules installed; do NOT run npm install.
+
+DESIRED STATE:
+- New file src/middleware/requestLogger.js exports middleware that logs one line to stderr per request:
+  `[request] <METHOD> <path>`
+- Wired in src/server.js before API routes so /api/health and /api/notes are logged.
+
+SUCCESS CRITERIA:
+1. scripts/verify-request-logger.sh starts server on free PORT, curls /api/health once, asserts stderr contains `[request] GET /api/health`, stops server.
+2. Script exits 0.
+3. Final message: STATUS: SUCCESS with FILES_CHANGED and TESTS_RUN.
+
+INJECTED SKILLS: modularity, quality-gates
+
+IMPLEMENTATION:
+- Create middleware module, wire server, add verification script, run it.
