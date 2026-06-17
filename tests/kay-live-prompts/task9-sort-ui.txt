@@ -10,6 +10,11 @@ DESIRED STATE:
 - scripts/verify-sort-api.sh seeds notes and asserts order
 - scripts/verify-sort-ui.sh asserts sort control wired
 
+UI ELEMENT REQUIREMENTS (verify-sort-ui.sh greps exactly):
+- index.html: element id `sortSelect` with options including `updated_desc` and `title_asc`
+- notes-ui.js: wire `sortSelect`, call `params.set('sort'` when building query params
+- src/routes/notes.js: handle `req.query.sort` via `SORT_MAP`
+
 SUCCESS CRITERIA:
 - Both verify scripts exit 0.
 - STATUS: SUCCESS with FILES_CHANGED and TESTS_RUN in final message.
