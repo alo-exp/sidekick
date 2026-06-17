@@ -2,7 +2,7 @@
 
 > Current Sidekick architecture for the Kay and Codex sidekicks.
 
-**Plugin version:** Sidekick 0.8.0
+**Plugin version:** Sidekick 0.8.1
 **Hosts:** Claude Code, Codex, and Cursor
 **Stack:** Shell/Bash plus Markdown
 **Supported sidekicks:** Kay and Codex
