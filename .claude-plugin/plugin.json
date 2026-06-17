@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code, Codex, and Cursor. Kay and Codex are the supported sidekicks: Kay installs through Sidekick, while Codex delegates to the local OpenAI Codex CLI. The Claude-facing workflow bodies are generated from skills into agents/claude.",
   "author": {
     "name": "\u0100lo Labs",
