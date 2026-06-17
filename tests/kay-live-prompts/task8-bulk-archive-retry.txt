@@ -11,6 +11,10 @@ DESIRED STATE:
 3. scripts/verify-bulk-archive-api.sh — curl test
 4. scripts/verify-bulk-archive-ui.sh — grep-based UI test
 
+UI ELEMENT REQUIREMENTS (verify-bulk-archive-ui.sh greps exactly):
+- index.html: element id `bulkArchiveButton`
+- notes-ui.js: wire `bulkArchiveButton`, render `note-checkbox`, track `selectedIds`, reference `bulk-archive` endpoint
+
 SUCCESS CRITERIA:
 - Both verify scripts exit 0.
 - No code after module.exports.
