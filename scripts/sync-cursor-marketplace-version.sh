@@ -36,17 +36,18 @@ fi
 
 MARKETPLACE_FILE="${MARKETPLACE_REPO}/.cursor-plugin/marketplace.json"
 SIDEKICK_ENTRY="${ROOT}/.cursor-plugin/marketplace.json"
+COMMIT_SHA="$(git -C "${ROOT}" rev-parse "v${VERSION}^{commit}" 2>/dev/null || git -C "${ROOT}" rev-parse HEAD)"
 
-python3 - "${MARKETPLACE_FILE}" "${SIDEKICK_ENTRY}" "${VERSION}" <<'PY'
+python3 - "${MARKETPLACE_FILE}" "${SIDEKICK_ENTRY}" "${VERSION}" "${COMMIT_SHA}" <<'PY'
 import json
 import sys
 
-marketplace_path, sidekick_entry_path, version = sys.argv[1:4]
+marketplace_path, sidekick_entry_path, version, commit_sha = sys.argv[1:5]
 marketplace = json.load(open(marketplace_path))
 sidekick_template = json.load(open(sidekick_entry_path))
 sidekick = next(plugin for plugin in sidekick_template["plugins"] if plugin["name"] == "sidekick")
 sidekick["version"] = version
-sidekick["source"]["ref"] = f"v{version}"
+sidekick["source"]["ref"] = commit_sha
 
 plugins = [plugin for plugin in marketplace.get("plugins", []) if plugin.get("name") != "sidekick"]
 plugins.insert(0, sidekick)
@@ -62,4 +63,4 @@ with open(marketplace_path, "w", encoding="utf-8") as handle:
     handle.write("\n")
 PY
 
-echo "Updated ${MARKETPLACE_FILE} for sidekick ${VERSION}"
+echo "Updated ${MARKETPLACE_FILE} for sidekick ${VERSION} at ${COMMIT_SHA}"

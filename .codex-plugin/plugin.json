@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Sidekick \u2014 AI coding-agent delegation workflows for Codex. Kay and Codex are the supported sidekicks on Claude Code, Codex, and Cursor hosts. Codex consumes the canonical Sidekick skills directly.",
   "author": {
     "name": "\u0100lo Labs",

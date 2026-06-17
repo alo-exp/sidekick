@@ -43,9 +43,10 @@ import sys
 
 data = json.load(open(sys.argv[1]))
 assert data["name"] == "sidekick"
-assert data["skills"] == "./agents/cursor/"
-assert data["hooks"] == "./hooks/cursor-hooks.json"
+assert data["skills"] == "agents/cursor/"
+assert data["hooks"] == "hooks/cursor-hooks.json"
 assert "outputStyles" not in data
+assert "_integrity" not in data
 assert "cursor" in data["description"].lower()
 PY
 then

@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.8.1 -- 2026-06-17
+
+### Cursor marketplace install fix
+
+- Cursor `.cursor-plugin/plugin.json` now conforms to the official Cursor plugin schema: removed `_integrity` (still present in Claude/Codex manifests), and dropped `./` prefixes from `skills`/`hooks` paths.
+- `sync-cursor-marketplace-version.sh` pins marketplace entries to commit SHAs instead of annotated tags, avoiding Cursor cache `gitPath` mismatches.
+
 ## v0.8.0 -- 2026-06-13
 
 ### Cursor host support
