@@ -38,3 +38,16 @@ bash tests/run_unit.bash
 bash tests/run_all.bash
 bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 ```
+
+## Cursor Install
+
+Cursor discovers plugins through registered marketplaces, not from files copied into `~/.cursor/plugins/cache/`.
+
+1. In Cursor, open **Settings → Plugins → Add marketplace**.
+2. Add source `https://github.com/alo-labs/alo-labs-cursor-marketplace`.
+3. Install the **sidekick** plugin from that marketplace list.
+4. Restart Cursor so `hooks/cursor-hooks.json` loads before delegation.
+
+Until Sidekick is listed in the central Ālo Labs Cursor marketplace, add a second marketplace with source `https://github.com/alo-exp/sidekick` and install Sidekick from that catalog instead.
+
+For development from a repository checkout, symlink or copy the repo into `~/.cursor/plugins/cache/alo-labs/sidekick/<version>` and enable it from **Settings → Plugins**; that path still requires a marketplace registration for UI discovery.

@@ -1,6 +1,7 @@
 ---
 name: kay-stop
 description: Canonical Kay stop workflow. Use /sidekick:kay-stop to deactivate delegation and return to direct host behavior.
+argument-hint: ""
 ---
 
 # Kay Stop Workflow
