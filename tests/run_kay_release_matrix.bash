@@ -15,7 +15,11 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-export PATH="${HOME}/.local/bin:${PATH}"
+if [ -n "${SIDEKICK_KAY_BIN:-}" ] && [ -x "${SIDEKICK_KAY_BIN}" ]; then
+  export PATH="$(dirname "${SIDEKICK_KAY_BIN}"):${HOME}/.local/bin:${PATH}"
+else
+  export PATH="${HOME}/.local/bin:${PATH}"
+fi
 LOG_DIR="$ROOT/tests/.kay-live-logs"
 REPO="alo-labs/kay"
 SEED="$ROOT/tests/test-notes-app-seeds/export-import"

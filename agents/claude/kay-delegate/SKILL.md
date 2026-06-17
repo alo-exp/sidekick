@@ -1,6 +1,7 @@
 ---
 name: kay-delegate
 description: Canonical Kay delegation workflow for the Kay sidekick. Use when activating Kay mode before delegated implementation work.
+argument-hint: "[ocg|xiaomi] <task to delegate>"
 ---
 
 # Kay Delegate Workflow

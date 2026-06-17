@@ -146,7 +146,7 @@ run_with_timeout() {
 }
 
 prepare_kay_runner() {
-  local bin="$1"
+  local bin="${SIDEKICK_KAY_BIN:-$1}"
   local help_file
   help_file="$(mktemp)"
   KAY_RUNNER=()
