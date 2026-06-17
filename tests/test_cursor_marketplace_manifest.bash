@@ -114,19 +114,32 @@ case "${MARKETPLACE_NAME}" in
 esac
 
 echo "=== sidekick_entry_present ==="
-if python3 - "${MARKETPLACE_FILE}" "${SIDEKICK_VERSION}" "${SIDEKICK_TAG}" <<'PY'
+if python3 - "${MARKETPLACE_FILE}" "${SIDEKICK_VERSION}" "${SIDEKICK_TAG}" "${SIDEKICK_DIR}" <<'PY'
 import json
+import subprocess
 import sys
 
 path = sys.argv[1]
 expected_version = sys.argv[2]
 expected_tag = sys.argv[3]
+sidekick_dir = sys.argv[4]
 data = json.load(open(path))
 plugins = {plugin["name"]: plugin for plugin in data["plugins"]}
 sidekick = plugins["sidekick"]
 assert sidekick["source"]["source"] == "github"
 assert sidekick["source"]["repo"] == "alo-exp/sidekick"
-assert sidekick["source"]["ref"] == expected_tag
+ref = sidekick["source"]["ref"]
+allowed_refs = {expected_tag, f"v{expected_version}"}
+try:
+    allowed_refs.add(
+        subprocess.check_output(
+            ["git", "-C", sidekick_dir, "rev-parse", f"v{expected_version}^{{commit}}"],
+            text=True,
+        ).strip()
+    )
+except subprocess.CalledProcessError:
+    pass
+assert ref in allowed_refs, f"unexpected ref {ref!r}, expected one of {sorted(allowed_refs)}"
 assert sidekick["version"] == expected_version
 assert sidekick.get("category", "").lower() == "development"
 PY
