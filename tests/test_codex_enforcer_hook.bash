@@ -146,6 +146,28 @@ else
   assert_fail "test_noop_when_marker_absent" "expected empty, got: '${out}'"
 fi
 
+echo "=== test_cursor_noop_when_marker_absent ==="
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Write","tool_input":{"file_path":"/tmp/x","content":"y"}}' 2>/dev/null)"
+dec="$(extract_decision "${out}")"
+if [ "${dec}" = "allow" ] && printf '%s' "${out}" | jq -e '.permission == "allow"' >/dev/null 2>&1; then
+  assert_pass "test_cursor_noop_when_marker_absent"
+else
+  assert_fail "test_cursor_noop_when_marker_absent" "dec='${dec}' out='${out}'"
+fi
+
+echo "=== test_cursor_readonly_bash_passthrough_when_inactive ==="
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Shell","tool_input":{"command":"git status"}}' 2>/dev/null)"
+dec="$(extract_decision "${out}")"
+if [ "${dec}" = "allow" ]; then
+  assert_pass "test_cursor_readonly_bash_passthrough_when_inactive"
+else
+  assert_fail "test_cursor_readonly_bash_passthrough_when_inactive" "dec='${dec}' out='${out}'"
+fi
+
 echo "=== test_noop_when_unknown_sidekick_is_active ==="
 touch "${KAY_MARKER_FILE}"
 printf '%s\n' "pilot" > "${ACTIVE_MODE_FILE}"

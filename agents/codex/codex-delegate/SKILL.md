@@ -1,6 +1,7 @@
 ---
 name: codex-delegate
 description: Canonical Codex delegation workflow for the OpenAI Codex CLI sidekick. Use when activating Codex mode before delegated implementation work.
+argument-hint: "<task to delegate to Codex>"
 ---
 
 # Codex Delegate Workflow

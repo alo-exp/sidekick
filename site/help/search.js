@@ -32,7 +32,7 @@ var IDX = [
     text:'Required: Claude Code or Codex host, a working Kay runtime for Kay mode, and the real OpenAI Codex CLI for Codex mode. Sidekick checks runtime readiness when delegation starts for the current session.' },
   { page:'Getting Started', url:'getting-started/', anchor:'install',
     title:'Installing Sidekick',
-    text:'Install Sidekick through the host plugin surface. Claude Code uses /plugin install alo-labs/sidekick. Codex uses codex plugin marketplace add alo-labs/codex-plugins. Restart the host so the hook surface loads before starting Kay or Codex delegation.' },
+    text:'Install Sidekick through the host plugin surface. Claude Code uses /plugin install alo-labs/sidekick. Codex uses codex plugin marketplace add alo-labs/codex-plugins. Cursor uses Settings → Plugins → Add marketplace with source https://github.com/alo-labs/alo-labs-cursor-marketplace, then installs sidekick from the marketplace list. Until Sidekick is listed there, add marketplace https://github.com/alo-exp/sidekick instead. Restart the host so the hook surface loads before starting Kay or Codex delegation.' },
   { page:'Getting Started', url:'getting-started/', anchor:'health-check',
     title:'Health check - verify current session',
     text:'Codex mode verifies that codex resolves to the real OpenAI Codex CLI and that codex exec supports the managed flags. Kay mode verifies kay --version, kay exec --help, and Kay provider readiness before routing work.' },

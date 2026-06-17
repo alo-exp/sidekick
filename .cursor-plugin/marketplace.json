@@ -31,7 +31,8 @@
         "terminal-agent",
         "coding-agent",
         "orchestration"
-      ]
+      ],
+      "category": "development"
     }
   ]
 }

@@ -82,7 +82,7 @@ decide_write_edit() {
   local file_path
   file_path="$(printf '%s' "$tool_input_json" | jq -r '.file_path // .path // empty')"
   if is_allowed_doc_path "$file_path"; then
-    return 0
+    sidekick_return_allow_passthrough
   fi
   deny_direct_edit
 }
@@ -96,7 +96,7 @@ decide_mcp_write() {
   local file_path
   file_path="$(printf '%s' "$tool_input_json" | jq -r '.path // .file_path // empty')"
   if is_allowed_doc_path "$file_path"; then
-    return 0
+    sidekick_return_allow_passthrough
   fi
   deny_direct_edit
 }
@@ -387,7 +387,7 @@ decide_bash() {
   local tool_input_json cmd stripped uuid hint rewritten
   tool_input_json="$1"
   cmd="$(printf '%s' "$tool_input_json" | jq -r '.command // empty')"
-  [[ -z "$cmd" ]] && return 0
+  [[ -z "$cmd" ]] && sidekick_return_allow_passthrough
 
   export_env_prefix "$cmd"
 
@@ -431,7 +431,7 @@ decide_bash() {
   fi
 
   if is_read_only "$cmd"; then
-    return 0
+    sidekick_return_allow_passthrough
   fi
 
   if is_mutating "$cmd"; then
@@ -455,7 +455,7 @@ main() {
   SIDEKICK_NAME="$(sidekick_active_mode 2>/dev/null || true)"
   case "$SIDEKICK_NAME" in
     kay|codex) ;;
-    *) exit 0 ;;
+    *) sidekick_finish_inactive_passthrough ;;
   esac
 
   if ! command -v jq >/dev/null 2>&1; then
@@ -464,8 +464,8 @@ main() {
   fi
 
   MARKER_FILE="$(sidekick_session_marker_file "$SIDEKICK_NAME" 2>/dev/null || true)"
-  [[ -n "$MARKER_FILE" ]] || exit 0
-  [[ -f "$MARKER_FILE" ]] || exit 0
+  [[ -n "$MARKER_FILE" ]] || sidekick_finish_inactive_passthrough
+  [[ -f "$MARKER_FILE" ]] || sidekick_finish_inactive_passthrough
 
   SIDEKICK_HOOK_INPUT="$input"
   tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
@@ -499,7 +499,7 @@ main() {
           fi
           ;;
       esac
-      return 0
+      sidekick_return_allow_passthrough
       ;;
   esac
 }

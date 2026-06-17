@@ -110,6 +110,22 @@ sidekick_emit_post_tool_context() {
   jq -cn --arg ctx "$payload" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'
 }
 
+sidekick_emit_cursor_allow_passthrough() {
+  if sidekick_is_cursor_host; then
+    jq -cn '{permission: "allow"}'
+  fi
+}
+
+sidekick_finish_inactive_passthrough() {
+  sidekick_emit_cursor_allow_passthrough
+  exit 0
+}
+
+sidekick_return_allow_passthrough() {
+  sidekick_emit_cursor_allow_passthrough
+  return 0
+}
+
 sidekick_emit_jq_missing_denial() {
   local sidekick_name="${1:-sidekick}"
   local reason="Sidekick /${sidekick_name} mode requires jq for hook enforcement. Install jq and re-run."
