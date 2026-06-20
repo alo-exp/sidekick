@@ -17,6 +17,7 @@
 #   is_mutating              — return 0 if command is known mutating (includes gh ENF-05)
 #   has_non_readonly_chain_segment — return 0 if any &&/;/|| segment is not explicitly read-only (ENF-06)
 #   has_non_readonly_pipe_segment  — return 0 if any | segment is not explicitly read-only (ENF-08)
+#   is_verification_bash           — return 0 for host verification test/script invocations
 # =============================================================================
 
 set -euo pipefail
@@ -1318,4 +1319,58 @@ has_mutating_chain_segment() {
 
 has_mutating_pipe_segment() {
   has_non_readonly_pipe_segment "$1"
+}
+
+# -----------------------------------------------------------------------------
+# is_verification_bash
+# Return 0 when bash/sh is invoking a repository verification script under
+# tests/ or scripts/ (read-only host verification while delegation is active).
+# -----------------------------------------------------------------------------
+is_verification_bash() {
+  local cmd="$1"
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$cmd" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+try:
+    tokens = shlex.split(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+
+if not tokens:
+    raise SystemExit(1)
+
+index = 0
+while index < len(tokens) and "=" in tokens[index] and not tokens[index].startswith("="):
+    index += 1
+if index >= len(tokens):
+    raise SystemExit(1)
+
+head = Path(tokens[index]).name
+if head not in {"bash", "sh", "zsh"}:
+    raise SystemExit(1)
+
+script = tokens[index + 1] if index + 1 < len(tokens) else ""
+if not script:
+    raise SystemExit(1)
+
+path = Path(script)
+parts = path.parts
+if not parts:
+    raise SystemExit(1)
+
+if parts[0] == "tests" and path.suffix == ".bash":
+    raise SystemExit(0)
+if parts[0] == "scripts" and path.suffix == ".bash":
+    allowed = {
+        "sync-host-surfaces.sh",
+        "test_plugin_integrity.bash",
+    }
+    if path.name in allowed or path.name.startswith("test_"):
+        raise SystemExit(0)
+
+raise SystemExit(1)
+PY
 }

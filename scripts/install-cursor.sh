@@ -150,9 +150,12 @@ printf '\nSidekick Cursor install complete.\n'
 printf '  plugin cache: %s\n' "${DEST_ROOT}"
 printf '  current symlink: %s/plugins/cache/alo-labs/sidekick/current\n' "${CURSOR_HOME}"
 printf '  local marketplace symlink: %s -> %s\n' "${CURSOR_MARKETPLACE_ROOT}" "${REPO_ROOT}"
+printf '\nRecovery: if hooks still lock down all tools, re-run with --merge-hooks-only after reload.\n'
+printf '  Stale ~/.cursor/hooks.json entries from older installs are replaced idempotently by merge-cursor-hooks.py.\n'
+printf '  Set preToolUse failClosed to false (Sidekick default) so inactive hooks always allow host tools.\n'
 printf '\nNext steps:\n'
 printf '  1. Reload Cursor (Cmd+Shift+P → Developer: Reload Window)\n'
 printf '  2. In Settings → Plugins, add marketplace https://github.com/alo-exp/sidekick if sidekick is not listed\n'
 printf '  3. Enable sidekick, then reload again\n'
 printf '  4. Run: bash scripts/install-cursor.sh --merge-hooks-only\n'
-printf '  5. Try slash commands: kay-delegate, kay-stop, codex-delegate, codex-stop\n'
+printf '  5. Try slash commands: kay, kay-stop, codex, codex-stop\n'

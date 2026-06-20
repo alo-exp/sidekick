@@ -158,15 +158,15 @@ try:
     skills = resp["result"]["plugin"]["skills"]
     names = [skill["name"] for skill in skills]
     expected_names = [
-        "sidekick:codex-delegate",
+        "sidekick:codex",
         "sidekick:codex-stop",
-        "sidekick:kay-delegate",
+        "sidekick:kay",
         "sidekick:kay-stop",
     ]
     canonical_order = [
-        "sidekick:codex-delegate",
+        "sidekick:codex",
         "sidekick:codex-stop",
-        "sidekick:kay-delegate",
+        "sidekick:kay",
         "sidekick:kay-stop",
     ]
     expected_counts = {name: 1 for name in expected_names}

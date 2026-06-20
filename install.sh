@@ -1070,4 +1070,4 @@ if [ "${INSTALL_KAY}" = "1" ]; then
 
 fi
 
-echo "[sidekick-plugin] Setup complete. Use /sidekick:kay-delegate or /sidekick:codex-delegate to activate a sidekick."
+echo "[sidekick-plugin] Setup complete. Use /sidekick:kay or /sidekick:codex to activate a sidekick."

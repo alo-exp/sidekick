@@ -82,8 +82,24 @@ stop_command() {
   sidekick_registry_get "$SIDEKICK_NAME" '.[$sidekick].stop_command'
 }
 
+host_direct_edit_advisory() {
+  local tool_name="$1"
+  local file_path="$2"
+  local delegate_cmd name prefix payload
+
+  [[ -n "$file_path" ]] || return 1
+  is_allowed_doc_path "$file_path" && return 1
+  sidekick_is_cursor_host || return 1
+
+  delegate_cmd="$(sidekick_registry_get "$SIDEKICK_NAME" '.[$sidekick].delegate_command')"
+  name="$(display_name)"
+  prefix="[SIDEKICK]"
+  payload="${prefix} ${name} owns implementation edits. Prefer: ${delegate_cmd} \"<task>\". Host direct ${tool_name} on ${file_path} bypasses delegation."
+  sidekick_emit_post_tool_context "$payload"
+}
+
 main() {
-  local input tool_name normalized_tool cmd output summary header footer payload prefix name
+  local input tool_name normalized_tool cmd output summary header footer payload prefix name file_path
 
   if ! command -v jq >/dev/null 2>&1; then
     exit 0
@@ -106,6 +122,15 @@ main() {
 
   tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
   normalized_tool="$(sidekick_normalize_tool_name "$tool_name")"
+
+  case "$normalized_tool" in
+    Write|Edit|Delete|NotebookEdit)
+      file_path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null)"
+      host_direct_edit_advisory "$normalized_tool" "$file_path" || true
+      exit 0
+      ;;
+  esac
+
   [[ "$normalized_tool" = "Bash" ]] || exit 0
 
   cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"

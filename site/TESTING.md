@@ -29,7 +29,7 @@ bash tests/run_in_kay.bash SIDEKICK_LIVE_CODEX=1 bash tests/run_release.bash
 
 | Suite | Coverage |
 | --- | --- |
-| `tests/test_homepage_sidekicks.bash` | Homepage names Sidekick 0.8.1, Kay, Codex, Cursor, activation commands, stop commands, host verification, and release evidence. |
+| `tests/test_homepage_sidekicks.bash` | Homepage names Sidekick 0.8.2, Kay, Codex, Cursor, activation commands, stop commands, host verification, and release evidence. |
 | `tests/test_help_site_navigation.bash` | Help pages exist, share navigation, document Kay/Codex workflows, and include recovery content. |
 | `tests/test_docs_contract.bash` | Public Markdown docs align with the current Sidekick contract. |
 | `tests/test_og_image.bash` | Social preview source names Kay and Codex delegation and the host verification promise. |

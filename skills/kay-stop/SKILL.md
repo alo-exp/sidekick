@@ -32,3 +32,4 @@ Stop Kay mode and restore normal direct-host behavior.
 
 - `.kay/conversations.idx` is preserved across deactivation as the Sidekick-owned Kay audit ledger.
 - Deactivation does not touch Kay runtime history, the legacy `~/.code/history.jsonl` compatibility history file, or any project files.
+- On Cursor, the sessionEnd hook also clears session-scoped Kay markers when the chat session ends.

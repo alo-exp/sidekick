@@ -1,5 +1,5 @@
 ---
-name: kay-delegate
+name: kay
 description: Canonical Kay delegation workflow for the Kay sidekick. Use when activating Kay mode before delegated implementation work.
 argument-hint: "[ocg|xiaomi] <task to delegate>"
 ---
@@ -18,7 +18,21 @@ Kay     = Hands
 
 - Claude Code, Codex, and Cursor hosts all follow STEP 0 through STEP 3.
 - When the active host is Codex, treat Kay as a child execution process launched through `kay exec`; do not confuse host Codex planning work with delegated Kay implementation work.
-- When the active host is Cursor, treat Kay as a child execution process launched through `kay exec`; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation.
+- When the active host is Cursor, treat Kay as a child execution process launched through `kay exec`; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation, and sessionEnd clears session-scoped delegation markers.
+
+## Division of Labor (active delegation)
+
+While Kay mode is active, the host AI remains the user-interactor, orchestrator, verifier, advisor, and mentor. Kay is the primary implementation executor.
+
+The host keeps freedom to:
+
+- Read, search, and inspect the codebase for verification and diagnosis
+- Run read-only or verification shell commands (`git status`, `git diff`, `bash tests/*.bash`, and similar)
+- Launch Task subagents for non-implementation orchestration when appropriate
+- Edit planning docs under `.planning/` and `site/`
+- Communicate with the user
+
+Sidekick hooks narrow enforcement to implementation ownership: direct Write/Edit/Delete on implementation files is denied on Claude/Codex hosts and surfaced as an advisory on Cursor via postToolUse. Delegate implementation through `kay exec --full-auto`.
 
 The stop workflow lives canonically in `kay-stop/SKILL.md` in this generated cursor skill root (`agents/cursor/kay-stop/SKILL.md` in the repository).
 
@@ -87,9 +101,6 @@ Provider argument handling:
 - If no provider keyword was supplied, leave `SIDEKICK_KAY_PROVIDER_ARG` unset and use the default OpenCode Go routing.
 
 ```bash
-if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  SIDEKICK_HOST_HOME="${HOME}/.cursor"
-fi
 SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SESSION_ID:-}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Kay mode"; exit 1; }
 KAY_PROVIDER_INPUT="${SIDEKICK_KAY_PROVIDER_ARG:-${SIDEKICK_KAY_PROVIDER:-${SIDEKICK_KAY_MODEL_PROVIDER:-opencode-go}}}"
@@ -107,13 +118,20 @@ esac
 KAY_STATE_ROOT="${HOME}/.kay"
 CODEX_STATE_ROOT="${HOME}/.codex"
 mkdir -p "${KAY_STATE_ROOT}/sessions/${SIDEKICK_SESSION}" \
-  "${HOME}/.cursor/sessions/${SIDEKICK_SESSION}" \
   "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
 rm -f "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.codex-delegation-active"
 printf '%s\n' "kay" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
 printf '%s\n' "${KAY_PROVIDER}" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/kay-provider"
 : > "${KAY_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
 ```
+
+Session-scoped markers only:
+
+- `~/.sidekick/sessions/<session>/active-sidekick` — shared selector (`kay` or `codex`)
+- `~/.kay/sessions/<session>/.kay-delegation-active` — Kay enforcement marker
+- `~/.sidekick/sessions/<session>/kay-provider` — optional provider persistence
+
+Delegation ends when the host session ends (Cursor sessionEnd hook clears markers) or when `/sidekick:kay-stop` runs. Do not use project-level or repo-root activation markers.
 
 Kay and Codex are mutually exclusive per host session. Kay activation clears any current-session Codex marker and writes `active-sidekick=kay`, so the Codex hook becomes a no-op before Kay commands start.
 

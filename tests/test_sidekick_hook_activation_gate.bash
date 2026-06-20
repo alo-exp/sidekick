@@ -67,7 +67,7 @@ expect_enforcer_passthrough() {
   payload="$(jq -cn '{tool_name:"Write",tool_input:{file_path:"hooks/generated-test-fixture.sh",content:"changed"}}')"
   out="$(run_enforcer "${h}" "${hook}" "${payload}")"; rc=$?
   decision="$(printf '%s' "${out}" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
-  if [ "${rc}" -eq 0 ] && [ -z "${out}" ] && [ -z "${decision}" ]; then
+  if [ "${rc}" -eq 0 ] && [ "${decision}" = "allow" ]; then
     assert_pass "${label}"
   else
     assert_fail "${label}" "rc=${rc} decision=${decision} out=${out}"

@@ -63,13 +63,15 @@ else
 fi
 
 echo "=== cursor_skill_frontmatter_has_argument_hint ==="
-for skill in kay-delegate kay-stop codex-delegate codex-stop; do
-  path="${REPO_ROOT}/agents/cursor/${skill}/SKILL.md"
-  if grep -q '^name: '"${skill}"'$' "${path}" \
+for entry in "kay-delegate:kay" "kay-stop:kay-stop" "codex-delegate:codex" "codex-stop:codex-stop"; do
+  skill_path="${entry%%:*}"
+  skill_name="${entry##*:}"
+  path="${REPO_ROOT}/agents/cursor/${skill_path}/SKILL.md"
+  if grep -q '^name: '"${skill_name}"'$' "${path}" \
     && grep -q '^argument-hint:' "${path}"; then
-    assert_pass "cursor ${skill} frontmatter ready for slash menu"
+    assert_pass "cursor ${skill_path} frontmatter ready for slash menu"
   else
-    assert_fail "cursor ${skill} frontmatter ready for slash menu" "missing name or argument-hint in ${path}"
+    assert_fail "cursor ${skill_path} frontmatter ready for slash menu" "missing name or argument-hint in ${path}"
   fi
 done
 

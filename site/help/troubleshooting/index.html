@@ -164,7 +164,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <div class="callout callout-tip">
         <span class="callout-icon"><i data-lucide="lightbulb"></i></span>
-        <div class="callout-body"><strong>After installing, run <code>/sidekick:codex-delegate</code>.</strong> This verifies the real Codex CLI before Sidekick routes implementation work to it.</div>
+        <div class="callout-body"><strong>After installing, run <code>/sidekick:codex</code>.</strong> This verifies the real Codex CLI before Sidekick routes implementation work to it.</div>
       </div>
 
       <h2 id="kay-runtime"><span class="issue-badge badge-config"><i data-lucide="terminal"></i> Config</span> Kay Runtime Issues</h2>
@@ -196,14 +196,14 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <li>Log in to the OpenAI Codex CLI if authentication is missing.</li>
       </ul>
       <h3>✗ Kay readiness failed</h3>
-      <p><strong>Fix:</strong> Verify <code>kay --version</code>, <code>kay exec --help</code>, and provider login. If provider routing is wrong, start Kay with <code>/sidekick:kay-delegate xiaomi</code>, <code>/sidekick:kay-delegate ocg</code>, or set <code>SIDEKICK_KAY_PROVIDER</code>.</p>
+      <p><strong>Fix:</strong> Verify <code>kay --version</code>, <code>kay exec --help</code>, and provider login. If provider routing is wrong, start Kay with <code>/sidekick:kay xiaomi</code>, <code>/sidekick:kay ocg</code>, or set <code>SIDEKICK_KAY_PROVIDER</code>.</p>
 
       <h2 id="provider-config"><span class="issue-badge badge-config"><i data-lucide="settings"></i> Config</span> Provider Routing</h2>
 
       <h3>Kay provider selector is wrong</h3>
       <p><strong>Fix:</strong> Use the explicit activation form for the session:</p>
-      <div class="code-block"><span class="cmd">/sidekick:kay-delegate xiaomi</span>
-<span class="cmd">/sidekick:kay-delegate ocg</span></div>
+      <div class="code-block"><span class="cmd">/sidekick:kay xiaomi</span>
+<span class="cmd">/sidekick:kay ocg</span></div>
 
       <h3>Codex model is not what you expected</h3>
       <p><strong>Cause:</strong> Codex sidekick mode intentionally pins <code>gpt-5.4-mini</code> with extra-high reasoning.</p>
@@ -255,8 +255,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <p><strong>Fix:</strong> Stop the current sidekick, then activate the one you want:</p>
       <div class="code-block"><span class="cmd">/sidekick:kay-stop</span>
 <span class="cmd">/sidekick:codex-stop</span>
-<span class="cmd">/sidekick:kay-delegate</span>
-<span class="cmd">/sidekick:codex-delegate</span></div>
+<span class="cmd">/sidekick:kay</span>
+<span class="cmd">/sidekick:codex</span></div>
 
       <h2 id="reinstall"><span class="issue-badge badge-config"><i data-lucide="download"></i> Reset</span> Reinstall / Full Reset</h2>
 
