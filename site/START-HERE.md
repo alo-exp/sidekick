@@ -17,9 +17,9 @@ bash scripts/sync-host-surfaces.sh
 Use Kay when you want the Kay runtime:
 
 ```text
-/sidekick:kay-delegate
-/sidekick:kay-delegate xiaomi
-/sidekick:kay-delegate ocg
+/sidekick:kay
+/sidekick:kay xiaomi
+/sidekick:kay ocg
 ```
 
 Then read [Workflows](help/workflows/) for the review and retry loop.
@@ -29,7 +29,7 @@ Then read [Workflows](help/workflows/) for the review and retry loop.
 Use Codex when you want the local OpenAI Codex CLI:
 
 ```text
-/sidekick:codex-delegate
+/sidekick:codex
 ```
 
 The Codex sidekick runs through `codex exec` with `gpt-5.4-mini` and extra-high reasoning.

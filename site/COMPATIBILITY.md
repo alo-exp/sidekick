@@ -7,7 +7,7 @@
 | Concern | Claude Code host | Codex host | Cursor host | Kay sidekick | Codex sidekick |
 | --- | --- | --- | --- | --- | --- |
 | Skill source | Rendered from `skills/` into `agents/claude/` | Rendered from `skills/` into `agents/codex/` | Rendered from `skills/` into `agents/cursor/` | `skills/kay-delegate/SKILL.md` | `skills/codex-delegate/SKILL.md` |
-| Activation | `/sidekick:kay-delegate` or `/sidekick:codex-delegate` | `/sidekick:kay-delegate` or `/sidekick:codex-delegate` | `/sidekick:kay-delegate` or `/sidekick:codex-delegate` | Starts Kay mode | Starts Codex mode |
+| Activation | `/sidekick:kay` or `/sidekick:codex` | `/sidekick:kay` or `/sidekick:codex` | `/sidekick:kay` or `/sidekick:codex` | Starts Kay mode | Starts Codex mode |
 | Stop command | `/sidekick:kay-stop` or `/sidekick:codex-stop` | `/sidekick:kay-stop` or `/sidekick:codex-stop` | `/sidekick:kay-stop` or `/sidekick:codex-stop` | Clears Kay mode | Clears Codex mode |
 | Child runtime | Host launches the selected sidekick | Host launches the selected sidekick | Host launches the selected sidekick | `kay exec` | `codex exec` |
 | Model and provider | Host does not own sidekick model selection | Host does not own sidekick model selection | Host does not own sidekick model selection | OpenCode Go by default; `xiaomi`, `ocg`, and `SIDEKICK_KAY_PROVIDER` are accepted selectors | Local OpenAI Codex CLI using `gpt-5.4-mini` with extra-high reasoning |
@@ -22,20 +22,20 @@ Kay is the primary runtime identity. Sidekick installs and repairs the Kay runti
 Use these user-facing commands:
 
 ```text
-/sidekick:kay-delegate
-/sidekick:kay-delegate xiaomi
-/sidekick:kay-delegate ocg
+/sidekick:kay
+/sidekick:kay xiaomi
+/sidekick:kay ocg
 /sidekick:kay-stop
 ```
 
 ## Codex sidekick compatibility
 
-The Codex sidekick is the local OpenAI Codex CLI, not a Kay alias. Sidekick activates it through `/sidekick:codex-delegate`, launches it with `codex exec`, and pins the sidekick mode to `gpt-5.4-mini` with extra-high reasoning.
+The Codex sidekick is the local OpenAI Codex CLI, not a Kay alias. Sidekick activates it through `/sidekick:codex`, launches it with `codex exec`, and pins the sidekick mode to `gpt-5.4-mini` with extra-high reasoning.
 
 Use these user-facing commands:
 
 ```text
-/sidekick:codex-delegate
+/sidekick:codex
 /sidekick:codex-stop
 ```
 

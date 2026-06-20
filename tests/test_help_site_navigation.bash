@@ -49,8 +49,8 @@ for page in "${pages[@]}"; do
 done
 
 echo "=== T2: help content covers Kay, Codex, and verification ==="
-expect_contains "site/help/index.html" "/sidekick:kay-delegate" "help home includes Kay activation"
-expect_contains "site/help/index.html" "/sidekick:codex-delegate" "help home includes Codex activation"
+expect_contains "site/help/index.html" "/sidekick:kay" "help home includes Kay activation"
+expect_contains "site/help/index.html" "/sidekick:codex" "help home includes Codex activation"
 expect_contains "site/help/concepts/index.html" "active-sidekick" "concepts explain active selector"
 expect_contains "site/help/workflows/index.html" "kay exec" "workflows explain Kay runtime"
 expect_contains "site/help/workflows/index.html" "codex exec" "workflows explain Codex runtime"

@@ -60,7 +60,7 @@ deny_reason() {
       else
         shell_hint="Bash { command: '$(delegate_command) --full-auto \"<your task description>\"' }"
       fi
-      printf 'Sidekick /sidekick:kay-delegate mode is active: direct file edits are delegated to Kay. Use: %s. Sidekick injects the active provider and task model automatically; activate Kay with provider keyword ocg or xiaomi, or set SIDEKICK_KAY_PROVIDER, to select the backend. Legacy code/coder aliases remain compatibility-only.' "$shell_hint"
+      printf 'Sidekick /sidekick:kay mode is active: direct file edits are delegated to Kay. Use: %s. Sidekick injects the active provider and task model automatically; activate Kay with provider keyword ocg or xiaomi, or set SIDEKICK_KAY_PROVIDER, to select the backend. Legacy code/coder aliases remain compatibility-only.' "$shell_hint"
       ;;
     codex)
       if sidekick_is_cursor_host; then
@@ -68,7 +68,7 @@ deny_reason() {
       else
         shell_hint="Bash { command: '$(delegate_command) \"<your task description>\"' }"
       fi
-      printf 'Sidekick /sidekick:codex-delegate mode is active: direct file edits are delegated to Codex. Use: %s. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$shell_hint"
+      printf 'Sidekick /sidekick:codex mode is active: direct file edits are delegated to Codex. Use: %s. Sidekick injects -m gpt-5.4-mini, -c model_reasoning_effort=xhigh, --sandbox workspace-write, and --ask-for-approval never automatically.' "$shell_hint"
       ;;
   esac
 }
@@ -84,10 +84,16 @@ decide_write_edit() {
   if is_allowed_doc_path "$file_path"; then
     sidekick_return_allow_passthrough
   fi
+  if sidekick_is_cursor_host; then
+    sidekick_return_allow_passthrough
+  fi
   deny_direct_edit
 }
 
 decide_notebook_edit() {
+  if sidekick_is_cursor_host; then
+    sidekick_return_allow_passthrough
+  fi
   deny_direct_edit
 }
 
@@ -98,26 +104,20 @@ decide_mcp_write() {
   if is_allowed_doc_path "$file_path"; then
     sidekick_return_allow_passthrough
   fi
+  if sidekick_is_cursor_host; then
+    sidekick_return_allow_passthrough
+  fi
   deny_direct_edit
 }
 
 decide_task() {
-  local reason
-  case "$SIDEKICK_NAME" in
-    kay)
-      reason='Sidekick /sidekick:kay-delegate mode is active: Task subagents bypass Kay delegation. Delegate via kay exec --full-auto instead.'
-      ;;
-    codex)
-      reason='Sidekick /sidekick:codex-delegate mode is active: Task subagents bypass Codex delegation. Delegate via codex exec instead.'
-      ;;
-    *)
-      reason='Sidekick delegation mode is active: Task subagents are blocked while a sidekick owns implementation work.'
-      ;;
-  esac
-  emit_decision "deny" "$reason" ""
+  sidekick_return_allow_passthrough
 }
 
 decide_delete() {
+  if sidekick_is_cursor_host; then
+    sidekick_return_allow_passthrough
+  fi
   deny_direct_edit
 }
 
@@ -287,10 +287,10 @@ rewrite_delegate_exec() {
 missing_runtime_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: no Kay-compatible runtime is on PATH. Install the Kay sidekick package and re-run /sidekick:kay-delegate.'
+      printf '%s' 'Sidekick /sidekick:kay mode: no Kay-compatible runtime is on PATH. Install the Kay sidekick package and re-run /sidekick:kay.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: no OpenAI Codex CLI runtime is on PATH. Install the local OpenAI Codex CLI and re-run /sidekick:codex-delegate.'
+      printf '%s' 'Sidekick /sidekick:codex mode: no OpenAI Codex CLI runtime is on PATH. Install the local OpenAI Codex CLI and re-run /sidekick:codex.'
       ;;
   esac
 }
@@ -298,10 +298,10 @@ missing_runtime_reason() {
 malformed_rewrite_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: refusing to rewrite malformed Kay exec invocation.'
+      printf '%s' 'Sidekick /sidekick:kay mode: refusing to rewrite malformed Kay exec invocation.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: refusing to rewrite malformed Codex exec invocation.'
+      printf '%s' 'Sidekick /sidekick:codex mode: refusing to rewrite malformed Codex exec invocation.'
       ;;
   esac
 }
@@ -309,10 +309,10 @@ malformed_rewrite_reason() {
 idx_not_writable_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: Kay audit index is not writable or is outside the project. Remove any symlinked .kay path and re-run /sidekick:kay-delegate.'
+      printf '%s' 'Sidekick /sidekick:kay mode: Kay audit index is not writable or is outside the project. Remove any symlinked .kay path and re-run /sidekick:kay.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: Codex audit index is not writable or is outside the project. Remove any symlinked .codex path and re-run /sidekick:codex-delegate.'
+      printf '%s' 'Sidekick /sidekick:codex mode: Codex audit index is not writable or is outside the project. Remove any symlinked .codex path and re-run /sidekick:codex.'
       ;;
   esac
 }
@@ -320,10 +320,10 @@ idx_not_writable_reason() {
 idx_append_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: Kay audit index could not record the delegated task. Check .kay/conversations.idx permissions and re-run /sidekick:kay-delegate.'
+      printf '%s' 'Sidekick /sidekick:kay mode: Kay audit index could not record the delegated task. Check .kay/conversations.idx permissions and re-run /sidekick:kay.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: Codex audit index could not record the delegated task. Check .codex/conversations.idx permissions and re-run /sidekick:codex-delegate.'
+      printf '%s' 'Sidekick /sidekick:codex mode: Codex audit index could not record the delegated task. Check .codex/conversations.idx permissions and re-run /sidekick:codex.'
       ;;
   esac
 }
@@ -331,10 +331,10 @@ idx_append_reason() {
 mutating_chain_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: command chain contains a non-read-only segment. Use kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay mode: command chain contains a non-read-only segment. Use kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: command chain contains a non-read-only segment. Delegate via codex exec.'
+      printf '%s' 'Sidekick /sidekick:codex mode: command chain contains a non-read-only segment. Delegate via codex exec.'
       ;;
   esac
 }
@@ -342,10 +342,10 @@ mutating_chain_reason() {
 mutating_pipe_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: pipe chain contains a non-read-only segment. Use kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay mode: pipe chain contains a non-read-only segment. Use kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: pipe chain contains a non-read-only segment. Delegate via codex exec.'
+      printf '%s' 'Sidekick /sidekick:codex mode: pipe chain contains a non-read-only segment. Delegate via codex exec.'
       ;;
   esac
 }
@@ -353,10 +353,10 @@ mutating_pipe_reason() {
 mutating_denied_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: mutating command denied. Delegate via kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay mode: mutating command denied. Delegate via kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: mutating command denied. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
+      printf '%s' 'Sidekick /sidekick:codex mode: mutating command denied. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
       ;;
   esac
 }
@@ -364,10 +364,10 @@ mutating_denied_reason() {
 unclassified_reason() {
   case "$SIDEKICK_NAME" in
     kay)
-      printf '%s' 'Sidekick /sidekick:kay-delegate mode: command could not be classified. Delegate via kay exec --full-auto.'
+      printf '%s' 'Sidekick /sidekick:kay mode: command could not be classified. Delegate via kay exec --full-auto.'
       ;;
     codex)
-      printf '%s' 'Sidekick /sidekick:codex-delegate mode: command could not be classified. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
+      printf '%s' 'Sidekick /sidekick:codex mode: command could not be classified. Delegate via codex exec with the Sidekick-managed GPT-5.4-mini contract.'
       ;;
   esac
 }
@@ -430,6 +430,10 @@ decide_bash() {
     return 0
   fi
 
+  if is_verification_bash "$cmd"; then
+    sidekick_return_allow_passthrough
+  fi
+
   if is_read_only "$cmd"; then
     sidekick_return_allow_passthrough
   fi
@@ -443,13 +447,11 @@ decide_bash() {
 }
 
 main() {
-  local input tool_name normalized_tool tool_input
+  local input tool_name normalized_tool tool_input rc=0
 
+  input="$(cat)"
   if command -v jq >/dev/null 2>&1; then
-    input="$(cat)"
     sidekick_bind_hook_session_from_input "$input"
-  else
-    input=""
   fi
 
   SIDEKICK_NAME="$(sidekick_active_mode 2>/dev/null || true)"
@@ -490,6 +492,9 @@ main() {
       ;;
     mcp__filesystem__write_file|mcp__filesystem__edit_file|mcp__filesystem__move_file|mcp__filesystem__create_directory)
       decide_mcp_write "$tool_input"
+      ;;
+    Read|Grep|Glob|SemanticSearch)
+      sidekick_return_allow_passthrough
       ;;
     *)
       case "$tool_name" in

@@ -163,15 +163,15 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
     <div class="doc-content">
 
       <h2 id="delegation">Codex Delegation Mode</h2>
-      <p>When you invoke <code>/sidekick:codex-delegate</code>, the host activates Codex sidekick mode for the current session. The host AI does <em>not</em> write implementation edits directly while the mode is active. It delegates bounded work to the local OpenAI Codex CLI through <code>codex exec</code>, then verifies the result before reporting success.</p>
+      <p>When you invoke <code>/sidekick:codex</code>, the host activates Codex sidekick mode for the current session. The host AI does <em>not</em> write implementation edits directly while the mode is active. It delegates bounded work to the local OpenAI Codex CLI through <code>codex exec</code>, then verifies the result before reporting success.</p>
       <p>The Codex sidekick is pinned to <code>gpt-5.4-mini</code> with extra-high reasoning. Sidekick injects the model, reasoning, sandbox, and approval flags through the hook layer so the host can keep prompts focused on the task instead of runtime plumbing.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>
-        <div class="callout-body"><strong>Delegation is session scoped.</strong> Once <code>/sidekick:codex-delegate</code> is active, implementation tasks are routed to Codex until <code>/sidekick:codex-stop</code> removes the current-session marker. Codex and Kay are mutually exclusive in the same host session through the shared <code>active-sidekick</code> selector.</div>
+        <div class="callout-body"><strong>Delegation is session scoped.</strong> Once <code>/sidekick:codex</code> is active, implementation tasks are routed to Codex until <code>/sidekick:codex-stop</code> removes the current-session marker. Codex and Kay are mutually exclusive in the same host session through the shared <code>active-sidekick</code> selector.</div>
       </div>
 
       <h2 id="kay-delegation">Kay Delegation Model</h2>
-      <p>Kay is Sidekick's Kay/OpenCode Go execution sidekick. The user-facing activation surface is <code>/sidekick:kay-delegate</code>, with <code>xiaomi</code> and <code>ocg</code> selectors for provider routing. Once Kay mode is active, Sidekick routes implementation through Kay's native <code>kay exec</code> runtime path.</p>
+      <p>Kay is Sidekick's Kay/OpenCode Go execution sidekick. The user-facing activation surface is <code>/sidekick:kay</code>, with <code>xiaomi</code> and <code>ocg</code> selectors for provider routing. Once Kay mode is active, Sidekick routes implementation through Kay's native <code>kay exec</code> runtime path.</p>
       <p>Kay keeps native agents, skills, subagents, and <code>AGENTS.md</code> support. Sidekick contributes package wiring, a session-scoped Kay marker, the shared <code>active-sidekick</code> selector, a <code>.kay/conversations.idx</code> lookup ledger, and progress summaries from the Kay hook surface.</p>
       <div class="callout callout-info">
         <span class="callout-icon"><i data-lucide="info"></i></span>

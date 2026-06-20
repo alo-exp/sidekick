@@ -2,7 +2,7 @@
 
 > Product-level summary for the current Sidekick site and plugin contract.
 
-**Current public version:** Sidekick 0.8.1
+**Current public version:** Sidekick 0.8.2
 **Supported hosts:** Claude Code, Codex, and Cursor
 **Supported sidekicks:** Kay and Codex
 **Primary users:** Developers using Claude Code, Codex, or Cursor who want delegated implementation with host-owned review.
@@ -23,10 +23,10 @@ The one thing that must work above all else:
 
 | Sidekick | Runtime | Activation | Stop |
 | --- | --- | --- | --- |
-| Kay | `kay exec` | `/sidekick:kay-delegate` | `/sidekick:kay-stop` |
-| Codex | `codex exec` using `gpt-5.4-mini` with extra-high reasoning | `/sidekick:codex-delegate` | `/sidekick:codex-stop` |
+| Kay | `kay exec` | `/sidekick:kay` | `/sidekick:kay-stop` |
+| Codex | `codex exec` using `gpt-5.4-mini` with extra-high reasoning | `/sidekick:codex` | `/sidekick:codex-stop` |
 
-Kay also accepts `/sidekick:kay-delegate xiaomi`, `/sidekick:kay-delegate ocg`, and `SIDEKICK_KAY_PROVIDER` for provider routing.
+Kay also accepts `/sidekick:kay xiaomi`, `/sidekick:kay ocg`, and `SIDEKICK_KAY_PROVIDER` for provider routing.
 
 ## Requirement Areas
 

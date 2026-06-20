@@ -139,7 +139,7 @@ run_case() {
   assert_contains "${canonical_kay_skill}" "CODEX_THREAD_ID" "${host}: canonical Kay skill keeps Codex fallback in source"
   assert_absent "${canonical_kay_skill}" "${marker_prefix}/sessions/\${${host_session_var}}" "${host}: install does not rewrite canonical Kay skill to a host session path"
 
-  assert_contains "${generated_kay_skill}" "\${HOME}/${marker_prefix}/sessions/\${SIDEKICK_SESSION}" "${host}: generated Kay skill uses the host session path"
+  assert_contains "${generated_kay_skill}" "\${HOME}/.sidekick/sessions/\${SIDEKICK_SESSION}" "${host}: generated Kay skill uses sidekick session selector path"
   assert_contains "${generated_kay_skill}" "${host_session_var}" "${host}: generated Kay skill resolver uses the host session var"
   assert_absent "${generated_kay_skill}" "${other_env_var}" "${host}: generated Kay skill excludes the other host root"
   assert_absent "${generated_kay_skill}" "${other_session_var}" "${host}: generated Kay skill excludes the other host session var"

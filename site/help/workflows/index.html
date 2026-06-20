@@ -151,8 +151,8 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
           <div class="flow-body">
-            <h4>Run /sidekick:codex-delegate</h4>
-            <p>Type <code>/sidekick:codex-delegate</code> in the host. Claude and Codex hosts both use the canonical <code>skills/codex-delegate/SKILL.md</code> workflow, with rendered host copies generated from the same source.</p>
+            <h4>Run /sidekick:codex</h4>
+            <p>Type <code>/sidekick:codex</code> in the host. Claude and Codex hosts both use the canonical <code>skills/codex-delegate/SKILL.md</code> workflow, with rendered host copies generated from the same source.</p>
           </div>
         </div>
         <div class="flow-step">
@@ -184,7 +184,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-workflow">Kay Workflow</h2>
-      <p>Kay uses its native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. Claude Code, Codex, and Cursor both activate Kay mode through <code>/sidekick:kay-delegate</code>; active Kay mode launches Kay as a child execution runtime through <code>kay exec</code> while the host remains in the planning and verification role.</p>
+      <p>Kay uses its native automation flow. Sidekick keeps the runtime packaged, exposes the delegate/stop skills for host pickers, and preserves a project-local Kay audit ledger. Claude Code, Codex, and Cursor both activate Kay mode through <code>/sidekick:kay</code>; active Kay mode launches Kay as a child execution runtime through <code>kay exec</code> while the host remains in the planning and verification role.</p>
       <div class="flow">
         <div class="flow-step">
           <div class="flow-connector"><div class="flow-num">1</div><div class="flow-line"></div></div>
@@ -197,7 +197,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
           <div class="flow-connector"><div class="flow-num">2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Activate Kay mode</h4>
-            <p>Run <code>/sidekick:kay-delegate</code>, <code>/sidekick:kay-delegate xiaomi</code>, or <code>/sidekick:kay-delegate ocg</code>, then give the host the task to delegate. Activation clears any Codex marker and writes <code>active-sidekick=kay</code>. The hook surfaces bounded, redacted output with <code>[KAY]</code>.</p>
+            <p>Run <code>/sidekick:kay</code>, <code>/sidekick:kay xiaomi</code>, or <code>/sidekick:kay ocg</code>, then give the host the task to delegate. Activation clears any Codex marker and writes <code>active-sidekick=kay</code>. The hook surfaces bounded, redacted output with <code>[KAY]</code>.</p>
           </div>
         </div>
         <div class="flow-step">

@@ -244,9 +244,9 @@ if [ -f "${SKILL_ROOT}/codex-delegate/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/codex-history/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/forge/SKILL.md" ] \
   && [ ! -f "${SKILL_ROOT}/forge-stop/SKILL.md" ] \
-  && grep -q '^name: codex-delegate' "${SKILL_ROOT}/codex-delegate/SKILL.md" \
+  && grep -q '^name: codex$' "${SKILL_ROOT}/codex-delegate/SKILL.md" \
   && grep -q '\.codex-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \
-  && grep -q '^name: kay-delegate' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
+  && grep -q '^name: kay$' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
   && grep -q '\.kay-delegation-active' "${SKILL_ROOT}/kay-stop/SKILL.md" \
   && grep -q '^user-invocable: false' "${SKILL_ROOT}/codex-delegate.md"
 then
@@ -342,9 +342,9 @@ try:
                 names.append(skill["name"])
     print("skill_names:", ", ".join(names))
     expected = [
-        "sidekick:codex-delegate",
+        "sidekick:codex",
         "sidekick:codex-stop",
-        "sidekick:kay-delegate",
+        "sidekick:kay",
         "sidekick:kay-stop",
     ]
     if names != expected:
@@ -419,7 +419,7 @@ if [ -d "${INSTALLED_ROOT}" ]; then
     && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
     && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
     && ! grep -Fq '${HOME}/.codex/sessions/${SIDEKICK_SESSION}' "${SKILL_ROOT}/kay-delegate/SKILL.md" \
-    && grep -Fq 'SIDEKICK_HOST_HOME' "${SKILL_ROOT}/codex-stop/SKILL.md" \
+    && grep -Fq 'SIDEKICK_HOST_SESSION_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && grep -Fq 'CLAUDE_SESSION_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && grep -Fq 'CODEX_THREAD_ID' "${SKILL_ROOT}/codex-stop/SKILL.md" \
     && grep -Fq '.codex-delegation-active' "${SKILL_ROOT}/codex-stop/SKILL.md" \

@@ -35,10 +35,10 @@ done
 
 echo "=== T1: canonical codex-delegate frontmatter ==="
 if grep -q '^---$' "${CODEX_DELEGATE_FILE}" \
-  && grep -q '^name: codex-delegate' "${CODEX_DELEGATE_FILE}"; then
+  && grep -q '^name: codex$' "${CODEX_DELEGATE_FILE}"; then
   assert_pass "codex-delegate frontmatter present"
 else
-  assert_fail "codex-delegate frontmatter" "missing YAML frontmatter or name: codex-delegate"
+  assert_fail "codex-delegate frontmatter" "missing YAML frontmatter or name: codex"
 fi
 
 echo "=== T2: codex-delegate documents the OpenAI Codex CLI contract ==="
@@ -55,17 +55,16 @@ else
 fi
 
 echo "=== T3: codex-delegate stays canonical and host-neutral ==="
-if grep -q 'SIDEKICK_HOST_HOME' "${CODEX_DELEGATE_FILE}" \
-  && grep -q 'SIDEKICK_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
+if grep -q 'SIDEKICK_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
   && grep -q 'SIDEKICK_HOST_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
   && grep -q 'CODEX_THREAD_ID' "${CODEX_DELEGATE_FILE}" \
   && grep -q 'CLAUDE_SESSION_ID' "${CODEX_DELEGATE_FILE}" \
   && grep -q '\.codex-delegation-active' "${CODEX_DELEGATE_FILE}" \
   && grep -q '\.sidekick/sessions' "${CODEX_DELEGATE_FILE}" \
+  && grep -q '\.codex/sessions' "${CODEX_DELEGATE_FILE}" \
   && grep -q 'active-sidekick' "${CODEX_DELEGATE_FILE}" \
   && grep -q 'Codex sidekick mode activated' "${CODEX_DELEGATE_FILE}" \
-  && ! grep -q '\.claude/sessions' "${CODEX_DELEGATE_FILE}" \
-  && ! grep -q '\.codex/sessions' "${CODEX_DELEGATE_FILE}"; then
+  && ! grep -q '\.claude/sessions' "${CODEX_DELEGATE_FILE}"; then
   assert_pass "codex-delegate keeps host-neutral activation source"
 else
   assert_fail "codex-delegate activation marker" "missing host-neutral session marker flow or still hard-codes a host session path"
@@ -74,16 +73,15 @@ fi
 echo "=== T4: codex-stop frontmatter and host-neutral marker handling ==="
 if grep -q '^---$' "${CODEX_STOP_FILE}" \
   && grep -q '^name: codex-stop' "${CODEX_STOP_FILE}" \
-  && grep -q 'SIDEKICK_HOST_HOME' "${CODEX_STOP_FILE}" \
   && grep -q 'SIDEKICK_SESSION_ID' "${CODEX_STOP_FILE}" \
   && grep -q 'SIDEKICK_HOST_SESSION_ID' "${CODEX_STOP_FILE}" \
   && grep -q 'CODEX_THREAD_ID' "${CODEX_STOP_FILE}" \
   && grep -q 'CLAUDE_SESSION_ID' "${CODEX_STOP_FILE}" \
   && grep -q '\.codex-delegation-active' "${CODEX_STOP_FILE}" \
+  && grep -q 'CODEX_STATE_ROOT="${HOME}/.codex"' "${CODEX_STOP_FILE}" \
   && grep -q 'active-sidekick' "${CODEX_STOP_FILE}" \
   && grep -q 'Direct-host mode restored' "${CODEX_STOP_FILE}" \
-  && ! grep -q '\.claude/sessions' "${CODEX_STOP_FILE}" \
-  && ! grep -q '\.codex/sessions' "${CODEX_STOP_FILE}"; then
+  && ! grep -q '\.claude/sessions' "${CODEX_STOP_FILE}"; then
   assert_pass "codex-stop keeps host-neutral marker workflow"
 else
   assert_fail "codex-stop" "missing host-neutral session resolution or still hard-codes a host session path"
@@ -91,10 +89,10 @@ fi
 
 echo "=== T5: canonical kay-delegate frontmatter ==="
 if grep -q '^---$' "${KAY_DELEGATE_FILE}" \
-  && grep -q '^name: kay-delegate' "${KAY_DELEGATE_FILE}"; then
+  && grep -q '^name: kay$' "${KAY_DELEGATE_FILE}"; then
   assert_pass "kay-delegate frontmatter present"
 else
-  assert_fail "kay-delegate frontmatter" "missing YAML frontmatter or name: kay-delegate"
+  assert_fail "kay-delegate frontmatter" "missing YAML frontmatter or name: kay"
 fi
 
 echo "=== T6: kay-delegate remains the Kay runtime contract ==="
