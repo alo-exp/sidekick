@@ -5,7 +5,7 @@
 - Shell/Bash + Markdown stack -- no compiled languages.
 - Supported sidekicks are Kay and Codex.
 - Supported hosts are Claude Code, Codex, and Cursor.
-- Canonical workflows live under `skills/`: `kay-delegate`, `kay-stop`, `codex-delegate`, and `codex-stop`.
+- Canonical workflows live under `skills/`: `kay`, `kay-stop`, `codex`, and `codex-stop`.
 - Generated host bundles under `agents/claude/`, `agents/codex/`, and `agents/cursor/` are rendered by `bash scripts/sync-host-surfaces.sh`; do not hand-edit generated copies unless you also update the canonical source and renderer contract.
 - Tests live in `tests/` and run via `bash tests/run_all.bash`.
 - Plugin manifests live in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.cursor-plugin/plugin.json`; refresh `_integrity` SHA-256 values when install, hook, skill, generated surface, output-style, or registry files change.
@@ -15,7 +15,8 @@
 - The host AI plans, communicates, delegates, verifies, and owns final correctness.
 - Kay delegates to the Kay/OpenCode Go runtime.
 - Codex delegates to the local Codex CLI using `gpt-5.4-mini` with Extra High reasoning.
-- Activation is selected by the shared `active-sidekick` marker. Only one sidekick may be active in a host session.
+- Activation is session-scoped via `~/.sidekick/sessions/<session>/active-sidekick` plus per-sidekick markers under `~/.kay/sessions/<session>/` or `~/.codex/sessions/<session>/`. Only one sidekick may be active in a host session. Delegation ends when the session ends (Cursor sessionEnd hook) or when the matching stop skill runs.
+- While delegation is active, the host retains read/search/verification/orchestration freedom; hooks narrow enforcement to implementation ownership (direct implementation edits and mutating shell not routed through `kay exec` / `codex exec`).
 - After every sidekick task, the host must verify the result against the original prompt and surrounding repository behavior before reporting completion.
 
 ## Host Verification

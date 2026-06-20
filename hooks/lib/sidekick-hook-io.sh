@@ -110,19 +110,34 @@ sidekick_emit_post_tool_context() {
   jq -cn --arg ctx "$payload" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'
 }
 
-sidekick_emit_cursor_allow_passthrough() {
+sidekick_emit_allow_passthrough() {
   if sidekick_is_cursor_host; then
-    jq -cn '{permission: "allow"}'
+    if command -v jq >/dev/null 2>&1; then
+      jq -cn '{permission: "allow"}'
+    else
+      printf '%s\n' '{"permission":"allow"}'
+    fi
+    return 0
+  fi
+
+  if command -v jq >/dev/null 2>&1; then
+    jq -cn '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: ""}}'
+  else
+    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":""}}'
   fi
 }
 
+sidekick_emit_cursor_allow_passthrough() {
+  sidekick_emit_allow_passthrough
+}
+
 sidekick_finish_inactive_passthrough() {
-  sidekick_emit_cursor_allow_passthrough
+  sidekick_emit_allow_passthrough
   exit 0
 }
 
 sidekick_return_allow_passthrough() {
-  sidekick_emit_cursor_allow_passthrough
+  sidekick_emit_allow_passthrough
   return 0
 }
 

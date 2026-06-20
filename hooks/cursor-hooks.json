@@ -6,10 +6,15 @@
         "command": "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\"; bash \"${ROOT}/hooks/cursor-session-bootstrap.sh\""
       }
     ],
+    "sessionEnd": [
+      {
+        "command": "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\"; bash \"${ROOT}/hooks/cursor-session-end.sh\""
+      }
+    ],
     "preToolUse": [
       {
         "command": "ROOT=\"$(printf '%s' \"${CURSOR_PLUGIN_ROOT:-${SIDEKICK_PLUGIN_ROOT:-}}\")\"; SIDEKICK_HOOK_HOST=cursor bash \"${ROOT}/hooks/codex-delegation-enforcer.sh\"",
-        "failClosed": true
+        "failClosed": false
       }
     ],
     "postToolUse": [

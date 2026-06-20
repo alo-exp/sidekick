@@ -1,6 +1,6 @@
 # Sidekick
 
-[![version](https://img.shields.io/badge/version-v0.8.1-blue)](https://github.com/alo-exp/sidekick/releases/tag/v0.8.1)
+[![version](https://img.shields.io/badge/version-v0.8.2-blue)](https://github.com/alo-exp/sidekick/releases/tag/v0.8.2)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **AI coding-agent delegation for Claude Code, Codex, and Cursor.**
@@ -40,12 +40,12 @@ Sidekick does **not** install SessionStart hooks. Kay and Codex readiness is che
 
 | Sidekick | Activate | Stop | Runtime |
 | --- | --- | --- | --- |
-| **Kay** | `/sidekick:kay-delegate` | `/sidekick:kay-stop` | Kay runtime via `kay exec` |
-| **Codex** | `/sidekick:codex-delegate` | `/sidekick:codex-stop` | Local OpenAI Codex CLI (`gpt-5.4-mini`, extra-high reasoning) |
+| **Kay** | `/sidekick:kay` | `/sidekick:kay-stop` | Kay runtime via `kay exec` |
+| **Codex** | `/sidekick:codex` | `/sidekick:codex-stop` | Local OpenAI Codex CLI (`gpt-5.4-mini`, extra-high reasoning) |
 
-Kay defaults to existing `opencode-go` routing. Use `/sidekick:kay-delegate xiaomi` for Xiaomi routing, `/sidekick:kay-delegate ocg` to force OpenCode Go routing, or `SIDEKICK_KAY_PROVIDER` as an environment override. Sidekick selects the model automatically per provider.
+Kay defaults to existing `opencode-go` routing. Use `/sidekick:kay xiaomi` for Xiaomi routing, `/sidekick:kay ocg` to force OpenCode Go routing, or `SIDEKICK_KAY_PROVIDER` as an environment override. Sidekick selects the model automatically per provider.
 
-On **Cursor**, the same workflows appear as slash commands `kay-delegate`, `kay-stop`, `codex-delegate`, and `codex-stop`.
+On **Cursor**, the same workflows appear as slash commands `kay`, `kay-stop`, `codex`, and `codex-stop`.
 
 ## Quick Start
 
@@ -58,8 +58,8 @@ On **Cursor**, the same workflows appear as slash commands `kay-delegate`, `kay-
 Restart Claude Code, then activate a sidekick:
 
 ```text
-/sidekick:kay-delegate
-/sidekick:codex-delegate
+/sidekick:kay
+/sidekick:codex
 ```
 
 ### Codex host
@@ -68,7 +68,7 @@ Restart Claude Code, then activate a sidekick:
 codex plugin marketplace add alo-labs/codex-plugins
 ```
 
-Install Sidekick from that marketplace, restart Codex, then run `/sidekick:kay-delegate` or `/sidekick:codex-delegate`.
+Install Sidekick from that marketplace, restart Codex, then run `/sidekick:kay` or `/sidekick:codex`.
 
 ### Cursor (recommended)
 
@@ -76,7 +76,7 @@ Cursor discovers plugins through registered marketplaces, not from files copied 
 
 1. In Cursor, open **Settings → Plugins → Add marketplace**.
 2. Add source `https://github.com/alo-labs/alo-labs-cursor-marketplace`.
-3. Install **sidekick** (currently **v0.8.1**, commit-pinned in the marketplace catalog).
+3. Install **sidekick** (currently **v0.8.2**, commit-pinned in the marketplace catalog).
 4. **Developer: Reload Window** so `hooks/cursor-hooks.json` loads before delegation.
 5. Enable the plugin if needed, reload again, then merge hooks:
 
@@ -84,7 +84,7 @@ Cursor discovers plugins through registered marketplaces, not from files copied 
 bash scripts/install-cursor.sh --merge-hooks-only
 ```
 
-Use slash commands `kay-delegate`, `codex-delegate`, `kay-stop`, and `codex-stop` in agent chat.
+Use slash commands `kay`, `codex`, `kay-stop`, and `codex-stop` in agent chat.
 
 **Development from a checkout:**
 
@@ -126,7 +126,7 @@ Common failure classes include `MISSED_REQUIREMENT`, `INTEGRATION_ERROR`, `REGRE
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Sidekick missing in Cursor plugin list | Marketplace not registered | Add [alo-labs-cursor-marketplace](https://github.com/alo-labs/alo-labs-cursor-marketplace), reload, enable **sidekick@0.8.1** |
+| Sidekick missing in Cursor plugin list | Marketplace not registered | Add [alo-labs-cursor-marketplace](https://github.com/alo-labs/alo-labs-cursor-marketplace), reload, enable **sidekick@0.8.2** |
 | Hooks block tools before delegation | Hooks merged while plugin inactive or stale hook paths | Run `bash scripts/install-cursor.sh --merge-hooks-only` after plugin is enabled; confirm enforcer inactive pass-through |
 | `current → current` symlink loop | Ran `--merge-hooks-only` without a prior install | Install first with `bash scripts/install-cursor.sh`, then merge hooks |
 | `codex not found` | Missing CLI or Kay alias on PATH | `which codex`; ensure real OpenAI Codex CLI is first on PATH |

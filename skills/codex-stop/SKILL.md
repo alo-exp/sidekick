@@ -12,17 +12,6 @@ Stop Codex mode and restore normal direct-host behavior.
 
 1. Resolve the active host session id, then check whether the matching Codex marker exists:
    ```bash
-   if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-     if [[ -n "${CURSOR_VERSION:-${CURSOR_PROJECT_DIR:-${CURSOR_PLUGIN_ROOT:-}}}" ]]; then
-       SIDEKICK_HOST_HOME="${HOME}/.cursor"
-     elif [[ -n "${CODEX_HOME:-${CODEX_THREAD_ID:-${CODEX_PROJECT_DIR:-${CODEX_PLUGIN_ROOT:-}}}}" ]]; then
-       SIDEKICK_HOST_HOME="${CODEX_HOME:-${HOME}/.codex}"
-     elif [[ -n "${CLAUDE_SESSION_ID:-${CLAUDE_PROJECT_DIR:-${CLAUDE_PLUGIN_ROOT:-}}}" ]]; then
-       SIDEKICK_HOST_HOME="${HOME}/.claude"
-     else
-       echo "No host home found for Codex mode"; exit 1
-     fi
-   fi
    SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${SIDEKICK_HOST_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}}}"
    test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Codex mode"; exit 1; }
    CODEX_STATE_ROOT="${HOME}/.codex"
@@ -43,3 +32,4 @@ Stop Codex mode and restore normal direct-host behavior.
 
 - `.codex/conversations.idx` is preserved across deactivation as the Sidekick-owned Codex audit ledger.
 - Deactivation does not touch the local OpenAI Codex CLI's own runtime history or any project files.
+- On Cursor, the sessionEnd hook also clears session-scoped Codex markers when the chat session ends.

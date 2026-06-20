@@ -1,5 +1,5 @@
 ---
-name: codex-delegate
+name: codex
 description: Canonical Codex delegation workflow for the OpenAI Codex CLI sidekick. Use when activating Codex mode before delegated implementation work.
 argument-hint: "<task to delegate to Codex>"
 ---
@@ -18,7 +18,21 @@ Codex   = Hands
 
 - Claude Code, Codex, and Cursor hosts all follow STEP 0 through STEP 3.
 - When the active host is Codex, treat the delegated Codex CLI session as a child execution process, not as a replacement for the host's own planning and communication role.
-- When the active host is Cursor, treat the delegated Codex CLI session as a child execution process; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation.
+- When the active host is Cursor, treat the delegated Codex CLI session as a child execution process; Cursor's sessionStart hook binds `SIDEKICK_SESSION_ID` before activation, and sessionEnd clears session-scoped delegation markers.
+
+## Division of Labor (active delegation)
+
+While Codex mode is active, the host AI remains the user-interactor, orchestrator, verifier, advisor, and mentor. Codex is the primary implementation executor.
+
+The host keeps freedom to:
+
+- Read, search, and inspect the codebase for verification and diagnosis
+- Run read-only or verification shell commands (`git status`, `git diff`, `bash tests/*.bash`, and similar)
+- Launch Task subagents for non-implementation orchestration when appropriate
+- Edit planning docs under `.planning/` and `site/`
+- Communicate with the user
+
+Sidekick hooks narrow enforcement to implementation ownership: direct Write/Edit/Delete on implementation files is denied on Claude/Codex hosts and surfaced as an advisory on Cursor via postToolUse. Delegate implementation through `codex exec`.
 
 ## Runtime Readiness
 
@@ -53,20 +67,22 @@ If the CLI is installed but not authenticated, guide the user through the local 
 Create the current-session Codex marker before delegating so Sidekick hooks can enforce direct-edit denial, inject the Codex runtime flags above, surface bounded redacted Codex output with `[CODEX]` and `[CODEX-SUMMARY]` markers, and maintain `.codex/conversations.idx`:
 
 ```bash
-if [[ -z "${SIDEKICK_HOST_HOME:-}" ]]; then
-  SIDEKICK_HOST_HOME="${HOME}/.claude"
-fi
 SIDEKICK_SESSION="${SIDEKICK_SESSION_ID:-${CLAUDE_SESSION_ID:-${SESSION_ID:-}}}"
 test -n "${SIDEKICK_SESSION}" || { echo "No host session id found for Codex mode"; exit 1; }
 CODEX_STATE_ROOT="${HOME}/.codex"
 mkdir -p "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}" \
-  "${HOME}/.claude/sessions/${SIDEKICK_SESSION}" \
-  "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}" \
-  "${HOME}/.kay/sessions/${SIDEKICK_SESSION}"
+  "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}"
 rm -f "${HOME}/.kay/sessions/${SIDEKICK_SESSION}/.kay-delegation-active"
 printf '%s\n' "codex" > "${HOME}/.sidekick/sessions/${SIDEKICK_SESSION}/active-sidekick"
 : > "${CODEX_STATE_ROOT}/sessions/${SIDEKICK_SESSION}/.codex-delegation-active"
 ```
+
+Session-scoped markers only:
+
+- `~/.sidekick/sessions/<session>/active-sidekick` — shared selector (`kay` or `codex`)
+- `~/.codex/sessions/<session>/.codex-delegation-active` — Codex enforcement marker
+
+Delegation ends when the host session ends (Cursor sessionEnd hook clears markers) or when `/sidekick:codex-stop` runs. Do not use project-level or repo-root activation markers.
 
 Codex and Kay are mutually exclusive per host session. Codex activation clears any current-session Kay marker and writes `active-sidekick=codex`, so the Kay hook becomes a no-op before Codex commands start.
 

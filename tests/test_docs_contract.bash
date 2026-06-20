@@ -35,8 +35,8 @@ current_docs=(
 )
 
 echo "=== T1: docs expose Kay and Codex only ==="
-contains "README.md" "/sidekick:kay-delegate" "README documents Kay activation"
-contains "README.md" "/sidekick:codex-delegate" "README documents Codex activation"
+contains "README.md" "/sidekick:kay" "README documents Kay activation"
+contains "README.md" "/sidekick:codex" "README documents Codex activation"
 contains "README.md" "gpt-5.4-mini" "README documents Codex model"
 contains "context.md" "active-sidekick" "context documents active selector"
 contains "site/COMPATIBILITY.md" "Kay compatibility aliases" "compatibility documents Kay aliases"

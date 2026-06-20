@@ -2,7 +2,7 @@
 
 > Current Sidekick architecture for the Kay and Codex sidekicks.
 
-**Plugin version:** Sidekick 0.8.1
+**Plugin version:** Sidekick 0.8.2
 **Hosts:** Claude Code, Codex, and Cursor
 **Stack:** Shell/Bash plus Markdown
 **Supported sidekicks:** Kay and Codex
@@ -22,10 +22,10 @@ The system has two durable roles:
 
 | Sidekick | Activate | Runtime | State root |
 | --- | --- | --- | --- |
-| Kay | `/sidekick:kay-delegate` | `kay exec` | `.kay/sessions/<session>` |
-| Codex | `/sidekick:codex-delegate` | `codex exec` with `gpt-5.4-mini` and extra-high reasoning | `.codex/sessions/<session>` |
+| Kay | `/sidekick:kay` | `kay exec` | `.kay/sessions/<session>` |
+| Codex | `/sidekick:codex` | `codex exec` with `gpt-5.4-mini` and extra-high reasoning | `.codex/sessions/<session>` |
 
-Kay defaults to OpenCode Go routing. `/sidekick:kay-delegate xiaomi` selects Xiaomi routing, and `/sidekick:kay-delegate ocg` forces OpenCode Go routing. `SIDEKICK_KAY_PROVIDER` is still supported as an environment override.
+Kay defaults to OpenCode Go routing. `/sidekick:kay xiaomi` selects Xiaomi routing, and `/sidekick:kay ocg` forces OpenCode Go routing. `SIDEKICK_KAY_PROVIDER` is still supported as an environment override.
 
 ## Delegation Boundary
 

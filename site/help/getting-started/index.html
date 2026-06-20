@@ -175,7 +175,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-block"><span class="cmd">Settings → Plugins → Add marketplace</span>
 <span class="comment"># Source: https://github.com/alo-labs/alo-labs-cursor-marketplace</span>
 <span class="comment"># Then install the sidekick plugin from the marketplace list</span></div>
-      <p>Cursor lists installable plugins from registered marketplaces only. Copying files into <code>~/.cursor/plugins/cache/</code> does not make Sidekick appear in the install list. Install <strong>sidekick@0.8.1</strong> from <a href="https://github.com/alo-labs/alo-labs-cursor-marketplace">alo-labs-cursor-marketplace</a>, reload Cursor, then run <code>bash scripts/install-cursor.sh --merge-hooks-only</code> from a checkout if hooks did not load automatically.</p>
+      <p>Cursor lists installable plugins from registered marketplaces only. Copying files into <code>~/.cursor/plugins/cache/</code> does not make Sidekick appear in the install list. Install <strong>sidekick@0.8.2</strong> from <a href="https://github.com/alo-labs/alo-labs-cursor-marketplace">alo-labs-cursor-marketplace</a>, reload Cursor, then run <code>bash scripts/install-cursor.sh --merge-hooks-only</code> from a checkout if hooks did not load automatically.</p>
       <p>Restart the host after installation so the hook surface loads before you start a Kay or Codex session. Sidekick does not install SessionStart hooks; runtime readiness is checked when delegation starts for the current session.</p>
       <p>Codex users should install the Codex-facing Sidekick package through the Codex plugin surface. That path exposes the shared skill bodies and runtime guidance without duplicating writable state from Claude Code.</p>
 
@@ -184,7 +184,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <h3>Codex health check</h3>
       <p>In the host, run:</p>
       <div class="code-label">in any host session</div>
-      <div class="code-block"><span class="cmd">/sidekick:codex-delegate</span>
+      <div class="code-block"><span class="cmd">/sidekick:codex</span>
 <span class="comment"># the host activates Codex sidekick mode and checks the local OpenAI Codex CLI</span></div>
       <p>On activation, Codex mode verifies that the real OpenAI Codex CLI is available, is not Kay's compatibility alias, and supports <code>codex exec --ask-for-approval</code>. Sidekick then creates the current-session marker, writes <code>active-sidekick=codex</code>, and routes implementation through <code>codex exec</code>.</p>
       <p>A successful health check means the child command can run with Sidekick's managed defaults:</p>
@@ -199,7 +199,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h3>Kay health check</h3>
-      <p>For the Kay path, verify that the Kay runtime is reachable. Claude Code, Codex, and Cursor both start Kay mode through <code>/sidekick:kay-delegate</code>; active Kay mode then routes implementation through the native <code>kay exec</code> child runtime while Sidekick maintains <code>.kay/conversations.idx</code>.</p>
+      <p>For the Kay path, verify that the Kay runtime is reachable. Claude Code, Codex, and Cursor both start Kay mode through <code>/sidekick:kay</code>; active Kay mode then routes implementation through the native <code>kay exec</code> child runtime while Sidekick maintains <code>.kay/conversations.idx</code>.</p>
       <div class="code-label">Kay runtime</div>
       <div class="code-block"><span class="cmd">kay --version</span> <span class="comment"># legacy aliases may also exist</span>
 <span class="cmd">kay exec --help</span>
@@ -243,11 +243,11 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       </div>
 
       <h2 id="kay-path">Your First Kay Task</h2>
-      <p>Start Kay mode through <code>/sidekick:kay-delegate</code>. Use <code>/sidekick:kay-delegate xiaomi</code> for Xiaomi routing, <code>/sidekick:kay-delegate ocg</code> to force OpenCode Go routing, or <code>SIDEKICK_KAY_PROVIDER</code> as an environment override.</p>
+      <p>Start Kay mode through <code>/sidekick:kay</code>. Use <code>/sidekick:kay xiaomi</code> for Xiaomi routing, <code>/sidekick:kay ocg</code> to force OpenCode Go routing, or <code>SIDEKICK_KAY_PROVIDER</code> as an environment override.</p>
       <div class="code-label">Kay activation surface</div>
-      <div class="code-block"><span class="cmd">/sidekick:kay-delegate</span>
-<span class="cmd">/sidekick:kay-delegate xiaomi</span>
-<span class="cmd">/sidekick:kay-delegate ocg</span></div>
+      <div class="code-block"><span class="cmd">/sidekick:kay</span>
+<span class="cmd">/sidekick:kay xiaomi</span>
+<span class="cmd">/sidekick:kay ocg</span></div>
       <p>Once Kay mode is active, the hook keeps <code>kay exec</code> as the child runtime command, surfaces bounded redacted output, and preserves project-local <code>.kay/conversations.idx</code> lookup metadata.</p>
 
       <h2 id="agents-md-bootstrap">AGENTS.md Bootstrap</h2>

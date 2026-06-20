@@ -6,9 +6,9 @@
 <meta name="color-scheme" content="dark light">
 <script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
 <title>Sidekick — AI Coding Agents for Claude Code, Codex, and Cursor</title>
-<meta name="description" content="Sidekick 0.8.1 lets Claude Code, Codex, and Cursor activate Kay or Codex sidekicks for delegated implementation while the host AI plans, reviews, verifies, and communicates.">
+<meta name="description" content="Sidekick 0.8.2 lets Claude Code, Codex, and Cursor activate Kay or Codex sidekicks for delegated implementation while the host AI plans, reviews, verifies, and communicates.">
 <meta property="og:title" content="Sidekick — AI Coding Agents for Claude Code, Codex, and Cursor">
-<meta property="og:description" content="Sidekick 0.8.1 lets Claude Code, Codex, and Cursor activate Kay or Codex sidekicks for delegated implementation while the host AI plans, reviews, verifies, and communicates.">
+<meta property="og:description" content="Sidekick 0.8.2 lets Claude Code, Codex, and Cursor activate Kay or Codex sidekicks for delegated implementation while the host AI plans, reviews, verifies, and communicates.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sidekick.alolabs.dev">
 <meta property="og:image" content="https://sidekick.alolabs.dev/og-image.png">
@@ -16,7 +16,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Sidekick — AI Coding Agents for Claude Code, Codex, and Cursor">
-<meta name="twitter:description" content="Sidekick 0.8.1 lets Claude Code, Codex, and Cursor activate Kay or Codex sidekicks for delegated implementation while the host AI plans, reviews, verifies, and communicates.">
+<meta name="twitter:description" content="Sidekick 0.8.2 lets Claude Code, Codex, and Cursor activate Kay or Codex sidekicks for delegated implementation while the host AI plans, reviews, verifies, and communicates.">
 <meta name="twitter:image" content="https://sidekick.alolabs.dev/og-image.png">
 <link rel="icon" href="/og-image.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -903,14 +903,14 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 
       <!-- Kay -->
       <div class="sidekick-card primary">
-        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.8.1</div>
+        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.8.2</div>
         <div class="sk-logo"><i data-lucide="layers-3"></i></div>
         <div class="sk-name">Kay sidekick</div>
         <div class="sk-role">Kay runtime · Provider-selectable</div>
-        <div class="benchmark-badge">Activate with <code>/sidekick:kay-delegate</code></div>
+        <div class="benchmark-badge">Activate with <code>/sidekick:kay</code></div>
         <p class="sk-desc">Kay is the Kay/OpenCode Go execution sidekick. It uses <code>kay exec</code> for child implementation work, supports the <code>xiaomi</code> and <code>ocg</code> selectors, and keeps <code>SIDEKICK_KAY_PROVIDER</code> as an environment override.</p>
         <ul class="sk-features">
-          <li>Activate with /sidekick:kay-delegate</li>
+          <li>Activate with /sidekick:kay</li>
           <li>Provider selectors: xiaomi or ocg</li>
           <li>Child runtime: kay exec</li>
           <li>Native Kay agents, skills, subagents, and AGENTS.md</li>
@@ -920,7 +920,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <div class="sk-tags">
           <span class="tag tag-cyan">kay</span>
           <span class="tag tag-purple">OpenCode Go</span>
-          <span class="tag tag-indigo">/sidekick:kay-delegate</span>
+          <span class="tag tag-indigo">/sidekick:kay</span>
           <span class="tag tag-amber">OpenCode Go</span>
         </div>
         <a href="https://github.com/alo-labs/kay" class="sk-learn-more" target="_blank" rel="noopener">Learn More <i data-lucide="arrow-right"></i></a>
@@ -928,14 +928,14 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
 
       <!-- Codex -->
       <div class="sidekick-card">
-        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.8.1</div>
+        <div class="primary-badge"><i data-lucide="check-circle"></i> Available · v0.8.2</div>
         <div class="sk-logo"><i data-lucide="terminal"></i></div>
         <div class="sk-name">Codex sidekick</div>
         <div class="sk-role">OpenAI Codex CLI · gpt-5.4-mini</div>
-        <div class="benchmark-badge">Activate with <code>/sidekick:codex-delegate</code></div>
+        <div class="benchmark-badge">Activate with <code>/sidekick:codex</code></div>
         <p class="sk-desc">Codex delegates implementation to the local OpenAI Codex CLI through <code>codex exec</code>. Sidekick pins the child runtime to <code>gpt-5.4-mini</code> with extra-high reasoning, workspace-write sandboxing, and no approval prompts.</p>
         <ul class="sk-features">
-          <li>Activate with /sidekick:codex-delegate</li>
+          <li>Activate with /sidekick:codex</li>
           <li>Child runtime: codex exec</li>
           <li>Model pinned to gpt-5.4-mini</li>
           <li>Reasoning effort set to xhigh</li>
@@ -1046,7 +1046,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
             </td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">kay exec</td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">default</td>
-            <td>Starts with <code>/sidekick:kay-delegate</code>; Sidekick records Kay session state and progress metadata.</td>
+            <td>Starts with <code>/sidekick:kay</code>; Sidekick records Kay session state and progress metadata.</td>
           </tr>
           <tr class="model-highlight winner">
             <td>
@@ -1055,7 +1055,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
             </td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">kay exec</td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">xiaomi / ocg</td>
-            <td>Use <code>/sidekick:kay-delegate xiaomi</code>, <code>/sidekick:kay-delegate ocg</code>, or <code>SIDEKICK_KAY_PROVIDER</code>.</td>
+            <td>Use <code>/sidekick:kay xiaomi</code>, <code>/sidekick:kay ocg</code>, or <code>SIDEKICK_KAY_PROVIDER</code>.</td>
           </tr>
           <tr class="model-highlight winner">
             <td>
@@ -1064,7 +1064,7 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
             </td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">codex exec</td>
             <td style="font-family:var(--font-mono);font-size:.875rem;color:var(--text-primary)">gpt-5.4-mini / xhigh</td>
-            <td>Starts with <code>/sidekick:codex-delegate</code>; Sidekick injects model, reasoning, sandbox, and approval flags.</td>
+            <td>Starts with <code>/sidekick:codex</code>; Sidekick injects model, reasoning, sandbox, and approval flags.</td>
           </tr>
         </tbody>
       </table>
@@ -1107,8 +1107,8 @@ footer .logo-icon i[data-lucide]{width:14px;height:14px;stroke:#fff;stroke-width
         <h3>Delegate Per Session</h3>
         <p>Start the sidekick workflow for the current session. The host stays in the planning and verification role while Kay or Codex performs implementation work.</p>
         <div class="step-code">
-          <span class="string">Kay:</span> <span class="cmd">/sidekick:kay-delegate</span><br>
-          <span class="string">Codex:</span> <span class="cmd">/sidekick:codex-delegate</span>
+          <span class="string">Kay:</span> <span class="cmd">/sidekick:kay</span><br>
+          <span class="string">Codex:</span> <span class="cmd">/sidekick:codex</span>
         </div>
       </div>
     </div>

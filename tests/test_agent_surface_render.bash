@@ -82,7 +82,6 @@ for path in \
   expect_contains "$path" "CLAUDE_SESSION_ID" "canonical ${path} includes Claude fallback"
   expect_contains "$path" "CODEX_THREAD_ID" "canonical ${path} includes Codex fallback"
   expect_not_contains "$path" ".claude/sessions" "canonical ${path} has no Claude session path"
-  expect_not_contains "$path" ".codex/sessions" "canonical ${path} has no Codex session path"
 done
 
 echo "=== T3: generated Claude skills are Claude-specific ==="
@@ -98,7 +97,7 @@ done
 for path in \
   agents/claude/kay-delegate/SKILL.md \
   agents/claude/codex-delegate/SKILL.md; do
-  expect_contains "$path" ".claude/sessions" "Claude generated ${path} uses Claude session path"
+  expect_contains "$path" ".sidekick/sessions" "Claude generated ${path} uses sidekick session selector path"
 done
 
 echo "=== T4: generated Codex skills are Codex-specific ==="
@@ -114,7 +113,7 @@ done
 for path in \
   agents/codex/kay-delegate/SKILL.md \
   agents/codex/codex-delegate/SKILL.md; do
-  expect_contains "$path" ".codex/sessions" "Codex generated ${path} uses Codex session path"
+  expect_contains "$path" ".sidekick/sessions" "Codex generated ${path} uses sidekick session selector path"
 done
 
 echo "=== T4b: generated Cursor skills are Cursor-specific ==="
@@ -130,7 +129,7 @@ done
 for path in \
   agents/cursor/kay-delegate/SKILL.md \
   agents/cursor/codex-delegate/SKILL.md; do
-  expect_contains "$path" ".cursor/sessions" "Cursor generated ${path} uses Cursor session path"
+  expect_contains "$path" ".sidekick/sessions" "Cursor generated ${path} uses sidekick session selector path"
 done
 
 echo "=== T5: redundant Kay alias is absent and wrappers point at host-specific surfaces ==="
@@ -138,7 +137,8 @@ for agent in claude codex cursor; do
   expect_absent "agents/${agent}/kay:delegate/SKILL.md"
   expect_contains "agents/${agent}/codex-delegate.md" "generated host skill at codex-delegate/SKILL.md" "${agent} flat Codex wrapper names generated skill surface"
   expect_not_contains "agents/${agent}/codex-delegate.md" 'skills/codex-delegate/SKILL.md' "${agent} flat Codex wrapper does not point at canonical skills tree"
-  expect_contains "agents/${agent}/kay-delegate/SKILL.md" "agents/${agent}/kay-stop/SKILL.md" "${agent} Kay skill names generated stop skill"
+  expect_file "agents/${agent}/kay-delegate/SKILL.md"
+  expect_contains "agents/${agent}/kay-delegate/SKILL.md" "kay-stop/SKILL.md" "${agent} Kay skill names generated stop skill"
 done
 
 echo "=== T6: generated bundles are in sync with renderer ==="

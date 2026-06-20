@@ -25,13 +25,13 @@ expect_absent() {
 }
 
 echo "=== T1: homepage exposes supported sidekicks ==="
-expect_contains "Sidekick 0.8.1" "homepage shows release version"
+expect_contains "Sidekick 0.8.2" "homepage shows release version"
 expect_contains "Cursor" "homepage includes Cursor host"
 expect_contains "Kay sidekick" "homepage includes Kay"
 expect_contains "Codex sidekick" "homepage includes Codex"
-expect_contains "/sidekick:kay-delegate" "homepage shows Kay activation"
+expect_contains "/sidekick:kay" "homepage shows Kay activation"
 expect_contains "/sidekick:kay-stop" "homepage shows Kay stop"
-expect_contains "/sidekick:codex-delegate" "homepage shows Codex activation"
+expect_contains "/sidekick:codex" "homepage shows Codex activation"
 expect_contains "/sidekick:codex-stop" "homepage shows Codex stop"
 expect_contains "gpt-5.4-mini" "homepage documents Codex model"
 

@@ -26,8 +26,8 @@ absent() {
 
 echo "=== T1: preview reflects supported sidekicks ==="
 contains "Kay + Codex Delegation" "preview title names Kay and Codex"
-contains "/sidekick:kay-delegate" "preview includes Kay activation"
-contains "/sidekick:codex-delegate" "preview includes Codex activation"
+contains "/sidekick:kay" "preview includes Kay activation"
+contains "/sidekick:codex" "preview includes Codex activation"
 contains "host verifies every result" "preview states host verification"
 
 echo "=== T2: preview has no removed sidekick copy ==="

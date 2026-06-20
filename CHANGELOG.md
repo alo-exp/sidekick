@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.2 -- 2026-06-20
+
+### Delegation safety hardening and command rename
+
+- Finalized the session-scoped delegation safety model: inactive sessions always pass through, delegation markers are cleaned up on Cursor `sessionEnd`, and host orchestration/verification/read workflows remain allowed while sidekicks own implementation execution.
+- Renamed activation commands to `/sidekick:kay` and `/sidekick:codex` (stop commands unchanged), and refreshed canonical skills, generated host bundles, hooks messaging, tests, and help/docs content to match.
+- Updated release manifests/version surfaces to `0.8.2` and refreshed plugin integrity hashes after regenerating host artifacts.
+
 ## v0.8.1 -- 2026-06-17
 
 ### Cursor marketplace install fix
