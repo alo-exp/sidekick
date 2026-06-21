@@ -12,10 +12,10 @@
       "source": {
         "source": "github",
         "repo": "alo-exp/sidekick",
-        "ref": "v0.8.3"
+        "ref": "v0.8.4"
       },
       "description": "Sidekick — AI coding-agent delegation workflows for Cursor. Kay installs through Sidekick, Codex delegates to the local OpenAI Codex CLI, and Cursor stays in the orchestrator role.",
-      "version": "0.8.3",
+      "version": "0.8.4",
       "author": {
         "name": "Ālo Labs",
         "url": "https://alolabs.dev"
