@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.8.3 -- 2026-06-21
+
+### Cursor delegation enforcer fail-open fix (#22)
+
+- Fixed `codex-delegation-enforcer.sh` fall-through after passthrough paths that caused double JSON output and Cursor fail-closed hook cancellation on Shell/Write/Task tools.
+- Added Cursor ERR trap fail-open so unhandled hook errors emit a single `{"permission":"allow"}` line instead of blocking all tools.
+- `merge-cursor-hooks.py` now replaces stale Sidekick hook entries by script basename (not only exact command match), refreshing `failClosed: false` on re-merge.
+- `install-cursor.sh --merge-hooks-only` verifies the registered hook path exists and is readable after merge.
+
 ## v0.8.2 -- 2026-06-20
 
 ### Delegation safety hardening and command rename
