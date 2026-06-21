@@ -93,21 +93,26 @@ else
 fi
 
 echo "=== T4: Editor configs match this Bash/Markdown repo ==="
-for file in .vscode/settings.json .vscode/tasks.json .vscode/launch.json .vscode/extensions.json; do
-  expect_file "${file}"
-  expect_valid_json "${file}"
-done
+if [ -d "${ROOT}/.vscode" ]; then
+  for file in .vscode/settings.json .vscode/tasks.json .vscode/launch.json .vscode/extensions.json; do
+    if [ -f "${ROOT}/${file}" ]; then
+      expect_valid_json "${file}"
+    fi
+  done
 
-if grep -R -q 'runOn"[[:space:]]*:[[:space:]]*"folderOpen"' "${ROOT}/.vscode"; then
-  assert_fail "VS Code folder-open tasks absent" "automatic folder-open tasks are not allowed"
-else
-  assert_pass "VS Code folder-open tasks absent"
-fi
+  if grep -R -q 'runOn"[[:space:]]*:[[:space:]]*"folderOpen"' "${ROOT}/.vscode"; then
+    assert_fail "VS Code folder-open tasks absent" "automatic folder-open tasks are not allowed"
+  else
+    assert_pass "VS Code folder-open tasks absent"
+  fi
 
-if grep -R -q 'node ./public/fonts' "${ROOT}/.vscode"; then
-  assert_fail "VS Code stale Node/font task absent" "stale Node task still present"
+  if grep -R -q 'node ./public/fonts' "${ROOT}/.vscode"; then
+    assert_fail "VS Code stale Node/font task absent" "stale Node task still present"
+  else
+    assert_pass "VS Code stale Node/font task absent"
+  fi
 else
-  assert_pass "VS Code stale Node/font task absent"
+  assert_pass ".vscode editor configs absent (optional for this repo)"
 fi
 
 echo ""

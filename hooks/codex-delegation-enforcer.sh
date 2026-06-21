@@ -6,6 +6,22 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+sidekick_enforcer_fail_open_on_error() {
+  local rc=$?
+  if [[ "${SIDEKICK_HOOK_HOST:-}" == "cursor" ]] \
+    || [[ -n "${CURSOR_VERSION:-}" ]] \
+    || [[ -n "${CURSOR_PROJECT_DIR:-}" ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      jq -cn '{permission: "allow"}' || printf '%s\n' '{"permission":"allow"}'
+    else
+      printf '%s\n' '{"permission":"allow"}'
+    fi
+    exit 0
+  fi
+  exit "$rc"
+}
+trap sidekick_enforcer_fail_open_on_error ERR
+
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=hooks/lib/enforcer-utils.sh
 source "${HOOK_DIR}/lib/enforcer-utils.sh"
@@ -83,9 +99,11 @@ decide_write_edit() {
   file_path="$(printf '%s' "$tool_input_json" | jq -r '.file_path // .path // empty')"
   if is_allowed_doc_path "$file_path"; then
     sidekick_return_allow_passthrough
+    return 0
   fi
   if sidekick_is_cursor_host; then
     sidekick_return_allow_passthrough
+    return 0
   fi
   deny_direct_edit
 }
@@ -93,6 +111,7 @@ decide_write_edit() {
 decide_notebook_edit() {
   if sidekick_is_cursor_host; then
     sidekick_return_allow_passthrough
+    return 0
   fi
   deny_direct_edit
 }
@@ -103,20 +122,24 @@ decide_mcp_write() {
   file_path="$(printf '%s' "$tool_input_json" | jq -r '.path // .file_path // empty')"
   if is_allowed_doc_path "$file_path"; then
     sidekick_return_allow_passthrough
+    return 0
   fi
   if sidekick_is_cursor_host; then
     sidekick_return_allow_passthrough
+    return 0
   fi
   deny_direct_edit
 }
 
 decide_task() {
   sidekick_return_allow_passthrough
+  return 0
 }
 
 decide_delete() {
   if sidekick_is_cursor_host; then
     sidekick_return_allow_passthrough
+    return 0
   fi
   deny_direct_edit
 }
@@ -387,7 +410,10 @@ decide_bash() {
   local tool_input_json cmd stripped uuid hint rewritten
   tool_input_json="$1"
   cmd="$(printf '%s' "$tool_input_json" | jq -r '.command // empty')"
-  [[ -z "$cmd" ]] && sidekick_return_allow_passthrough
+  if [[ -z "$cmd" ]]; then
+    sidekick_return_allow_passthrough
+    return 0
+  fi
 
   export_env_prefix "$cmd"
 
@@ -432,10 +458,12 @@ decide_bash() {
 
   if is_verification_bash "$cmd"; then
     sidekick_return_allow_passthrough
+    return 0
   fi
 
   if is_read_only "$cmd"; then
     sidekick_return_allow_passthrough
+    return 0
   fi
 
   if is_mutating "$cmd"; then
@@ -501,12 +529,14 @@ main() {
         MCP:*)
           if [[ "$tool_name" == *write* ]] || [[ "$tool_name" == *edit* ]] || [[ "$tool_name" == *move* ]] || [[ "$tool_name" == *create* ]]; then
             decide_mcp_write "$tool_input"
+            return 0
           fi
           ;;
       esac
       sidekick_return_allow_passthrough
       ;;
   esac
+  exit 0
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0:-}" ]]; then

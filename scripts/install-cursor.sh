@@ -139,6 +139,34 @@ fi
 if [[ "${MERGE_HOOKS_FLAG}" -eq 1 ]]; then
   python3 "${MERGE_HOOKS}" "${DEST_ROOT}"
   printf '  hooks merged into: %s/hooks.json\n' "${CURSOR_HOME}"
+  if python3 - "${CURSOR_HOME}/hooks.json" "${DEST_ROOT}" <<'PY'
+import json
+import os
+import sys
+
+hooks_path, install_path = sys.argv[1:3]
+data = json.load(open(hooks_path))
+entries = data.get("hooks", {}).get("preToolUse", [])
+sidekick = [entry for entry in entries if "codex-delegation-enforcer.sh" in entry.get("command", "")]
+if len(sidekick) != 1:
+    raise SystemExit(f"expected 1 Sidekick preToolUse hook, found {len(sidekick)}")
+command = sidekick[0].get("command", "")
+if install_path not in command:
+    raise SystemExit(f"Sidekick hook command does not reference install path: {command}")
+if sidekick[0].get("failClosed") is not False:
+    raise SystemExit("Sidekick preToolUse hook must set failClosed to false")
+script = command.rsplit("bash ", 1)[-1].strip().strip('"')
+if not os.path.isfile(script):
+    raise SystemExit(f"Sidekick hook script missing: {script}")
+if not os.access(script, os.R_OK):
+    raise SystemExit(f"Sidekick hook script not readable: {script}")
+PY
+  then
+    printf '  hook registration verified (path exists, failClosed=false)\n'
+  else
+    printf 'ERROR: Sidekick hook registration verification failed; re-run --merge-hooks-only after enabling the plugin\n' >&2
+    exit 1
+  fi
 else
   printf '  hooks not merged (pass --merge-hooks after enabling the plugin in Cursor)\n'
 fi

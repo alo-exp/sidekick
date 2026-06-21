@@ -378,14 +378,40 @@ else
   assert_fail "test_cursor_kay_mode_denies_task" "dec='${dec}' out='${out}'"
 fi
 
-echo "=== test_cursor_kay_mode_emits_flat_permission_json ==="
+echo "=== test_cursor_kay_mode_allows_write_passthrough ==="
 out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
   SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
   bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Write","tool_input":{"file_path":"/tmp/x","content":"y"}}' 2>/dev/null)"
-if printf '%s' "${out}" | jq -e '.permission == "deny" and (.user_message|length) > 0' >/dev/null 2>&1; then
-  assert_pass "test_cursor_kay_mode_emits_flat_permission_json"
+line_count="$(printf '%s\n' "${out}" | sed '/^$/d' | wc -l | tr -d ' ')"
+dec="$(extract_decision "${out}")"
+if [ "${line_count}" = "1" ] && [ "${dec}" = "allow" ] && printf '%s' "${out}" | jq -e '.permission == "allow"' >/dev/null 2>&1; then
+  assert_pass "test_cursor_kay_mode_allows_write_passthrough"
 else
-  assert_fail "test_cursor_kay_mode_emits_flat_permission_json" "out='${out}'"
+  assert_fail "test_cursor_kay_mode_allows_write_passthrough" "lines='${line_count}' dec='${dec}' out='${out}'"
+fi
+
+echo "=== test_cursor_kay_mode_readonly_shell_single_json ==="
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"Shell","tool_input":{"command":"git status"}}' 2>/dev/null)"
+line_count="$(printf '%s\n' "${out}" | sed '/^$/d' | wc -l | tr -d ' ')"
+dec="$(extract_decision "${out}")"
+if [ "${line_count}" = "1" ] && [ "${dec}" = "allow" ]; then
+  assert_pass "test_cursor_kay_mode_readonly_shell_single_json"
+else
+  assert_fail "test_cursor_kay_mode_readonly_shell_single_json" "lines='${line_count}' dec='${dec}' out='${out}'"
+fi
+
+echo "=== test_cursor_kay_mode_mcp_write_single_json ==="
+out="$(HOME="${HOME_SANDBOX}" SIDEKICK_PROJECT_DIR="${PROJECT_SANDBOX}" PATH="${STUB_PATH}" \
+  SIDEKICK_HOOK_HOST=cursor SIDEKICK_TEST_SESSION_ID="${TEST_SESSION_ID}" \
+  bash "${HOOK_FILE}" <<< '{"conversation_id":"codex-test-'"${TEST_SESSION_ID}"'","tool_name":"MCP: filesystem write_file","tool_input":{"path":"/tmp/x","content":"y"}}' 2>/dev/null)"
+line_count="$(printf '%s\n' "${out}" | sed '/^$/d' | wc -l | tr -d ' ')"
+dec="$(extract_decision "${out}")"
+if [ "${line_count}" = "1" ] && [ "${dec}" = "allow" ]; then
+  assert_pass "test_cursor_kay_mode_mcp_write_single_json"
+else
+  assert_fail "test_cursor_kay_mode_mcp_write_single_json" "lines='${line_count}' dec='${dec}' out='${out}'"
 fi
 
 echo ""
