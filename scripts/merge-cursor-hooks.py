@@ -62,6 +62,30 @@ def is_stale_sidekick_hook(entry: dict) -> bool:
     return bool(SIDEKICK_HOOK_RE.search(command)) and install_path not in command
 
 
+def hook_script_basename(command: str) -> str:
+    match = re.search(r"/hooks/([^/\" ]+\.sh)", command)
+    return match.group(1) if match else ""
+
+
+def should_replace_sidekick_hook(existing: dict, merged: dict) -> bool:
+    old_cmd = existing.get("command", "")
+    new_cmd = merged.get("command", "")
+    if old_cmd == new_cmd:
+        return True
+    old_base = hook_script_basename(old_cmd)
+    new_base = hook_script_basename(new_cmd)
+    if not old_base or old_base != new_base:
+        return False
+    if "/sidekick/" in old_cmd or is_stale_sidekick_hook(existing):
+        return True
+    return old_base in {
+        "codex-delegation-enforcer.sh",
+        "codex-progress-surface.sh",
+        "cursor-session-bootstrap.sh",
+        "cursor-session-end.sh",
+    }
+
+
 if os.path.exists(settings_path):
     with open(settings_path, encoding="utf-8") as handle:
         settings = json.load(handle)
@@ -86,7 +110,13 @@ for event, entries in sidekick_hooks.items():
         merged_entry = dict(new_entry)
         merged_entry["command"] = resolve_command(new_entry.get("command", ""), install_path)
         new_cmd = merged_entry.get("command", "")
-        if not any(entry.get("command", "") == new_cmd for entry in event_list):
+        replaced = False
+        for index, entry in enumerate(event_list):
+            if should_replace_sidekick_hook(entry, merged_entry):
+                event_list[index] = merged_entry
+                replaced = True
+                break
+        if not replaced:
             event_list.append(merged_entry)
 
 pathlib.Path(settings_path).parent.mkdir(parents=True, exist_ok=True)

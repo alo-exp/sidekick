@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Sidekick \u2014 AI coding-agent delegation workflows for Cursor. Kay and Codex are the supported sidekicks: Kay installs through Sidekick, while Codex delegates to the local OpenAI Codex CLI. The Cursor-facing workflow bodies are generated from skills into agents/cursor.",
   "author": {
     "name": "\u0100lo Labs",

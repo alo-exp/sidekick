@@ -62,6 +62,29 @@ else
   assert_fail "merge-hooks-only preserves existing hooks and adds Sidekick" "$(cat /tmp/sidekick-cursor-merge.out)"
 fi
 
+echo "=== merge_hooks_refreshes_fail_closed_metadata ==="
+printf '{"version":1,"hooks":{"preToolUse":[{"command":"%s/hooks/codex-delegation-enforcer.sh","failClosed":true}]}}\n' \
+  "${CURSOR_HOME}/plugins/cache/alo-labs/sidekick/current" > "${CURSOR_HOME}/hooks.json"
+if bash "${INSTALL_SCRIPT}" --merge-hooks-only --no-register-claude-import >/tmp/sidekick-cursor-refresh.out 2>&1; then
+  if python3 - "${CURSOR_HOME}/hooks.json" <<'PY'
+import json
+import sys
+
+data = json.load(open(sys.argv[1]))
+entries = data.get("hooks", {}).get("preToolUse", [])
+sidekick = [entry for entry in entries if "codex-delegation-enforcer.sh" in entry.get("command", "")]
+assert len(sidekick) == 1
+assert sidekick[0].get("failClosed") is False
+PY
+  then
+    assert_pass "merge-hooks refreshes failClosed metadata"
+  else
+    assert_fail "merge-hooks refreshes failClosed metadata" "$(cat /tmp/sidekick-cursor-refresh.out)"
+  fi
+else
+  assert_fail "merge-hooks refreshes failClosed metadata" "$(cat /tmp/sidekick-cursor-refresh.out)"
+fi
+
 echo "=== cursor_skill_frontmatter_has_argument_hint ==="
 for entry in "kay-delegate:kay" "kay-stop:kay-stop" "codex-delegate:codex" "codex-stop:codex-stop"; do
   skill_path="${entry%%:*}"

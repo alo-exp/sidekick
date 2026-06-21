@@ -1,6 +1,6 @@
 {
   "name": "sidekick",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Sidekick \u2014 AI coding-agent delegation workflows for Claude Code, Codex, and Cursor. Kay and Codex are the supported sidekicks: Kay installs through Sidekick, while Codex delegates to the local OpenAI Codex CLI. The Claude-facing workflow bodies are generated from skills into agents/claude.",
   "author": {
     "name": "\u0100lo Labs",
@@ -33,7 +33,7 @@
     "codex_codex_stop_skill_md_sha256": "f3aa12bfd8b8d4752131626c6cc6f4ac95f52981acbea7776602937d097dd5ee",
     "codex_delegate_md_sha256": "cbc234fdbd0f1802c4e82912ebdb1de55f9ae7a2797395a341e8dfece796bb52",
     "codex_delegate_skill_md_sha256": "01d6ab827c0ff87381ff7da787a524fc108867d4da80522133818fab6e6e559c",
-    "codex_delegation_enforcer_sha256": "8a75f1ccb5a19b81e39712f54530ae04e0a08bddc8a2eb5498e0959901b7a900",
+    "codex_delegation_enforcer_sha256": "fb7cf37883becd41553a2c68720b920c08b05b375fdc0ca192aac65d3011b212",
     "codex_installer_sha256": "a2b6cba30bb41eec0d920f051796fad5841de6612e0be34eefeeab64efd94555",
     "codex_kay_delegate_skill_md_sha256": "46c3c602de45c3dfaf278fe151fc4deca05f4d7a49781bc43c97ef2a280baf7e",
     "codex_kay_stop_skill_md_sha256": "dee6c3e88cd3b5ee7e691e7041b0949a76422570916e4e4ede8d3ab81f85147c",
