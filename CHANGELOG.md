@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.8.4 -- 2026-06-21
+
+### Cursor hook delegation lockdown test suite
+
+- Added a robust Cursor hook contract test suite covering delegation enforcer fail-open behavior, hook merge refresh, and related lockdown contracts.
+
+
 ## v0.8.3 -- 2026-06-21
 
 ### Cursor delegation enforcer fail-open fix (#22)
