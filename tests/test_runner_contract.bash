@@ -55,7 +55,8 @@ for script in \
   test_removed_sidekick_absent.bash \
   test_codex_marketplace_release_gate.bash \
   test_runner_contract.bash \
-  test_repo_layout.bash; do
+  test_repo_layout.bash \
+  test_cursor_hook_contract.bash; do
   expect_contains "tests/run_unit.bash" "${script}" "run_unit includes ${script}"
 done
 for live_script in \
