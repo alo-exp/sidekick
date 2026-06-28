@@ -64,6 +64,30 @@ for page in "${pages[@]}" site/help/search.js; do
   expect_absent "${page}" "forgecode" "${page} is free of removed runtime text"
 done
 
+echo "=== T4: public HTML must not link raw markdown ==="
+html_pages=(
+  site/index.html
+  site/help/index.html
+  site/help/getting-started/index.html
+  site/help/concepts/index.html
+  site/help/workflows/index.html
+  site/help/reference/index.html
+  site/help/troubleshooting/index.html
+  site/help/start-here/index.html
+  site/help/audience/index.html
+  site/help/glossary/index.html
+  site/help/compatibility/index.html
+  site/help/testing/index.html
+  site/help/decisions/index.html
+)
+for page in "${html_pages[@]}"; do
+  if grep -E 'href="[^"]*\.md"' "${ROOT}/${page}" >/dev/null 2>&1; then
+    fail "${page} has no .md hrefs" "found markdown href in ${page}"
+  else
+    pass "${page} has no .md hrefs"
+  fi
+done
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"

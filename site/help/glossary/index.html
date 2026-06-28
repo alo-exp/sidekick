@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" data-neutral-variant="s3" data-theme-key="sidekick-theme" data-theme-key-legacy="sidekick-theme-v2">
+<head>
+<script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){}})();</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>Glossary — Sidekick Help</title>
+<meta name="description" content="Canonical terms for current Sidekick docs.">
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../neutral-variants.css?v=s3-home-icons">
+<link rel="stylesheet" href="../../chrome.css?v=site-chrome-11">
+<link rel="icon" href="../../og-image.png" type="image/png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+h1,h2,h3,h4,h5,h6,.logo,.nav-logo,.section-title,.section-label,.tagline,.btn,.tag,.nav-cta,.hero-tagline-caps,.version-badge{font-family:var(--font-heading)}
+.container{max-width:860px;margin:0 auto;padding:0 24px}
+.page-hero{background:var(--bg-hero);padding-bottom:64px;padding-left:24px;padding-right:24px;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;top:-200px;right:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,var(--accent-faint) 0%,transparent 70%)}
+.page-hero .container{position:relative;z-index:1}
+.page-hero h1{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:900;letter-spacing:0;margin-bottom:16px;line-height:1.1}
+.page-hero p{font-size:1rem;color:var(--text-secondary);max-width:560px;line-height:1.7}
+.doc-layout{padding:64px 0}
+.doc-content h2{font-size:1.5rem;font-weight:800;letter-spacing:0;margin-bottom:16px;margin-top:48px;padding-top:16px}
+.doc-content h2:first-child{margin-top:0}
+.doc-content h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:32px;color:var(--text-primary)}
+.doc-content p{margin-bottom:16px;color:var(--text-secondary);line-height:1.8}
+.doc-content ul,.doc-content ol{margin-bottom:16px;padding-left:20px;color:var(--text-secondary)}
+.doc-content li{margin-bottom:6px;line-height:1.7}
+.doc-content strong{color:var(--text-primary)}
+.doc-content a{color:var(--accent-light);text-decoration:none}
+.doc-content a:hover{text-decoration:underline}
+.callout{border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
+.callout-info{background:var(--accent-faint);border:1px solid var(--accent-border)}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:.875rem;color:var(--text-secondary);line-height:1.7}
+.callout-body strong{color:var(--text-primary)}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px 24px;font-family:var(--font-mono);font-size:1rem;line-height:1.9;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin-bottom:20px}
+.ref-table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:.85rem}
+.ref-table th{text-align:left;padding:10px 16px;background:var(--bg-code);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);border-bottom:1px solid var(--border)}
+.ref-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top}
+.ref-table code{font-family:var(--font-mono);font-size:.88em;background:var(--bg-code);padding:2px 6px;border-radius:4px}
+.page-nav-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:48px;border-top:1px solid var(--border);margin-top:48px}
+.pnav-btn{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius);background:var(--bg-card);border:1px solid var(--border);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:600;transition:all .2s}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent-light)}
+svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;stroke-width:1.5;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body class="has-help-subnav">
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../" class="nav-brand" aria-label="Sidekick home">
+      <img src="../../og-image.png" alt="" class="nav-bullet" aria-hidden="true">
+      <span class="nav-wordmark"><span class="logo gradient">Sidekick</span></span>
+    </a>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('active')" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+    <ul class="nav-links">
+      <li><a href="../../#problem">Problem</a></li>
+      <li><a href="../../#future">What If</a></li>
+      <li><a href="../../#mechanism">How It Works</a></li>
+      <li><a href="../../#sidekicks">Sidekicks</a></li>
+      <li><a href="../../#install">Install</a></li>
+      <li class="mobile-only"><a href="https://github.com/alo-exp/sidekick" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="../../help/" class="nav-help">Help Center</a>
+      <button id="theme-toggle" type="button" aria-label="Toggle light/dark mode">
+        <span id="icon-sun"><i data-lucide="sun"></i></span>
+        <span id="icon-moon" style="display:none"><i data-lucide="moon"></i></span>
+      </button>
+      <a href="https://github.com/alo-exp/sidekick" class="nav-cta" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="help-subnav" id="help-subnav">
+  <div class="help-subnav-inner">
+    <nav class="help-breadcrumb" aria-label="Help Center"><a href="../../">Home</a><span class="sep">/</span><a href="../">Help</a><span class="sep">/</span><span class="current">Glossary</span></nav>
+    <div class="help-subnav-extra">
+      <div class="help-subnav-links"><a href="../getting-started/">Getting Started</a><a href="../concepts/">Concepts</a><a href="../workflows/">Workflows</a><a href="../reference/">Reference</a><a href="../troubleshooting/">Troubleshooting</a></div>
+      <div class="nav-search-wrap"><input type="text" class="nav-search-input" id="nav-search-input" placeholder="Search docs…" autocomplete="off"><div class="nav-search-results" id="nav-search-results"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-hero">
+  <div class="container">
+    <h1>Glossary</h1>
+    <p>Canonical terms for current Sidekick docs.</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="doc-layout">
+    <div class="doc-content">
+
+      <table class="ref-table">
+        <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sidekick</strong></td><td>The Alo Labs plugin that gives Claude Code, Codex, and Cursor a shared delegation layer for supported coding sidekicks.</td></tr>
+          <tr><td><strong>host AI</strong></td><td>The Claude Code, Codex, or Cursor session that plans, delegates, reviews, verifies, and communicates with the user.</td></tr>
+          <tr><td><strong>sidekick</strong></td><td>A supported child runtime that performs bounded implementation work after activation. Current sidekicks are Kay and Codex.</td></tr>
+          <tr><td><strong>Kay</strong></td><td>The Kay runtime installed and repaired through Sidekick. Kay tasks run through <code>kay exec</code>.</td></tr>
+          <tr><td><strong>Codex sidekick</strong></td><td>The local OpenAI Codex CLI used as a child runtime through <code>codex exec</code>, pinned to <code>gpt-5.4-mini</code> with extra-high reasoning.</td></tr>
+          <tr><td><strong>delegate</strong></td><td>To hand a bounded coding task from the host AI to the active sidekick.</td></tr>
+          <tr><td><strong>active-sidekick</strong></td><td>The shared session selector at <code>~/.sidekick/sessions/&lt;session&gt;/active-sidekick</code>. It contains <code>kay</code> or <code>codex</code>.</td></tr>
+          <tr><td><strong>marker</strong></td><td>A project-local file showing that a sidekick is active in the current host session.</td></tr>
+          <tr><td><strong>Host verification</strong></td><td>The host-owned review pass that checks requirements, diffs, tests, integration behavior, assumptions, and failure classes before reporting completion.</td></tr>
+          <tr><td><strong>generated host bundle</strong></td><td>A rendered skill surface under <code>agents/claude/</code>, <code>agents/codex/</code>, or <code>agents/cursor/</code>, produced from canonical files under <code>skills/</code>.</td></tr>
+          <tr><td><strong>registry</strong></td><td><code>sidekicks/registry.json</code>, the shared metadata for runtime names, marker paths, commands, and install details.</td></tr>
+          <tr><td><strong>release gate</strong></td><td>The test sequence that proves public docs, generated surfaces, manifests, hooks, and live sidekick paths are aligned.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Canonical Rules</h2>
+      <ul>
+        <li>The host AI owns final correctness.</li>
+        <li>Kay and Codex are mutually exclusive in a host session.</li>
+        <li>Canonical workflow text lives under <code>skills/</code>.</li>
+        <li>Generated host bundles are render outputs.</li>
+        <li>Public docs should name only the supported sidekicks: Kay and Codex.</li>
+      </ul>
+
+<div class="page-nav-bottom"><a href="../audience/" class="pnav-btn"><i data-lucide="arrow-left"></i> Audience</a><a href="../compatibility/" class="pnav-btn">Compatibility <i data-lucide="arrow-right"></i></a></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand-group">
+      <span class="footer-credit"><a href="../../" class="footer-brand-link">Sidekick</a> &middot; Innovated at <a href="https://alolabs.dev" target="_blank" rel="noopener noreferrer" style="font-weight:700;text-decoration:none;color:inherit">&#256;lo Labs</a></span>
+    </div>
+    <div class="footer-copyright">&copy; 2026 Alo Labs. All rights reserved.</div>
+    <div class="footer-links">
+      <a href="../../help/">Help</a>
+      <a href="../../terms/">Terms of Use</a>
+      <a href="../../privacy/">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script src="../search.js"></script>
+<script src="../common.js"></script>
+<script src="../../chrome.js?v=site-chrome-11"></script>
+</body>
+</html>
