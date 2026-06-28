@@ -1,0 +1,13 @@
+{
+  "product_name": "Sidekick",
+  "logo_path": "og-image.png",
+  "github_url": "https://github.com/alo-exp/sidekick",
+  "copyright_year": "2026",
+  "theme_storage_key": "sidekick-theme",
+  "theme_storage_key_legacy": "sidekick-theme-v2",
+  "alpha_badge_html": "",
+  "nav_links_html": "<li><a href=\"{{ROOT}}#problem\">Problem</a></li>\n      <li><a href=\"{{ROOT}}#future\">What If</a></li>\n      <li><a href=\"{{ROOT}}#mechanism\">How It Works</a></li>\n      <li><a href=\"{{ROOT}}#sidekicks\">Sidekicks</a></li>\n      <li><a href=\"{{ROOT}}#install\">Install</a></li>",
+  "help_links_html": "",
+  "help_search_html": "",
+  "chrome_version": "site-chrome-11"
+}
