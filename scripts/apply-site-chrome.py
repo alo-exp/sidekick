@@ -61,6 +61,18 @@ def init_chrome(site: Path) -> None:
     CHROME_SCRIPT = f'<script src="{{root}}chrome.js?v={CHROME_VER}"></script>'
 
 LUCIDE = '<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>'
+LUCIDE_TAG_RE = re.compile(
+    r'<script src="https://unpkg\.com/lucide@[^"]+"[^>]*></script>\s*',
+    re.IGNORECASE,
+)
+LEGACY_DARK_DEFAULT_BOOT_RE = re.compile(
+    r"<script>\(\(\)=>\{const theme=localStorage\.getItem\([^)]+\);"
+    r"document\.documentElement\.setAttribute\([^)]+\);\}\)\(\);</script>\s*"
+)
+INLINE_THEME_HANDLER_RE = re.compile(
+    r"<script>\s*function applyTheme\(dark\)\{[\s\S]*?"
+    r"(?:lucide\.createIcons\(\);\s*)?</script>\s*"
+)
 
 TARGET_GLOBS = [
     "index.html",
@@ -544,6 +556,112 @@ def repair_help_subnav_close(html: str) -> str:
     return html[:inner_end] + "\n</div>\n" + html[inner_end:]
 
 
+def strip_legacy_theme_scripts(html: str) -> str:
+    html = LEGACY_DARK_DEFAULT_BOOT_RE.sub("", html)
+    html = INLINE_THEME_HANDLER_RE.sub("", html)
+    return html
+
+
+def dedupe_lucide_scripts(html: str) -> str:
+    seen = False
+
+    def repl(match: re.Match[str]) -> str:
+        nonlocal seen
+        if seen:
+            return ""
+        seen = True
+        return match.group(0)
+
+    return LUCIDE_TAG_RE.sub(repl, html)
+
+
+def normalize_help_stylesheets(html: str, path: Path) -> str:
+    if not is_help_page(path):
+        return html
+    root = root_prefix(path)
+    tokens = f'<link rel="stylesheet" href="{root}tokens.css">'
+    chrome = CHROME_LINK.format(root=root)
+    neutral = NEUTRAL_LINK.format(root=root)
+    html = re.sub(
+        r'<link rel="stylesheet" href="[^"]*tokens\.css[^"]*">',
+        tokens,
+        html,
+        count=1,
+    )
+    html = re.sub(
+        r'<link rel="stylesheet" href="[^"]*chrome\.css[^"]*">',
+        chrome,
+        html,
+        count=1,
+    )
+    html = re.sub(
+        r'<link rel="stylesheet" href="[^"]*neutral-variants\.css[^"]*">',
+        neutral,
+        html,
+        count=1,
+    )
+    return html
+
+
+def ensure_theme_data_attrs(html: str) -> str:
+    if "data-theme-key=" in html:
+        return html
+    config = load_site_config(SITE)
+    primary = config.get("theme_storage_key", "alo-theme")
+    legacy = config.get("theme_storage_key_legacy", "")
+    attrs = f'data-theme-key="{primary}"'
+    if legacy:
+        attrs += f' data-theme-key-legacy="{legacy}"'
+    return re.sub(
+        r'<html lang="en"([^>]*)>',
+        rf'<html lang="en"\1 {attrs}>',
+        html,
+        count=1,
+    )
+
+
+def is_help_inner_page(path: Path) -> bool:
+    if not is_help_page(path):
+        return False
+    rel = path.relative_to(SITE / "help")
+    return not (len(rel.parts) == 1 and rel.parts[0] == "index.html")
+
+
+def ensure_help_common_js(html: str, path: Path) -> str:
+    if not is_help_inner_page(path):
+        return html
+    rel = help_prefix(path)
+    script_tag = f'<script src="{rel}common.js"></script>'
+    if re.search(r'<script src="[^"]*common\.js[^"]*"></script>', html):
+        return html
+    if re.search(r'<script src="[^"]*chrome\.js[^"]*"></script>', html):
+        return re.sub(
+            r'(<script src="[^"]*chrome\.js[^"]*"></script>)',
+            script_tag + r"\n\1",
+            html,
+            count=1,
+        )
+    return html.replace("</body>", f"{script_tag}\n</body>", 1)
+
+
+def normalize_help_body_scripts(html: str, path: Path) -> str:
+    if not is_help_page(path):
+        return html
+    rel = help_prefix(path)
+    root = root_prefix(path)
+    scripts: list[str] = [LUCIDE.strip()]
+    scripts.append(f'<script src="{rel}search.js"></script>')
+    if is_help_inner_page(path):
+        scripts.append(f'<script src="{rel}common.js"></script>')
+    scripts.append(CHROME_SCRIPT.format(root=root))
+    block = "\n".join(scripts) + "\n"
+    html = LUCIDE_TAG_RE.sub("", html)
+    html = re.sub(r'<script src="[^"]*search\.js[^"]*"></script>\s*', "", html)
+    html = re.sub(r'<script src="[^"]*common\.js[^"]*"></script>\s*', "", html)
+    html = re.sub(r'<script src="[^"]*chrome\.js[^"]*"></script>\s*', "", html)
+    return html.replace("</body>", f"{block}</body>", 1)
+
+
 def ensure_help_search_script(html: str, path: Path) -> str:
     if "search.js" in html:
         return html
@@ -611,13 +729,20 @@ def patch_file(path: Path) -> bool:
     html = strip_inline_footer_css(html)
     html = collapse_style_whitespace(html)
     html = repair_css_damage(html)
+    html = strip_legacy_theme_scripts(html)
     html = ensure_head_assets(html, root, help_page=is_help_page(path))
+    html = ensure_theme_data_attrs(html)
+    if is_help_page(path):
+        html = normalize_help_stylesheets(html, path)
     html = ensure_body_scripts(html, root)
     if is_help_page(path):
         html = repair_help_subnav_close(html)
         html = replace_or_insert_help_subnav(html, build_help_subnav(path))
         html = ensure_body_class(html, "has-help-subnav")
         html = ensure_help_search_script(html, path)
+        html = ensure_help_common_js(html, path)
+        html = normalize_help_body_scripts(html, path)
+        html = dedupe_lucide_scripts(html)
         html = adjust_help_layout_padding(html)
         if path == SITE / "help" / "index.html":
             html = remove_help_index_subtitle(html)

@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" data-neutral-variant="s3">
+<html lang="en" data-neutral-variant="s3" data-theme-key="sidekick-theme" data-theme-key-legacy="sidekick-theme-v2">
 <head>
 <script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
-<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
 <title>Core Concepts — Sidekick Help</title>
 <meta name="description" content="Understand Sidekick's current concepts: host-advisor delegation, per-session readiness, SKILL.md activation, hook enforcement, fallback handling, skill injection, AGENTS.md mentoring, and runtime compatibility.">
-<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../../tokens.css">
 <link rel="stylesheet" href="../../neutral-variants.css?v=s3-home-icons">
 <link rel="stylesheet" href="../../chrome.css?v=site-chrome-11">
 <link rel="icon" href="../../og-image.png" type="image/png">
@@ -282,21 +281,9 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   </div>
 </footer>
 
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
-<script>
-function applyTheme(dark){
-  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
-  document.getElementById('icon-sun').style.display=dark?'none':'';
-  document.getElementById('icon-moon').style.display=dark?'':'none';
-  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
-  localStorage.removeItem('sidekick-theme');
-}
-function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
-(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
-lucide.createIcons();
-</script>
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<script src="../../chrome.js?v=site-chrome-11"></script>
 <script src="../search.js"></script>
+<script src="../common.js"></script>
+<script src="../../chrome.js?v=site-chrome-11"></script>
 </body>
 </html>
