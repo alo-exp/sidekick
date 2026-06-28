@@ -1,0 +1,106 @@
+/* Sidekick — Help Center Design Tokens
+   Adapts Silver Bullet's token structure with Sidekick's color scheme. */
+
+/* ───── DESIGN TOKENS — DARK (default) ───── */
+:root,[data-theme="dark"]{
+  --bg-page:#0a0a0f;
+  --bg-card:#12121a;
+  --bg-card-hover:#181825;
+  --bg-code:#0d0d16;
+  --bg-hero:linear-gradient(160deg,#060608 0%,#0a0a14 25%,#0d0d1c 48%,#0f0f22 62%,#0a0a18 80%,#060610 100%);
+  --accent:#6366f1;
+  --accent-light:#818cf8;
+  --accent-glow:rgba(99,102,241,0.18);
+  --accent2:#7c3aed;
+  --accent3:#db2777;
+  --gradient-brand:linear-gradient(135deg,#4f46e5,#7c3aed,#db2777);
+  --green:#059669;
+  --amber:#d97706;
+  --red:#dc2626;
+  --cyan:#0891b2;
+  --text-primary:#e8edf5;
+  --text-secondary:#c0cfde;
+  --text-dim:#8099b4;
+  --border:#1e293b;
+  --border-hover:#334155;
+  --radius:12px;
+  --radius-lg:20px;
+  --radius-sm:8px;
+  --font-heading:'Space Grotesk',system-ui,sans-serif;
+  --font-body:'Roboto',system-ui,sans-serif;
+  --font-sans:var(--font-body);
+  --font-mono:'Roboto Mono',monospace;
+  --shadow-lg:0 20px 60px rgba(0,0,0,.7);
+  --shadow-glow:0 0 40px rgba(99,102,241,0.08);
+  --nav-bg:rgba(10,10,15,.92);
+  --section-alt:rgba(18,18,26,.7);
+  --card-top:rgba(99,102,241,0.6);
+  --card-accent:linear-gradient(90deg,#6366f1,#7c3aed);
+  /* ── Derived color tokens ── */
+  --accent-subtle:rgba(99,102,241,.1);
+  --accent-faint:rgba(99,102,241,.08);
+  --accent-border:rgba(99,102,241,.2);
+  --accent-border-md:rgba(99,102,241,.25);
+  --accent-border-lg:rgba(99,102,241,.35);
+  --green-faint:rgba(5,150,105,.06);
+  --green-subtle:rgba(5,150,105,.12);
+  --green-border:rgba(5,150,105,.2);
+  --amber-faint:rgba(217,119,6,.06);
+  --amber-subtle:rgba(217,119,6,.12);
+  --amber-border:rgba(217,119,6,.2);
+  --red-faint:rgba(220,38,38,.06);
+  --red-subtle:rgba(220,38,38,.1);
+  --red-border:rgba(220,38,38,.2);
+  --accent-stripe:rgba(99,102,241,.4);
+}
+
+/* ───── LIGHT THEME ───── */
+[data-theme="light"]{
+  --bg-page:#f8f9fc;
+  --bg-card:#ffffff;
+  --bg-card-hover:#f1f2f8;
+  --bg-code:#eef0f8;
+  --bg-hero:linear-gradient(160deg,#eef0f8 0%,#f0f2fa 25%,#f4f5fc 48%,#f6f7fd 62%,#f0f2f8 80%,#eaedf6 100%);
+  --accent:#4f46e5;
+  --accent-light:#4338ca;
+  --accent-glow:rgba(79,70,229,0.1);
+  --accent2:#7c3aed;
+  --accent3:#db2777;
+  --gradient-brand:linear-gradient(135deg,#4f46e5,#7c3aed,#db2777);
+  --green:#059669;
+  --amber:#b45309;
+  --red:#dc2626;
+  --cyan:#0e7490;
+  --text-primary:#0f172a;
+  --text-secondary:#475569;
+  --text-dim:#94a3b8;
+  --border:#e2e8f0;
+  --border-hover:#c7d2fe;
+  --shadow-lg:0 20px 60px rgba(15,23,42,.10);
+  --shadow-glow:0 0 40px rgba(79,70,229,0.08);
+  --nav-bg:rgba(248,249,252,.92);
+  --section-alt:rgba(241,242,248,.7);
+  --card-top:rgba(99,102,241,0.5);
+  --card-accent:linear-gradient(90deg,#4f46e5,#7c3aed);
+  /* ── Derived color tokens (light overrides) ── */
+  --accent-subtle:rgba(79,70,229,.1);
+  --accent-faint:rgba(79,70,229,.08);
+  --accent-border:rgba(79,70,229,.2);
+  --accent-border-md:rgba(79,70,229,.25);
+  --accent-border-lg:rgba(79,70,229,.35);
+  --green-faint:rgba(5,150,105,.06);
+  --green-subtle:rgba(5,150,105,.12);
+  --green-border:rgba(5,150,105,.2);
+  --amber-faint:rgba(180,83,9,.06);
+  --amber-subtle:rgba(180,83,9,.12);
+  --amber-border:rgba(180,83,9,.2);
+  --red-faint:rgba(220,38,38,.06);
+  --red-subtle:rgba(220,38,38,.1);
+  --red-border:rgba(220,38,38,.2);
+  --accent-stripe:rgba(79,70,229,.4);
+}
+
+/* ───── THEME TRANSITION ───── */
+body,nav,section,.help-card,.quick-link,.callout,.code-block{
+  transition:background .25s,background-color .25s,border-color .25s,color .25s,box-shadow .25s;
+}
