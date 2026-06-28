@@ -13,8 +13,12 @@
 <link rel="icon" href="og-image.png" type="image/png">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="./chrome.css?v=site-chrome-11">
-<script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){}})();</script>
 <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-primary);line-height:1.7;overflow-x:hidden}
+h1,h2,h3,h4,h5,h6,.logo,.section-title,.section-label,.btn,.nav-cta{font-family:var(--font-heading)}
 .container{max-width:1100px;margin:0 auto;padding:0 24px}
 .text-center{text-align:center}
 .mt-6{margin-top:48px}
@@ -22,7 +26,7 @@
 .section-title{font-family:var(--font-heading);font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:700;color:var(--text-primary);margin-bottom:16px;line-height:1.2}
 .section-desc{color:var(--text-secondary);max-width:720px;line-height:1.7}
 .section-desc.centered{margin-left:auto;margin-right:auto}
-.hero{padding:calc(var(--nav-h,56px) + 64px) 24px 80px;text-align:center;background:var(--bg-hero);position:relative}
+.hero{padding:calc(var(--site-header-h) + 64px) 24px 80px;text-align:center;background:var(--bg-hero);position:relative}
 .hero h1{font-family:var(--font-heading);font-size:clamp(2rem,4.5vw,3rem);font-weight:800;line-height:1.15;max-width:820px;margin:0 auto 20px}
 .hero .subtitle{font-size:1.1rem;color:var(--text-secondary);max-width:640px;margin:0 auto 32px;line-height:1.65}
 .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
@@ -137,6 +141,7 @@ code{font-family:var(--font-mono);font-size:.88em;background:var(--bg-code);padd
       <div class="pain-card"><div class="pain-num">PAIN 05</div><h3>Every Host Reinvents Delegation</h3><p>Claude Code, Codex, and Cursor each need the same brain/hands split — but copy-pasted prompts do not enforce it.</p></div>
       <div class="pain-card"><div class="pain-num">PAIN 06</div><h3>Frontier Models Burn on Implementation</h3><p>Expensive host models write boilerplate that Kay or Codex could run — if delegation were reliable and verified.</p></div>
     </div>
+    <!-- CMF C3: AGITATION / STAKES -->
     <div class="stakes-callout">
       <div class="stakes-grid">
         <div class="stakes-item"><h4>Financial</h4><p>Frontier token spend on implementation plus rework when unverified diffs land in main.</p></div>
@@ -233,17 +238,19 @@ code{font-family:var(--font-mono);font-size:.88em;background:var(--bg-code);padd
   </div>
 </section>
 
-<!-- CMF C9–C11: INSTALL + RISK REVERSAL + CTA -->
+<!-- CMF C9: OFFER -->
 <section id="install">
   <div class="container">
     <div class="install-block">
       <div class="section-label">Install</div>
       <h2 class="section-title">Get Sidekick on Your Host</h2>
       <p class="section-desc centered" style="margin:0 auto 24px">Claude Code: <code>/plugin install alo-labs/sidekick</code> · Codex: marketplace <code>alo-labs/codex-plugins</code> · Cursor: <code>alo-labs-cursor-marketplace</code> then reload window.</p>
+      <!-- CMF C11: CTA -->
       <div class="hero-cta">
         <a href="help/getting-started/" class="btn btn-primary">Help Center</a>
         <a href="https://github.com/alo-exp/sidekick" class="btn btn-outline" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
+      <!-- CMF C10: RISK REVERSAL -->
       <p style="font-size:.85rem;color:var(--text-dim);margin-top:20px">MIT license · <a href="COMPATIBILITY.md">Compatibility</a> · <a href="TESTING.md">Testing</a> · Stop with <code>/sidekick:kay-stop</code> or <code>/sidekick:codex-stop</code></p>
     </div>
   </div>

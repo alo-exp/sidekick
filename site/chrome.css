@@ -2,6 +2,7 @@
 
 :root{
   --site-header-h:64px;
+  --nav-h:var(--site-header-h);
   --help-subnav-h:72px;
   --chrome-stack-h:calc(var(--site-header-h) + var(--help-subnav-h));
   --anchor-scroll-gap:32px;

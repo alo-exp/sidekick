@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-neutral-variant="s3" data-theme-key="sidekick-theme" data-theme-key-legacy="sidekick-theme-v2">
 <head>
-<script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
@@ -49,7 +49,10 @@ h1,h2,h3,h4,h5,h6,.logo,.nav-logo,.section-title,.section-label,.tagline,.btn,.t
 .flow-step{display:flex;gap:20px;align-items:flex-start}
 .flow-step+.flow-step{margin-top:0}
 .flow-connector{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
-.flow-num{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);flex-shrink:0}
+.flow-num{width:36px;height:36px;border-radius:50%;background:var(--btn-gradient);color:var(--heading-muted);font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);flex-shrink:0}
+.flow-num-l1{background:linear-gradient(135deg,var(--grad-1),var(--grad-2))}
+.flow-num-l2{background:linear-gradient(135deg,var(--amber),var(--grad-2))}
+.flow-num-l3{background:linear-gradient(135deg,var(--red),var(--grad-1))}
 .flow-line{width:2px;height:32px;background:linear-gradient(180deg,var(--accent-stripe),var(--accent-subtle));margin:0 auto}
 .flow-body{padding-top:6px;padding-bottom:32px}
 .flow-body h4{font-size:.95rem;font-weight:700;margin-bottom:6px}
@@ -227,21 +230,21 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
 
       <div class="flow">
         <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#059669,#047857)">L1</div><div class="flow-line"></div></div>
+          <div class="flow-connector"><div class="flow-num flow-num-l1">L1</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Inspect</h4>
             <p>The host checks the diff, touched files, signatures, imports, config, and assumptions.</p>
           </div>
         </div>
         <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#d97706,#b45309)">L2</div><div class="flow-line"></div></div>
+          <div class="flow-connector"><div class="flow-num flow-num-l2">L2</div><div class="flow-line"></div></div>
           <div class="flow-body">
             <h4>Run evidence</h4>
             <p>The host runs the smallest meaningful tests, lint, build, type checks, or runtime checks.</p>
           </div>
         </div>
         <div class="flow-step">
-          <div class="flow-connector"><div class="flow-num" style="background:linear-gradient(135deg,#dc2626,#b91c1c)">L3</div></div>
+          <div class="flow-connector"><div class="flow-num flow-num-l3">L3</div></div>
           <div class="flow-body">
             <h4>Classify failures</h4>
             <p>Failures are classified as missed requirement, integration error, regression, wrong logic, syntax error, wrong file, unverified assumption, knowledge gap, misunderstood task, incomplete trial, API failure, or external execution error.</p>

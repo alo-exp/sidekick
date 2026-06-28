@@ -52,10 +52,15 @@ def init_chrome(site: Path) -> None:
     legacy_expr = (
         f"||localStorage.getItem('{legacy_key}')" if legacy_key else ""
     )
+    theme_default = config.get("theme_default", "light")
+    if theme_default == "dark":
+        theme_attr = "('data-theme',t==='light'?'light':'dark')"
+    else:
+        theme_attr = "('data-theme',t==='dark'?'dark':'light')"
     THEME_BOOT = (
         f"<script>(function(){{try{{var t=localStorage.getItem('{theme_key}')"
         f"{legacy_expr};document.documentElement.setAttribute"
-        "('data-theme',t==='dark'?'dark':'light');}catch(e){}})();</script>"
+        f"{theme_attr};}}catch(e){{}}}})();</script>"
     )
     CHROME_LINK = f'<link rel="stylesheet" href="{{root}}chrome.css?v={CHROME_VER}">'
     CHROME_SCRIPT = f'<script src="{{root}}chrome.js?v={CHROME_VER}"></script>'
@@ -294,8 +299,17 @@ def ensure_head_assets(html: str, root: str, *, help_page: bool = False) -> str:
 
 
 def normalize_theme_boot(html: str) -> str:
-    """Ensure early head script defaults to light unless user saved dark."""
+    """Ensure early head script matches site.config theme_default."""
     html = OLD_THEME_BOOT_RE.sub(THEME_BOOT, html)
+    html = LEGACY_DARK_DEFAULT_BOOT_RE.sub(THEME_BOOT, html)
+    html = re.sub(
+        r"<script>\(function\(\)\{try\{var t=localStorage\.getItem\([^)]+\)"
+        r"(?:\|\|localStorage\.getItem\([^)]+\))?;"
+        r"document\.documentElement\.setAttribute\('data-theme',[^)]+\);\}catch\(e\)\{\}\}\)\(\);</script>",
+        THEME_BOOT,
+        html,
+        count=1,
+    )
     if THEME_BOOT not in html and "<head>" in html:
         html = html.replace("<head>", f"<head>\n{THEME_BOOT}", 1)
     return html
@@ -458,7 +472,12 @@ def repair_css_damage(html: str) -> str:
     html = re.sub(
         r"/\* FOOTER \*/\s*(?:footer a\{[^}]*\}\s*)+"
         r"(?:footer a:hover\{[^}]*\}\s*)?\s*\n?\}",
-        "/* FOOTER */",
+        "/* FOOTER — chrome.css */",
+        html,
+    )
+    html = re.sub(
+        r"/\* FOOTER(?: — chrome\.css)? \*/\s*\n\s*\}",
+        "/* FOOTER — chrome.css */",
         html,
     )
     return html
