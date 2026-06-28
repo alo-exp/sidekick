@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=1200">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800;900&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:1200px;height:630px;overflow:hidden}
 body{
-  font-family:'Space Grotesk',system-ui,sans-serif;
+  font-family:var(--font-sans);
   background:#07080d;
   color:#e5ecf6;
   position:relative;
@@ -53,7 +53,7 @@ body::after{
   font-size:1.18rem;font-weight:900;letter-spacing:0;
 }
 .logo-domain{
-  font-family:'Fira Code',monospace;font-size:.72rem;color:#7c8aa1;
+  font-family:var(--font-mono);font-size:.72rem;color:#7c8aa1;
 }
 .headline{
   max-width:680px;margin-top:18px;
@@ -112,7 +112,7 @@ h1 .comma-gap{display:inline-block;margin-left:.3em}
   width:54px;height:54px;border-radius:14px;
   display:flex;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#2563eb,#7c3aed);
-  color:#fff;font-family:'Fira Code',monospace;font-size:1.18rem;font-weight:900;
+  color:#fff;font-family:var(--font-mono);font-size:1.18rem;font-weight:900;
   box-shadow:0 12px 30px rgba(99,102,241,.28);
 }
 .codex .rank{background:linear-gradient(135deg,#059669,#2563eb)}
