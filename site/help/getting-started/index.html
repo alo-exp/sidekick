@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" data-neutral-variant="s3" data-theme-key="sidekick-theme" data-theme-key-legacy="sidekick-theme-v2">
+<html lang="en" data-neutral-variant="s3">
 <head>
 <script>(function(){try{var t=localStorage.getItem('sidekick-theme')||localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
+<script>(()=>{const theme=localStorage.getItem('sidekick-theme-v2');document.documentElement.setAttribute('data-theme',theme==='light'?'light':'dark');})();</script>
 <title>Getting Started — Sidekick Help</title>
 <meta name="description" content="Get started with Sidekick for Claude Code, Codex, or Cursor. Install the plugin, choose Kay or Codex, run the current-session readiness check, and delegate your first coding task.">
-<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../tokens.css">
 <link rel="stylesheet" href="../../neutral-variants.css?v=s3-home-icons">
 <link rel="stylesheet" href="../../chrome.css?v=site-chrome-11">
 <link rel="icon" href="../../og-image.png" type="image/png">
@@ -168,7 +169,7 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
       <div class="code-block"><span class="cmd">Settings → Plugins → Add marketplace</span>
 <span class="comment"># Source: https://github.com/alo-labs/alo-labs-cursor-marketplace</span>
 <span class="comment"># Then install the sidekick plugin from the marketplace list</span></div>
-      <p>Cursor lists installable plugins from registered marketplaces only. Copying files into <code>~/.cursor/plugins/cache/</code> does not make Sidekick appear in the install list. Install <strong>sidekick@0.8.4</strong> from <a href="https://github.com/alo-labs/alo-labs-cursor-marketplace">alo-labs-cursor-marketplace</a>, reload Cursor, then run <code>bash scripts/install-cursor.sh --merge-hooks-only</code> from a checkout if hooks did not load automatically.</p>
+      <p>Cursor lists installable plugins from registered marketplaces only. Copying files into <code>~/.cursor/plugins/cache/</code> does not make Sidekick appear in the install list. Install <strong>sidekick@0.8.2</strong> from <a href="https://github.com/alo-labs/alo-labs-cursor-marketplace">alo-labs-cursor-marketplace</a>, reload Cursor, then run <code>bash scripts/install-cursor.sh --merge-hooks-only</code> from a checkout if hooks did not load automatically.</p>
       <p>Restart the host after installation so the hook surface loads before you start a Kay or Codex session. Sidekick does not install SessionStart hooks; runtime readiness is checked when delegation starts for the current session.</p>
       <p>Codex users should install the Codex-facing Sidekick package through the Codex plugin surface. That path exposes the shared skill bodies and runtime guidance without duplicating writable state from Claude Code.</p>
 
@@ -281,9 +282,21 @@ svg.lucide{display:inline-block;vertical-align:middle;width:1em;height:1em;strok
   </div>
 </footer>
 
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
+<script>
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  document.getElementById('icon-sun').style.display=dark?'none':'';
+  document.getElementById('icon-moon').style.display=dark?'':'none';
+  localStorage.setItem('sidekick-theme-v2',dark?'dark':'light');
+  localStorage.removeItem('sidekick-theme');
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
+(function(){const s=localStorage.getItem('sidekick-theme-v2');applyTheme(s==='light'?false:true)})();
+lucide.createIcons();
+</script>
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<script src="../search.js"></script>
-<script src="../common.js"></script>
 <script src="../../chrome.js?v=site-chrome-11"></script>
+<script src="../search.js"></script>
 </body>
 </html>
