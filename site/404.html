@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found — Sidekick</title>
+<link rel="icon" href="/og-image.png" type="image/png">
+<script>
+(function () {
+  var redirects = {
+    '/START-HERE.md': '/help/start-here/',
+    '/AUDIENCE.md': '/help/audience/',
+    '/COMPATIBILITY.md': '/help/compatibility/',
+    '/GLOSSARY.md': '/help/glossary/',
+    '/TESTING.md': '/help/testing/',
+    '/ARCHITECTURE.md': '/help/concepts/',
+    '/ADR/README.md': '/help/decisions/',
+    '/doc-scheme.md': '/help/reference/',
+    '/CICD.md': '/help/reference/',
+    '/CHANGELOG.md': '/help/reference/',
+    '/PRD-Overview.md': '/help/reference/',
+    '/pre-release-quality-gate.md': '/help/reference/'
+  };
+  var path = window.location.pathname.replace(/\/+$/, '') || '/';
+  var target = redirects[path];
+  if (target) {
+    window.location.replace(target);
+  }
+})();
+</script>
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 2rem auto;
+    max-width: 40rem;
+    line-height: 1.5;
+    color: #111;
+    background: #fafafa;
+  }
+  a { color: #4f46e5; }
+</style>
+</head>
+<body>
+  <h1>Page not found</h1>
+  <p>The page you requested is not available on the public docs site.</p>
+  <p><a href="/">Home</a> · <a href="/help/">Sidekick Help</a></p>
+</body>
+</html>
