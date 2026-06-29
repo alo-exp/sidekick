@@ -12,6 +12,9 @@ temp_interactive_push.bat
 .gitignore
 .env.local
 
+# Local GitHub Pages staging (scripts/prepare-pages-artifact.sh)
+.pages-staging/
+
 # Kay agent runtime (exec logs, local state)
 .kay/
 
@@ -20,3 +23,4 @@ tests/test-notes-app/node_modules/
 tests/test-notes-app/data/
 tests/test-notes-app-seeds/**/node_modules/
 tests/test-notes-app-seeds/**/data/
+branch_structure.json
