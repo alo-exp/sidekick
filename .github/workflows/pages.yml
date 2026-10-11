@@ -24,8 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Prepare Pages artifact (exclude markdown sources)
+        run: bash scripts/prepare-pages-artifact.sh .pages-staging
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: .pages-staging
       - id: deployment
         uses: actions/deploy-pages@v4

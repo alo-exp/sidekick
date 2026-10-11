@@ -88,6 +88,42 @@ for page in "${html_pages[@]}"; do
   fi
 done
 
+echo "=== T5: Pages artifact excludes markdown sources ==="
+STAGING="$(mktemp -d)"
+trap 'rm -rf "${STAGING}"' EXIT
+bash "${ROOT}/scripts/prepare-pages-artifact.sh" "${STAGING}"
+
+if find "${STAGING}" -type f -name '*.md' | grep -q .; then
+  fail "pages artifact has no markdown" "found .md files under staging tree"
+else
+  pass "pages artifact has no markdown"
+fi
+
+for rel in index.html help/index.html help/start-here/index.html 404.html CNAME; do
+  if [ -f "${STAGING}/${rel}" ]; then
+    pass "pages artifact ships ${rel}"
+  else
+    fail "pages artifact ships ${rel}" "missing ${rel}"
+  fi
+done
+
+echo "=== T6: legacy markdown URLs redirect via 404.html ==="
+expect_file "site/404.html"
+redirect_pairs=(
+  '/START-HERE.md:/help/start-here/'
+  '/AUDIENCE.md:/help/audience/'
+  '/COMPATIBILITY.md:/help/compatibility/'
+  '/GLOSSARY.md:/help/glossary/'
+  '/TESTING.md:/help/testing/'
+  '/ARCHITECTURE.md:/help/concepts/'
+  '/ADR/README.md:/help/decisions/'
+)
+for pair in "${redirect_pairs[@]}"; do
+  from="${pair%%:*}"
+  to="${pair##*:}"
+  expect_contains "site/404.html" "'${from}': '${to}'" "404 redirects ${from}"
+done
+
 echo ""
 echo "======================================="
 echo "Results: ${PASS} passed, ${FAIL} failed"
