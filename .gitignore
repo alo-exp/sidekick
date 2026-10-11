@@ -7,10 +7,11 @@ docs/sessions/
 .forge/conversations.idx
 .forge/.db_check_ok
 tests/.kay-live-logs/
-temp_auto_push.bat
-temp_interactive_push.bat
 .gitignore
 .env.local
+
+# Local GitHub Pages staging (scripts/prepare-pages-artifact.sh)
+.pages-staging/
 
 # Kay agent runtime (exec logs, local state)
 .kay/
